@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { AuthUiError } from "@/features/auth";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -44,6 +45,7 @@ import {
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
 import {
   nationActiveConstructionProjectsQueryOptions,
+  nationActiveSubsidiesQueryOptions,
   nationLatestTaxSnapshotQueryOptions,
   nationStockpileQueryOptions,
 } from "../../queries/treasuryQueries";
@@ -51,6 +53,7 @@ import {
 import type {
   Nation,
   NationActiveConstructionProject,
+  NationActiveSubsidy,
   NationSettlement,
   NationStockpileEntry,
 } from "../../types/nationTypes";
@@ -79,6 +82,7 @@ export function NationTreasurySection({
   const snapshotQuery = useQuery(
     nationLatestTaxSnapshotQueryOptions(nation.id),
   );
+  const subsidiesQuery = useQuery(nationActiveSubsidiesQueryOptions(nation.id));
 
   const [isGranting, setIsGranting] = useState(false);
   const [isSubsidizing, setIsSubsidizing] = useState(false);
@@ -139,6 +143,13 @@ export function NationTreasurySection({
         ) : (
           <StockpileTable stockpile={stockpileQuery.data} />
         )}
+
+        <ActiveSubsidiesSection
+          error={subsidiesQuery.error}
+          isError={subsidiesQuery.isError}
+          isPending={subsidiesQuery.isPending}
+          subsidies={subsidiesQuery.data ?? []}
+        />
       </Card>
 
       {isGranting ? (
@@ -155,6 +166,7 @@ export function NationTreasurySection({
           nation={nation}
           onClose={() => setIsSubsidizing(false)}
           queryClient={queryClient}
+          stockpile={stockpileQuery.data ?? []}
         />
       ) : null}
     </>
@@ -185,6 +197,85 @@ function StockpileTable({
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function ActiveSubsidiesSection({
+  error,
+  isError,
+  isPending,
+  subsidies,
+}: {
+  readonly error: AuthUiError | null;
+  readonly isError: boolean;
+  readonly isPending: boolean;
+  readonly subsidies: readonly NationActiveSubsidy[];
+}): JSX.Element {
+  return (
+    <div className="grid gap-2">
+      <h3 className="text-sm font-medium">Active subsidies</h3>
+      {isPending ? (
+        <LoadingState label="Loading active subsidies…" />
+      ) : isError ? (
+        <ErrorState
+          title="Active subsidies could not be loaded"
+          description={getErrorDescription(error)}
+        />
+      ) : subsidies.length === 0 ? (
+        <EmptyState
+          title="No active subsidies"
+          description="No queued, in-progress, or paused construction project has received a treasury subsidy yet."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Settlement</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Resources committed</TableHead>
+              <TableHead className="text-right">Progress</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {subsidies.map((subsidy) => {
+              const totalRequired = subsidy.costs.reduce(
+                (sum, cost) => sum + cost.amount,
+                0,
+              );
+              const totalCommitted = subsidy.costs.reduce(
+                (sum, cost) =>
+                  sum + Math.min(cost.committedQuantity, cost.amount),
+                0,
+              );
+              const progressPercent =
+                totalRequired > 0
+                  ? Math.round((totalCommitted / totalRequired) * 100)
+                  : 0;
+
+              return (
+                <TableRow key={subsidy.projectId}>
+                  <TableCell>{subsidy.settlementName}</TableCell>
+                  <TableCell>
+                    {subsidy.blueprintName} (tier {subsidy.tierNumber})
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {subsidy.costs
+                      .map(
+                        (cost) =>
+                          `${cost.committedQuantity.toLocaleString()} / ${cost.amount.toLocaleString()} ${cost.resourceName}`,
+                      )
+                      .join(", ")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {progressPercent}%
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </div>
   );
 }
 
@@ -439,10 +530,12 @@ function SubsidizeConstructionDialog({
   nation,
   onClose,
   queryClient,
+  stockpile,
 }: {
   readonly nation: Nation;
   readonly onClose: () => void;
   readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly stockpile: readonly NationStockpileEntry[];
 }): JSX.Element {
   const projectsQuery = useQuery(
     nationActiveConstructionProjectsQueryOptions(nation.id),
@@ -455,6 +548,14 @@ function SubsidizeConstructionDialog({
 
   const projects = projectsQuery.data ?? [];
   const selectedProject = projects.find((project) => project.id === projectId);
+  const stockpileByResource = new Map(
+    stockpile.map((entry) => [entry.resourceId, entry.quantity]),
+  );
+  const hasInsufficientStock =
+    selectedProject !== undefined &&
+    selectedProject.costs.some(
+      (cost) => (stockpileByResource.get(cost.resourceId) ?? 0) < cost.amount,
+    );
 
   function handleSubmit(): void {
     if (selectedProject === undefined) return;
@@ -489,7 +590,10 @@ function SubsidizeConstructionDialog({
           <DialogTitle>Subsidize construction</DialogTitle>
           <DialogDescription>
             Transfer a project's required input resources from the nation
-            treasury into its settlement's stockpile.
+            treasury into its settlement's stockpile. The transfer is clamped to
+            the nation's available stock and the settlement's remaining storage
+            space, so an insufficient stockpile only partially funds the
+            project.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
@@ -525,15 +629,47 @@ function SubsidizeConstructionDialog({
                 </SelectContent>
               </Select>
               {selectedProject !== undefined ? (
-                <p className="text-xs text-muted-foreground">
-                  Requires{" "}
-                  {selectedProject.costs
-                    .map(
-                      (cost) =>
-                        `${cost.amount.toLocaleString()} ${cost.resourceName}`,
-                    )
-                    .join(", ")}
-                  .
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Resource</TableHead>
+                      <TableHead className="text-right">Required</TableHead>
+                      <TableHead className="text-right">
+                        Nation stockpile
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedProject.costs.map((cost) => {
+                      const held =
+                        stockpileByResource.get(cost.resourceId) ?? 0;
+                      const insufficient = held < cost.amount;
+                      return (
+                        <TableRow key={cost.resourceId}>
+                          <TableCell>{cost.resourceName}</TableCell>
+                          <TableCell className="text-right">
+                            {cost.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell
+                            className={
+                              insufficient
+                                ? "text-right text-destructive"
+                                : "text-right"
+                            }
+                          >
+                            {held.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : null}
+              {hasInsufficientStock ? (
+                <p className="text-xs text-destructive">
+                  Nation stockpile is insufficient for one or more required
+                  resources. The subsidy will transfer as much as is available
+                  and clamp the rest.
                 </p>
               ) : null}
             </div>

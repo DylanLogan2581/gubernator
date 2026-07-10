@@ -246,6 +246,85 @@ describe("NationTreasurySection", () => {
       );
     });
   });
+
+  it("shows a warning when nation stockpile is insufficient for the selected project", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      projects: [
+        {
+          id: "project-1",
+          settlement_id: "settlement-1",
+          settlement_name: "Ironhaven Keep",
+          blueprint_name: "Granary",
+          tier_number: 1,
+          costs: [{ resource_id: "resource-1", amount: 20 }],
+        },
+      ],
+      resources: [{ id: "resource-1", name: "Grain" }],
+      stockpile: [{ resource_id: "resource-1", quantity: 5, name: "Grain" }],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    render(
+      <TestHarness>
+        <NationTreasurySection
+          canAdminWorld={true}
+          isArchived={false}
+          nation={createNation()}
+        />
+      </TestHarness>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: "Subsidize construction" }),
+    );
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Construction project" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Ironhaven Keep/ }),
+    );
+
+    expect(
+      await screen.findByText(/Nation stockpile is insufficient/),
+    ).toBeDefined();
+  });
+
+  it("lists active subsidies with committed vs required amounts and progress", async () => {
+    const clientFixture = createClientFixture({
+      resources: [{ id: "resource-1", name: "Grain" }],
+      stockpile: [],
+      subsidies: [
+        {
+          project_id: "project-1",
+          settlement_id: "settlement-1",
+          settlement_name: "Ironhaven Keep",
+          blueprint_name: "Granary",
+          tier_number: 1,
+          resource_id: "resource-1",
+          granted_quantity: 10,
+          costs: [{ resource_id: "resource-1", amount: 20 }],
+        },
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    render(
+      <TestHarness>
+        <NationTreasurySection
+          canAdminWorld={false}
+          isArchived={false}
+          nation={createNation()}
+        />
+      </TestHarness>,
+    );
+
+    expect(await screen.findByText("Ironhaven Keep")).toBeDefined();
+    expect(screen.getByText(/Granary \(tier 1\)/)).toBeDefined();
+    expect(screen.getByText("10 / 20 Grain")).toBeDefined();
+    expect(screen.getByText("50%")).toBeDefined();
+  });
 });
 
 function TestHarness({
@@ -335,6 +414,7 @@ function createClientFixture({
   resources = [],
   settlements = [],
   stockpile,
+  subsidies = [],
 }: {
   readonly projects?: readonly {
     readonly blueprint_name: string;
@@ -359,6 +439,19 @@ function createClientFixture({
     readonly name: string;
     readonly quantity: number;
     readonly resource_id: string;
+  }[];
+  readonly subsidies?: readonly {
+    readonly blueprint_name: string;
+    readonly costs: readonly {
+      readonly amount: number;
+      readonly resource_id: string;
+    }[];
+    readonly granted_quantity: number;
+    readonly project_id: string;
+    readonly resource_id: string;
+    readonly settlement_id: string;
+    readonly settlement_name: string;
+    readonly tier_number: number;
   }[];
 }): { readonly client: unknown; readonly rpc: ReturnType<typeof vi.fn> } {
   const rpc = vi.fn((name: string) => {
@@ -434,6 +527,28 @@ function createClientFixture({
     }
     if (table === "resources") {
       return chain({ data: resources, error: null });
+    }
+    if (table === "construction_project_subsidies") {
+      return chain({
+        data: subsidies.map((subsidy) => ({
+          construction_projects: {
+            building_blueprint_tiers: {
+              construction_costs_json: subsidy.costs,
+              tier_number: subsidy.tier_number,
+            },
+            building_blueprints: { name: subsidy.blueprint_name },
+            settlement_id: subsidy.settlement_id,
+            settlements: {
+              name: subsidy.settlement_name,
+              nation_id: "nation-1",
+            },
+          },
+          granted_quantity: subsidy.granted_quantity,
+          project_id: subsidy.project_id,
+          resource_id: subsidy.resource_id,
+        })),
+        error: null,
+      });
     }
     throw new Error(`Unexpected table ${table}`);
   });

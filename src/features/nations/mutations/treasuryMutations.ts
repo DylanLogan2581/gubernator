@@ -108,6 +108,9 @@ export function subsidizeConstructionProjectMutationOptions({
           queryKey: nationsQueryKeys.treasuryActiveProjects(input.nationId),
         }),
         queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.treasuryActiveSubsidies(input.nationId),
+        }),
+        queryClient.invalidateQueries({
           queryKey: resourcesQueryKeys.stockpilesBySettlement(
             input.settlementId,
           ),

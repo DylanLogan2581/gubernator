@@ -757,6 +757,78 @@ export type Database = {
           },
         ];
       };
+      construction_project_subsidies: {
+        Row: {
+          clamped: boolean;
+          created_at: string;
+          created_by_user_id: string | null;
+          granted_quantity: number;
+          id: string;
+          nation_id: string;
+          project_id: string;
+          resource_id: string;
+          settlement_id: string;
+        };
+        Insert: {
+          clamped?: boolean;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          granted_quantity: number;
+          id?: string;
+          nation_id: string;
+          project_id: string;
+          resource_id: string;
+          settlement_id: string;
+        };
+        Update: {
+          clamped?: boolean;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          granted_quantity?: number;
+          id?: string;
+          nation_id?: string;
+          project_id?: string;
+          resource_id?: string;
+          settlement_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "construction_project_subsidies_created_by_user_id_fkey";
+            columns: ["created_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_project_subsidies_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_project_subsidies_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "construction_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_project_subsidies_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_project_subsidies_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       construction_projects: {
         Row: {
           activated_on_turn_number: number | null;

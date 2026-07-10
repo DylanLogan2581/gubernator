@@ -11,6 +11,7 @@ import { nationsQueryKeys } from "./nationsQueryKeys";
 
 import type {
   NationActiveConstructionProject,
+  NationActiveSubsidy,
   NationLatestTaxSnapshot,
   NationStockpileEntry,
 } from "../types/nationTypes";
@@ -188,6 +189,111 @@ async function getResourceNamesById(
   }
 
   return new Map(data.map((row) => [row.id, row.name]));
+}
+
+type NationActiveSubsidiesQueryKey = ReturnType<
+  typeof nationsQueryKeys.treasuryActiveSubsidies
+>;
+type NationActiveSubsidiesQueryOptions = UseQueryOptions<
+  readonly NationActiveSubsidy[],
+  AuthUiError,
+  readonly NationActiveSubsidy[],
+  NationActiveSubsidiesQueryKey
+>;
+
+const ACTIVE_SUBSIDY_SELECT =
+  "project_id,resource_id,granted_quantity,construction_projects!inner(settlement_id,settlements!inner(name,nation_id),building_blueprints(name),building_blueprint_tiers(tier_number,construction_costs_json))";
+
+type ActiveSubsidyRow = {
+  readonly construction_projects: {
+    readonly building_blueprint_tiers: {
+      readonly construction_costs_json: unknown;
+      readonly tier_number: number;
+    };
+    readonly building_blueprints: { readonly name: string };
+    readonly settlement_id: string;
+    readonly settlements: { readonly name: string; readonly nation_id: string };
+  };
+  readonly granted_quantity: number;
+  readonly project_id: string;
+  readonly resource_id: string;
+};
+
+export function nationActiveSubsidiesQueryOptions(
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): NationActiveSubsidiesQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getNationActiveSubsidies(c, nationId),
+    queryKey: nationsQueryKeys.treasuryActiveSubsidies(nationId),
+  });
+}
+
+async function getNationActiveSubsidies(
+  client: GubernatorSupabaseClient,
+  nationId: string,
+): Promise<readonly NationActiveSubsidy[]> {
+  const { data, error } = await client
+    .from("construction_project_subsidies")
+    .select(ACTIVE_SUBSIDY_SELECT)
+    .eq("nation_id", nationId)
+    .in("construction_projects.status", ["queued", "in_progress", "paused"])
+    .returns<ActiveSubsidyRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  const rowsByProject = new Map<string, ActiveSubsidyRow[]>();
+  for (const row of data) {
+    if (row.construction_projects === null) continue;
+    const existing = rowsByProject.get(row.project_id) ?? [];
+    existing.push(row);
+    rowsByProject.set(row.project_id, existing);
+  }
+
+  const resourceIds = new Set<string>();
+  for (const rows of rowsByProject.values()) {
+    for (const cost of parseConstructionCosts(
+      rows[0].construction_projects.building_blueprint_tiers
+        .construction_costs_json,
+    )) {
+      resourceIds.add(cost.resource_id);
+    }
+  }
+
+  const resourceNamesById = await getResourceNamesById(client, resourceIds);
+
+  return [...rowsByProject.entries()]
+    .map(([projectId, rows]) => {
+      const project = rows[0].construction_projects;
+      const committedByResource = new Map<string, number>();
+      for (const row of rows) {
+        committedByResource.set(
+          row.resource_id,
+          (committedByResource.get(row.resource_id) ?? 0) +
+            row.granted_quantity,
+        );
+      }
+
+      return {
+        blueprintName: project.building_blueprints.name,
+        costs: parseConstructionCosts(
+          project.building_blueprint_tiers.construction_costs_json,
+        ).map((cost) => ({
+          amount: cost.amount,
+          committedQuantity: committedByResource.get(cost.resource_id) ?? 0,
+          resourceId: cost.resource_id,
+          resourceName: resourceNamesById.get(cost.resource_id) ?? "Unknown",
+        })),
+        projectId,
+        settlementId: project.settlement_id,
+        settlementName: project.settlements.name,
+        tierNumber: project.building_blueprint_tiers.tier_number,
+      };
+    })
+    .sort((a, b) => a.settlementName.localeCompare(b.settlementName));
 }
 
 type NationLatestTaxSnapshotQueryKey = ReturnType<

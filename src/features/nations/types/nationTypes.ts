@@ -133,6 +133,28 @@ export type NationActiveConstructionProject = {
   readonly tierNumber: number;
 };
 
+// Treasury (#1162): one required input resource for an actively subsidized
+// construction project, pairing the tier's full required amount with the
+// amount committed so far via construction_project_subsidies.
+export type NationActiveSubsidyCost = {
+  readonly amount: number;
+  readonly committedQuantity: number;
+  readonly resourceId: string;
+  readonly resourceName: string;
+};
+
+// Treasury (#1162): an active (queued/in_progress/paused) construction
+// project belonging to one of the nation's settlements that has received at
+// least one subsidy, for the Treasury's "Active subsidies" list.
+export type NationActiveSubsidy = {
+  readonly blueprintName: string;
+  readonly costs: readonly NationActiveSubsidyCost[];
+  readonly projectId: string;
+  readonly settlementId: string;
+  readonly settlementName: string;
+  readonly tierNumber: number;
+};
+
 // Treasury (#1084): the most recent nation_turn_snapshots row, used to
 // render an "estimated next-turn intake" figure on the tax rate slider.
 // null before the nation's first economy-phase snapshot exists.

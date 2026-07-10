@@ -38,6 +38,8 @@ export const nationsQueryKeys = {
     [...nationsQueryKeys.all, "treaties", nationId] as const,
   treasuryActiveProjects: (nationId: string) =>
     [...nationsQueryKeys.all, "treasury-active-projects", nationId] as const,
+  treasuryActiveSubsidies: (nationId: string) =>
+    [...nationsQueryKeys.all, "treasury-active-subsidies", nationId] as const,
   treasuryLatestSnapshot: (nationId: string) =>
     [...nationsQueryKeys.all, "treasury-latest-snapshot", nationId] as const,
   treasuryStockpile: (nationId: string) =>

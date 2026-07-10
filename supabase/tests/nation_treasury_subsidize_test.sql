@@ -5,7 +5,7 @@
 begin;
 
 select
-  plan (20);
+  plan (24);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -493,6 +493,35 @@ select
     'project settlement credited with the second input''s granted quantity'
   );
 
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.construction_project_subsidies
+      where
+        project_id = 'd9000000-0000-0000-0000-000000000001'
+    ),
+    2,
+    'subsidize records one ledger row per transferred input resource'
+  );
+
+select
+  is (
+    (
+      select
+        granted_quantity
+      from
+        public.construction_project_subsidies
+      where
+        project_id = 'd9000000-0000-0000-0000-000000000001'
+        and resource_id = 'd6000000-0000-0000-0000-000000000001'
+    ),
+    20::numeric,
+    'ledger row records the full granted quantity of the first input'
+  );
+
 -- ===========================================================================
 -- RPC: subsidize clamps to nation stock AND to settlement storage space
 -- independently per resource, on a second project in the same settlement.
@@ -620,6 +649,36 @@ select
     ),
     50::numeric,
     'settlement stockpile never exceeds its effective storage cap on the second input'
+  );
+
+select
+  is (
+    (
+      select
+        granted_quantity
+      from
+        public.construction_project_subsidies
+      where
+        project_id = 'd9000000-0000-0000-0000-000000000004'
+        and resource_id = 'd6000000-0000-0000-0000-000000000001'
+    ),
+    5::numeric,
+    'ledger row records the clamped granted quantity of the first input on the second project'
+  );
+
+select
+  is (
+    (
+      select
+        clamped
+      from
+        public.construction_project_subsidies
+      where
+        project_id = 'd9000000-0000-0000-0000-000000000004'
+        and resource_id = 'd6000000-0000-0000-0000-000000000002'
+    ),
+    true,
+    'ledger row flags the second input as clamped'
   );
 
 select
