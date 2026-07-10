@@ -201,4 +201,34 @@ describe("deleteCultureInputSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a reassignment target", () => {
+    const result = deleteCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      reassignToId: "33333333-3333-3333-3333-333333333333",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a null reassignment target", () => {
+    const result = deleteCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      reassignToId: null,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects reassigning a culture to itself", () => {
+    const result = deleteCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      reassignToId: CULTURE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

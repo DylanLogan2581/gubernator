@@ -184,7 +184,7 @@ describe("updateReligionMutationOptions", () => {
 });
 
 describe("deleteReligionMutationOptions", () => {
-  it("deletes scoped by id and world", async () => {
+  it("calls delete_religion RPC with a null reassignment target by default", async () => {
     const { client, calls } = createDeleteClient({
       data: { id: RELIGION_ID, world_id: WORLD_ID },
       error: null,
@@ -198,8 +198,31 @@ describe("deleteReligionMutationOptions", () => {
     });
 
     expect(result).toEqual({ religionId: RELIGION_ID, worldId: WORLD_ID });
-    expect(calls.eqId).toHaveBeenCalledWith("id", RELIGION_ID);
-    expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
+    expect(calls.rpc).toHaveBeenCalledWith("delete_religion", {
+      p_religion_id: RELIGION_ID,
+      p_reassign_to_id: null,
+    });
+  });
+
+  it("calls delete_religion RPC with the given reassignment target", async () => {
+    const REASSIGN_TO_ID = "33333333-3333-3333-3333-333333333333";
+    const { client, calls } = createDeleteClient({
+      data: { id: RELIGION_ID, world_id: WORLD_ID },
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const options = deleteReligionMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      religionId: RELIGION_ID,
+      reassignToId: REASSIGN_TO_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.rpc).toHaveBeenCalledWith("delete_religion", {
+      p_religion_id: RELIGION_ID,
+      p_reassign_to_id: REASSIGN_TO_ID,
+    });
   });
 
   it("raises religion_not_found when delete returns no row", async () => {
@@ -213,6 +236,22 @@ describe("deleteReligionMutationOptions", () => {
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "religion_not_found" });
+  });
+
+  it("maps a 42501 permission error to religion_forbidden", async () => {
+    const { client } = createDeleteClient({
+      data: null,
+      error: { code: "42501", message: "permission denied" },
+    });
+    const queryClient = createQueryClient();
+    const options = deleteReligionMutationOptions({ client, queryClient });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        religionId: RELIGION_ID,
+        worldId: WORLD_ID,
+      }),
+    ).rejects.toMatchObject({ code: "religion_forbidden" });
   });
 });
 
@@ -288,20 +327,14 @@ function createDeleteClient(
 ): {
   readonly client: GubernatorSupabaseClient;
   readonly calls: {
-    readonly eqId: ReturnType<typeof vi.fn>;
-    readonly eqWorld: ReturnType<typeof vi.fn>;
-    readonly from: ReturnType<typeof vi.fn>;
+    readonly rpc: ReturnType<typeof vi.fn>;
   };
 } {
   const maybeSingle = vi.fn().mockResolvedValue(result);
-  const select = vi.fn(() => ({ maybeSingle }));
-  const eqWorld = vi.fn(() => ({ select }));
-  const eqId = vi.fn(() => ({ eq: eqWorld }));
-  const deleteFn = vi.fn(() => ({ eq: eqId }));
-  const from = vi.fn(() => ({ delete: deleteFn }));
+  const rpc = vi.fn(() => ({ maybeSingle }));
   return {
-    client: { from } as unknown as GubernatorSupabaseClient,
-    calls: { eqId, eqWorld, from },
+    client: { rpc } as unknown as GubernatorSupabaseClient,
+    calls: { rpc },
   };
 }
 

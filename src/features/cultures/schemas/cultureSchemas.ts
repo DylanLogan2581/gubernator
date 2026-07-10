@@ -72,10 +72,25 @@ export const updateCultureInputSchema = z
     }
   });
 
-export const deleteCultureInputSchema = z.strictObject({
-  cultureId: cultureIdSchema,
-  worldId: worldIdSchema,
-});
+export const deleteCultureInputSchema = z
+  .strictObject({
+    cultureId: cultureIdSchema,
+    reassignToId: z.union([cultureIdSchema, z.null()]).optional(),
+    worldId: worldIdSchema,
+  })
+  .superRefine((value, ctx): void => {
+    if (
+      value.reassignToId !== undefined &&
+      value.reassignToId !== null &&
+      value.reassignToId === value.cultureId
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Cannot reassign to the culture being deleted.",
+        path: ["reassignToId"],
+      });
+    }
+  });
 
 export type CreateCultureInput = z.input<typeof createCultureInputSchema>;
 export type CreateCultureValues = z.output<typeof createCultureInputSchema>;

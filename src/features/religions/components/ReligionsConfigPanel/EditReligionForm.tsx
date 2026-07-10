@@ -19,14 +19,13 @@ import { cultureReligionInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
-import {
-  deleteReligionMutationOptions,
-  updateReligionMutationOptions,
-} from "../../mutations/religionsMutations";
+import { updateReligionMutationOptions } from "../../mutations/religionsMutations";
 import {
   updateReligionInputSchema,
   type UpdateReligionInput,
 } from "../../schemas/religionSchemas";
+
+import { DeleteReligionDialog } from "./DeleteReligionDialog";
 
 import type { Religion } from "../../types/religionTypes";
 
@@ -52,17 +51,15 @@ export function EditReligionForm({
   const updateMutation = useMutation(
     updateReligionMutationOptions({ queryClient }),
   );
-  const deleteMutation = useMutation(
-    deleteReligionMutationOptions({ queryClient }),
-  );
 
   const [name, setName] = useState(religion.name);
   const [description, setDescription] = useState(religion.description ?? "");
   const [color, setColor] = useState(religion.color);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof ReligionFieldErrors>();
 
-  const isPending = updateMutation.isPending || deleteMutation.isPending;
+  const isPending = updateMutation.isPending;
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -90,16 +87,6 @@ export function EditReligionForm({
       onClose();
     } catch (error) {
       handleCrudError(error, "Failed to save religion.");
-    }
-  }
-
-  async function handleDelete(): Promise<void> {
-    try {
-      await deleteMutation.mutateAsync({ religionId: religion.id, worldId });
-      notifyMutationSuccess("Religion deleted.");
-      onClose();
-    } catch (error) {
-      handleCrudError(error, "Failed to delete religion.");
     }
   }
 
@@ -173,10 +160,6 @@ export function EditReligionForm({
               ) : null}
             </Label>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Deleting this religion clears it from any nation that has it set as
-            their state religion.
-          </p>
           <DialogFooter className="sm:justify-between">
             <Button
               type="button"
@@ -184,7 +167,7 @@ export function EditReligionForm({
               size="sm"
               disabled={isPending}
               onClick={() => {
-                void handleDelete();
+                setShowDeleteDialog(true);
               }}
             >
               <Trash2 aria-hidden="true" />
@@ -207,6 +190,17 @@ export function EditReligionForm({
           </DialogFooter>
         </form>
       </DialogContent>
+      {showDeleteDialog ? (
+        <DeleteReligionDialog
+          queryClient={queryClient}
+          religion={religion}
+          worldId={worldId}
+          onClose={() => {
+            setShowDeleteDialog(false);
+            onClose();
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

@@ -19,14 +19,13 @@ import { cultureReligionInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
-import {
-  deleteCultureMutationOptions,
-  updateCultureMutationOptions,
-} from "../../mutations/culturesMutations";
+import { updateCultureMutationOptions } from "../../mutations/culturesMutations";
 import {
   updateCultureInputSchema,
   type UpdateCultureInput,
 } from "../../schemas/cultureSchemas";
+
+import { DeleteCultureDialog } from "./DeleteCultureDialog";
 
 import type { Culture } from "../../types/cultureTypes";
 
@@ -52,17 +51,15 @@ export function EditCultureForm({
   const updateMutation = useMutation(
     updateCultureMutationOptions({ queryClient }),
   );
-  const deleteMutation = useMutation(
-    deleteCultureMutationOptions({ queryClient }),
-  );
 
   const [name, setName] = useState(culture.name);
   const [description, setDescription] = useState(culture.description ?? "");
   const [color, setColor] = useState(culture.color);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CultureFieldErrors>();
 
-  const isPending = updateMutation.isPending || deleteMutation.isPending;
+  const isPending = updateMutation.isPending;
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -90,16 +87,6 @@ export function EditCultureForm({
       onClose();
     } catch (error) {
       handleCrudError(error, "Failed to save culture.");
-    }
-  }
-
-  async function handleDelete(): Promise<void> {
-    try {
-      await deleteMutation.mutateAsync({ cultureId: culture.id, worldId });
-      notifyMutationSuccess("Culture deleted.");
-      onClose();
-    } catch (error) {
-      handleCrudError(error, "Failed to delete culture.");
     }
   }
 
@@ -173,10 +160,6 @@ export function EditCultureForm({
               ) : null}
             </Label>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Deleting this culture clears it from any nation that has it set as
-            their primary culture.
-          </p>
           <DialogFooter className="sm:justify-between">
             <Button
               type="button"
@@ -184,7 +167,7 @@ export function EditCultureForm({
               size="sm"
               disabled={isPending}
               onClick={() => {
-                void handleDelete();
+                setShowDeleteDialog(true);
               }}
             >
               <Trash2 aria-hidden="true" />
@@ -207,6 +190,17 @@ export function EditCultureForm({
           </DialogFooter>
         </form>
       </DialogContent>
+      {showDeleteDialog ? (
+        <DeleteCultureDialog
+          culture={culture}
+          queryClient={queryClient}
+          worldId={worldId}
+          onClose={() => {
+            setShowDeleteDialog(false);
+            onClose();
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

@@ -9,6 +9,7 @@ export {
 export {
   cultureByIdQueryOptions,
   culturesByWorldQueryOptions,
+  cultureUsageQueryOptions,
 } from "./queries/culturesQueries";
 export { culturesQueryKeys } from "./queries/culturesQueryKeys";
 export {
@@ -19,6 +20,7 @@ export {
 
 export type { CultureMutationIssue } from "./mutations/culturesMutations";
 export type { DeleteCultureResult } from "./mutations/culturesMutations";
+export type { CultureUsage } from "./queries/culturesQueries";
 export type {
   CreateCultureInput,
   CreateCultureValues,

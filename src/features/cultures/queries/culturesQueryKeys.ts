@@ -6,4 +6,6 @@ export const culturesQueryKeys = {
     [...culturesQueryKeys.all, "by-world", worldId] as const,
   detail: (cultureId: string) =>
     [...culturesQueryKeys.all, "detail", cultureId] as const,
+  usage: (cultureId: string) =>
+    [...culturesQueryKeys.all, "usage", cultureId] as const,
 } as const;

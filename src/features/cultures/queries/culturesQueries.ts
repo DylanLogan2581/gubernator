@@ -14,6 +14,7 @@ import type { Culture } from "../types/cultureTypes";
 
 type CulturesByWorldQueryKey = ReturnType<typeof culturesQueryKeys.byWorld>;
 type CultureDetailQueryKey = ReturnType<typeof culturesQueryKeys.detail>;
+type CultureUsageQueryKey = ReturnType<typeof culturesQueryKeys.usage>;
 
 type CulturesByWorldQueryOptions = UseQueryOptions<
   readonly Culture[],
@@ -26,6 +27,18 @@ type CultureDetailQueryOptions = UseQueryOptions<
   AuthUiError,
   Culture | null,
   CultureDetailQueryKey
+>;
+
+export type CultureUsage = {
+  readonly citizenCount: number;
+  readonly nationCount: number;
+};
+
+type CultureUsageQueryOptions = UseQueryOptions<
+  CultureUsage,
+  AuthUiError,
+  CultureUsage,
+  CultureUsageQueryKey
 >;
 
 export function culturesByWorldQueryOptions(
@@ -47,6 +60,17 @@ export function cultureByIdQueryOptions(
     client,
     fetcher: (c) => getCultureById(c, cultureId),
     queryKey: culturesQueryKeys.detail(cultureId),
+  });
+}
+
+export function cultureUsageQueryOptions(
+  cultureId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CultureUsageQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getCultureUsage(c, cultureId),
+    queryKey: culturesQueryKeys.usage(cultureId),
   });
 }
 
@@ -84,4 +108,32 @@ async function getCultureById(
   }
 
   return data === null ? null : toCulture(data);
+}
+
+async function getCultureUsage(
+  client: GubernatorSupabaseClient,
+  cultureId: string,
+): Promise<CultureUsage> {
+  const [citizens, nations] = await Promise.all([
+    client
+      .from("citizens")
+      .select("id", { count: "exact", head: true })
+      .eq("culture_id", cultureId),
+    client
+      .from("nations")
+      .select("id", { count: "exact", head: true })
+      .eq("primary_culture_id", cultureId),
+  ]);
+
+  if (citizens.error !== null) {
+    throw normalizeSupabaseError(citizens.error);
+  }
+  if (nations.error !== null) {
+    throw normalizeSupabaseError(nations.error);
+  }
+
+  return {
+    citizenCount: citizens.count ?? 0,
+    nationCount: nations.count ?? 0,
+  };
 }

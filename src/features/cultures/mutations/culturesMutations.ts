@@ -208,13 +208,27 @@ async function deleteCulture(
 ): Promise<DeleteCultureResult> {
   const values = parseInput(deleteCultureInputSchema, input);
 
-  const { data, error } = await client
-    .from("cultures")
-    .delete()
-    .eq("id", values.cultureId)
-    .eq("world_id", values.worldId)
-    .select("id,world_id")
-    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+  // p_reassign_to_id is a nullable uuid (default null) -- generated types
+  // don't reflect that (see setNationCultureReligion in
+  // src/features/nations/mutations/nationsMutations.ts for the same cast).
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+
+  const { data, error } = (await clientAsRpcCapable
+    .rpc("delete_culture", {
+      p_culture_id: values.cultureId,
+      p_reassign_to_id: values.reassignToId ?? null,
+    })
+    .maybeSingle()) as {
+    data: { readonly id: string; readonly world_id: string } | null;
+    error: { readonly code?: string | null; readonly message: string } | null;
+  };
 
   if (error !== null) {
     throw translateCultureError(error);

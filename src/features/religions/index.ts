@@ -9,6 +9,7 @@ export {
 export {
   religionByIdQueryOptions,
   religionsByWorldQueryOptions,
+  religionUsageQueryOptions,
 } from "./queries/religionsQueries";
 export { religionsQueryKeys } from "./queries/religionsQueryKeys";
 export {
@@ -19,6 +20,7 @@ export {
 
 export type { ReligionMutationIssue } from "./mutations/religionsMutations";
 export type { DeleteReligionResult } from "./mutations/religionsMutations";
+export type { ReligionUsage } from "./queries/religionsQueries";
 export type {
   CreateReligionInput,
   CreateReligionValues,

@@ -5771,9 +5771,23 @@ export type Database = {
         Args: { p_memory_id: string };
         Returns: undefined;
       };
+      delete_culture: {
+        Args: { p_culture_id: string; p_reassign_to_id?: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       delete_event_or_group: {
         Args: { p_event_id: string; p_group_id: string };
         Returns: Json;
+      };
+      delete_religion: {
+        Args: { p_reassign_to_id?: string; p_religion_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
       };
       deposit_reserves: {
         Args: { p_currency_id: string; p_quantity: number };

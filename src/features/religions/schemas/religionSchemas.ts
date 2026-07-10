@@ -72,10 +72,25 @@ export const updateReligionInputSchema = z
     }
   });
 
-export const deleteReligionInputSchema = z.strictObject({
-  religionId: religionIdSchema,
-  worldId: worldIdSchema,
-});
+export const deleteReligionInputSchema = z
+  .strictObject({
+    religionId: religionIdSchema,
+    reassignToId: z.union([religionIdSchema, z.null()]).optional(),
+    worldId: worldIdSchema,
+  })
+  .superRefine((value, ctx): void => {
+    if (
+      value.reassignToId !== undefined &&
+      value.reassignToId !== null &&
+      value.reassignToId === value.religionId
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Cannot reassign to the religion being deleted.",
+        path: ["reassignToId"],
+      });
+    }
+  });
 
 export type CreateReligionInput = z.input<typeof createReligionInputSchema>;
 export type CreateReligionValues = z.output<typeof createReligionInputSchema>;

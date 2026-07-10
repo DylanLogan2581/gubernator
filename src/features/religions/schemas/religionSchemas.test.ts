@@ -201,4 +201,34 @@ describe("deleteReligionInputSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a reassignment target", () => {
+    const result = deleteReligionInputSchema.safeParse({
+      reassignToId: "33333333-3333-3333-3333-333333333333",
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a null reassignment target", () => {
+    const result = deleteReligionInputSchema.safeParse({
+      reassignToId: null,
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects reassigning a religion to itself", () => {
+    const result = deleteReligionInputSchema.safeParse({
+      reassignToId: RELIGION_ID,
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
