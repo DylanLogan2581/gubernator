@@ -27,9 +27,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AmendmentsSection } from "@/features/law-amendments";
+import {
+  nationGovernmentBodiesQueryOptions,
+  settlementGovernmentBodiesQueryOptions,
+} from "@/features/government-bodies";
+import {
+  AmendmentsSection,
+  SetProcedureEditor,
+} from "@/features/law-amendments";
+import {
+  nationOfficeTypesQueryOptions,
+  settlementOfficeTypesQueryOptions,
+} from "@/features/nations";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import type { AmendmentProcedure } from "@/shared/government";
 
 import {
   createLawDocumentMutationOptions,
@@ -269,6 +281,38 @@ function CreateLawDocumentDialog({
   readonly queryClient: ReturnType<typeof useQueryClient>;
   readonly scopeContext: LawDocumentScopeContext;
 }): JSX.Element {
+  const isNationScope = scopeContext.scope === "nation";
+  const settlementId =
+    scopeContext.scope === "settlement" ? scopeContext.settlementId : "";
+
+  const nationBodiesQuery = useQuery({
+    ...nationGovernmentBodiesQueryOptions(scopeContext.nationId),
+    enabled: isNationScope,
+  });
+  const settlementBodiesQuery = useQuery({
+    ...settlementGovernmentBodiesQueryOptions(settlementId),
+    enabled: !isNationScope,
+  });
+  const bodiesQuery = isNationScope ? nationBodiesQuery : settlementBodiesQuery;
+
+  const nationOfficeTypesQuery = useQuery({
+    ...nationOfficeTypesQueryOptions(
+      scopeContext.worldId,
+      scopeContext.nationId,
+    ),
+    enabled: isNationScope,
+  });
+  const settlementOfficeTypesQuery = useQuery({
+    ...settlementOfficeTypesQueryOptions(
+      scopeContext.worldId,
+      scopeContext.nationId,
+    ),
+    enabled: !isNationScope,
+  });
+  const officeTypesQuery = isNationScope
+    ? nationOfficeTypesQuery
+    : settlementOfficeTypesQuery;
+
   const [title, setTitle] = useState("");
   const [preamble, setPreamble] = useState("");
   const [articles, setArticles] = useState<
@@ -278,6 +322,10 @@ function CreateLawDocumentDialog({
       readonly bodyMarkdown: string;
     }[]
   >([{ key: globalThis.crypto.randomUUID(), heading: "", bodyMarkdown: "" }]);
+  // Sensible default (#1158): a ruler decree, always a valid procedure so a
+  // document can be created without the DM touching this field.
+  const [amendmentProcedure, setAmendmentProcedure] =
+    useState<AmendmentProcedure | null>({ kind: "decree", authority: "ruler" });
 
   const createMutation = useMutation(
     createLawDocumentMutationOptions({ queryClient }),
@@ -311,16 +359,23 @@ function CreateLawDocumentDialog({
     (article) =>
       article.heading.trim() !== "" && article.bodyMarkdown.trim() !== "",
   );
+  const bodies = bodiesQuery.data ?? [];
+  const officeTypes = officeTypesQuery.data ?? [];
+  const referenceDataPending =
+    bodiesQuery.isPending || officeTypesQuery.isPending;
   const canSubmit =
     trimmedTitle !== "" &&
     validArticles.length > 0 &&
-    validArticles.length === articles.length;
+    validArticles.length === articles.length &&
+    amendmentProcedure !== null &&
+    !referenceDataPending;
 
   function handleSubmit(): void {
-    if (!canSubmit) return;
+    if (!canSubmit || amendmentProcedure === null) return;
 
     createMutation.mutate(
       {
+        amendmentProcedure,
         articles: validArticles.map((article) => ({
           bodyMarkdown: article.bodyMarkdown,
           heading: article.heading,
@@ -375,6 +430,19 @@ function CreateLawDocumentDialog({
               onChange={(e) => setPreamble(e.target.value)}
               rows={3}
             />
+          </div>
+
+          <div className="grid gap-2 border-t border-border pt-3">
+            <h3 className="text-sm font-medium">Amendment procedure</h3>
+            {referenceDataPending ? (
+              <LoadingState label="Loading procedure options…" />
+            ) : (
+              <SetProcedureEditor
+                bodies={bodies}
+                officeTypes={officeTypes}
+                onChange={setAmendmentProcedure}
+              />
+            )}
           </div>
 
           <div className="grid gap-2 border-t border-border pt-3">

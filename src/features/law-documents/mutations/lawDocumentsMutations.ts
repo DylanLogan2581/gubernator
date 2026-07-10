@@ -115,7 +115,7 @@ async function createLawDocument(
   const values = parseInput(createLawDocumentInputSchema, input);
 
   const { error } = await client.rpc("create_law_document", {
-    p_amendment_procedure_json: (values.amendmentProcedure ?? {}) as Json,
+    p_amendment_procedure_json: values.amendmentProcedure as Json,
     p_articles: values.articles.map((article) => ({
       bodyMarkdown: article.bodyMarkdown,
       heading: article.heading,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { lawDocumentInputLimits } from "@/lib/inputLimits";
+import { VOTE_THRESHOLDS } from "@/shared/government";
 
 const titleSchema = z
   .string()
@@ -31,9 +32,55 @@ export const lawDocumentArticleInputSchema = z.strictObject({
   heading: headingSchema,
 });
 
+// Mirrors the shape validate_law_amendment_procedure_json (DB, #1138) and
+// validateAmendmentProcedure (@/shared/government) enforce -- a discriminated
+// union so an omitted/unknown kind is rejected client-side instead of
+// silently falling back to `{}`, which the DB trigger rejects at creation.
+const decreeAuthorityInputSchema = z.union([
+  z.literal("ruler"),
+  z.strictObject({ officeTypeId: z.guid() }),
+]);
+
+const decreeProcedureInputSchema = z.strictObject({
+  authority: decreeAuthorityInputSchema,
+  kind: z.literal("decree"),
+});
+
+const voteProcedureInputSchema = z.strictObject({
+  bodyId: z.guid(),
+  kind: z.literal("vote"),
+  secondBodyId: z.union([z.guid(), z.null()]),
+  threshold: z.enum(VOTE_THRESHOLDS),
+  votingPeriodTurns: z
+    .number()
+    .int("Voting period must be a whole number of turns.")
+    .min(1, "Voting period must be at least 1 turn."),
+});
+
+const lockedProcedureInputSchema = z.strictObject({
+  kind: z.literal("locked"),
+});
+
+export const amendmentProcedureInputSchema = z
+  .discriminatedUnion("kind", [
+    decreeProcedureInputSchema,
+    voteProcedureInputSchema,
+    lockedProcedureInputSchema,
+  ])
+  .refine(
+    (value) =>
+      value.kind !== "vote" ||
+      value.secondBodyId === null ||
+      value.secondBodyId !== value.bodyId,
+    {
+      message: "Second body must differ from first.",
+      path: ["secondBodyId"] satisfies PropertyKey[],
+    },
+  );
+
 export const createLawDocumentInputSchema = z
   .strictObject({
-    amendmentProcedure: z.unknown().optional(),
+    amendmentProcedure: amendmentProcedureInputSchema,
     articles: z
       .array(lawDocumentArticleInputSchema)
       .min(1, "Add at least one article."),
@@ -55,6 +102,9 @@ export const repealLawDocumentInputSchema = z.strictObject({
   id: z.guid(),
 });
 
+export type AmendmentProcedureInput = z.output<
+  typeof amendmentProcedureInputSchema
+>;
 export type CreateLawDocumentInput = z.input<
   typeof createLawDocumentInputSchema
 >;

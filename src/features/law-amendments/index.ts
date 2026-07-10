@@ -4,6 +4,7 @@
 // (propose_law_amendment, cast_law_amendment_vote, withdraw_law_amendment).
 export { AmendmentsSection } from "./components/AmendmentsSection";
 export type { AmendmentsSectionProps } from "./components/AmendmentsSection";
+export { SetProcedureEditor } from "./components/SetProcedureEditor";
 export {
   castLawAmendmentVoteMutationOptions,
   isLawAmendmentMutationError,
