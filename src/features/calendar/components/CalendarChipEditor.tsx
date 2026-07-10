@@ -58,7 +58,7 @@ export function CalendarChipEditor<
     >
       <legend className="sr-only">{legend}</legend>
       {error === undefined ? null : <FieldError id={errorId} message={error} />}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex max-h-72 flex-col gap-1.5 overflow-y-auto">
         {items.map((item, index) => {
           const nameLabel = showDayCount
             ? `${rowLabel} ${index + 1} Name`
