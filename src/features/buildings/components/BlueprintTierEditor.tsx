@@ -54,14 +54,17 @@ import {
   tierCostsToState,
   tierEffectsToState,
 } from "../utils/tierEditorUtils";
+import {
+  formatTierCosts,
+  formatTierEducationConfig,
+  formatTierEffects,
+} from "../utils/tierSummaryFormatting";
 
 import { TierDraftFields } from "./TierDraftFields";
 
 import type {
   BuildingBlueprint,
   BuildingBlueprintTier,
-  TierCostEntry,
-  TierEffect,
 } from "../types/buildingTypes";
 
 type BlueprintTierEditorProps = {
@@ -349,24 +352,24 @@ function TierRow({
           {tier.constructionCostsJson.length > 0 ? (
             <div className="text-xs text-muted-foreground">
               Construction:{" "}
-              {formatCosts(tier.constructionCostsJson, activeResources)}
+              {formatTierCosts(tier.constructionCostsJson, activeResources)}
             </div>
           ) : null}
           {tier.upkeepCostsJson.length > 0 ? (
             <div className="text-xs text-muted-foreground">
-              Upkeep: {formatCosts(tier.upkeepCostsJson, activeResources)}
+              Upkeep: {formatTierCosts(tier.upkeepCostsJson, activeResources)}
             </div>
           ) : null}
           {tier.effectsJson.length > 0 ? (
             <div className="text-xs text-muted-foreground">
               Effects:{" "}
-              {formatEffects(tier.effectsJson, activeResources, activeJobs)}
+              {formatTierEffects(tier.effectsJson, activeResources, activeJobs)}
             </div>
           ) : null}
           {tier.educationConfigJson !== null ? (
             <div className="text-xs text-muted-foreground">
               School:{" "}
-              {formatEducationConfig(
+              {formatTierEducationConfig(
                 tier.educationConfigJson,
                 activeEducationLevels,
                 activeJobs,
@@ -654,65 +657,4 @@ function EditTierForm({
       </div>
     </form>
   );
-}
-
-function resolveResourceName(
-  resourceId: string,
-  resources: readonly Resource[],
-): string {
-  return resources.find((r) => r.id === resourceId)?.name ?? "[unknown]";
-}
-
-function resolveJobName(jobId: string, jobs: readonly JobDefinition[]): string {
-  return jobs.find((j) => j.id === jobId)?.name ?? "[unknown]";
-}
-
-function resolveEducationLevelName(
-  levelId: string,
-  levels: readonly EducationLevel[],
-): string {
-  return levels.find((l) => l.id === levelId)?.name ?? "[unknown]";
-}
-
-function formatEducationConfig(
-  config: NonNullable<BuildingBlueprintTier["educationConfigJson"]>,
-  levels: readonly EducationLevel[],
-  jobs: readonly JobDefinition[],
-): string {
-  const levelName = resolveEducationLevelName(
-    config.teachesUpToLevelId,
-    levels,
-  );
-  const teacherName = resolveJobName(config.teacherJobId, jobs);
-  return `up to ${levelName}, ${config.studentCapacity} students, ${config.turnsPerLevel} turns/level, ${teacherName} (${config.studentsPerTeacher} students/teacher)`;
-}
-
-function formatCosts(
-  costs: readonly TierCostEntry[],
-  resources: readonly Resource[],
-): string {
-  return costs
-    .map((c) => `${c.amount} ${resolveResourceName(c.resourceId, resources)}`)
-    .join(", ");
-}
-
-function formatEffects(
-  effects: readonly TierEffect[],
-  resources: readonly Resource[],
-  jobs: readonly JobDefinition[],
-): string {
-  return effects
-    .map((e) => {
-      switch (e.type) {
-        case "job_capacity_increase":
-          return `+${e.amount} ${resolveJobName(e.jobId, jobs)} capacity`;
-        case "passive_resource_production":
-          return `+${e.amount} ${resolveResourceName(e.resourceId, resources)}/turn`;
-        case "resource_storage_increase":
-          return `+${e.amount} ${resolveResourceName(e.resourceId, resources)} storage`;
-        case "population_cap_increase":
-          return `+${e.amount} pop cap`;
-      }
-    })
-    .join(", ");
 }

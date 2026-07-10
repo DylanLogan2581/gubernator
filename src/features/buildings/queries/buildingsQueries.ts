@@ -102,10 +102,14 @@ export function tierByIdQueryOptions(
   });
 }
 
+export type BlueprintsSortBy = "name" | "gracePeriod" | "maxInstances";
+
 export type BlueprintsPageParams = {
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: BlueprintsSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -179,8 +183,24 @@ async function getBlueprintsPage(
     query = query.ilike("name", `%${search}%`);
   }
 
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "gracePeriod") {
+    query = query
+      .order("grace_period_turns", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "maxInstances") {
+    query = query
+      .order("max_instances_per_settlement", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+      })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
+  }
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<BlueprintSummaryRow[]>();

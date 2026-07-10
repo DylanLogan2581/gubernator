@@ -5,7 +5,14 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "lucide-react";
+import { Fragment, type JSX, type ReactElement, type ReactNode } from "react";
 
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -16,8 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import type { JSX, ReactElement, ReactNode } from "react";
 
 export type DataTableProps<TData> = {
   readonly columns: readonly ColumnDef<TData, unknown>[];
@@ -43,6 +48,17 @@ export type DataTableProps<TData> = {
   readonly emptyMessage?: string;
   /** Optional extra className per row, e.g. to mute deceased citizens. */
   readonly rowClassName?: (row: TData) => string | undefined;
+  /**
+   * Renders a row's sub-content, shown in a full-width row directly below it
+   * while expanded. Providing this adds a leading toggle column to the table.
+   */
+  readonly renderExpandedContent?: (row: TData) => ReactNode;
+  /** Whether a given row is currently expanded. Only consulted alongside `renderExpandedContent`. */
+  readonly isRowExpanded?: (row: TData) => boolean;
+  /** Called when a row's expand toggle is activated. */
+  readonly onToggleRowExpand?: (row: TData) => void;
+  /** Accessible name for a row's expand toggle button, e.g. "Farmhouse tiers". */
+  readonly expandToggleLabel?: (row: TData) => string;
 };
 
 function SortIndicator({
@@ -90,7 +106,13 @@ export function DataTable<TData>({
   renderRowLink,
   emptyMessage = "No results.",
   rowClassName,
+  renderExpandedContent,
+  isRowExpanded,
+  onToggleRowExpand,
+  expandToggleLabel,
 }: DataTableProps<TData>): JSX.Element {
+  const canExpand = renderExpandedContent !== undefined;
+
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable is a TanStack Table hook, not a React hook
   const table = useReactTable({
     data: data as TData[],
@@ -109,6 +131,7 @@ export function DataTable<TData>({
   }
 
   const rows = table.getRowModel().rows;
+  const columnCount = columns.length + (canExpand ? 1 : 0);
 
   return (
     <div className="space-y-2">
@@ -117,6 +140,11 @@ export function DataTable<TData>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                {canExpand ? (
+                  <TableHead key="expand-toggle" className="w-10">
+                    <span className="sr-only">Expand row</span>
+                  </TableHead>
+                ) : null}
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const direction = header.column.getIsSorted();
@@ -155,30 +183,72 @@ export function DataTable<TData>({
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columnCount}
                   className="py-8 text-center text-muted-foreground"
                 >
                   {emptyMessage}
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row) => (
-                <TableRow key={row.id} className={rowClassName?.(row.original)}>
-                  {row.getVisibleCells().map((cell, cellIndex) => {
-                    const cellContent = flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
-                    );
-                    return (
-                      <TableCell key={cell.id}>
-                        {cellIndex === 0 && renderRowLink !== undefined
-                          ? renderRowLink(row.original, cellContent)
-                          : cellContent}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))
+              rows.map((row) => {
+                const expanded =
+                  canExpand && (isRowExpanded?.(row.original) ?? false);
+                const panelId = `${row.id}-expanded-content`;
+                return (
+                  <Fragment key={row.id}>
+                    <TableRow className={rowClassName?.(row.original)}>
+                      {canExpand ? (
+                        <TableCell key="expand-toggle">
+                          <button
+                            aria-controls={panelId}
+                            aria-expanded={expanded}
+                            aria-label={
+                              expandToggleLabel?.(row.original) ?? "Expand row"
+                            }
+                            className="flex size-6 items-center justify-center rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                            type="button"
+                            onClick={() => {
+                              onToggleRowExpand?.(row.original);
+                            }}
+                          >
+                            {expanded ? (
+                              <ChevronDownIcon
+                                aria-hidden="true"
+                                className="size-4"
+                              />
+                            ) : (
+                              <ChevronRightIcon
+                                aria-hidden="true"
+                                className="size-4"
+                              />
+                            )}
+                          </button>
+                        </TableCell>
+                      ) : null}
+                      {row.getVisibleCells().map((cell, cellIndex) => {
+                        const cellContent = flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        );
+                        return (
+                          <TableCell key={cell.id}>
+                            {cellIndex === 0 && renderRowLink !== undefined
+                              ? renderRowLink(row.original, cellContent)
+                              : cellContent}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                    {expanded ? (
+                      <TableRow key={`${row.id}-expanded`}>
+                        <TableCell id={panelId} colSpan={columnCount}>
+                          {renderExpandedContent?.(row.original)}
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </Fragment>
+                );
+              })
             )}
           </TableBody>
         </Table>

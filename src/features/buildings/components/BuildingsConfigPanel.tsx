@@ -8,17 +8,33 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
+import { activeJobsByWorldQueryOptions } from "@/features/jobs";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { useCreateBlueprintWithTiers } from "../hooks/useCreateBlueprintWithTiers";
-import { blueprintsPageQueryOptions } from "../queries/buildingsQueries";
+import {
+  blueprintsPageQueryOptions,
+  type BlueprintsSortBy,
+} from "../queries/buildingsQueries";
 
 import { BlueprintTierEditor } from "./BlueprintTierEditor";
 import { BlueprintsTable } from "./BuildingsConfigPanel/BlueprintsTable";
 import { CreateBlueprintForm } from "./BuildingsConfigPanel/CreateBlueprintForm";
 
+import type { SortingState } from "@tanstack/react-table";
+
 const PAGE_SIZE = 25;
+
+// Maps a DataTable column id to the blueprints page query's sort column
+// (see buildingsQueries.ts), mirroring the resources/jobs config panels.
+const SORT_BY_ID: Record<string, BlueprintsSortBy> = {
+  gracePeriod: "gracePeriod",
+  maxInstances: "maxInstances",
+  name: "name",
+};
 
 type BuildingsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -67,19 +83,31 @@ function BlueprintListPanel({
   const { submit } = useCreateBlueprintWithTiers();
 
   const [search, setSearch] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
+  const activeSort = sorting[0];
+  const sortBy: BlueprintsSortBy | undefined =
+    activeSort !== undefined ? SORT_BY_ID[activeSort.id] : undefined;
+
   const blueprintsQuery = useQuery(
     blueprintsPageQueryOptions(worldId, {
       page: pageIndex,
       pageSize: PAGE_SIZE,
       search: debouncedSearch,
+      sortBy,
+      sortDirection: activeSort?.desc === true ? "desc" : "asc",
       trash: showTrash,
     }),
+  );
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
   );
 
   function resetToFirstPage(): void {
@@ -130,7 +158,7 @@ function BlueprintListPanel({
       />
 
       {blueprintsQuery.isPending ? (
-        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={6} rowCount={PAGE_SIZE} />
       ) : blueprintsQuery.isError ? (
         <ErrorState
           title="Buildings could not be loaded"
@@ -159,6 +187,9 @@ function BlueprintListPanel({
             ).toString()} of ${totalCount.toString()}`}
           </p>
           <BlueprintsTable
+            activeEducationLevels={educationLevelsQuery.data ?? []}
+            activeJobs={jobsQuery.data ?? []}
+            activeResources={resourcesQuery.data ?? []}
             blueprints={items}
             canEdit={canEdit}
             isPaginationDisabled={blueprintsQuery.isFetching}
@@ -166,8 +197,13 @@ function BlueprintListPanel({
             pageIndex={pageIndex}
             queryClient={queryClient}
             showTrash={showTrash}
+            sorting={sorting}
             worldId={worldId}
             onPageChange={setPageIndex}
+            onSortingChange={(next) => {
+              setSorting(next);
+              resetToFirstPage();
+            }}
           />
         </>
       )}

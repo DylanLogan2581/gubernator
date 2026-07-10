@@ -263,6 +263,96 @@ describe("BuildingsConfigPanel", () => {
     ).toBeNull();
   });
 
+  // ── Atomic columns, sorting, and tier expansion (#1168) ──────────────────
+
+  it("shows tier count, grace period, and max/settlement as separate columns", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({
+            grace_period_turns: 3,
+            max_instances_per_settlement: 2,
+            name: "Farmhouse",
+            tier_count: [{ count: 4 }],
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    const row = screen.getByRole("row", { name: /Farmhouse/ });
+    expect(within(row).getByText("4")).toBeDefined();
+    expect(within(row).getByText("3")).toBeDefined();
+    expect(within(row).getByText("2")).toBeDefined();
+  });
+
+  it("re-sorts blueprints when a sortable column header is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({
+            grace_period_turns: 5,
+            name: "Farmhouse",
+          }),
+          createBlueprintRow({
+            grace_period_turns: 1,
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Windmill",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+
+    await user.click(screen.getByRole("button", { name: /Grace period/ }));
+
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole("columnheader", { name: /Grace period/ })
+          .getAttribute("aria-sort"),
+      ).toBe("ascending");
+    });
+  });
+
+  it("expands a blueprint row to show its tiers, and collapses it again", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({ name: "Farmhouse", tier_count: [{ count: 1 }] }),
+        ],
+        tierRows: [createTierRow({ tier_number: 1, worker_turns_required: 2 })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    expect(screen.queryByText("Tier")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
+
+    expect(await screen.findByText("Manage tiers")).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: "Farmhouse tiers" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("columnheader", { name: "Tier" })).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
+
+    expect(screen.queryByText("Manage tiers")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Farmhouse tiers" }),
+    ).toHaveAttribute("aria-expanded", "false");
+  });
+
   // ── InlineTierDraftForm nested-form regression ───────────────────────────
 
   it("clicking Add on tier draft adds draft to pending list without submitting the blueprint form", async () => {
@@ -524,6 +614,7 @@ function createClient({
   resourceRows = [],
   rpcResult = { data: null, error: null },
   tierInsertResult = { data: createTierRow(), error: null },
+  tierRows = [],
   updateResult = { data: createBlueprintRow(), error: null },
 }: {
   readonly blueprintInsertSpy?: ReturnType<typeof vi.fn>;
@@ -543,6 +634,7 @@ function createClient({
     readonly data: TestTierRow | null;
     readonly error: { readonly message: string } | null;
   };
+  readonly tierRows?: readonly TestTierRow[];
   readonly updateResult?: {
     readonly data: TestBlueprintRow | null;
     readonly error: { readonly message: string } | null;
@@ -562,12 +654,17 @@ function createClient({
         );
       }
       if (table === "building_blueprint_tiers") {
+        const tiersReadBuilder = createSimpleQueryBuilder(tierRows) as Record<
+          string,
+          unknown
+        >;
         return {
           insert: vi.fn(() => ({
             select: vi.fn(() => ({
               maybeSingle: vi.fn().mockResolvedValue(tierInsertResult),
             })),
           })),
+          select: tiersReadBuilder.select,
         };
       }
       if (table === "resources") {
