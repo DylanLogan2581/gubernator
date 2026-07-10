@@ -189,62 +189,52 @@ function WorldConfigurationContent({
   function renderPanel(): JSX.Element | null {
     if (activeTab === "resources") {
       return (
-        <ConfigPanelShell>
-          <ResourcesConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <ResourcesConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "jobs") {
       return (
-        <ConfigPanelShell>
-          <JobsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <JobsConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "buildings") {
       return (
-        <ConfigPanelShell>
-          <BuildingsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            selectedBlueprintId={selectedBlueprintId}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <BuildingsConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          selectedBlueprintId={selectedBlueprintId}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "deposits") {
       return (
-        <ConfigPanelShell>
-          <DepositsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <DepositsConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "managed-populations") {
       return (
-        <ConfigPanelShell>
-          <ManagedPopulationsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <ManagedPopulationsConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
@@ -271,102 +261,86 @@ function WorldConfigurationContent({
 
     if (activeTab === "education") {
       return (
-        <ConfigPanelShell>
-          <EducationConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <EducationConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "military") {
       return (
-        <ConfigPanelShell>
-          <MilitaryConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <MilitaryConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "calendar") {
       return (
-        <ConfigPanelShell>
-          <WorldCalendarConfigPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <WorldCalendarConfigPanel
+          accessContext={accessContext}
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "namesets") {
       return (
-        <ConfigPanelShell>
-          <NamesetsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <NamesetsConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "discovery") {
       return (
-        <ConfigPanelShell>
-          <NationDiscoveryConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <NationDiscoveryConfigPanel
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "npc-flavor") {
       return (
-        <ConfigPanelShell>
-          <WorldNpcFlavorConfigPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <WorldNpcFlavorConfigPanel
+          accessContext={accessContext}
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "population-rules") {
       return (
-        <ConfigPanelShell>
-          <WorldPopulationRulesConfigPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
+        <WorldPopulationRulesConfigPanel
+          accessContext={accessContext}
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+        />
       );
     }
 
     if (activeTab === "images") {
       return (
-        <ConfigPanelShell>
-          <WorldImagesPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-            worldName={header.name}
-          />
-        </ConfigPanelShell>
+        <WorldImagesPanel
+          accessContext={accessContext}
+          canAdmin={canAdmin}
+          isArchived={header.isArchived}
+          worldId={worldId}
+          worldName={header.name}
+        />
       );
     }
 
@@ -375,14 +349,12 @@ function WorldConfigurationContent({
         return null;
       }
       return (
-        <ConfigPanelShell>
-          <WorldSettingsPanel
-            currentTurnNumber={header.currentTurnNumber}
-            queryClient={queryClient}
-            worldId={worldId}
-            worldName={header.name}
-          />
-        </ConfigPanelShell>
+        <WorldSettingsPanel
+          currentTurnNumber={header.currentTurnNumber}
+          queryClient={queryClient}
+          worldId={worldId}
+          worldName={header.name}
+        />
       );
     }
 
