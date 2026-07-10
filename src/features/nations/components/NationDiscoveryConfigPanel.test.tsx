@@ -30,7 +30,7 @@ describe("NationDiscoveryConfigPanel", () => {
     requireSupabaseClient.mockReset();
   });
 
-  it("renders the upper-triangle grid and lets an admin mark a pair as met", async () => {
+  it("renders the discovery matrix and lets an admin mark a pair as met", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       discoveryRows: [],
@@ -44,12 +44,12 @@ describe("NationDiscoveryConfigPanel", () => {
     renderPanel({ canAdmin: true, isArchived: false });
 
     expect(await screen.findByRole("table")).toBeDefined();
-    const [checkbox] = screen.getAllByRole("checkbox", {
-      name: "Nation A has met Nation B",
+    const cell = screen.getByRole("button", {
+      name: "Nation A ↔ Nation B: not discovered",
     });
-    expect(checkbox).not.toBeChecked();
+    expect(cell).toHaveAttribute("aria-pressed", "false");
 
-    await user.click(checkbox);
+    await user.click(cell);
 
     await waitFor(() => {
       expect(clientFixture.rpc).toHaveBeenCalledWith("set_nations_met", {
@@ -79,11 +79,11 @@ describe("NationDiscoveryConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByRole("table");
-    const [checkbox] = screen.getAllByRole("checkbox", {
-      name: "Nation A has met Nation B",
+    const cell = screen.getByRole("button", {
+      name: "Nation A ↔ Nation B: discovered",
     });
-    expect(checkbox).toBeChecked();
-    expect(checkbox).toBeDisabled();
+    expect(cell).toHaveAttribute("aria-pressed", "true");
+    expect(cell).toBeDisabled();
   });
 });
 

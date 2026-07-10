@@ -38,6 +38,9 @@ export function NationDiscoveryConfigPanel({
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [bulkPendingNationId, setBulkPendingNationId] = useState<string | null>(
+    null,
+  );
 
   const nationsQuery = useQuery(nationsListQueryOptions(worldId));
   const discoveriesQuery = useQuery(nationDiscoveriesQueryOptions(worldId));
@@ -109,6 +112,78 @@ export function NationDiscoveryConfigPanel({
     );
   }
 
+  async function handleDiscoverAll(nation: Nation): Promise<void> {
+    const undiscovered = nations.filter(
+      (other) =>
+        other.id !== nation.id &&
+        !pairsByKey.has(discoveryPairKey(nation.id, other.id)),
+    );
+
+    if (undiscovered.length === 0) {
+      return;
+    }
+
+    setBulkPendingNationId(nation.id);
+    const results = await Promise.allSettled(
+      undiscovered.map((other) =>
+        setMetMutation.mutateAsync({
+          nationAId: nation.id,
+          nationBId: other.id,
+          worldId,
+        }),
+      ),
+    );
+    setBulkPendingNationId(null);
+
+    const firstFailure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (firstFailure !== undefined) {
+      notifyMutationError(
+        firstFailure.reason,
+        `Could not mark ${nation.name} as met with all nations.`,
+      );
+    } else {
+      notifyMutationSuccess(`${nation.name} marked as met with all nations.`);
+    }
+  }
+
+  async function handleClearAll(nation: Nation): Promise<void> {
+    const discovered = nations.filter(
+      (other) =>
+        other.id !== nation.id &&
+        pairsByKey.has(discoveryPairKey(nation.id, other.id)),
+    );
+
+    if (discovered.length === 0) {
+      return;
+    }
+
+    setBulkPendingNationId(nation.id);
+    const results = await Promise.allSettled(
+      discovered.map((other) =>
+        setUnmetMutation.mutateAsync({
+          nationAId: nation.id,
+          nationBId: other.id,
+          worldId,
+        }),
+      ),
+    );
+    setBulkPendingNationId(null);
+
+    const firstFailure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (firstFailure !== undefined) {
+      notifyMutationError(
+        firstFailure.reason,
+        `Could not mark ${nation.name} as unmet with all nations.`,
+      );
+    } else {
+      notifyMutationSuccess(`${nation.name} marked as unmet with all nations.`);
+    }
+  }
+
   if (nations.length < 2) {
     return (
       <div className="flex flex-col gap-4">
@@ -143,10 +218,17 @@ export function NationDiscoveryConfigPanel({
         <>
           <div className="hidden md:block">
             <NationDiscoveryGrid
+              bulkPendingNationId={bulkPendingNationId}
               canEdit={canEdit}
               nations={filteredNations}
               pairsByKey={pairsByKey}
               pendingKey={pendingKey}
+              onClearAll={(nation) => {
+                void handleClearAll(nation);
+              }}
+              onDiscoverAll={(nation) => {
+                void handleDiscoverAll(nation);
+              }}
               onToggle={handleToggle}
             />
           </div>
