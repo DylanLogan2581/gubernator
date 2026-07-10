@@ -86,10 +86,28 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-5 py-6">
-      <section className="rounded-xl border bg-card p-5 shadow-sm">
-        <div className="mb-5">
-          <h1 className="text-2xl font-semibold">Sign in</h1>
+    <div className="mx-auto grid w-full max-w-5xl items-center gap-8 py-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
+      <section
+        aria-hidden="true"
+        className="hidden flex-col justify-center gap-6 rounded-xl bg-gradient-to-br from-primary/15 via-card to-card p-10 ring-1 ring-foreground/10 lg:flex"
+      >
+        <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 p-4">
+          <img src="/logo.png" alt="" className="size-full object-contain" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <h2 className="text-3xl font-semibold tracking-tight text-balance">
+            Gubernator
+          </h2>
+          <p className="max-w-sm text-muted-foreground text-balance">
+            A turn-based world simulation game: found nations, grow settlements,
+            and steer generations of citizens through the outcome of every turn.
+          </p>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm sm:p-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
           <p
             id={formDescriptionId}
             className="mt-2 text-sm text-muted-foreground"
