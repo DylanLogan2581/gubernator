@@ -13,11 +13,11 @@ import { CitizenAssignmentSection } from "./AssignmentSection";
 import { CitizenCoreSection } from "./CoreEditForm";
 import { CitizenCultureReligionEditSection } from "./CultureReligionEditSection";
 import { CitizenEducationEditSection } from "./EducationEditSection";
+import { CitizenFamilyTreeSection } from "./FamilyTreeSection";
 import { CitizenLifecycleSection } from "./LifecycleControls";
 import { CitizenMemoriesSection } from "./MemoriesSection";
 import { CitizenNpcFlavorSection } from "./NpcFlavorSection";
 import { CitizenNpcNotesSection } from "./NpcNotesSection";
-import { CitizenParentsSection } from "./ParentsSection";
 import { CitizenPlayerCharacterSection } from "./PlayerCharacterSection";
 
 import type { Citizen, CitizenAdminDetails } from "../../types/citizenTypes";
@@ -76,7 +76,7 @@ export function CitizenDetailTabs({
       </TabsContent>
 
       <TabsContent className="grid gap-4" value="family">
-        <CitizenParentsSection citizen={citizen} />
+        <CitizenFamilyTreeSection citizen={citizen} />
         <PartnershipHistoryPanel
           canAdmin={canAdmin}
           citizen={citizen}

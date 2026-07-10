@@ -684,9 +684,7 @@ describe("CitizenDetailPage", () => {
     });
   });
 
-  it("renders parent A as a named link and parent B as an em-dash when absent", async () => {
-    const parentARow = createCitizenRow({ id: PARENT_A_ID, name: "Elder A" });
-
+  it("renders known ancestors as named links and empty parent slots as Unknown in the family tree", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -696,7 +694,35 @@ describe("CitizenDetailPage", () => {
           parent_a_citizen_id: PARENT_A_ID,
           parent_b_citizen_id: null,
         }),
-        citizenRowsById: { [PARENT_A_ID]: parentARow },
+        familyTreeRows: [
+          {
+            citizen_id: CITIZEN_ID,
+            direction: "self",
+            generation: 0,
+            name: "Child",
+            node_path: "root",
+            parent_path: null,
+            status: "alive",
+          },
+          {
+            citizen_id: PARENT_A_ID,
+            direction: "ancestor",
+            generation: -1,
+            name: "Elder A",
+            node_path: "root.A",
+            parent_path: "root",
+            status: "alive",
+          },
+          {
+            citizen_id: null,
+            direction: "unknown",
+            generation: -1,
+            name: null,
+            node_path: "root.B",
+            parent_path: "root",
+            status: null,
+          },
+        ],
       }),
     );
 
@@ -706,7 +732,7 @@ describe("CitizenDetailPage", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     const link = await screen.findByRole("link", { name: "Elder A" });
     expect((link as HTMLAnchorElement).href).toContain(PARENT_A_ID);
-    expect(screen.getByText("—")).toBeDefined();
+    expect(screen.getByText("Unknown")).toBeDefined();
   });
 
   it("shows a 'Back to {name}' link pointing to the settlement for citizens with a settlement", async () => {
@@ -940,6 +966,7 @@ function createClient({
   assignmentRow = null,
   citizen,
   citizenRowsById = {},
+  familyTreeRows,
   jobRows = [],
   usersRows = [USER_ROW],
   usersQueryFails = false,
@@ -949,6 +976,7 @@ function createClient({
   readonly assignmentRow?: unknown;
   readonly citizen: CitizenRowFixture;
   readonly citizenRowsById?: Readonly<Record<string, CitizenRowFixture>>;
+  readonly familyTreeRows?: readonly unknown[];
   readonly jobRows?: readonly unknown[];
   readonly usersRows?: readonly (typeof USER_ROW)[];
   readonly usersQueryFails?: boolean;
@@ -1019,6 +1047,20 @@ function createClient({
           data: usersRows.map((u) => ({ id: u.id, username: u.username })),
           error: null,
         });
+      }
+      if (name === "get_citizen_family_tree") {
+        const data = familyTreeRows ?? [
+          {
+            citizen_id: citizen.id,
+            direction: "self",
+            generation: 0,
+            name: citizen.name,
+            node_path: "root",
+            parent_path: null,
+            status: citizen.status,
+          },
+        ];
+        return { returns: () => Promise.resolve({ data, error: null }) };
       }
       return undefined;
     }),

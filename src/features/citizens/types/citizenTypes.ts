@@ -68,6 +68,23 @@ export type CitizenAggregateStats = {
   readonly unassignedPcCount: number;
 };
 
+export type FamilyTreeDirection =
+  | "self"
+  | "ancestor"
+  | "descendant"
+  | "partner"
+  | "unknown";
+
+export type FamilyTreeNode = {
+  readonly citizenId: string | null;
+  readonly direction: FamilyTreeDirection;
+  readonly generation: number;
+  readonly name: string | null;
+  readonly nodePath: string;
+  readonly parentPath: string | null;
+  readonly status: CitizenStatus | null;
+};
+
 // Sentinel key for citizens with no culture_id / religion_id assigned —
 // matches neither a valid uuid nor any real culture/religion id.
 export const UNASSIGNED_CULTURE_RELIGION_KEY = "unassigned";

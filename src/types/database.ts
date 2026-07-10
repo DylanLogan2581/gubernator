@@ -6028,6 +6028,18 @@ export type Database = {
           skills_text: string;
         }[];
       };
+      get_citizen_family_tree: {
+        Args: { p_citizen_id: string };
+        Returns: {
+          citizen_id: string;
+          direction: string;
+          generation: number;
+          name: string;
+          node_path: string;
+          parent_path: string;
+          status: string;
+        }[];
+      };
       get_settlement_construction_project_counts: {
         Args: { p_settlement_id: string };
         Returns: {
