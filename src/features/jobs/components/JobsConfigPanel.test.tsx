@@ -79,7 +79,7 @@ describe("JobsConfigPanel", () => {
     expect(within(table).queryByText("farming")).toBeNull();
   });
 
-  it("shows a required education level badge on the job row", async () => {
+  it("shows the required education level in its own column", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         educationLevelRows: [createEducationLevelRow({ name: "Literate" })],
@@ -96,10 +96,11 @@ describe("JobsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Scribe");
-    expect(await screen.findByText("Requires Literate")).toBeDefined();
+    const table = screen.getByRole("table");
+    expect(await within(table).findByText("Literate")).toBeDefined();
   });
 
-  it("does not show a required education level badge when there is no requirement", async () => {
+  it("shows no requirement in the education column when there is no requirement", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
@@ -109,7 +110,7 @@ describe("JobsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Farming");
-    expect(screen.queryByText(/Requires/)).toBeNull();
+    expect(screen.getByText("No requirement")).toBeDefined();
   });
 
   it("shows trashed jobs when trash view is toggled", async () => {
@@ -158,10 +159,13 @@ describe("JobsConfigPanel", () => {
     await screen.findByText("Farming");
     expect(screen.getByText("Silk Road")).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Standard" }));
+    await user.click(screen.getByRole("button", { name: "Job type" }));
+    await user.click(screen.getByRole("checkbox", { name: "Standard" }));
 
-    expect(screen.getByText("Farming")).toBeDefined();
-    expect(screen.queryByText("Silk Road")).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText("Farming")).toBeDefined();
+      expect(screen.queryByText("Silk Road")).toBeNull();
+    });
   });
 
   it("emits a success toast after creating a standard job", async () => {
@@ -1427,6 +1431,12 @@ function createJobsQueryBuilder(
       eq: vi.fn((column: string, value: unknown) => {
         filtered = filtered.filter(
           (row) => row[column as keyof TestJobRow] === value,
+        );
+        return selectBuilder;
+      }),
+      in: vi.fn((column: string, values: readonly unknown[]) => {
+        filtered = filtered.filter((row) =>
+          values.includes(row[column as keyof TestJobRow]),
         );
         return selectBuilder;
       }),

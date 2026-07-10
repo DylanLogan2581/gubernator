@@ -9,6 +9,7 @@ import {
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
 import { SlugHint } from "@/components/shared/SlugHint";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,6 +41,7 @@ import {
   updateJobInputSchema,
   type UpdateJobInput,
 } from "../../schemas/jobSchemas";
+import { JOB_TYPE_LABELS } from "../../utils/jobTypeLabels";
 import { validateJobReferencesAgainstWorld } from "../../utils/validateJobReferences";
 
 import { entryToRow, rowToEntry, type FieldErrors } from "./JobFormState";
@@ -241,7 +243,10 @@ export function EditJobForm({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Edit job</DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Edit job</DialogTitle>
+              <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
+            </div>
           </DialogHeader>
           <div className="grid gap-3">
             <Label htmlFor="edit-job-name" className="grid gap-1 text-sm">

@@ -37,6 +37,9 @@ export const JOB_SELECT = [
   "deposit_types!deposit_types_job_id_fk(id)",
   "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
   "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
+  // Embedded solely so the page query can order by education level rank
+  // (see getJobsPage); not surfaced on JobDefinition.
+  "education_levels!job_definitions_required_education_level_fk(rank)",
 ].join(",");
 
 export function toJobIoEntry(row: JobIoEntryRow): JobIoEntry {
