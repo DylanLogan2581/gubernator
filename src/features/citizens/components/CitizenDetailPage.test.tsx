@@ -138,14 +138,12 @@ describe("CitizenDetailPage", () => {
       await screen.findByRole("heading", { level: 1, name: "Aldra" }),
     ).toBeDefined();
     expect(screen.getByText("Player character.")).toBeDefined();
-    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Core edit" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
+    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
     expect(
       screen.getAllByRole("button", { name: /Edit/ }).length,
     ).toBeGreaterThan(0);
-
-    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
     expect(screen.getByRole("button", { name: "Mark dead" })).toBeDefined();
 
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
@@ -174,7 +172,7 @@ describe("CitizenDetailPage", () => {
     expect(screen.getByText("Admin")).toBeDefined();
     expect(screen.getByText("fever")).toBeDefined();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
     expect(
       screen.getByRole("button", { name: "Revive citizen" }),
     ).toBeDefined();
@@ -343,7 +341,7 @@ describe("CitizenDetailPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
     expect(screen.queryByTestId("role-assignment-controls")).toBeNull();
-    expect(screen.queryByText("Role and linked user")).toBeNull();
+    expect(screen.queryByText("Linked user")).toBeNull();
 
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
@@ -388,12 +386,14 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const linkButton = await screen.findByRole("button", {
         name: "Link user",
       });
       await userEvent.click(linkButton);
 
-      const select = screen.getByRole("combobox");
+      const select = screen.getByRole("combobox", { name: "User" });
       expect(select).toBeDefined();
 
       const options = Array.from((select as HTMLSelectElement).options).map(
@@ -417,6 +417,8 @@ describe("CitizenDetailPage", () => {
       );
 
       renderPage();
+
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
 
       const linkButton = await screen.findByRole("button", {
         name: "Link user",
@@ -456,6 +458,8 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
       });
@@ -484,6 +488,8 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
       });
@@ -510,6 +516,8 @@ describe("CitizenDetailPage", () => {
       requireSupabaseClient.mockReturnValue(client);
 
       renderPage();
+
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
 
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
@@ -544,6 +552,8 @@ describe("CitizenDetailPage", () => {
       requireSupabaseClient.mockReturnValue(client);
 
       renderPage();
+
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
 
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
@@ -653,12 +663,14 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const linkButton = await screen.findByRole("button", {
         name: "Link user",
       });
       await userEvent.click(linkButton);
 
-      const select = await screen.findByRole("combobox");
+      const select = await screen.findByRole("combobox", { name: "User" });
       await userEvent.selectOptions(select, OTHER_USER_ID);
 
       await userEvent.click(screen.getByRole("button", { name: "Link user" }));

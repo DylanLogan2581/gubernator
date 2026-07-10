@@ -14,10 +14,6 @@ vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
-vi.mock("@/features/permissions", () => ({
-  RoleAssignmentControls: () => null,
-}));
-
 const WORLD_ID = "00000000-0000-0000-0000-000000000010";
 const USER_ID = "00000000-0000-0000-0000-000000000099";
 
@@ -72,7 +68,6 @@ function renderSection(
         canAdmin={options.canAdmin}
         canEdit={options.canAdmin}
         citizen={citizen}
-        isArchived={false}
         queryClient={createQueryClient()}
       />
     </QueryClientProvider>,

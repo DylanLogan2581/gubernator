@@ -9,7 +9,6 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
-import { RoleAssignmentControls } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -30,13 +29,11 @@ export function CitizenPlayerCharacterSection({
   canAdmin,
   canEdit,
   citizen,
-  isArchived,
   queryClient,
 }: {
   readonly canAdmin: boolean;
   readonly canEdit: boolean;
   readonly citizen: Citizen;
-  readonly isArchived: boolean;
   readonly queryClient: QueryClient;
 }): JSX.Element {
   return (
@@ -49,10 +46,10 @@ export function CitizenPlayerCharacterSection({
           id="citizen-player-character-heading"
           className="text-base font-medium"
         >
-          Role and linked user
+          Linked user
         </h2>
         <p className="text-sm text-muted-foreground">
-          Manager role, and (for player characters) the user that controls them.
+          The user account that controls this player character.
         </p>
       </div>
       {citizen.citizenType === "player_character" ? (
@@ -63,12 +60,6 @@ export function CitizenPlayerCharacterSection({
           queryClient={queryClient}
         />
       ) : null}
-      <RoleAssignmentControls
-        canAdminWorld={canAdmin}
-        citizen={citizen}
-        isArchived={isArchived}
-        variant="citizen"
-      />
     </Card>
   );
 }
@@ -306,6 +297,7 @@ function CitizenLinkedUserControl({
             ) : (
               <NativeSelect
                 aria-invalid={inputError === undefined ? undefined : true}
+                aria-label="User"
                 disabled={linkMutation.isPending || usersQuery.isPending}
                 value={selectedUserId}
                 onChange={(event) => {

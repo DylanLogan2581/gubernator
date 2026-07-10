@@ -21,7 +21,6 @@ import { citizenByIdQueryOptions } from "../../queries/citizensQueries";
 import { CitizenDetailFrame } from "./CitizenDetailFrame";
 import { CitizenDetailTabs } from "./CitizenDetailTabs";
 import { CitizenIdentityCard } from "./CitizenIdentityCard";
-import { CitizenSiblingNav } from "./CitizenSiblingNav";
 
 import type { Citizen } from "../../types/citizenTypes";
 import type { JSX } from "react";
@@ -230,15 +229,8 @@ function CitizenDetailLoaded({
 
   return (
     <CitizenDetailFrame settlementNav={settlementNav} worldId={worldId}>
-      <CitizenSiblingNav citizen={citizen} worldId={worldId} />
-
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] lg:items-start">
-        <CitizenIdentityCard
-          canAdmin={canAdmin}
-          citizen={citizen}
-          queryClient={queryClient}
-          settlement={settlement}
-        />
+        <CitizenIdentityCard citizen={citizen} settlement={settlement} />
 
         <CitizenDetailTabs
           canAdmin={canAdmin}
