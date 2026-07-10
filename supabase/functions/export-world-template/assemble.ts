@@ -86,7 +86,8 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
       name: r.name,
       slug: r.slug,
       base_stockpile_cap: r.base_stockpile_cap,
-      decay_rate: r.decay_rate,
+      change_amount: r.change_amount,
+      change_mode: r.change_mode,
       is_system_resource: r.is_system_resource,
     }));
 

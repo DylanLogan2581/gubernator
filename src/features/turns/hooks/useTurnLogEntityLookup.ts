@@ -104,7 +104,7 @@ const RESOURCE_PAYLOAD_CATEGORIES = new Set([
   "passive_effect.applied",
   "standard_job.processed",
   "stockpile.clamped",
-  "stockpile.decayed",
+  "stockpile.changed",
 ]);
 
 export function useTurnLogEntityLookup(

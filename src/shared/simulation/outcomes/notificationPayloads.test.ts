@@ -23,7 +23,7 @@ import {
   parseManualDeconstructOvershootPayload,
   parsePassiveEffectAppliedPayload,
   parseStockpileClampedPayload,
-  parseStockpileDecayedPayload,
+  parseStockpileChangedPayload,
   parseBuildingSuspendedPayload,
   parseConstructionCompletedPayload,
   parseConstructionPausedPayload,
@@ -816,9 +816,10 @@ describe("parseStockpileClampedPayload", () => {
   });
 });
 
-describe("parseStockpileDecayedPayload", () => {
+describe("parseStockpileChangedPayload", () => {
   const valid = {
-    decayRate: 0.1,
+    changeAmount: -10,
+    changeMode: "percent",
     delta: -2,
     post: 18,
     pre: 20,
@@ -827,11 +828,11 @@ describe("parseStockpileDecayedPayload", () => {
   };
 
   it("returns null for malformed inputs", () => {
-    expectNullForCommonMalformed(parseStockpileDecayedPayload);
-    expectNullPerInvalidField(parseStockpileDecayedPayload, valid);
+    expectNullForCommonMalformed(parseStockpileChangedPayload);
+    expectNullPerInvalidField(parseStockpileChangedPayload, valid);
   });
 
   it("returns typed payload for valid input", () => {
-    expect(parseStockpileDecayedPayload(valid)).toEqual(valid);
+    expect(parseStockpileChangedPayload(valid)).toEqual(valid);
   });
 });

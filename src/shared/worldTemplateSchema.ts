@@ -71,7 +71,8 @@ const resourceTemplateSchema = z.object({
   name: z.string(),
   slug: z.string(),
   base_stockpile_cap: z.number(),
-  decay_rate: z.number(),
+  change_amount: z.number(),
+  change_mode: z.enum(["percent", "flat"]),
   is_system_resource: z.boolean(),
 });
 

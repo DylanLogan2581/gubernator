@@ -336,7 +336,7 @@ export function fetchResources(
       world_id: `eq.${worldId}`,
       is_system_resource: "eq.true",
       is_trashed: "eq.false",
-      select: "decay_rate,id,slug",
+      select: "change_amount,change_mode,id,slug",
     },
   });
 }

@@ -108,17 +108,17 @@ values
       "resources": [
         {
           "name": "Food", "slug": "food",
-          "base_stockpile_cap": 1000, "decay_rate": 0.05,
+          "base_stockpile_cap": 1000, "change_mode": "percent", "change_amount": -0.05,
           "is_system_resource": true
         },
         {
           "name": "Fresh Water", "slug": "fresh-water",
-          "base_stockpile_cap": 800, "decay_rate": 0.0,
+          "base_stockpile_cap": 800, "change_mode": "percent", "change_amount": 0.0,
           "is_system_resource": true
         },
         {
           "name": "Wood", "slug": "wood",
-          "base_stockpile_cap": 500, "decay_rate": 0.0,
+          "base_stockpile_cap": 500, "change_mode": "percent", "change_amount": 0.0,
           "is_system_resource": false
         }
       ],
@@ -219,7 +219,7 @@ values
       "naming_config": {"convention":"none","female_given_names":[],"male_given_names":[],"surnames":[]},
       "namesets": [],
       "resources": [
-        {"name":"Food","slug":"food","base_stockpile_cap":1000,"decay_rate":0.05,"is_system_resource":true}
+        {"name":"Food","slug":"food","base_stockpile_cap":1000,"change_mode":"percent","change_amount":-0.05,"is_system_resource":true}
       ],
       "jobs": [
         {

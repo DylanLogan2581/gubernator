@@ -24,10 +24,13 @@ import {
   createResourceInputSchema,
   type CreateResourceInput,
 } from "../../schemas/resourceSchemas";
+import { buildChangePreviewText } from "../../utils/changePreviewText";
+
+import type { ResourceChangeMode } from "../../types/resourceTypes";
 
 type CreateResourceFieldErrors = {
   readonly baseStockpileCap?: string;
-  readonly decayRate?: string;
+  readonly changeAmount?: string;
   readonly name?: string;
   readonly slug?: string;
 };
@@ -47,7 +50,8 @@ export function CreateResourceForm({
 }: CreateResourceFormProps): JSX.Element {
   const [name, setName] = useState("");
   const [baseStockpileCap, setBaseStockpileCap] = useState("");
-  const [decayRate, setDecayRate] = useState("");
+  const [changeMode, setChangeMode] = useState<ResourceChangeMode>("percent");
+  const [changeAmount, setChangeAmount] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const { fieldErrors, setFromZod, clear } =
@@ -61,6 +65,11 @@ export function CreateResourceForm({
     maxLength: resourceInputLimits.resourceSlugMax,
   });
 
+  const changePreview = buildChangePreviewText(
+    changeMode,
+    changeAmount !== "" ? parseFloat(changeAmount) : 0,
+  );
+
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     clear();
@@ -68,7 +77,8 @@ export function CreateResourceForm({
     const input: CreateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
       categoryId,
-      decayRate: decayRate !== "" ? decayRate : undefined,
+      changeAmount: changeAmount !== "" ? changeAmount : undefined,
+      changeMode,
       icon,
       name,
       slug: derivedSlug,
@@ -140,27 +150,40 @@ export function CreateResourceForm({
                 </p>
               ) : null}
             </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="create-resource-decay"
-            >
-              <span className="text-muted-foreground">Decay rate (%)</span>
-              <Input
-                aria-invalid={fieldErrors.decayRate !== undefined}
-                disabled={isPending}
-                id="create-resource-decay"
-                inputMode="decimal"
-                placeholder="0"
-                value={decayRate}
-                onChange={(e) => {
-                  setDecayRate(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.decayRate !== undefined ? (
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Change per turn</span>
+              <div className="flex gap-2">
+                <NativeSelect
+                  aria-label="Change mode"
+                  disabled={isPending}
+                  value={changeMode}
+                  onChange={(e) => {
+                    setChangeMode(e.currentTarget.value as ResourceChangeMode);
+                  }}
+                >
+                  <option value="percent">Percent</option>
+                  <option value="flat">Flat amount</option>
+                </NativeSelect>
+                <Input
+                  aria-invalid={fieldErrors.changeAmount !== undefined}
+                  aria-label="Change amount"
+                  disabled={isPending}
+                  id="create-resource-change-amount"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={changeAmount}
+                  onChange={(e) => {
+                    setChangeAmount(e.currentTarget.value);
+                  }}
+                />
+              </div>
+              {fieldErrors.changeAmount !== undefined ? (
                 <p className="text-xs text-destructive">
-                  {fieldErrors.decayRate}
+                  {fieldErrors.changeAmount}
                 </p>
-              ) : null}
+              ) : (
+                <p className="text-xs text-muted-foreground">{changePreview}</p>
+              )}
             </Label>
             <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Icon</span>

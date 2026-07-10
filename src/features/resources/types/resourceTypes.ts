@@ -7,12 +7,15 @@ export type ResourceCategoryRef = {
   readonly name: string;
 };
 
+export type ResourceChangeMode = "percent" | "flat";
+
 export type Resource = {
   readonly baseStockpileCap: number;
   readonly category: ResourceCategoryRef | null;
   readonly categoryId: string | null;
+  readonly changeAmount: number;
+  readonly changeMode: ResourceChangeMode;
   readonly createdAt: string;
-  readonly decayRate: number;
   readonly icon: string | null;
   readonly id: string;
   readonly isTrashed: boolean;

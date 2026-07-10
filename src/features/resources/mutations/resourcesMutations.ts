@@ -110,7 +110,8 @@ async function createResource(
     .insert({
       base_stockpile_cap: values.baseStockpileCap ?? 0,
       category_id: values.categoryId ?? null,
-      decay_rate: values.decayRate ?? 0,
+      change_amount: values.changeAmount ?? 0,
+      change_mode: values.changeMode ?? "percent",
       icon: values.icon ?? null,
       name: values.name.trim(),
       slug: values.slug.trim(),
@@ -150,7 +151,8 @@ async function updateResource(
   const updatePayload: {
     base_stockpile_cap?: number;
     category_id?: string | null;
-    decay_rate?: number;
+    change_amount?: number;
+    change_mode?: "percent" | "flat";
     icon?: string | null;
     name?: string;
     slug?: string;
@@ -165,8 +167,11 @@ async function updateResource(
   if (values.baseStockpileCap !== undefined) {
     updatePayload.base_stockpile_cap = values.baseStockpileCap;
   }
-  if (values.decayRate !== undefined) {
-    updatePayload.decay_rate = values.decayRate;
+  if (values.changeMode !== undefined) {
+    updatePayload.change_mode = values.changeMode;
+  }
+  if (values.changeAmount !== undefined) {
+    updatePayload.change_amount = values.changeAmount;
   }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;

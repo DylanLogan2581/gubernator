@@ -448,14 +448,18 @@ export function runSimulation(
   // Phase 12.5 — Resource Decay (mutates pendingStockpiles in place)
   // -------------------------------------------------------------------------
 
-  // Index resources by ID for quick decay rate lookup.
+  // Index resources by ID for quick change mode/amount lookup.
   const resourcesByWorldId = new Map(
-    input.resources.map((r) => [r.id, { decayRate: r.decayRate }]),
+    input.resources.map((r) => [
+      r.id,
+      { changeAmount: r.changeAmount, changeMode: r.changeMode },
+    ]),
   );
 
   const p12dot5 = phaseResourceDecay(
     pendingStockpiles,
     resourcesByWorldId,
+    effectiveStorageCaps,
     stockpileKeyIndex,
   );
 

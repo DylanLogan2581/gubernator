@@ -501,7 +501,8 @@ export type SimPartnership = {
 };
 
 export type SimResource = {
-  readonly decayRate: number;
+  readonly changeAmount: number;
+  readonly changeMode: "percent" | "flat";
   readonly id: string;
 };
 

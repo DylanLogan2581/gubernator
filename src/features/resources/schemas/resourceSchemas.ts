@@ -29,19 +29,15 @@ const baseStockpileCapSchema = z
   )
   .transform((value): number => parseFloat(value));
 
-const decayRateSchema = z
+const resourceChangeModeSchema = z.enum(["percent", "flat"]);
+
+const changeAmountSchema = z
   .string()
   .regex(
-    /^\d+(\.\d{1,2})?$/,
-    "Decay rate must be a non-negative decimal with up to two decimal places.",
+    /^-?\d+(\.\d{1,2})?$/,
+    "Change amount must be a decimal with up to two decimal places.",
   )
-  .transform((value): number => parseFloat(value))
-  .pipe(
-    z
-      .number()
-      .min(0, "Decay rate must be at least 0.")
-      .max(100, "Decay rate cannot exceed 100."),
-  );
+  .transform((value): number => parseFloat(value));
 
 const resourceIconSchema = z
   .string()
@@ -54,21 +50,46 @@ const resourceCategoryIdInputSchema = z
   .optional()
   .nullable();
 
-export const createResourceInputSchema = z.strictObject({
-  baseStockpileCap: baseStockpileCapSchema.optional(),
-  categoryId: resourceCategoryIdInputSchema,
-  decayRate: decayRateSchema.optional(),
-  icon: resourceIconSchema,
-  name: resourceNameSchema,
-  slug: resourceSlugSchema,
-  worldId: worldIdSchema,
-});
+function checkPercentChangeAmountRange(
+  value: {
+    readonly changeAmount?: number;
+    readonly changeMode?: "percent" | "flat";
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const mode = value.changeMode ?? "percent";
+  if (
+    mode === "percent" &&
+    value.changeAmount !== undefined &&
+    value.changeAmount < -100
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Percent decay cannot exceed 100% per turn.",
+      path: ["changeAmount"],
+    });
+  }
+}
+
+export const createResourceInputSchema = z
+  .strictObject({
+    baseStockpileCap: baseStockpileCapSchema.optional(),
+    categoryId: resourceCategoryIdInputSchema,
+    changeAmount: changeAmountSchema.optional(),
+    changeMode: resourceChangeModeSchema.optional(),
+    icon: resourceIconSchema,
+    name: resourceNameSchema,
+    slug: resourceSlugSchema,
+    worldId: worldIdSchema,
+  })
+  .superRefine(checkPercentChangeAmountRange);
 
 export const updateResourceInputSchema = z
   .strictObject({
     baseStockpileCap: baseStockpileCapSchema.optional(),
     categoryId: resourceCategoryIdInputSchema,
-    decayRate: decayRateSchema.optional(),
+    changeAmount: changeAmountSchema.optional(),
+    changeMode: resourceChangeModeSchema.optional(),
     icon: resourceIconSchema,
     name: resourceNameSchema.optional(),
     resourceId: resourceIdSchema,
@@ -80,17 +101,19 @@ export const updateResourceInputSchema = z
       value.name === undefined &&
       value.slug === undefined &&
       value.baseStockpileCap === undefined &&
-      value.decayRate === undefined &&
+      value.changeMode === undefined &&
+      value.changeAmount === undefined &&
       value.icon === undefined &&
       value.categoryId === undefined
     ) {
       ctx.addIssue({
         code: "custom",
         message:
-          "At least one of name, slug, baseStockpileCap, decayRate, icon, or categoryId must be provided.",
+          "At least one of name, slug, baseStockpileCap, changeMode, changeAmount, icon, or categoryId must be provided.",
         path: ["name"],
       });
     }
+    checkPercentChangeAmountRange(value, ctx);
   });
 
 export const softDeleteResourceInputSchema = z.strictObject({

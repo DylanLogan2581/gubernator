@@ -67,8 +67,8 @@ function makeInput(
     partnerships: [],
     populationRules: BASE_POPULATION_RULES,
     resources: [
-      { decayRate: 0, id: "food" },
-      { decayRate: 0, id: "water" },
+      { changeAmount: 0, changeMode: "percent", id: "food" },
+      { changeAmount: 0, changeMode: "percent", id: "water" },
     ],
     settlementBuildings: [],
     settlements: [{ id: "settlement1", name: "TestCity" }],

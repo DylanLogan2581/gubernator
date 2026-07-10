@@ -157,35 +157,40 @@
       "name": "Grain",
       "slug": "grain",
       "base_stockpile_cap": 1000,
-      "decay_rate": 0.02,
+      "change_mode": "percent",
+      "change_amount": -0.02,
       "is_system_resource": false
     },
     {
       "name": "Hardwood Logs",
       "slug": "hardwood-logs",
       "base_stockpile_cap": 600,
-      "decay_rate": 0.0,
+      "change_mode": "percent",
+      "change_amount": 0.0,
       "is_system_resource": false
     },
     {
       "name": "Iron Ore",
       "slug": "iron-ore",
       "base_stockpile_cap": 400,
-      "decay_rate": 0.0,
+      "change_mode": "percent",
+      "change_amount": 0.0,
       "is_system_resource": false
     },
     {
       "name": "Stone Block",
       "slug": "stone-block",
       "base_stockpile_cap": 800,
-      "decay_rate": 0.0,
+      "change_mode": "percent",
+      "change_amount": 0.0,
       "is_system_resource": false
     },
     {
       "name": "Wool",
       "slug": "wool",
       "base_stockpile_cap": 300,
-      "decay_rate": 0.0,
+      "change_mode": "percent",
+      "change_amount": 0.0,
       "is_system_resource": false
     }
   ],

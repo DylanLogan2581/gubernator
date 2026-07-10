@@ -887,11 +887,12 @@ export function parseStockpileClampedPayload(
 }
 
 // ---------------------------------------------------------------------------
-// stockpile.decayed
+// stockpile.changed
 // ---------------------------------------------------------------------------
 
-export type StockpileDecayedPayload = {
-  readonly decayRate: number;
+export type StockpileChangedPayload = {
+  readonly changeAmount: number;
+  readonly changeMode: "percent" | "flat";
   readonly delta: number;
   readonly post: number;
   readonly pre: number;
@@ -899,19 +900,21 @@ export type StockpileDecayedPayload = {
   readonly settlementId: string;
 };
 
-export function parseStockpileDecayedPayload(
+export function parseStockpileChangedPayload(
   payload: unknown,
-): StockpileDecayedPayload | null {
+): StockpileChangedPayload | null {
   if (typeof payload !== "object" || payload === null) return null;
   const p = payload as Record<string, unknown>;
-  if (typeof p.decayRate !== "number") return null;
+  if (typeof p.changeAmount !== "number") return null;
+  if (p.changeMode !== "percent" && p.changeMode !== "flat") return null;
   if (typeof p.delta !== "number") return null;
   if (typeof p.post !== "number") return null;
   if (typeof p.pre !== "number") return null;
   if (typeof p.resourceId !== "string") return null;
   if (typeof p.settlementId !== "string") return null;
   return {
-    decayRate: p.decayRate,
+    changeAmount: p.changeAmount,
+    changeMode: p.changeMode,
     delta: p.delta,
     post: p.post,
     pre: p.pre,

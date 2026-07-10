@@ -16,6 +16,7 @@ import {
   restoreResourceMutationOptions,
   softDeleteResourceMutationOptions,
 } from "../../mutations/resourcesMutations";
+import { buildChangePreviewText } from "../../utils/changePreviewText";
 import { buildCleanupDescription } from "../../utils/cleanupDescription";
 
 import { EditResourceForm } from "./EditResourceForm";
@@ -116,9 +117,13 @@ function buildColumns({
       header: "Stats",
       cell: ({ row }) => {
         const resource = row.original;
+        const changeText = buildChangePreviewText(
+          resource.changeMode,
+          resource.changeAmount,
+        );
         return (
           <span className="tabular-nums text-sm text-muted-foreground">
-            {`Cap ${resource.baseStockpileCap.toLocaleString()} · Decay ${resource.decayRate.toString()}%`}
+            {`Cap ${resource.baseStockpileCap.toLocaleString()} · ${changeText}`}
           </span>
         );
       },

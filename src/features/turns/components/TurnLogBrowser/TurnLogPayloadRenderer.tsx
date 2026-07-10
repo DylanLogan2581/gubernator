@@ -44,7 +44,7 @@ import {
   parseSettlementHomelessnessOccurredPayload,
   parseSettlementStarvationOccurredPayload,
   parseStockpileClampedPayload,
-  parseStockpileDecayedPayload,
+  parseStockpileChangedPayload,
   parseTradeRoutePausedPayload,
   parseTradeRouteResumedPayload,
 } from "@/shared/simulation/outcomes/notificationPayloads";
@@ -958,7 +958,7 @@ function StockpileClampedRenderer({
   );
 }
 
-function StockpileDecayedRenderer({
+function StockpileChangedRenderer({
   isAdmin,
   lookup,
   mode,
@@ -969,14 +969,15 @@ function StockpileDecayedRenderer({
   readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
-  const p = parseStockpileDecayedPayload(payload);
+  const p = parseStockpileChangedPayload(payload);
   if (p === null) {
     return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
   }
   const resourceName = lookup.resourceName(p.resourceId) ?? "Unknown resource";
+  const verb = p.delta >= 0 ? "grew" : "decayed";
   return (
     <span className="text-sm">
-      {resourceName} stockpile decayed: {Math.round(p.pre)} →{" "}
+      {resourceName} stockpile {verb}: {Math.round(p.pre)} →{" "}
       <strong>{Math.round(p.post)}</strong>
     </span>
   );
@@ -1272,9 +1273,9 @@ export function TurnLogPayloadRenderer({
           payload={payload}
         />
       );
-    case "stockpile.decayed":
+    case "stockpile.changed":
       return (
-        <StockpileDecayedRenderer
+        <StockpileChangedRenderer
           isAdmin={isAdmin}
           lookup={lookup}
           mode={mode}

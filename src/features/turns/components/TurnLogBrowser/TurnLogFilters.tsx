@@ -70,7 +70,7 @@ const LOG_CATEGORIES = [
   "standard_job.processed",
   "starvation",
   "stockpile.clamped",
-  "stockpile.decayed",
+  "stockpile.changed",
   "tampered",
   "trade_route.paused",
   "trade_route.resumed",

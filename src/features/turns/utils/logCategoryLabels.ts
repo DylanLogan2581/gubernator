@@ -37,7 +37,7 @@ export const LOG_CATEGORY_LABELS: Readonly<Record<string, string>> = {
   "standard_job.processed": "Job Processed",
   starvation: "Starvation",
   "stockpile.clamped": "Stockpile Clamped",
-  "stockpile.decayed": "Stockpile Decay",
+  "stockpile.changed": "Stockpile Growth/Decay",
   tampered: "Tampered",
   "trade_route.paused": "Trade Route Paused",
   "trade_route.resumed": "Trade Route Resumed",

@@ -30,13 +30,14 @@ import {
   updateResourceInputSchema,
   type UpdateResourceInput,
 } from "../../schemas/resourceSchemas";
+import { buildChangePreviewText } from "../../utils/changePreviewText";
 import { buildCleanupDescription } from "../../utils/cleanupDescription";
 
-import type { Resource } from "../../types/resourceTypes";
+import type { Resource, ResourceChangeMode } from "../../types/resourceTypes";
 
 type ResourceFieldErrors = {
   readonly baseStockpileCap?: string;
-  readonly decayRate?: string;
+  readonly changeAmount?: string;
   readonly name?: string;
   readonly slug?: string;
 };
@@ -66,7 +67,12 @@ export function EditResourceForm({
   const [baseStockpileCap, setBaseStockpileCap] = useState(
     String(resource.baseStockpileCap),
   );
-  const [decayRate, setDecayRate] = useState(String(resource.decayRate));
+  const [changeMode, setChangeMode] = useState<ResourceChangeMode>(
+    resource.changeMode,
+  );
+  const [changeAmount, setChangeAmount] = useState(
+    String(resource.changeAmount),
+  );
   const [icon, setIcon] = useState<string | null>(resource.icon);
   const [categoryId, setCategoryId] = useState<string | null>(
     resource.categoryId,
@@ -79,6 +85,11 @@ export function EditResourceForm({
   );
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
+
+  const changePreview = buildChangePreviewText(
+    changeMode,
+    changeAmount !== "" ? parseFloat(changeAmount) : 0,
+  );
 
   function handleNameChange(value: string): void {
     setName(value);
@@ -94,7 +105,8 @@ export function EditResourceForm({
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
       categoryId,
-      decayRate: decayRate !== "" ? decayRate : undefined,
+      changeAmount: changeAmount !== "" ? changeAmount : undefined,
+      changeMode,
       icon,
       name,
       resourceId: resource.id,
@@ -191,24 +203,40 @@ export function EditResourceForm({
                 </p>
               ) : null}
             </Label>
-            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-decay">
-              <span className="text-muted-foreground">Decay rate (%)</span>
-              <Input
-                aria-invalid={fieldErrors.decayRate !== undefined}
-                disabled={isPending}
-                id="edit-resource-decay"
-                inputMode="decimal"
-                placeholder="0"
-                value={decayRate}
-                onChange={(e) => {
-                  setDecayRate(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.decayRate !== undefined ? (
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Change per turn</span>
+              <div className="flex gap-2">
+                <NativeSelect
+                  aria-label="Change mode"
+                  disabled={isPending}
+                  value={changeMode}
+                  onChange={(e) => {
+                    setChangeMode(e.currentTarget.value as ResourceChangeMode);
+                  }}
+                >
+                  <option value="percent">Percent</option>
+                  <option value="flat">Flat amount</option>
+                </NativeSelect>
+                <Input
+                  aria-invalid={fieldErrors.changeAmount !== undefined}
+                  aria-label="Change amount"
+                  disabled={isPending}
+                  id="edit-resource-change-amount"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={changeAmount}
+                  onChange={(e) => {
+                    setChangeAmount(e.currentTarget.value);
+                  }}
+                />
+              </div>
+              {fieldErrors.changeAmount !== undefined ? (
                 <p className="text-xs text-destructive">
-                  {fieldErrors.decayRate}
+                  {fieldErrors.changeAmount}
                 </p>
-              ) : null}
+              ) : (
+                <p className="text-xs text-muted-foreground">{changePreview}</p>
+              )}
             </Label>
             <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Icon</span>

@@ -466,7 +466,8 @@ async function resolveEndTurnInputFromCtx(
       .map(toSimPartnership),
     populationRules,
     resources: systemResources.map((r) => ({
-      decayRate: r.decay_rate,
+      changeAmount: r.change_amount,
+      changeMode: r.change_mode,
       id: r.id,
     })),
     settlementBuildings: (

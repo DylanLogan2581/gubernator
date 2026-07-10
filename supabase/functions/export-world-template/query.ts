@@ -103,7 +103,7 @@ export async function fetchWorldConfigData(
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
-      select: "id,name,slug,base_stockpile_cap,decay_rate,is_system_resource,is_trashed",
+      select: "id,name,slug,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed",
     }),
     fetchRows<RawJobRow>(ctx, "job_definitions", {
       world_id: `eq.${worldId}`,

@@ -73,14 +73,16 @@ const VALID_TEMPLATE = {
       name: "Grain",
       slug: "grain",
       base_stockpile_cap: 1000,
-      decay_rate: 0.01,
+      change_amount: -0.01,
+      change_mode: "percent",
       is_system_resource: false,
     },
     {
       name: "Wood",
       slug: "wood",
       base_stockpile_cap: 500,
-      decay_rate: 0.0,
+      change_amount: 0.0,
+      change_mode: "percent",
       is_system_resource: false,
     },
   ],
@@ -167,7 +169,14 @@ describe("worldTemplateSchema", () => {
   it("rejects missing required field in resources", () => {
     const bad = {
       ...VALID_TEMPLATE,
-      resources: [{ name: "Grain", slug: "grain", decay_rate: 0.01 }],
+      resources: [
+        {
+          name: "Grain",
+          slug: "grain",
+          change_amount: -0.01,
+          change_mode: "percent",
+        },
+      ],
     };
     const result = worldTemplateSchema.safeParse(bad);
     expect(result.success).toBe(false);

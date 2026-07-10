@@ -70,7 +70,8 @@ export type RawResourceRow = {
   readonly name: string;
   readonly slug: string;
   readonly base_stockpile_cap: number;
-  readonly decay_rate: number;
+  readonly change_amount: number;
+  readonly change_mode: "percent" | "flat";
   readonly is_system_resource: boolean;
   readonly is_trashed: boolean;
 };
@@ -212,7 +213,8 @@ export type WorldTemplateOutput = {
     readonly name: string;
     readonly slug: string;
     readonly base_stockpile_cap: number;
-    readonly decay_rate: number;
+    readonly change_amount: number;
+    readonly change_mode: "percent" | "flat";
     readonly is_system_resource: boolean;
   }[];
   readonly jobs: readonly {

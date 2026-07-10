@@ -387,7 +387,8 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly category_id: string | null;
   readonly created_at: string;
-  readonly decay_rate: number;
+  readonly change_amount: number;
+  readonly change_mode: "percent" | "flat";
   readonly icon: string | null;
   readonly id: string;
   readonly is_trashed: boolean;
@@ -407,7 +408,8 @@ function createResourceRow(
     base_stockpile_cap: 0,
     category_id: null,
     created_at: "2026-01-01T00:00:00.000Z",
-    decay_rate: 0,
+    change_amount: 0,
+    change_mode: "percent",
     icon: null,
     id: RESOURCE_ID,
     is_trashed: false,

@@ -3448,8 +3448,9 @@ export type Database = {
         Row: {
           base_stockpile_cap: number;
           category_id: string | null;
+          change_amount: number;
+          change_mode: string;
           created_at: string;
-          decay_rate: number;
           icon: string | null;
           id: string;
           is_system_resource: boolean;
@@ -3463,8 +3464,9 @@ export type Database = {
         Insert: {
           base_stockpile_cap?: number;
           category_id?: string | null;
+          change_amount?: number;
+          change_mode?: string;
           created_at?: string;
-          decay_rate?: number;
           icon?: string | null;
           id?: string;
           is_system_resource?: boolean;
@@ -3478,8 +3480,9 @@ export type Database = {
         Update: {
           base_stockpile_cap?: number;
           category_id?: string | null;
+          change_amount?: number;
+          change_mode?: string;
           created_at?: string;
-          decay_rate?: number;
           icon?: string | null;
           id?: string;
           is_system_resource?: boolean;
@@ -7161,8 +7164,9 @@ export type Database = {
         Returns: {
           base_stockpile_cap: number;
           category_id: string | null;
+          change_amount: number;
+          change_mode: string;
           created_at: string;
-          decay_rate: number;
           icon: string | null;
           id: string;
           is_system_resource: boolean;
@@ -7916,8 +7920,9 @@ export type Database = {
         Returns: {
           base_stockpile_cap: number;
           category_id: string | null;
+          change_amount: number;
+          change_mode: string;
           created_at: string;
-          decay_rate: number;
           icon: string | null;
           id: string;
           is_system_resource: boolean;
