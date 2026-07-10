@@ -90,7 +90,8 @@ describe("DepositsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Iron Ore");
-    expect(screen.getByText(/5 output\/worker/)).toBeDefined();
+    const row = screen.getByText("Iron Ore").closest("tr");
+    expect(row).toHaveTextContent("5");
   });
 
   it("shows empty state with create link when no deposit jobs exist in create form", async () => {
@@ -151,7 +152,8 @@ describe("DepositsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Iron Ore");
-    expect(await screen.findByText(/Iron Mining/)).toBeDefined();
+    const row = screen.getByText("Iron Ore").closest("tr");
+    expect(row).toHaveTextContent("Iron Mining");
   });
 
   it("shows trashed deposit types when trash view is toggled", async () => {

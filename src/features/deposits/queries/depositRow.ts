@@ -24,6 +24,9 @@ export type DepositTypeRow = {
 export const DEPOSIT_TYPE_SELECT = [
   "id,world_id,name,slug,icon,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_deposit_type_fk(id)",
+  // Embedded solely so the page query can order by linked job name
+  // (see getDepositTypesPage); not surfaced on DepositType.
+  "job:job_definitions!deposit_types_job_id_fk(name)",
 ].join(",");
 
 export function toWorkerInputEntry(row: WorkerInputEntryRow): WorkerInputEntry {

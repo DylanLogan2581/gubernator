@@ -33,6 +33,11 @@ export const MANAGED_POPULATION_TYPE_SELECT = [
   "husbandry_workers_per_n_animals,growth_rate",
   "maintenance_rules_json,culling_outputs_json,regular_outputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_managed_pop_type_fk(id)",
+  // Embedded solely so the page query can order by husbandry/culling job
+  // name (see getManagedPopulationTypesPage); not surfaced on
+  // ManagedPopulationType.
+  "husbandry_job:job_definitions!managed_population_types_husbandry_job_fk(name)",
+  "culling_job:job_definitions!managed_population_types_culling_job_fk(name)",
 ].join(",");
 
 export function toPopulationResourceEntry(

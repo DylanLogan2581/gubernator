@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { jobsByTypeQueryOptions } from "@/features/jobs";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -23,11 +22,22 @@ import {
 } from "../../queries/depositsQueries";
 
 import { CreateDepositTypeForm } from "./CreateDepositTypeForm";
+import { DepositsFilters } from "./DepositsFilters";
 import { DepositTypesTable } from "./DepositTypesTable";
 
+import type { DepositTypesSortBy } from "../../queries/depositsQueries";
 import type { CreateDepositTypeInput } from "../../schemas/depositSchemas";
+import type { SortingState } from "@tanstack/react-table";
 
 const PAGE_SIZE = 25;
+
+// Maps a DataTable column id to the deposit types page query's sort column
+// (see depositsQueries.ts), mirroring the jobs/resources config panels.
+const SORT_BY_ID: Record<string, DepositTypesSortBy> = {
+  job: "job",
+  name: "name",
+  outputUnitsPerWorker: "outputUnitsPerWorker",
+};
 
 type DepositsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -44,17 +54,26 @@ export function DepositsConfigPanel({
   const canEdit = canAdmin && !isArchived;
 
   const [search, setSearch] = useState("");
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
+  const activeSort = sorting[0];
+  const sortBy: DepositTypesSortBy | undefined =
+    activeSort !== undefined ? SORT_BY_ID[activeSort.id] : undefined;
+
   const depositTypesPageQuery = useQuery(
     depositTypesPageQueryOptions(worldId, {
+      jobId,
       page: pageIndex,
       pageSize: PAGE_SIZE,
       search: debouncedSearch,
+      sortBy,
+      sortDirection: activeSort?.desc === true ? "desc" : "asc",
       trash: showTrash,
     }),
   );
@@ -108,19 +127,22 @@ export function DepositsConfigPanel({
         </div>
       </div>
 
-      <Input
-        aria-label="Search deposit types by name"
-        className="sm:w-[280px]"
-        placeholder="Search by name…"
-        value={search}
-        onChange={(event) => {
-          setSearch(event.currentTarget.value);
+      <DepositsFilters
+        depositJobs={depositJobs}
+        jobId={jobId}
+        search={search}
+        onJobIdChange={(next) => {
+          setJobId(next);
+          resetToFirstPage();
+        }}
+        onSearchChange={(next) => {
+          setSearch(next);
           resetToFirstPage();
         }}
       />
 
       {depositTypesPageQuery.isPending ? (
-        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={4} rowCount={PAGE_SIZE} />
       ) : depositTypesPageQuery.isError ? (
         <ErrorState
           title="Deposit types could not be loaded"
@@ -129,10 +151,10 @@ export function DepositsConfigPanel({
       ) : items.length === 0 ? (
         showTrash ? (
           <EmptyState title="No deposit types in trash" />
-        ) : debouncedSearch !== "" ? (
+        ) : debouncedSearch !== "" || jobId !== null ? (
           <EmptyState
             title="No matching deposit types"
-            description="Try a different search."
+            description="Try a different search or filter."
           />
         ) : (
           <EmptyState
@@ -158,8 +180,13 @@ export function DepositsConfigPanel({
             pageIndex={pageIndex}
             queryClient={queryClient}
             showTrash={showTrash}
+            sorting={sorting}
             worldId={worldId}
             onPageChange={setPageIndex}
+            onSortingChange={(next) => {
+              setSorting(next);
+              resetToFirstPage();
+            }}
           />
         </>
       )}

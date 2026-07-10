@@ -105,8 +105,9 @@ describe("ManagedPopulationsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Cattle");
-    expect(screen.getByText(/5\.0% growth/)).toBeDefined();
-    expect(screen.getByText(/2 workers\/N/)).toBeDefined();
+    const row = screen.getByText("Cattle").closest("tr");
+    expect(row).toHaveTextContent("5.0%");
+    expect(row).toHaveTextContent("2");
   });
 
   it("shows linked husbandry and culling job names in the row", async () => {
@@ -140,8 +141,9 @@ describe("ManagedPopulationsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Cattle");
-    expect(await screen.findByText(/Cattle Husbandry/)).toBeDefined();
-    expect(await screen.findByText(/Cattle Culling/)).toBeDefined();
+    const row = screen.getByText("Cattle").closest("tr");
+    expect(row).toHaveTextContent("Cattle Husbandry");
+    expect(row).toHaveTextContent("Cattle Culling");
   });
 
   it("shows empty state with create link when no husbandry or culling jobs exist in create form", async () => {
@@ -1175,13 +1177,11 @@ function createClientWithInsertSpy({
     eq: vi.fn(() => selectBuilder),
     order: vi.fn(() => selectBuilder),
     range: vi.fn(() => selectBuilder),
-    returns: vi
-      .fn()
-      .mockResolvedValue({
-        count: populationTypeRows.length,
-        data: populationTypeRows,
-        error: null,
-      }),
+    returns: vi.fn().mockResolvedValue({
+      count: populationTypeRows.length,
+      data: populationTypeRows,
+      error: null,
+    }),
   };
 
   return {
@@ -1232,13 +1232,11 @@ function createClientWithUpdateSpy({
     eq: vi.fn(() => selectBuilder),
     order: vi.fn(() => selectBuilder),
     range: vi.fn(() => selectBuilder),
-    returns: vi
-      .fn()
-      .mockResolvedValue({
-        count: populationTypeRows.length,
-        data: populationTypeRows,
-        error: null,
-      }),
+    returns: vi.fn().mockResolvedValue({
+      count: populationTypeRows.length,
+      data: populationTypeRows,
+      error: null,
+    }),
   };
 
   return {

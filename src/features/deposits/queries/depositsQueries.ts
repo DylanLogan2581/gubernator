@@ -74,10 +74,15 @@ export function depositTypeByIdQueryOptions(
   });
 }
 
+export type DepositTypesSortBy = "job" | "name" | "outputUnitsPerWorker";
+
 export type DepositTypesPageParams = {
+  readonly jobId?: string | null;
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: DepositTypesSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -124,12 +129,32 @@ async function getDepositTypesPage(
     .eq("world_id", worldId)
     .eq("is_trashed", params.trash);
 
+  if (params.jobId !== undefined && params.jobId !== null) {
+    query = query.eq("job_id", params.jobId);
+  }
+
   if (search !== "") {
     query = query.ilike("name", `%${search}%`);
   }
 
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "job") {
+    query = query
+      .order("name", {
+        ascending: sortAscending,
+        referencedTable: "job",
+      })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "outputUnitsPerWorker") {
+    query = query
+      .order("output_units_per_worker", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
+  }
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<DepositTypeRow[]>();

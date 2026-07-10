@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { jobsByTypeQueryOptions } from "@/features/jobs";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -23,11 +22,25 @@ import {
 } from "../../queries/managedPopulationsQueries";
 
 import { CreateManagedPopulationTypeForm } from "./components/CreateManagedPopulationTypeForm";
+import { ManagedPopulationsFilters } from "./components/ManagedPopulationsFilters";
 import { ManagedPopulationTypesTable } from "./components/ManagedPopulationTypesTable";
 
+import type { ManagedPopulationTypesSortBy } from "../../queries/managedPopulationsQueries";
 import type { CreateManagedPopulationTypeInput } from "../../schemas/managedPopulationSchemas";
+import type { SortingState } from "@tanstack/react-table";
 
 const PAGE_SIZE = 25;
+
+// Maps a DataTable column id to the managed population types page query's
+// sort column (see managedPopulationsQueries.ts), mirroring the jobs
+// config panel.
+const SORT_BY_ID: Record<string, ManagedPopulationTypesSortBy> = {
+  cullingJob: "cullingJob",
+  growthRate: "growthRate",
+  husbandryJob: "husbandryJob",
+  husbandryWorkersPerNAnimals: "husbandryWorkersPerNAnimals",
+  name: "name",
+};
 
 type ManagedPopulationsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -44,17 +57,28 @@ export function ManagedPopulationsConfigPanel({
   const canEdit = canAdmin && !isArchived;
 
   const [search, setSearch] = useState("");
+  const [husbandryJobId, setHusbandryJobId] = useState<string | null>(null);
+  const [cullingJobId, setCullingJobId] = useState<string | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
+  const activeSort = sorting[0];
+  const sortBy: ManagedPopulationTypesSortBy | undefined =
+    activeSort !== undefined ? SORT_BY_ID[activeSort.id] : undefined;
+
   const populationTypesPageQuery = useQuery(
     managedPopulationTypesPageQueryOptions(worldId, {
+      cullingJobId,
+      husbandryJobId,
       page: pageIndex,
       pageSize: PAGE_SIZE,
       search: debouncedSearch,
+      sortBy,
+      sortDirection: activeSort?.desc === true ? "desc" : "asc",
       trash: showTrash,
     }),
   );
@@ -117,19 +141,28 @@ export function ManagedPopulationsConfigPanel({
         </div>
       </div>
 
-      <Input
-        aria-label="Search population types by name"
-        className="sm:w-[280px]"
-        placeholder="Search by name…"
-        value={search}
-        onChange={(event) => {
-          setSearch(event.currentTarget.value);
+      <ManagedPopulationsFilters
+        cullingJobId={cullingJobId}
+        cullingJobs={cullingJobs}
+        husbandryJobId={husbandryJobId}
+        husbandryJobs={husbandryJobs}
+        search={search}
+        onCullingJobIdChange={(next) => {
+          setCullingJobId(next);
+          resetToFirstPage();
+        }}
+        onHusbandryJobIdChange={(next) => {
+          setHusbandryJobId(next);
+          resetToFirstPage();
+        }}
+        onSearchChange={(next) => {
+          setSearch(next);
           resetToFirstPage();
         }}
       />
 
       {populationTypesPageQuery.isPending ? (
-        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={6} rowCount={PAGE_SIZE} />
       ) : populationTypesPageQuery.isError ? (
         <ErrorState
           title="Managed population types could not be loaded"
@@ -138,10 +171,12 @@ export function ManagedPopulationsConfigPanel({
       ) : items.length === 0 ? (
         showTrash ? (
           <EmptyState title="No managed population types in trash" />
-        ) : debouncedSearch !== "" ? (
+        ) : debouncedSearch !== "" ||
+          husbandryJobId !== null ||
+          cullingJobId !== null ? (
           <EmptyState
             title="No matching managed population types"
-            description="Try a different search."
+            description="Try a different search or filter."
           />
         ) : (
           <EmptyState
@@ -168,8 +203,13 @@ export function ManagedPopulationsConfigPanel({
             populationTypes={items}
             queryClient={queryClient}
             showTrash={showTrash}
+            sorting={sorting}
             worldId={worldId}
             onPageChange={setPageIndex}
+            onSortingChange={(next) => {
+              setSorting(next);
+              resetToFirstPage();
+            }}
           />
         </>
       )}

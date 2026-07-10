@@ -23,7 +23,7 @@ import {
 import { EditManagedPopulationTypeForm } from "./EditManagedPopulationTypeForm";
 
 import type { ManagedPopulationType } from "../../../types/managedPopulationTypes";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type PendingAction = {
   readonly action: "trash" | "restore";
@@ -41,35 +41,15 @@ type ManagedPopulationTypesTableProps = {
   readonly husbandryJobs: readonly JobDefinition[];
   readonly isPaginationDisabled: boolean;
   readonly onPageChange: (page: number) => void;
+  readonly onSortingChange: (sorting: SortingState) => void;
   readonly pageCount: number;
   readonly pageIndex: number;
   readonly populationTypes: readonly ManagedPopulationType[];
   readonly queryClient: QueryClient;
   readonly showTrash: boolean;
+  readonly sorting: SortingState;
   readonly worldId: string;
 };
-
-function buildStatsText(
-  populationType: ManagedPopulationType,
-  husbandryJobs: readonly JobDefinition[],
-  cullingJobs: readonly JobDefinition[],
-): string {
-  const husbandryJob = husbandryJobs.find(
-    (j) => j.id === populationType.husbandryJobId,
-  );
-  const cullingJob = cullingJobs.find(
-    (j) => j.id === populationType.cullingJobId,
-  );
-
-  let text = `${(populationType.growthRate * 100).toFixed(1)}% growth · ${populationType.husbandryWorkersPerNAnimals.toLocaleString()} workers/N`;
-  if (husbandryJob !== undefined) {
-    text += ` · ${husbandryJob.name}`;
-  }
-  if (cullingJob !== undefined) {
-    text += ` · ${cullingJob.name}`;
-  }
-  return text;
-}
 
 function buildColumns({
   canEdit,
@@ -99,7 +79,8 @@ function buildColumns({
   return [
     {
       id: "name",
-      enableSorting: false,
+      accessorFn: (row) => row.name,
+      enableSorting: true,
       header: "Name",
       cell: ({ row }) => {
         const populationType = row.original;
@@ -117,12 +98,54 @@ function buildColumns({
       },
     },
     {
-      id: "stats",
-      enableSorting: false,
-      header: "Stats",
+      id: "husbandryJob",
+      accessorFn: (row) => row.husbandryJobId,
+      enableSorting: true,
+      header: "Husbandry job",
+      cell: ({ row }) => {
+        const husbandryJob = husbandryJobs.find(
+          (j) => j.id === row.original.husbandryJobId,
+        );
+        if (husbandryJob === undefined) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        return <span className="text-sm">{husbandryJob.name}</span>;
+      },
+    },
+    {
+      id: "cullingJob",
+      accessorFn: (row) => row.cullingJobId,
+      enableSorting: true,
+      header: "Culling job",
+      cell: ({ row }) => {
+        const cullingJob = cullingJobs.find(
+          (j) => j.id === row.original.cullingJobId,
+        );
+        if (cullingJob === undefined) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        return <span className="text-sm">{cullingJob.name}</span>;
+      },
+    },
+    {
+      id: "growthRate",
+      accessorFn: (row) => row.growthRate,
+      enableSorting: true,
+      header: "Growth rate",
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-muted-foreground">
-          {buildStatsText(row.original, husbandryJobs, cullingJobs)}
+          {`${(row.original.growthRate * 100).toFixed(1)}%`}
+        </span>
+      ),
+    },
+    {
+      id: "husbandryWorkersPerNAnimals",
+      accessorFn: (row) => row.husbandryWorkersPerNAnimals,
+      enableSorting: true,
+      header: "Workers / N animals",
+      cell: ({ row }) => (
+        <span className="tabular-nums text-sm text-muted-foreground">
+          {row.original.husbandryWorkersPerNAnimals.toLocaleString()}
         </span>
       ),
     },
@@ -226,11 +249,13 @@ export function ManagedPopulationTypesTable({
   husbandryJobs,
   isPaginationDisabled,
   onPageChange,
+  onSortingChange,
   pageCount,
   pageIndex,
   populationTypes,
   queryClient,
   showTrash,
+  sorting,
   worldId,
 }: ManagedPopulationTypesTableProps): JSX.Element {
   const [editingPopulationType, setEditingPopulationType] =
@@ -311,10 +336,8 @@ export function ManagedPopulationTypesTable({
         columns={columns}
         data={populationTypes}
         getRowId={(populationType) => populationType.id}
-        sorting={[]}
-        onSortingChange={() => {
-          // Server-side ordering is fixed (by name); no sortable columns.
-        }}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
         pageIndex={pageIndex}
         pageCount={pageCount}
         onPageChange={onPageChange}

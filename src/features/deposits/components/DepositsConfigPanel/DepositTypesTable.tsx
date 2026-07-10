@@ -22,7 +22,7 @@ import { EditDepositTypeForm } from "./EditDepositTypeForm";
 
 import type { DepositType } from "../../types/depositTypes";
 import type { QueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type DepositTypesTableProps = {
   readonly allDepositTypes: readonly DepositType[];
@@ -31,10 +31,12 @@ type DepositTypesTableProps = {
   readonly depositTypes: readonly DepositType[];
   readonly isPaginationDisabled: boolean;
   readonly onPageChange: (page: number) => void;
+  readonly onSortingChange: (sorting: SortingState) => void;
   readonly pageCount: number;
   readonly pageIndex: number;
   readonly queryClient: QueryClient;
   readonly showTrash: boolean;
+  readonly sorting: SortingState;
   readonly worldId: string;
 };
 
@@ -64,7 +66,8 @@ function buildColumns({
   return [
     {
       id: "name",
-      enableSorting: false,
+      accessorFn: (row) => row.name,
+      enableSorting: true,
       header: "Name",
       cell: ({ row }) => {
         const depositType = row.original;
@@ -81,19 +84,29 @@ function buildColumns({
       },
     },
     {
-      id: "stats",
-      enableSorting: false,
-      header: "Stats",
+      id: "job",
+      accessorFn: (row) => row.jobId,
+      enableSorting: true,
+      header: "Linked job",
       cell: ({ row }) => {
         const depositType = row.original;
         const linkedJob = depositJobs.find((j) => j.id === depositType.jobId);
-        return (
-          <span className="tabular-nums text-sm text-muted-foreground">
-            {`${depositType.outputUnitsPerWorker.toLocaleString()} output/worker`}
-            {linkedJob !== undefined ? ` · ${linkedJob.name}` : ""}
-          </span>
-        );
+        if (linkedJob === undefined) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        return <span className="text-sm">{linkedJob.name}</span>;
       },
+    },
+    {
+      id: "outputUnitsPerWorker",
+      accessorFn: (row) => row.outputUnitsPerWorker,
+      enableSorting: true,
+      header: "Output / worker",
+      cell: ({ row }) => (
+        <span className="tabular-nums text-sm text-muted-foreground">
+          {row.original.outputUnitsPerWorker.toLocaleString()}
+        </span>
+      ),
     },
     {
       id: "actions",
@@ -195,10 +208,12 @@ export function DepositTypesTable({
   depositTypes,
   isPaginationDisabled,
   onPageChange,
+  onSortingChange,
   pageCount,
   pageIndex,
   queryClient,
   showTrash,
+  sorting,
   worldId,
 }: DepositTypesTableProps): JSX.Element {
   const [editingDepositType, setEditingDepositType] =
@@ -261,10 +276,8 @@ export function DepositTypesTable({
         columns={columns}
         data={depositTypes}
         getRowId={(depositType) => depositType.id}
-        sorting={[]}
-        onSortingChange={() => {
-          // Server-side ordering is fixed (by name); no sortable columns.
-        }}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
         pageIndex={pageIndex}
         pageCount={pageCount}
         onPageChange={onPageChange}
