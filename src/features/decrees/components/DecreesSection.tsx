@@ -55,6 +55,8 @@ import {
   settlementDecreesQueryOptions,
 } from "../queries/decreesQueries";
 
+import { DecreeIssuerCombobox } from "./DecreeIssuerCombobox";
+
 import type { Decree } from "../types/decreeTypes";
 
 type DecreeScopeContext =
@@ -135,9 +137,8 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
 
   // Only needed when an admin who is not themselves the manager wants to
   // issue: falls back to the scope's current manager citizen as the acting
-  // issuer. If there is no manager assigned, an admin cannot issue (no
-  // arbitrary-citizen picker exists yet -- a reasonable follow-up if that
-  // ever proves too restrictive).
+  // issuer. If there is no manager assigned, an admin (or superadmin) picks
+  // an arbitrary citizen in the scope instead via IssueDecreeDialog (#1159).
   const rulerLookupEnabled = canManage && effectiveCanAdmin && !isManagerActive;
   const nationRulerQuery = useQuery({
     ...playerCharactersInNationQueryOptions(props.nationId),
@@ -161,6 +162,7 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
             citizen.status === "alive",
       )?.id ?? null)
     : null;
+  const canPickIssuer = rulerLookupEnabled && rulerCitizenId === null;
 
   const issuedByCitizenId = isManagerActive
     ? (activeCharacter?.id ?? null)
@@ -203,7 +205,9 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
           <h2 id="decrees-heading" className="text-base font-medium">
             Decrees
           </h2>
-          {canManage && !isArchived && issuedByCitizenId !== null ? (
+          {canManage &&
+          !isArchived &&
+          (issuedByCitizenId !== null || canPickIssuer) ? (
             <Button
               type="button"
               variant="outline"
@@ -296,7 +300,7 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
         )}
       </Card>
 
-      {canManage && issuing && issuedByCitizenId !== null ? (
+      {canManage && issuing && (issuedByCitizenId !== null || canPickIssuer) ? (
         <IssueDecreeDialog
           issuedByCitizenId={issuedByCitizenId}
           onClose={() => setIssuing(false)}
@@ -344,29 +348,35 @@ function IssueDecreeDialog({
   queryClient,
   scopeContext,
 }: {
-  readonly issuedByCitizenId: string;
+  readonly issuedByCitizenId: string | null;
   readonly onClose: () => void;
   readonly queryClient: ReturnType<typeof useQueryClient>;
   readonly scopeContext: DecreeScopeContext;
 }): JSX.Element {
   const [title, setTitle] = useState("");
   const [bodyMarkdown, setBodyMarkdown] = useState("");
+  const [pickedCitizenId, setPickedCitizenId] = useState<string | null>(null);
 
   const issueMutation = useMutation(
     issueDecreeMutationOptions({ queryClient }),
   );
 
+  const resolvedIssuedByCitizenId = issuedByCitizenId ?? pickedCitizenId;
+
   const trimmedTitle = title.trim();
   const trimmedBody = bodyMarkdown.trim();
-  const canSubmit = trimmedTitle !== "" && trimmedBody !== "";
+  const canSubmit =
+    trimmedTitle !== "" &&
+    trimmedBody !== "" &&
+    resolvedIssuedByCitizenId !== null;
 
   function handleSubmit(): void {
-    if (!canSubmit) return;
+    if (!canSubmit || resolvedIssuedByCitizenId === null) return;
 
     issueMutation.mutate(
       {
         bodyMarkdown: trimmedBody,
-        issuedByCitizenId,
+        issuedByCitizenId: resolvedIssuedByCitizenId,
         nationId:
           scopeContext.scope === "nation" ? scopeContext.nationId : null,
         settlementId:
@@ -400,6 +410,22 @@ function IssueDecreeDialog({
         </DialogHeader>
 
         <div className="grid gap-3">
+          {issuedByCitizenId === null ? (
+            <div className="grid gap-1">
+              <Label htmlFor="decree-issuer">Issued by</Label>
+              <DecreeIssuerCombobox
+                citizenId={pickedCitizenId}
+                nationId={scopeContext.nationId}
+                onChange={setPickedCitizenId}
+                settlementId={
+                  scopeContext.scope === "settlement"
+                    ? scopeContext.settlementId
+                    : undefined
+                }
+                worldId={scopeContext.worldId}
+              />
+            </div>
+          ) : null}
           <div className="grid gap-1">
             <Label htmlFor="decree-title">Title</Label>
             <Input
