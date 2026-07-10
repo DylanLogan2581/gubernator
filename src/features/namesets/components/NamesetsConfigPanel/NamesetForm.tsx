@@ -77,50 +77,60 @@ export function EditNamesetForm({
   }
 
   return (
-    <form
-      aria-label="Edit nameset"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={(e) => {
-        void handleSubmit(e);
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <h3 className="text-sm font-medium">Edit nameset</h3>
-
-      <Label className="grid gap-1 text-sm" htmlFor="edit-nameset-name">
-        <span className="text-muted-foreground">Name</span>
-        <Input
-          aria-invalid={nameError !== undefined}
-          disabled={isPending}
-          id="edit-nameset-name"
-          maxLength={64}
-          value={name}
-          onChange={(e) => {
-            setName(e.currentTarget.value);
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <form
+          aria-label="Edit nameset"
+          className="contents"
+          noValidate
+          onSubmit={(e) => {
+            void handleSubmit(e);
           }}
-        />
-        {nameError !== undefined ? (
-          <p className="text-xs text-destructive">{nameError}</p>
-        ) : null}
-      </Label>
-
-      <NamingConfigFields config={config} onChange={setConfig} />
-
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
-          Save
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={onClose}
         >
-          Cancel
-        </Button>
-      </div>
-    </form>
+          <DialogHeader>
+            <DialogTitle>Edit nameset</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <Label className="grid gap-1 text-sm" htmlFor="edit-nameset-name">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={nameError !== undefined}
+                disabled={isPending}
+                id="edit-nameset-name"
+                maxLength={64}
+                value={name}
+                onChange={(e) => {
+                  setName(e.currentTarget.value);
+                }}
+              />
+              {nameError !== undefined ? (
+                <p className="text-xs text-destructive">{nameError}</p>
+              ) : null}
+            </Label>
+
+            <NamingConfigFields config={config} onChange={setConfig} />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
