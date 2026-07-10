@@ -26,21 +26,54 @@ type TierEffectRef =
   | {
       readonly amount: number;
       readonly type: "population_cap_increase";
+    }
+  | {
+      readonly levels: readonly {
+        readonly fromLevelId: string | null;
+        readonly toLevelId: string;
+      }[];
+      readonly teacherJobId: string;
+      readonly type: "education";
     };
-
-type TierEducationConfigRef = {
-  readonly teacherJobId: string;
-  readonly teachesUpToLevelId: string;
-};
 
 type TierReferencePayload = {
   readonly constructionCostsJson?: readonly TierCostRef[];
-  readonly educationConfigJson?: TierEducationConfigRef | null;
   readonly effectsJson?: readonly TierEffectRef[];
   readonly upkeepCostsJson?: readonly TierCostRef[];
 };
 
 export type BuildingReferenceIssue = ReferenceIssue;
+
+function checkEducationEffectRefs(
+  effect: Extract<TierEffectRef, { readonly type: "education" }>,
+  activeJobIds: ReadonlySet<string>,
+  activeEducationLevelIds: ReadonlySet<string>,
+  issues: BuildingReferenceIssue[],
+): void {
+  if (!activeJobIds.has(effect.teacherJobId)) {
+    issues.push({
+      field: "effectsJson",
+      message: `Job ${effect.teacherJobId} is not an active job in this world.`,
+    });
+  }
+  for (const level of effect.levels) {
+    if (
+      level.fromLevelId !== null &&
+      !activeEducationLevelIds.has(level.fromLevelId)
+    ) {
+      issues.push({
+        field: "effectsJson",
+        message: `Education level ${level.fromLevelId} does not exist in this world.`,
+      });
+    }
+    if (!activeEducationLevelIds.has(level.toLevelId)) {
+      issues.push({
+        field: "effectsJson",
+        message: `Education level ${level.toLevelId} does not exist in this world.`,
+      });
+    }
+  }
+}
 
 // Pre-flight reference check for tier create/update payloads.
 // Returns UI-friendly issues when referenced entities are absent from the
@@ -94,24 +127,13 @@ export function validateBlueprintTierReferencesAgainstWorld(
         message: `Job ${effect.jobId} is not an active job in this world.`,
       });
     }
-  }
-
-  if (
-    payload.educationConfigJson !== undefined &&
-    payload.educationConfigJson !== null
-  ) {
-    const config = payload.educationConfigJson;
-    if (!activeJobIds.has(config.teacherJobId)) {
-      issues.push({
-        field: "educationConfigJson",
-        message: `Job ${config.teacherJobId} is not an active job in this world.`,
-      });
-    }
-    if (!activeEducationLevelIds.has(config.teachesUpToLevelId)) {
-      issues.push({
-        field: "educationConfigJson",
-        message: `Education level ${config.teachesUpToLevelId} does not exist in this world.`,
-      });
+    if (effect.type === "education") {
+      checkEducationEffectRefs(
+        effect,
+        activeJobIds,
+        activeEducationLevelIds,
+        issues,
+      );
     }
   }
 

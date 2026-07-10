@@ -114,33 +114,36 @@ export function toSimTierCostEntries(
   return result;
 }
 
+function toSimTierAmountEffect(item: Record<string, unknown>): SimTierEffect | null {
+  const { type, amount } = item;
+  if (typeof amount !== "number") return null;
+  if (type === "job_capacity_increase" && typeof item.job_id === "string") {
+    return { amount, jobId: item.job_id, type };
+  }
+  if (type === "passive_resource_production" && typeof item.resource_id === "string") {
+    return { amount, resourceId: item.resource_id, type };
+  }
+  if (type === "resource_storage_increase" && typeof item.resource_id === "string") {
+    return { amount, resourceId: item.resource_id, type };
+  }
+  if (type === "population_cap_increase") {
+    return { amount, type: "population_cap_increase" };
+  }
+  return null;
+}
+
 export function toSimTierEffects(raw: unknown): readonly SimTierEffect[] {
   if (!Array.isArray(raw)) return [];
   const result: SimTierEffect[] = [];
   for (const item of raw) {
-    if (
-      !isRecord(item) ||
-      typeof item.type !== "string" ||
-      typeof item.amount !== "number"
-    ) {
+    if (!isRecord(item) || typeof item.type !== "string") continue;
+    if (item.type === "education") {
+      const config = parseTierEducationConfig(item);
+      if (config !== null) result.push({ ...config, type: "education" });
       continue;
     }
-    const { type, amount } = item;
-    if (type === "job_capacity_increase" && typeof item.job_id === "string") {
-      result.push({ amount, jobId: item.job_id, type });
-    } else if (
-      type === "passive_resource_production" &&
-      typeof item.resource_id === "string"
-    ) {
-      result.push({ amount, resourceId: item.resource_id, type });
-    } else if (
-      type === "resource_storage_increase" &&
-      typeof item.resource_id === "string"
-    ) {
-      result.push({ amount, resourceId: item.resource_id, type });
-    } else if (type === "population_cap_increase") {
-      result.push({ amount, type });
-    }
+    const effect = toSimTierAmountEffect(item);
+    if (effect !== null) result.push(effect);
   }
   return result;
 }
@@ -573,9 +576,6 @@ export function toBlueprintsAndTiers(rows: readonly unknown[]): {
         buildingBlueprintId: tier.building_blueprint_id,
         constructionCostsJson: toSimTierCostEntries(
           tier.construction_costs_json,
-        ),
-        educationConfigJson: parseTierEducationConfig(
-          tier.education_config_json,
         ),
         effectsJson: toSimTierEffects(tier.effects_json),
         id: tier.id,

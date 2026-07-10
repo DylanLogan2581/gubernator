@@ -4,6 +4,7 @@ export type JobType =
   | "deposit"
   | "husbandry"
   | "standard"
+  | "teacher"
   | "trader";
 
 export type JobIoEntry = {

@@ -13,7 +13,6 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 import { toSnakeCaseEntries } from "@/lib/toSnakeCaseEntries";
-import type { TierEducationConfig } from "@/shared/education/tierEducationConfig";
 import type { Json } from "@/types/database";
 
 import {
@@ -108,7 +107,6 @@ type BlueprintUpdatePayload = {
 type TierInsertPayload = {
   building_blueprint_id: string;
   construction_costs_json?: Json;
-  education_config_json?: Json | null;
   effects_json?: Json;
   tier_number: number;
   upkeep_costs_json?: Json;
@@ -117,7 +115,6 @@ type TierInsertPayload = {
 
 type TierUpdatePayload = {
   construction_costs_json?: Json;
-  education_config_json?: Json | null;
   effects_json?: Json;
   upkeep_costs_json?: Json;
   worker_turns_required?: number;
@@ -450,12 +447,6 @@ async function createTier(
   if (values.effectsJson !== undefined) {
     insertPayload.effects_json = toEffectJson(values.effectsJson);
   }
-  if (values.educationConfigJson !== undefined) {
-    insertPayload.education_config_json =
-      values.educationConfigJson === null
-        ? null
-        : toEducationConfigJson(values.educationConfigJson);
-  }
 
   const { data, error } = await client
     .from("building_blueprint_tiers")
@@ -498,12 +489,6 @@ async function updateTier(
   }
   if (values.effectsJson !== undefined) {
     updatePayload.effects_json = toEffectJson(values.effectsJson);
-  }
-  if (values.educationConfigJson !== undefined) {
-    updatePayload.education_config_json =
-      values.educationConfigJson === null
-        ? null
-        : toEducationConfigJson(values.educationConfigJson);
   }
 
   const { data, error } = await client
@@ -567,16 +552,6 @@ function toCostJson(entries: readonly TierCostEntry[]): Json {
   });
 }
 
-function toEducationConfigJson(config: TierEducationConfig): Json {
-  return {
-    student_capacity: config.studentCapacity,
-    students_per_teacher: config.studentsPerTeacher,
-    teacher_job_id: config.teacherJobId,
-    teaches_up_to_level_id: config.teachesUpToLevelId,
-    turns_per_level: config.turnsPerLevel,
-  };
-}
-
 function toEffectJson(effects: readonly TierEffect[]): Json {
   return effects.map((e): Record<string, Json> => {
     switch (e.type) {
@@ -588,6 +563,18 @@ function toEffectJson(effects: readonly TierEffect[]): Json {
         return { amount: e.amount, resource_id: e.resourceId, type: e.type };
       case "population_cap_increase":
         return { amount: e.amount, type: e.type };
+      case "education":
+        return {
+          levels: e.levels.map((l) => ({
+            from_level_id: l.fromLevelId,
+            to_level_id: l.toLevelId,
+            turns: l.turns,
+          })),
+          students_per_teacher: e.studentsPerTeacher,
+          teacher_capacity: e.teacherCapacity,
+          teacher_job_id: e.teacherJobId,
+          type: e.type,
+        };
     }
   });
 }

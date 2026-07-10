@@ -26,7 +26,6 @@ function makePopCapTier(
   return {
     buildingBlueprintId: "blueprint-1",
     constructionCostsJson: [],
-    educationConfigJson: null,
     effectsJson: [{ amount, type: "population_cap_increase" }],
     id: "tier-1",
     tierNumber: 1,

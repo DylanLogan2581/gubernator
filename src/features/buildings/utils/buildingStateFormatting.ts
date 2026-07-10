@@ -40,6 +40,9 @@ export function buildEffectChips(
           label: `+${row.amount} ${resourceNames.get(row.resourceId) ?? row.resourceId}/turn`,
         });
         break;
+      case "education":
+        chips.push({ key: row.id, label: "School" });
+        break;
       case "":
         break;
       default: {

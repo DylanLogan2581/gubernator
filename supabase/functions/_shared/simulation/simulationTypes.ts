@@ -236,7 +236,10 @@ export type SimTierEffect =
   | {
     readonly amount: number;
     readonly type: "population_cap_increase";
-  };
+  }
+  | ({
+    readonly type: "education";
+  } & TierEducationConfig);
 
 export type SimBuildingBlueprint = {
   readonly gracePeriodTurns: number;
@@ -248,7 +251,6 @@ export type SimBuildingBlueprint = {
 export type SimBuildingTier = {
   readonly buildingBlueprintId: string;
   readonly constructionCostsJson: readonly SimTierCostEntry[];
-  readonly educationConfigJson: TierEducationConfig | null;
   readonly effectsJson: readonly SimTierEffect[];
   readonly id: string;
   readonly tierNumber: number;

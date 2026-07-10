@@ -2,14 +2,22 @@
 -- public.unenroll_citizen (#1103): guards (capacity, wrong settlement, dead,
 -- double-enroll, nothing-left-to-learn), RLS, and exclusion of enrolled
 -- citizens from set_bulk_standard_job_assignment's NPC picking pool.
--- #1139 additions: null student_capacity is rejected (not bypassed), the
--- capacity count is taken under a row lock (for update), and an enlisted
--- soldier cannot enroll.
+-- #1139 additions: the capacity count is taken under a row lock (for
+-- update), and an enlisted soldier cannot enroll.
+-- #1170: education moved from building_blueprint_tiers.education_config_json
+-- to a tagged 'education' entry in effects_json; capacity is now
+-- teacher_capacity * students_per_teacher and the target level is an exact
+-- from_level_id -> to_level_id transition lookup (levels[]) instead of
+-- "next rank up to teaches_up_to_level_id". Fixtures below were updated
+-- accordingly, and two acceptance-criteria scenarios from #1170 were added:
+-- a "None -> Basic only" school (uneducated enrolls, Basic-or-above cannot)
+-- and a "Basic -> Advanced only" school (uneducated is rejected even though
+-- the school teaches higher levels, because null -> Basic isn't offered).
 -- Run with: npx supabase test db
 begin;
 
 select
-  plan (17);
+  plan (19);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -124,37 +132,112 @@ values
     2
   );
 
--- Tier 1: school, capacity 1, teaches up to Basic (rank 1).
--- Tier 2: not a school (null config) -- used by the non-school building.
+insert into
+  public.job_definitions (
+    id,
+    world_id,
+    name,
+    slug,
+    job_type,
+    base_capacity,
+    is_trashed
+  )
+values
+  (
+    'eea00000-0000-0000-0000-000000000001',
+    'ee200000-0000-0000-0000-000000000001',
+    'Enrollments Farming',
+    'ee-farming',
+    'standard',
+    5,
+    false
+  ),
+  (
+    'eea00000-0000-0000-0000-000000000002',
+    'ee200000-0000-0000-0000-000000000001',
+    'Enrollments Teacher',
+    'ee-teacher',
+    'teacher',
+    10,
+    false
+  );
+
+-- Tier 1: "None -> Basic only" school, capacity 1 (teacher_capacity 1 *
+--   students_per_teacher 1). Uneducated citizens can enroll (target Basic);
+--   Basic-or-above citizens cannot (no matching from_level_id transition).
+-- Tier 2 (Barracks tier 1): not a school (empty effects_json).
+-- Tier 3: "Basic -> Advanced (Skilled) only" school, capacity 25. Uneducated
+--   citizens cannot enroll here (no null -> Basic transition offered), even
+--   though the school does teach a higher level.
 insert into
   public.building_blueprint_tiers (
     id,
     building_blueprint_id,
     tier_number,
-    education_config_json
+    effects_json
   )
 values
   (
     'ee600000-0000-0000-0000-000000000001',
     'ee500000-0000-0000-0000-000000000001',
     1,
-    (
-      '{"teaches_up_to_level_id": "ee800000-0000-0000-0000-000000000001", "student_capacity": 1, "turns_per_level": 4, "teacher_job_id": "00000000-0000-0000-0000-000000000000", "students_per_teacher": 5}'
-    )::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'type',
+        'education',
+        'teacher_job_id',
+        'eea00000-0000-0000-0000-000000000002',
+        'teacher_capacity',
+        1,
+        'students_per_teacher',
+        1,
+        'levels',
+        jsonb_build_array(
+          jsonb_build_object(
+            'from_level_id',
+            null,
+            'to_level_id',
+            'ee800000-0000-0000-0000-000000000001',
+            'turns',
+            4
+          )
+        )
+      )
+    )
   ),
   (
     'ee600000-0000-0000-0000-000000000002',
     'ee500000-0000-0000-0000-000000000002',
     1,
-    null
+    '[]'::jsonb
   ),
   (
     'ee600000-0000-0000-0000-000000000003',
     'ee500000-0000-0000-0000-000000000001',
     2,
-    (
-      '{"teaches_up_to_level_id": "ee800000-0000-0000-0000-000000000001", "turns_per_level": 4, "teacher_job_id": "00000000-0000-0000-0000-000000000000", "students_per_teacher": 5}'
-    )::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'type',
+        'education',
+        'teacher_job_id',
+        'eea00000-0000-0000-0000-000000000002',
+        'teacher_capacity',
+        5,
+        'students_per_teacher',
+        5,
+        'levels',
+        jsonb_build_array(
+          jsonb_build_object(
+            'from_level_id',
+            'ee800000-0000-0000-0000-000000000001',
+            'to_level_id',
+            'ee800000-0000-0000-0000-000000000002',
+            'turns',
+            4
+          )
+        )
+      )
+    )
   );
 
 insert into
@@ -269,7 +352,7 @@ values
     'ee200000-0000-0000-0000-000000000001',
     'ee400000-0000-0000-0000-000000000001',
     'npc',
-    'Null Capacity Target',
+    'Uneducated At Advanced School',
     'alive',
     null,
     null
@@ -282,6 +365,16 @@ values
     'Enlisted Soldier',
     'alive',
     null,
+    null
+  ),
+  (
+    'ee900000-0000-0000-0000-000000000009',
+    'ee200000-0000-0000-0000-000000000001',
+    'ee400000-0000-0000-0000-000000000001',
+    'npc',
+    'Basic Level Citizen',
+    'alive',
+    'ee800000-0000-0000-0000-000000000001',
     null
   );
 
@@ -359,31 +452,10 @@ values
     1
   );
 
-insert into
-  public.job_definitions (
-    id,
-    world_id,
-    name,
-    slug,
-    job_type,
-    base_capacity,
-    is_trashed
-  )
-values
-  (
-    'eea00000-0000-0000-0000-000000000001',
-    'ee200000-0000-0000-0000-000000000001',
-    'Enrollments Farming',
-    'ee-farming',
-    'standard',
-    5,
-    false
-  );
-
--- Pre-assign Already Skilled, Capacity Filler, and Null Capacity Target to
--- the job so they are absent from the "unassigned NPC" pool from the start
--- -- they exist only to exercise enroll_citizen guards (rank ceiling,
--- capacity, null capacity) and must not contaminate the later
+-- Pre-assign Already Skilled, Capacity Filler, and Uneducated At Advanced
+-- School to the farming job so they are absent from the "unassigned NPC"
+-- pool from the start -- they exist only to exercise enroll_citizen guards
+-- (nothing left to learn, capacity) and must not contaminate the later
 -- bulk-assignment exclusion test. Enlisted Soldier needs no such pre-assign:
 -- the unit_soldiers row above already excludes it from that pool.
 insert into
@@ -468,8 +540,10 @@ select
   );
 
 -- ===========================================================================
--- enroll_citizen: citizen already at/above the tier's teaches_up_to level is
--- rejected with the "nothing left to learn" message.
+-- enroll_citizen: citizen already at/above the tier's only offered level is
+-- rejected with the "nothing left to learn" message (no matching
+-- from_level_id transition exists for a Skilled citizen at the
+-- None -> Basic-only school).
 -- ===========================================================================
 select
   throws_ok (
@@ -481,7 +555,25 @@ select
   $test$,
     'P0001',
     'Nothing left to learn here',
-    'a citizen already at or above the tier ceiling cannot be enrolled'
+    'a citizen already at or above the school''s only offered level cannot be enrolled'
+  );
+
+-- ===========================================================================
+-- enroll_citizen (#1170 AC): a "None -> Basic only" school excludes citizens
+-- who are already at Basic, even though the school offers no higher level to
+-- explain why -- there is simply no from_level_id = Basic transition.
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.enroll_citizen(
+      'ee700000-0000-0000-0000-000000000001'::uuid,
+      'ee900000-0000-0000-0000-000000000009'::uuid
+    )
+  $test$,
+    'P0001',
+    'Nothing left to learn here',
+    'a None -> Basic-only school rejects a citizen who is already at Basic'
   );
 
 -- ===========================================================================
@@ -524,8 +616,8 @@ select
   );
 
 -- ===========================================================================
--- enroll_citizen: capacity guard rejects once the tier's student_capacity
--- (1) is filled.
+-- enroll_citizen: capacity guard rejects once the tier's capacity
+-- (teacher_capacity 1 * students_per_teacher 1 = 1) is filled.
 -- ===========================================================================
 select
   throws_ok (
@@ -541,8 +633,10 @@ select
   );
 
 -- ===========================================================================
--- enroll_citizen: null student_capacity (config object present, key omitted)
--- is rejected outright, not treated as unlimited (#1139).
+-- enroll_citizen (#1170 AC): a "Basic -> Advanced (Skilled) only" school
+-- rejects an uneducated citizen with "nothing left to learn", even though
+-- the school does teach a higher level, because it offers no
+-- null -> Basic transition.
 -- ===========================================================================
 select
   throws_ok (
@@ -553,8 +647,32 @@ select
     )
   $test$,
     'P0001',
-    'settlement building is at student capacity',
-    'a school tier missing student_capacity is treated as full, not unlimited'
+    'Nothing left to learn here',
+    'a Basic -> Advanced-only school rejects an uneducated citizen'
+  );
+
+-- ===========================================================================
+-- enroll_citizen (#1170 AC): the same "Basic -> Advanced (Skilled) only"
+-- school accepts a Basic-level citizen and targets Skilled.
+-- ===========================================================================
+select
+  public.enroll_citizen (
+    'ee700000-0000-0000-0000-000000000003'::uuid,
+    'ee900000-0000-0000-0000-000000000009'::uuid
+  );
+
+select
+  is (
+    (
+      select
+        target_level_id
+      from
+        public.education_enrollments
+      where
+        citizen_id = 'ee900000-0000-0000-0000-000000000009'
+    ),
+    'ee800000-0000-0000-0000-000000000002'::uuid,
+    'a Basic-level citizen enrolling at a Basic -> Advanced-only school targets Skilled'
   );
 
 -- ===========================================================================
@@ -565,7 +683,7 @@ select
   throws_ok (
     $test$
     select public.enroll_citizen(
-      'ee700000-0000-0000-0000-000000000001'::uuid,
+      'ee700000-0000-0000-0000-000000000003'::uuid,
       'ee900000-0000-0000-0000-000000000008'::uuid
     )
   $test$,
@@ -652,12 +770,13 @@ reset role;
 
 -- ===========================================================================
 -- Enrolled citizens are excluded from set_bulk_standard_job_assignment's
--- unassigned-NPC picking pool. Already Skilled, Capacity Filler, and Null
--- Capacity Target are pre-assigned (current count = 3); Student One is
--- enrolled and Enlisted Soldier is a soldier (both excluded); the only
--- remaining eligible NPC is Available Worker. Raising to 5 (delta 2, only 1
--- eligible) must fail; raising to 4 (delta 1) must succeed and pick
--- Available Worker.
+-- unassigned-NPC picking pool. Already Skilled, Capacity Filler, and
+-- Uneducated At Advanced School are pre-assigned (current count = 3);
+-- Student One is enrolled and Enlisted Soldier is a soldier (both excluded);
+-- the only remaining eligible NPC is Available Worker (Basic Level Citizen
+-- is also enrolled by this point, further excluding it). Raising to 5
+-- (delta 2, only 1 eligible) must fail; raising to 4 (delta 1) must succeed
+-- and pick Available Worker.
 -- ===========================================================================
 set
   local role authenticated;

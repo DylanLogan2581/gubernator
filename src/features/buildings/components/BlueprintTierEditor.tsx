@@ -49,14 +49,9 @@ import {
   type CreateTierInput,
   type UpdateTierInput,
 } from "../schemas/buildingSchemas";
-import {
-  educationConfigToState,
-  tierCostsToState,
-  tierEffectsToState,
-} from "../utils/tierEditorUtils";
+import { tierCostsToState, tierEffectsToState } from "../utils/tierEditorUtils";
 import {
   formatTierCosts,
-  formatTierEducationConfig,
   formatTierEffects,
 } from "../utils/tierSummaryFormatting";
 
@@ -363,16 +358,11 @@ function TierRow({
           {tier.effectsJson.length > 0 ? (
             <div className="text-xs text-muted-foreground">
               Effects:{" "}
-              {formatTierEffects(tier.effectsJson, activeResources, activeJobs)}
-            </div>
-          ) : null}
-          {tier.educationConfigJson !== null ? (
-            <div className="text-xs text-muted-foreground">
-              School:{" "}
-              {formatTierEducationConfig(
-                tier.educationConfigJson,
-                activeEducationLevels,
+              {formatTierEffects(
+                tier.effectsJson,
+                activeResources,
                 activeJobs,
+                activeEducationLevels,
               )}
             </div>
           ) : null}
@@ -487,7 +477,6 @@ function CreateTierForm({
     const input: CreateTierInput = {
       blueprintId,
       constructionCostsJson: data.constructionCostsJson,
-      educationConfigJson: data.educationConfigJson,
       effectsJson: data.effectsJson,
       tierNumber: data.tierNumber,
       upkeepCostsJson: data.upkeepCostsJson,
@@ -512,11 +501,9 @@ function CreateTierForm({
           activeResources={activeResources}
           constructionCosts={form.constructionCosts}
           disabled={isPending}
-          educationConfig={form.educationConfig}
           effects={form.effects}
           fieldErrors={form.fieldErrors}
           onConstructionCostsChange={form.setConstructionCosts}
-          onEducationConfigChange={form.setEducationConfig}
           onEffectsChange={form.setEffects}
           onTierNumberChange={form.setTierNumber}
           onUpkeepCostsChange={form.setUpkeepCosts}
@@ -574,7 +561,6 @@ function EditTierForm({
     form.setConstructionCosts(tierCostsToState(tier.constructionCostsJson));
     form.setUpkeepCosts(tierCostsToState(tier.upkeepCostsJson));
     form.setEffects(tierEffectsToState(tier.effectsJson));
-    form.setEducationConfig(educationConfigToState(tier.educationConfigJson));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tier.id]);
 
@@ -592,7 +578,6 @@ function EditTierForm({
 
     const input: UpdateTierInput = {
       constructionCostsJson: data.constructionCostsJson ?? [],
-      educationConfigJson: data.educationConfigJson,
       effectsJson: data.effectsJson ?? [],
       tierId: tier.id,
       upkeepCostsJson: data.upkeepCostsJson ?? [],
@@ -625,11 +610,9 @@ function EditTierForm({
           activeResources={activeResources}
           constructionCosts={form.constructionCosts}
           disabled={updateMutation.isPending}
-          educationConfig={form.educationConfig}
           effects={form.effects}
           fieldErrors={form.fieldErrors}
           onConstructionCostsChange={form.setConstructionCosts}
-          onEducationConfigChange={form.setEducationConfig}
           onEffectsChange={form.setEffects}
           onTierNumberChange={form.setTierNumber}
           onUpkeepCostsChange={form.setUpkeepCosts}

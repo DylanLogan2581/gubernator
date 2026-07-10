@@ -24,7 +24,10 @@ export type TierEffect =
   | {
       readonly amount: number;
       readonly type: "population_cap_increase";
-    };
+    }
+  | ({
+      readonly type: "education";
+    } & TierEducationConfig);
 
 export type EffectTypeName = TierEffect["type"];
 
@@ -46,7 +49,6 @@ export type BuildingBlueprintTier = {
   readonly buildingBlueprintId: string;
   readonly constructionCostsJson: readonly TierCostEntry[];
   readonly createdAt: string;
-  readonly educationConfigJson: TierEducationConfig | null;
   readonly effectsJson: readonly TierEffect[];
   readonly id: string;
   readonly tierNumber: number;

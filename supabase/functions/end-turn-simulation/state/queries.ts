@@ -370,7 +370,7 @@ export function fetchBlueprints(
       is_trashed: "eq.false",
       order: "id.asc",
       select:
-        "id,name,grace_period_turns,max_instances_per_settlement,building_blueprint_tiers(id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,education_config_json)",
+        "id,name,grace_period_turns,max_instances_per_settlement,building_blueprint_tiers(id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json)",
     },
   });
 }

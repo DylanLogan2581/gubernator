@@ -128,7 +128,9 @@ function buildColumns({
       cell: ({ row }) => {
         const job = row.original;
         if (
-          (job.jobType !== "standard" && job.jobType !== "construction") ||
+          (job.jobType !== "standard" &&
+            job.jobType !== "construction" &&
+            job.jobType !== "teacher") ||
           job.baseCapacity === null
         ) {
           return <span className="text-sm text-muted-foreground">—</span>;

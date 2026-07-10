@@ -1,22 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState, type JSX } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { EducationLevel } from "@/features/education";
 import type { JobDefinition } from "@/features/jobs";
 import type { Resource } from "@/features/resources";
 
-import {
-  CostEditor,
-  EducationConfigEditor,
-  EffectsEditor,
-} from "./TierEditorFields";
-
-import type { EducationConfigRowState } from "../utils/tierEditorUtils";
+import { CostEditor, EffectsEditor } from "./TierEditorFields";
 
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000001";
 const JOB_ID = "00000000-0000-0000-0000-000000000002";
+const TEACHER_JOB_ID = "00000000-0000-0000-0000-000000000004";
 const LEVEL_ID = "00000000-0000-0000-0000-000000000003";
 
 const ACTIVE_RESOURCES = [
@@ -24,37 +18,13 @@ const ACTIVE_RESOURCES = [
 ] as unknown as Resource[];
 
 const ACTIVE_JOBS = [
-  { id: JOB_ID, name: "Farming" },
+  { id: JOB_ID, jobType: "standard", name: "Farming" },
+  { id: TEACHER_JOB_ID, jobType: "teacher", name: "Teacher" },
 ] as unknown as JobDefinition[];
 
 const ACTIVE_EDUCATION_LEVELS = [
   { id: LEVEL_ID, name: "Basic" },
 ] as unknown as EducationLevel[];
-
-const NOT_A_SCHOOL: EducationConfigRowState = {
-  isSchool: false,
-  studentCapacity: "",
-  studentsPerTeacher: "",
-  teacherJobId: "",
-  teachesUpToLevelId: "",
-  turnsPerLevel: "",
-};
-
-function EducationConfigEditorWrapper(): JSX.Element {
-  const [config, setConfig] = useState<EducationConfigRowState>({
-    ...NOT_A_SCHOOL,
-    isSchool: true,
-  });
-  return (
-    <EducationConfigEditor
-      activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
-      activeJobs={ACTIVE_JOBS}
-      config={config}
-      disabled={false}
-      onChange={setConfig}
-    />
-  );
-}
 
 // Simulate a non-secure context by removing crypto.randomUUID before each test
 // and restoring it after. This exercises the getRandomValues fallback path.
@@ -106,6 +76,7 @@ describe("EffectsEditor — Add effect button in non-secure context", () => {
 
     render(
       <EffectsEditor
+        activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
         activeJobs={[...ACTIVE_JOBS]}
         activeResources={[...ACTIVE_RESOURCES]}
         disabled={false}
@@ -127,67 +98,74 @@ describe("EffectsEditor — Add effect button in non-secure context", () => {
   });
 });
 
-describe("EducationConfigEditor", () => {
-  it("hides the five school fields when isSchool is false", () => {
+describe("EffectsEditor — education effect fields", () => {
+  it("shows only teacher-type jobs in the teacher job select", () => {
+    const rows: Parameters<typeof EffectsEditor>[0]["rows"] = [
+      {
+        amount: "",
+        effectType: "education",
+        id: "row-1",
+        jobId: "",
+        levels: [],
+        resourceId: "",
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: "",
+      },
+    ];
+
     render(
-      <EducationConfigEditor
+      <EffectsEditor
         activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
-        activeJobs={ACTIVE_JOBS}
-        config={NOT_A_SCHOOL}
+        activeJobs={[...ACTIVE_JOBS]}
+        activeResources={[...ACTIVE_RESOURCES]}
         disabled={false}
+        rows={rows}
         onChange={() => {}}
       />,
     );
 
     expect(
-      screen.queryByLabelText("Teaches up to level"),
+      screen.queryByRole("option", { name: "Farming" }),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Teacher" })).toBeInTheDocument();
   });
 
-  it("toggling the switch on notifies onChange with isSchool true", async () => {
+  it("adds a level transition row when Add transition is clicked", async () => {
     const user = userEvent.setup();
-    let captured: EducationConfigRowState = NOT_A_SCHOOL;
+    const rows: Parameters<typeof EffectsEditor>[0]["rows"] = [
+      {
+        amount: "",
+        effectType: "education",
+        id: "row-1",
+        jobId: "",
+        levels: [],
+        resourceId: "",
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: "",
+      },
+    ];
+    let captured: typeof rows = rows;
 
     render(
-      <EducationConfigEditor
+      <EffectsEditor
         activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
-        activeJobs={ACTIVE_JOBS}
-        config={NOT_A_SCHOOL}
+        activeJobs={[...ACTIVE_JOBS]}
+        activeResources={[...ACTIVE_RESOURCES]}
         disabled={false}
-        onChange={(c) => {
-          captured = c;
+        rows={rows}
+        onChange={(r) => {
+          captured = r;
         }}
       />,
     );
 
-    await user.click(
-      screen.getByRole("switch", { name: "This tier is a school" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Add transition" }));
 
-    expect(captured.isSchool).toBe(true);
-  });
-
-  it("reveals and wires the five school fields when isSchool is true", async () => {
-    const user = userEvent.setup();
-
-    render(<EducationConfigEditorWrapper />);
-
-    await user.selectOptions(
-      screen.getByLabelText("Teaches up to level"),
-      LEVEL_ID,
-    );
-    expect(
-      screen.getByLabelText<HTMLSelectElement>("Teaches up to level").value,
-    ).toBe(LEVEL_ID);
-
-    await user.selectOptions(screen.getByLabelText("Teacher job"), JOB_ID);
-    expect(screen.getByLabelText<HTMLSelectElement>("Teacher job").value).toBe(
-      JOB_ID,
-    );
-
-    await user.type(screen.getByLabelText("Student capacity"), "20");
-    expect(
-      screen.getByLabelText<HTMLInputElement>("Student capacity").value,
-    ).toBe("20");
+    expect(captured[0].levels).toHaveLength(1);
+    expect(captured[0].levels[0].fromLevelId).toBe("");
+    expect(captured[0].levels[0].toLevelId).toBe("");
+    expect(captured[0].levels[0].turns).toBe("");
   });
 });

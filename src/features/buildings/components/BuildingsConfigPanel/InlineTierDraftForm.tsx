@@ -45,7 +45,6 @@ export default function InlineTierDraftForm({
 
     onAdd({
       constructionCostsJson: data.constructionCostsJson,
-      educationConfigJson: data.educationConfigJson,
       effectsJson: data.effectsJson,
       id: generateLocalId(),
       tierNumber: data.tierNumber,
@@ -68,11 +67,9 @@ export default function InlineTierDraftForm({
           activeResources={activeResources}
           constructionCosts={form.constructionCosts}
           disabled={disabled}
-          educationConfig={form.educationConfig}
           effects={form.effects}
           fieldErrors={form.fieldErrors}
           onConstructionCostsChange={form.setConstructionCosts}
-          onEducationConfigChange={form.setEducationConfig}
           onEffectsChange={form.setEffects}
           onTierNumberChange={(value) => {
             form.setTierNumber(value);

@@ -47,6 +47,21 @@ export const tierCostEntrySchema = z.strictObject({
   resourceId: resourceIdSchema,
 });
 
+const educationLevelIdSchema = z.guid("Select an education level.");
+const turnsSchema = z.int().min(1, "Turns must be at least 1.");
+const teacherCapacitySchema = z
+  .int()
+  .min(1, "Teacher capacity must be at least 1.");
+const studentsPerTeacherSchema = z
+  .int()
+  .min(1, "Students per teacher must be at least 1.");
+
+export const tierEducationLevelTransitionSchema = z.strictObject({
+  fromLevelId: educationLevelIdSchema.nullable(),
+  toLevelId: educationLevelIdSchema,
+  turns: turnsSchema,
+});
+
 export const tierEffectSchema = z.discriminatedUnion("type", [
   z.strictObject({
     amount: effectAmountSchema,
@@ -67,29 +82,19 @@ export const tierEffectSchema = z.discriminatedUnion("type", [
     amount: effectAmountSchema,
     type: z.literal("population_cap_increase"),
   }),
+  z.strictObject({
+    levels: z
+      .array(tierEducationLevelTransitionSchema)
+      .min(1, "At least one level transition is required."),
+    studentsPerTeacher: studentsPerTeacherSchema,
+    teacherCapacity: teacherCapacitySchema,
+    teacherJobId: jobIdSchema,
+    type: z.literal("education"),
+  }),
 ]);
 
 const tierCostArraySchema = z.array(tierCostEntrySchema);
 const tierEffectArraySchema = z.array(tierEffectSchema);
-
-const educationLevelIdSchema = z.guid("Select an education level.");
-const studentCapacitySchema = z
-  .int()
-  .min(1, "Student capacity must be at least 1.");
-const turnsPerLevelSchema = z
-  .int()
-  .min(1, "Turns per level must be at least 1.");
-const studentsPerTeacherSchema = z
-  .int()
-  .min(1, "Students per teacher must be at least 1.");
-
-export const tierEducationConfigSchema = z.strictObject({
-  studentCapacity: studentCapacitySchema,
-  studentsPerTeacher: studentsPerTeacherSchema,
-  teacherJobId: jobIdSchema,
-  teachesUpToLevelId: educationLevelIdSchema,
-  turnsPerLevel: turnsPerLevelSchema,
-});
 
 const blueprintIconSchema = z
   .string()
@@ -153,7 +158,6 @@ export const hardDeleteBlueprintInputSchema = z.strictObject({
 export const createTierInputSchema = z.strictObject({
   blueprintId: blueprintIdSchema,
   constructionCostsJson: tierCostArraySchema.optional(),
-  educationConfigJson: tierEducationConfigSchema.nullable().optional(),
   effectsJson: tierEffectArraySchema.optional(),
   tierNumber: tierNumberSchema,
   upkeepCostsJson: tierCostArraySchema.optional(),
@@ -163,7 +167,6 @@ export const createTierInputSchema = z.strictObject({
 export const updateTierInputSchema = z
   .strictObject({
     constructionCostsJson: tierCostArraySchema.optional(),
-    educationConfigJson: tierEducationConfigSchema.nullable().optional(),
     effectsJson: tierEffectArraySchema.optional(),
     tierId: tierIdSchema,
     upkeepCostsJson: tierCostArraySchema.optional(),
@@ -174,8 +177,7 @@ export const updateTierInputSchema = z
       value.workerTurnsRequired === undefined &&
       value.constructionCostsJson === undefined &&
       value.upkeepCostsJson === undefined &&
-      value.effectsJson === undefined &&
-      value.educationConfigJson === undefined
+      value.effectsJson === undefined
     ) {
       ctx.addIssue({
         code: "custom",
@@ -213,11 +215,11 @@ export type SoftDeleteBlueprintValues = z.output<
 >;
 export type TierCostEntryInput = z.input<typeof tierCostEntrySchema>;
 export type TierCostEntryValues = z.output<typeof tierCostEntrySchema>;
-export type TierEducationConfigInput = z.input<
-  typeof tierEducationConfigSchema
+export type TierEducationLevelTransitionInput = z.input<
+  typeof tierEducationLevelTransitionSchema
 >;
-export type TierEducationConfigValues = z.output<
-  typeof tierEducationConfigSchema
+export type TierEducationLevelTransitionValues = z.output<
+  typeof tierEducationLevelTransitionSchema
 >;
 export type TierEffectInput = z.input<typeof tierEffectSchema>;
 export type TierEffectValues = z.output<typeof tierEffectSchema>;

@@ -229,16 +229,25 @@ describe("BlueprintTierEditor", () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
+        jobRows: [createJobRow({ base_capacity: 5, job_type: "teacher" })],
         tierRows: [],
         tierInsertResult: {
           data: createTierRow({
-            education_config_json: {
-              student_capacity: 20,
-              students_per_teacher: 5,
-              teacher_job_id: JOB_ID,
-              teaches_up_to_level_id: EDUCATION_LEVEL_ID,
-              turns_per_level: 4,
-            },
+            effects_json: [
+              {
+                levels: [
+                  {
+                    from_level_id: null,
+                    to_level_id: EDUCATION_LEVEL_ID,
+                    turns: 4,
+                  },
+                ],
+                students_per_teacher: 5,
+                teacher_capacity: 2,
+                teacher_job_id: JOB_ID,
+                type: "education",
+              },
+            ],
           }),
           error: null,
         },
@@ -251,18 +260,19 @@ describe("BlueprintTierEditor", () => {
     await user.click(screen.getByRole("button", { name: "Add tier" }));
 
     await screen.findByRole("heading", { name: "New tier" });
-    await user.click(
-      screen.getByRole("switch", { name: "This tier is a school" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Add effect" }));
+    await user.selectOptions(screen.getByLabelText("Effect type"), "education");
 
+    await user.selectOptions(screen.getByLabelText("Teacher job"), JOB_ID);
+    await user.type(screen.getByLabelText("Teacher capacity"), "2");
+    await user.type(screen.getByLabelText("Students per teacher"), "5");
+
+    await user.click(screen.getByRole("button", { name: "Add transition" }));
     await user.selectOptions(
-      screen.getByLabelText("Teaches up to level"),
+      screen.getByLabelText("To level"),
       EDUCATION_LEVEL_ID,
     );
-    await user.type(screen.getByLabelText("Student capacity"), "20");
-    await user.type(screen.getByLabelText("Turns per level"), "4");
-    await user.selectOptions(screen.getByLabelText("Teacher job"), JOB_ID);
-    await user.type(screen.getByLabelText("Students per teacher"), "5");
+    await user.type(screen.getByLabelText("Turns"), "4");
 
     await user.click(screen.getByRole("button", { name: "Create" }));
 
@@ -272,10 +282,11 @@ describe("BlueprintTierEditor", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("rejects a partial education config (missing fields)", async () => {
+  it("rejects a partial education effect (missing fields)", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
+        jobRows: [createJobRow({ base_capacity: 5, job_type: "teacher" })],
         tierRows: [],
       }),
     );
@@ -286,34 +297,45 @@ describe("BlueprintTierEditor", () => {
     await user.click(screen.getByRole("button", { name: "Add tier" }));
 
     await screen.findByRole("heading", { name: "New tier" });
-    await user.click(
-      screen.getByRole("switch", { name: "This tier is a school" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Add effect" }));
+    await user.selectOptions(screen.getByLabelText("Effect type"), "education");
 
-    // Only fill one of the five required school fields.
-    await user.type(screen.getByLabelText("Student capacity"), "20");
+    // Only fill one of the required education fields — no transitions,
+    // no teacher job, no students-per-teacher.
+    await user.type(screen.getByLabelText("Teacher capacity"), "2");
 
     await user.click(screen.getByRole("button", { name: "Create" }));
 
+    await waitFor(() => {
+      expect(toastSuccess).not.toHaveBeenCalled();
+    });
     expect(
-      await screen.findByText(/Invalid input|required/i),
+      screen.getByRole("heading", { name: "New tier" }),
     ).toBeInTheDocument();
-    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("shows an existing tier's school config in the edit form", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
+        jobRows: [createJobRow({ base_capacity: 5, job_type: "teacher" })],
         tierRows: [
           createTierRow({
-            education_config_json: {
-              student_capacity: 20,
-              students_per_teacher: 5,
-              teacher_job_id: JOB_ID,
-              teaches_up_to_level_id: EDUCATION_LEVEL_ID,
-              turns_per_level: 4,
-            },
+            effects_json: [
+              {
+                levels: [
+                  {
+                    from_level_id: null,
+                    to_level_id: EDUCATION_LEVEL_ID,
+                    turns: 4,
+                  },
+                ],
+                students_per_teacher: 5,
+                teacher_capacity: 2,
+                teacher_job_id: JOB_ID,
+                type: "education",
+              },
+            ],
           }),
         ],
       }),
@@ -327,14 +349,11 @@ describe("BlueprintTierEditor", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
     expect(
-      await screen.findByRole("switch", { name: "This tier is a school" }),
-    ).toBeChecked();
+      await screen.findByLabelText<HTMLSelectElement>("Teacher job"),
+    ).toHaveValue(JOB_ID);
     expect(
-      screen.getByLabelText<HTMLSelectElement>("Teaches up to level").value,
-    ).toBe(EDUCATION_LEVEL_ID);
-    expect(
-      screen.getByLabelText<HTMLInputElement>("Student capacity").value,
-    ).toBe("20");
+      screen.getByLabelText<HTMLInputElement>("Teacher capacity").value,
+    ).toBe("2");
   });
 
   it("creates a tier with passive_resource_production effect (happy path)", async () => {
@@ -644,6 +663,17 @@ type TestEffectRow =
       readonly type: "job_capacity_increase";
     }
   | {
+      readonly levels: readonly {
+        readonly from_level_id: string | null;
+        readonly to_level_id: string;
+        readonly turns: number;
+      }[];
+      readonly students_per_teacher: number;
+      readonly teacher_capacity: number;
+      readonly teacher_job_id: string;
+      readonly type: "education";
+    }
+  | {
       readonly amount: number;
       readonly resource_id: string;
       readonly type: "passive_resource_production";
@@ -658,7 +688,6 @@ type TestTierRow = {
   readonly building_blueprint_id: string;
   readonly construction_costs_json: readonly TestCostRow[];
   readonly created_at: string;
-  readonly education_config_json?: unknown;
   readonly effects_json: readonly TestEffectRow[];
   readonly id: string;
   readonly tier_number: number;
@@ -733,7 +762,6 @@ function createTierRow(overrides: Partial<TestTierRow> = {}): TestTierRow {
     building_blueprint_id: BLUEPRINT_ID,
     construction_costs_json: [],
     created_at: "2026-01-01T00:00:00.000Z",
-    education_config_json: null,
     effects_json: [],
     id: TIER_ID,
     tier_number: 1,

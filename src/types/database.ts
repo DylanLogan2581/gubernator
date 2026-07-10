@@ -260,7 +260,6 @@ export type Database = {
           building_blueprint_id: string;
           construction_costs_json: Json;
           created_at: string;
-          education_config_json: Json | null;
           effects_json: Json;
           id: string;
           tier_number: number;
@@ -272,7 +271,6 @@ export type Database = {
           building_blueprint_id: string;
           construction_costs_json?: Json;
           created_at?: string;
-          education_config_json?: Json | null;
           effects_json?: Json;
           id?: string;
           tier_number: number;
@@ -284,7 +282,6 @@ export type Database = {
           building_blueprint_id?: string;
           construction_costs_json?: Json;
           created_at?: string;
-          education_config_json?: Json | null;
           effects_json?: Json;
           id?: string;
           tier_number?: number;

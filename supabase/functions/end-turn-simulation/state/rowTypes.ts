@@ -74,7 +74,6 @@ export type SupabaseTierRow = {
   readonly construction_costs_json: unknown;
   readonly upkeep_costs_json: unknown;
   readonly effects_json: unknown;
-  readonly education_config_json: unknown;
 };
 
 export type SupabaseBlueprintRow = {

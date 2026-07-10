@@ -157,7 +157,6 @@ function makeBuildingTier(): SimBuildingTier {
   return {
     buildingBlueprintId: "bp1",
     constructionCostsJson: [],
-    educationConfigJson: null,
     effectsJson: [
       {
         amount: 1,

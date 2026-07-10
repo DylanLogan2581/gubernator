@@ -38,6 +38,7 @@ import type { JobType } from "../../types/jobTypes";
 const JOB_TYPES: readonly { label: string; value: JobType }[] = [
   { label: "Standard", value: "standard" },
   { label: "Construction", value: "construction" },
+  { label: "Teacher", value: "teacher" },
   { label: "Deposit", value: "deposit" },
   { label: "Husbandry", value: "husbandry" },
   { label: "Culling", value: "culling" },
@@ -136,6 +137,18 @@ export function CreateJobForm({
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           icon,
           jobType: "construction",
+          name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
+          slug: derivedSlug,
+          worldId,
+        };
+        break;
+      case "teacher":
+        input = {
+          baseCapacity:
+            baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
+          icon,
+          jobType: "teacher",
           name,
           requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
@@ -291,7 +304,8 @@ export function CreateJobForm({
                 </Label>
 
                 {selectedType === "standard" ||
-                selectedType === "construction" ? (
+                selectedType === "construction" ||
+                selectedType === "teacher" ? (
                   <Label
                     htmlFor="create-job-basecapacity"
                     className="grid gap-1 text-sm"

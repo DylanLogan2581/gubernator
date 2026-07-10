@@ -167,7 +167,9 @@ export function EditJobForm({
 
     const updateInput: UpdateJobInput = {
       baseCapacity:
-        job.jobType === "standard" || job.jobType === "construction"
+        job.jobType === "standard" ||
+        job.jobType === "construction" ||
+        job.jobType === "teacher"
           ? baseCapacity !== ""
             ? parseInt(baseCapacity, 10)
             : undefined
@@ -307,7 +309,9 @@ export function EditJobForm({
               ) : null}
             </Label>
 
-            {job.jobType === "standard" || job.jobType === "construction" ? (
+            {job.jobType === "standard" ||
+            job.jobType === "construction" ||
+            job.jobType === "teacher" ? (
               <Label
                 htmlFor="edit-job-basecapacity"
                 className="grid gap-1 text-sm"

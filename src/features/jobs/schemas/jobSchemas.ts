@@ -69,6 +69,11 @@ export const createJobInputSchema = z.discriminatedUnion("jobType", [
     ...commonCreateFields,
   }),
   z.strictObject({
+    baseCapacity: baseCapacitySchema.nullish(),
+    jobType: z.literal("teacher"),
+    ...commonCreateFields,
+  }),
+  z.strictObject({
     jobType: z.literal("trader"),
     traderCapacityPerWorker: traderCapacityPerWorkerSchema.nullish(),
     ...commonCreateFields,

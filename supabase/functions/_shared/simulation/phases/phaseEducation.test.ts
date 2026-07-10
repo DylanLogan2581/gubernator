@@ -59,14 +59,18 @@ function makeTier(
   return {
     buildingBlueprintId: "bp1",
     constructionCostsJson: [],
-    educationConfigJson: {
-      studentCapacity: 10,
-      studentsPerTeacher: 5,
-      teacherJobId: "teacher-job",
-      teachesUpToLevelId: "skilled",
-      turnsPerLevel: 3,
-    },
-    effectsJson: [],
+    effectsJson: [
+      {
+        levels: [
+          { fromLevelId: null, toLevelId: "basic", turns: 3 },
+          { fromLevelId: "basic", toLevelId: "skilled", turns: 3 },
+        ],
+        studentsPerTeacher: 5,
+        teacherCapacity: 2,
+        teacherJobId: "teacher-job",
+        type: "education",
+      },
+    ],
     tierNumber: 1,
     upkeepCostsJson: [],
     workerTurnsRequired: 0,
@@ -227,13 +231,15 @@ describe("phaseEducation — graduation and unenroll", () => {
       buildingBlueprints: [makeBlueprint({ id: "bp1" })],
       buildingTiers: [
         makeTier({
-          educationConfigJson: {
-            studentCapacity: 10,
-            studentsPerTeacher: 5,
-            teacherJobId: "teacher-job",
-            teachesUpToLevelId: "basic",
-            turnsPerLevel: 3,
-          },
+          effectsJson: [
+            {
+              levels: [{ fromLevelId: null, toLevelId: "basic", turns: 3 }],
+              studentsPerTeacher: 5,
+              teacherCapacity: 2,
+              teacherJobId: "teacher-job",
+              type: "education",
+            },
+          ],
           id: "tier1",
         }),
       ],

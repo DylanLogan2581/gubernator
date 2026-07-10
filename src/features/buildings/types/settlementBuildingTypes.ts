@@ -103,6 +103,8 @@ export function computeEffectsDigest(
           resourceId: effect.resourceId,
         });
         break;
+      case "education":
+        break;
     }
   }
 

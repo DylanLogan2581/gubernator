@@ -218,28 +218,20 @@ describe("validateBlueprintTierReferencesAgainstWorld", () => {
     expect(fields.filter((f) => f === "effectsJson")).toHaveLength(2);
   });
 
-  it("returns no issues for a valid educationConfigJson", () => {
+  it("returns no issues for a valid education effect", () => {
     const issues = validateBlueprintTierReferencesAgainstWorld(
       {
-        educationConfigJson: {
-          teacherJobId: JOB_A,
-          teachesUpToLevelId: LEVEL_A,
-        },
+        effectsJson: [
+          {
+            levels: [{ fromLevelId: null, toLevelId: LEVEL_A }],
+            teacherJobId: JOB_A,
+            type: "education",
+          },
+        ],
       },
       [],
       [{ id: JOB_A }],
       [{ id: LEVEL_A }],
-    );
-
-    expect(issues).toHaveLength(0);
-  });
-
-  it("returns no issues when educationConfigJson is null", () => {
-    const issues = validateBlueprintTierReferencesAgainstWorld(
-      { educationConfigJson: null },
-      [],
-      [],
-      [],
     );
 
     expect(issues).toHaveLength(0);
@@ -248,10 +240,13 @@ describe("validateBlueprintTierReferencesAgainstWorld", () => {
   it("returns an issue for an unknown teacherJobId", () => {
     const issues = validateBlueprintTierReferencesAgainstWorld(
       {
-        educationConfigJson: {
-          teacherJobId: JOB_A,
-          teachesUpToLevelId: LEVEL_A,
-        },
+        effectsJson: [
+          {
+            levels: [{ fromLevelId: null, toLevelId: LEVEL_A }],
+            teacherJobId: JOB_A,
+            type: "education",
+          },
+        ],
       },
       [],
       [],
@@ -259,17 +254,20 @@ describe("validateBlueprintTierReferencesAgainstWorld", () => {
     );
 
     expect(issues).toHaveLength(1);
-    expect(issues[0].field).toBe("educationConfigJson");
+    expect(issues[0].field).toBe("effectsJson");
     expect(issues[0].message).toContain(JOB_A);
   });
 
-  it("returns an issue for an unknown teachesUpToLevelId", () => {
+  it("returns an issue for an unknown toLevelId", () => {
     const issues = validateBlueprintTierReferencesAgainstWorld(
       {
-        educationConfigJson: {
-          teacherJobId: JOB_A,
-          teachesUpToLevelId: LEVEL_A,
-        },
+        effectsJson: [
+          {
+            levels: [{ fromLevelId: null, toLevelId: LEVEL_A }],
+            teacherJobId: JOB_A,
+            type: "education",
+          },
+        ],
       },
       [],
       [{ id: JOB_A }],
@@ -277,8 +275,28 @@ describe("validateBlueprintTierReferencesAgainstWorld", () => {
     );
 
     expect(issues).toHaveLength(1);
-    expect(issues[0].field).toBe("educationConfigJson");
+    expect(issues[0].field).toBe("effectsJson");
     expect(issues[0].message).toContain(LEVEL_A);
+  });
+
+  it("returns an issue for an unknown non-null fromLevelId", () => {
+    const issues = validateBlueprintTierReferencesAgainstWorld(
+      {
+        effectsJson: [
+          {
+            levels: [{ fromLevelId: LEVEL_A, toLevelId: LEVEL_A }],
+            teacherJobId: JOB_A,
+            type: "education",
+          },
+        ],
+      },
+      [],
+      [{ id: JOB_A }],
+      [],
+    );
+
+    expect(issues.length).toBeGreaterThanOrEqual(1);
+    expect(issues.every((i) => i.field === "effectsJson")).toBe(true);
   });
 
   it("uses activeResources for both cost and effect resource checks", () => {

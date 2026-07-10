@@ -85,9 +85,10 @@ export function EnrollCitizenDialog({
     );
   } else {
     const levels = levelsQuery.data ?? [];
-    const rankById = new Map(levels.map((l) => [l.id, l.rank]));
     const nameById = new Map(levels.map((l) => [l.id, l.name]));
-    const teachesUpToRank = rankById.get(educationConfig.teachesUpToLevelId);
+    const offeredFromLevelIds = new Set(
+      educationConfig.levels.map((l) => l.fromLevelId),
+    );
     const enrolledIds = new Set(enrolledIdsQuery.data ?? []);
 
     type EligibilityReason = "eligible" | "enrolled-elsewhere" | "at-max-level";
@@ -99,11 +100,7 @@ export function EnrollCitizenDialog({
     }): EligibilityReason | "dead" {
       if (citizen.status !== "alive") return "dead";
       if (enrolledIds.has(citizen.id)) return "enrolled-elsewhere";
-      const currentRank =
-        citizen.educationLevelId !== null
-          ? (rankById.get(citizen.educationLevelId) ?? 0)
-          : 0;
-      if (teachesUpToRank === undefined || currentRank >= teachesUpToRank) {
+      if (!offeredFromLevelIds.has(citizen.educationLevelId)) {
         return "at-max-level";
       }
       return "eligible";

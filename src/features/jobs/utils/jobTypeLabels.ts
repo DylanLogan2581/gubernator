@@ -6,5 +6,6 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   deposit: "Deposit",
   husbandry: "Husbandry",
   standard: "Standard",
+  teacher: "Teacher",
   trader: "Trader",
 };

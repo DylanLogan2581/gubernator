@@ -12,10 +12,19 @@ import type {
   EnrollmentProgressUpdate,
   SimCitizen,
   SimEducationEnrollment,
+  SimTierEffect,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
 } from "../simulationTypes.ts";
+
+type EducationEffect = Extract<SimTierEffect, { type: "education" }>;
+
+function findEducationEffect(
+  effects: readonly SimTierEffect[],
+): EducationEffect | undefined {
+  return effects.find((e): e is EducationEffect => e.type === "education");
+}
 
 export type PhaseEducationOutput = {
   readonly logs: readonly SimulationLogEntry[];
@@ -119,8 +128,8 @@ export function phaseEducation(
     .filter((b) => {
       const tier = tierById.get(b.currentTierId);
       return (
-        tier?.educationConfigJson !== null &&
-        tier?.educationConfigJson !== undefined &&
+        tier !== undefined &&
+        findEducationEffect(tier.effectsJson) !== undefined &&
         (enrollmentsByBuilding.get(b.id)?.length ?? 0) > 0
       );
     })
@@ -129,8 +138,8 @@ export function phaseEducation(
 
   for (const building of schoolsSorted) {
     const tier = tierById.get(building.currentTierId);
-    const config = tier?.educationConfigJson;
-    if (config === null || config === undefined) continue;
+    const config = tier !== undefined ? findEducationEffect(tier.effectsJson) : undefined;
+    if (config === undefined) continue;
 
     const enrollments = enrollmentsByBuilding.get(building.id) ?? [];
     if (enrollments.length === 0) continue;
@@ -172,16 +181,20 @@ export function phaseEducation(
       actualTeachers++;
     }
 
-    if (actualTeachers < requiredTeachers) {
+    // teacherCapacity bounds the building's own teacher slots, independent
+    // of the job's global settlement capacity.
+    const effectiveTeachers = Math.min(actualTeachers, config.teacherCapacity);
+
+    if (effectiveTeachers < requiredTeachers) {
       logs.push({
         category: "education.understaffed",
         payload: {
-          message: `School understaffed: ${actualTeachers} teacher${
-            actualTeachers === 1 ? "" : "s"
+          message: `School understaffed: ${effectiveTeachers} teacher${
+            effectiveTeachers === 1 ? "" : "s"
           } for ${students} student${students === 1 ? "" : "s"}.`,
           settlementBuildingId: building.id,
           studentCount: students,
-          teacherCount: actualTeachers,
+          teacherCount: effectiveTeachers,
         },
         phase: "education",
         settlementId: sid,
@@ -189,12 +202,22 @@ export function phaseEducation(
       continue;
     }
 
-    const teachesUpToLevel = levelById.get(config.teachesUpToLevelId);
-
     for (const enrollment of enrollments) {
+      const citizen = citizenById.get(enrollment.citizenId);
+      const transition = config.levels.find(
+        (l) =>
+          l.fromLevelId === (citizen?.educationLevelId ?? null) &&
+          l.toLevelId === enrollment.targetLevelId,
+      );
+      // Should always be found given enroll_citizen only ever targets a
+      // level reachable by an explicit transition from the citizen's
+      // current level; defensively treat a missing transition as never
+      // completing rather than crashing the turn.
+      if (transition === undefined) continue;
+
       const newProgress = enrollment.progressTurns + 1;
 
-      if (newProgress < config.turnsPerLevel) {
+      if (newProgress < transition.turns) {
         enrollmentProgressUpdates.push({
           enrollmentId: enrollment.id,
           progressTurns: newProgress,
@@ -211,23 +234,13 @@ export function phaseEducation(
 
       const reachedLevel = levelById.get(enrollment.targetLevelId);
 
-      // Find the next level above the one just reached, if the school
-      // teaches that high. Mirrors enroll_citizen's "order by rank asc
-      // limit 1" target-picking pattern.
-      let nextLevel: { id: string; rank: number } | undefined;
-      if (
-        reachedLevel !== undefined &&
-        teachesUpToLevel !== undefined &&
-        teachesUpToLevel.rank > reachedLevel.rank
-      ) {
-        const candidates = educationLevels
-          .filter((l) => l.worldId === reachedLevel.worldId && l.rank > reachedLevel.rank)
-          .sort((a, b) => a.rank - b.rank);
-        const candidate = candidates[0];
-        if (candidate !== undefined && candidate.rank <= teachesUpToLevel.rank) {
-          nextLevel = candidate;
-        }
-      }
+      // Find the next explicit transition offered from the level just
+      // reached, if any.
+      const nextTransition = config.levels.find(
+        (l) => l.fromLevelId === enrollment.targetLevelId,
+      );
+      const nextLevel =
+        nextTransition !== undefined ? levelById.get(nextTransition.toLevelId) : undefined;
 
       if (nextLevel !== undefined) {
         enrollmentProgressUpdates.push({

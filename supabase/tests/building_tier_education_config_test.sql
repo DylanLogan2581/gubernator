@@ -1,72 +1,280 @@
--- pgTAP tests for education_config_json object-type CHECK on
--- building_blueprint_tiers (#1101).
--- Full shape/referential validation lives in app code; the DB only rejects
--- non-object values here.
+-- pgTAP tests for the 'education' effects_json entry validation on
+-- building_blueprint_tiers (#1170).
+-- education_config_json and its object-type CHECK are gone; education is
+-- now a tagged entry inside the generic effects_json array, validated by
+-- public.is_valid_tier_effects_array via the
+-- building_blueprint_tiers_validate_json BEFORE trigger
+-- (public.validate_building_tier_json), which raises errcode P0001 on any
+-- shape/referential violation.
 -- Run with: npx supabase test db
 begin;
 
 select
-  plan (3);
+  plan (7);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
+--   bec1xxxx = worlds            bec2xxxx = education_levels
+--   bec3xxxx = job_definitions   bec4xxxx = building_blueprints
 -- ---------------------------------------------------------------------------
 insert into
   public.worlds (id, name, visibility, status)
 values
   (
-    'd2000000-0000-0000-0000-000000000001',
+    'bec10000-0000-0000-0000-000000000001',
     'BTEC World',
     'private',
     'active'
   );
 
 insert into
+  public.education_levels (id, world_id, name, rank)
+values
+  (
+    'bec20000-0000-0000-0000-000000000001',
+    'bec10000-0000-0000-0000-000000000001',
+    'Basic',
+    1
+  ),
+  (
+    'bec20000-0000-0000-0000-000000000002',
+    'bec10000-0000-0000-0000-000000000001',
+    'Advanced',
+    2
+  );
+
+insert into
+  public.job_definitions (
+    id,
+    world_id,
+    name,
+    slug,
+    job_type,
+    base_capacity,
+    is_trashed
+  )
+values
+  (
+    'bec30000-0000-0000-0000-000000000001',
+    'bec10000-0000-0000-0000-000000000001',
+    'BTEC Teacher',
+    'btc-teacher',
+    'teacher',
+    5,
+    false
+  ),
+  (
+    'bec30000-0000-0000-0000-000000000002',
+    'bec10000-0000-0000-0000-000000000001',
+    'BTEC Farmer',
+    'btc-farmer',
+    'standard',
+    5,
+    false
+  );
+
+insert into
   public.building_blueprints (id, world_id, name, slug)
 values
   (
-    'd5000000-0000-0000-0000-000000000001',
-    'd2000000-0000-0000-0000-000000000001',
+    'bec40000-0000-0000-0000-000000000001',
+    'bec10000-0000-0000-0000-000000000001',
     'Schoolhouse',
-    'schoolhouse'
+    'btc-schoolhouse'
   );
 
 -- ===========================================================================
--- EDUCATION_CONFIG_JSON — object-type validation
+-- effects_json 'education' entry — shape and referential validation
 -- ===========================================================================
 select
   lives_ok (
     $test$
-    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, education_config_json)
-    values ('d5000000-0000-0000-0000-000000000001', 1, null)
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
+    values ('bec40000-0000-0000-0000-000000000001', 1, '[]'::jsonb)
     $test$,
-    'education_config_json null is accepted (not a school)'
+    'empty effects_json is accepted (not a school)'
   );
 
 select
   lives_ok (
     $test$
-    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, education_config_json)
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
     values (
-      'd5000000-0000-0000-0000-000000000001', 2,
-      '{"teaches_up_to_level_id": "00000000-0000-0000-0000-000000000000", "student_capacity": 10, "turns_per_level": 4, "teacher_job_id": "00000000-0000-0000-0000-000000000000", "students_per_teacher": 5}'
+      'bec40000-0000-0000-0000-000000000001', 2,
+      jsonb_build_array(
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_job_id', 'bec30000-0000-0000-0000-000000000001',
+          'teacher_capacity', 2,
+          'students_per_teacher', 5,
+          'levels', jsonb_build_array(
+            jsonb_build_object(
+              'from_level_id', null,
+              'to_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'turns', 4
+            ),
+            jsonb_build_object(
+              'from_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'to_level_id', 'bec20000-0000-0000-0000-000000000002',
+              'turns', 4
+            )
+          )
+        )
+      )
     )
     $test$,
-    'education_config_json object is accepted'
+    'a valid education entry with a null -> Basic -> Advanced level chain is accepted'
   );
 
 select
   throws_ok (
     $test$
-    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, education_config_json)
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
     values (
-      'd5000000-0000-0000-0000-000000000001', 3,
-      '[1, 2, 3]'
+      'bec40000-0000-0000-0000-000000000001', 3,
+      jsonb_build_array(
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_capacity', 2,
+          'students_per_teacher', 5,
+          'levels', jsonb_build_array(
+            jsonb_build_object(
+              'from_level_id', null,
+              'to_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'turns', 4
+            )
+          )
+        )
+      )
     )
     $test$,
-    '23514',
+    'P0001',
     null,
-    'education_config_json that is not an object is rejected'
+    'an education entry missing teacher_job_id is rejected'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
+    values (
+      'bec40000-0000-0000-0000-000000000001', 4,
+      jsonb_build_array(
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_job_id', 'bec30000-0000-0000-0000-000000000001',
+          'teacher_capacity', 2,
+          'students_per_teacher', 5,
+          'levels', '[]'::jsonb
+        )
+      )
+    )
+    $test$,
+    'P0001',
+    null,
+    'an education entry with an empty levels array is rejected'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
+    values (
+      'bec40000-0000-0000-0000-000000000001', 5,
+      jsonb_build_array(
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_job_id', 'bec30000-0000-0000-0000-000000000002',
+          'teacher_capacity', 2,
+          'students_per_teacher', 5,
+          'levels', jsonb_build_array(
+            jsonb_build_object(
+              'from_level_id', null,
+              'to_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'turns', 4
+            )
+          )
+        )
+      )
+    )
+    $test$,
+    'P0001',
+    null,
+    'a teacher_job_id pointing at a non-teacher job is rejected'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
+    values (
+      'bec40000-0000-0000-0000-000000000001', 6,
+      jsonb_build_array(
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_job_id', 'bec30000-0000-0000-0000-000000000001',
+          'teacher_capacity', 2,
+          'students_per_teacher', 5,
+          'levels', jsonb_build_array(
+            jsonb_build_object(
+              'from_level_id', null,
+              'to_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'turns', 4
+            ),
+            jsonb_build_object(
+              'from_level_id', null,
+              'to_level_id', 'bec20000-0000-0000-0000-000000000002',
+              'turns', 4
+            )
+          )
+        )
+      )
+    )
+    $test$,
+    'P0001',
+    null,
+    'a duplicate from_level_id within levels is rejected'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.building_blueprint_tiers (building_blueprint_id, tier_number, effects_json)
+    values (
+      'bec40000-0000-0000-0000-000000000001', 7,
+      jsonb_build_array(
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_job_id', 'bec30000-0000-0000-0000-000000000001',
+          'teacher_capacity', 2,
+          'students_per_teacher', 5,
+          'levels', jsonb_build_array(
+            jsonb_build_object(
+              'from_level_id', null,
+              'to_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'turns', 4
+            )
+          )
+        ),
+        jsonb_build_object(
+          'type', 'education',
+          'teacher_job_id', 'bec30000-0000-0000-0000-000000000001',
+          'teacher_capacity', 1,
+          'students_per_teacher', 5,
+          'levels', jsonb_build_array(
+            jsonb_build_object(
+              'from_level_id', 'bec20000-0000-0000-0000-000000000001',
+              'to_level_id', 'bec20000-0000-0000-0000-000000000002',
+              'turns', 4
+            )
+          )
+        )
+      )
+    )
+    $test$,
+    'P0001',
+    null,
+    'more than one education entry in the same effects_json array is rejected'
   );
 
 select

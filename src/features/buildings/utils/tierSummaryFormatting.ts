@@ -36,6 +36,7 @@ export function formatTierEffects(
   effects: readonly TierEffect[],
   resources: readonly Resource[],
   jobs: readonly JobDefinition[],
+  educationLevels: readonly EducationLevel[] = [],
 ): string {
   return effects
     .map((e) => {
@@ -48,6 +49,8 @@ export function formatTierEffects(
           return `+${e.amount} ${resolveResourceName(e.resourceId, resources)} storage`;
         case "population_cap_increase":
           return `+${e.amount} pop cap`;
+        case "education":
+          return `School: ${formatTierEducationConfig(e, educationLevels, jobs)}`;
       }
     })
     .join(", ");
@@ -58,10 +61,17 @@ export function formatTierEducationConfig(
   levels: readonly EducationLevel[],
   jobs: readonly JobDefinition[],
 ): string {
-  const levelName = resolveEducationLevelName(
-    config.teachesUpToLevelId,
-    levels,
-  );
+  const transitions = config.levels
+    .map((l) => {
+      const fromName =
+        l.fromLevelId === null
+          ? "None"
+          : resolveEducationLevelName(l.fromLevelId, levels);
+      const toName = resolveEducationLevelName(l.toLevelId, levels);
+      return `${fromName}→${toName} (${l.turns}t)`;
+    })
+    .join(", ");
   const teacherName = resolveJobName(config.teacherJobId, jobs);
-  return `up to ${levelName}, ${config.studentCapacity} students, ${config.turnsPerLevel} turns/level, ${teacherName} (${config.studentsPerTeacher} students/teacher)`;
+  const capacity = config.teacherCapacity * config.studentsPerTeacher;
+  return `${transitions}; ${teacherName} × ${config.teacherCapacity} (${capacity} students max)`;
 }

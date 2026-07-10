@@ -71,7 +71,8 @@ export function SchoolEducationSection({
 
   const enrollments = enrollmentsQuery.data;
   const students = enrollments.length;
-  const capacity = educationConfig.studentCapacity;
+  const capacity =
+    educationConfig.teacherCapacity * educationConfig.studentsPerTeacher;
   const requiredTeachers =
     educationConfig.studentsPerTeacher > 0
       ? Math.ceil(students / educationConfig.studentsPerTeacher)
@@ -127,14 +128,16 @@ export function SchoolEducationSection({
       ) : (
         <ul className="grid gap-2">
           {enrollments.map((enrollment) => {
+            const transitionTurns =
+              educationConfig.levels.find(
+                (l) => l.toLevelId === enrollment.targetLevelId,
+              )?.turns ?? 0;
             const progressPct =
-              educationConfig.turnsPerLevel > 0
+              transitionTurns > 0
                 ? Math.min(
                     100,
                     Math.round(
-                      (enrollment.progressTurns /
-                        educationConfig.turnsPerLevel) *
-                        100,
+                      (enrollment.progressTurns / transitionTurns) * 100,
                     ),
                   )
                 : 0;

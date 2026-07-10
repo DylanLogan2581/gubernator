@@ -7,17 +7,14 @@ import type { Resource } from "@/features/resources";
 import {
   createTierInputSchema,
   type TierCostEntryInput,
-  type TierEducationConfigInput,
   type TierEffectInput,
 } from "../schemas/buildingSchemas";
 import {
   buildCostInputs,
-  buildEducationConfigInput,
   buildEffectInputs,
   extractFieldErrors,
   extractRefErrors,
   type CostRowState,
-  type EducationConfigRowState,
   type EffectRowState,
   type TierFormErrors,
 } from "../utils/tierEditorUtils";
@@ -29,7 +26,6 @@ export type TierDraftFormState = {
   constructionCosts: CostRowState[];
   upkeepCosts: CostRowState[];
   effects: EffectRowState[];
-  educationConfig: EducationConfigRowState;
 };
 
 export type TierDraftFormData = {
@@ -38,7 +34,6 @@ export type TierDraftFormData = {
   constructionCostsJson?: TierCostEntryInput[];
   upkeepCostsJson?: TierCostEntryInput[];
   effectsJson?: TierEffectInput[];
-  educationConfigJson: TierEducationConfigInput | null;
 };
 
 export function useTierDraftForm(): {
@@ -52,8 +47,6 @@ export function useTierDraftForm(): {
   setUpkeepCosts: (rows: CostRowState[]) => void;
   effects: EffectRowState[];
   setEffects: (rows: EffectRowState[]) => void;
-  educationConfig: EducationConfigRowState;
-  setEducationConfig: (config: EducationConfigRowState) => void;
   fieldErrors: TierFormErrors;
   setFieldErrors: (errors: TierFormErrors) => void;
   validate: (
@@ -69,15 +62,6 @@ export function useTierDraftForm(): {
   );
   const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>([]);
   const [effects, setEffects] = useState<EffectRowState[]>([]);
-  const [educationConfig, setEducationConfig] =
-    useState<EducationConfigRowState>({
-      isSchool: false,
-      studentCapacity: "",
-      studentsPerTeacher: "",
-      teacherJobId: "",
-      teachesUpToLevelId: "",
-      turnsPerLevel: "",
-    });
   const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
 
   function validate(
@@ -90,12 +74,10 @@ export function useTierDraftForm(): {
     const constructionCostInputs = buildCostInputs(constructionCosts);
     const upkeepCostInputs = buildCostInputs(upkeepCosts);
     const effectInputs = buildEffectInputs(effects);
-    const educationConfigInput = buildEducationConfigInput(educationConfig);
 
     const draftInput = {
       constructionCostsJson:
         constructionCostInputs.length > 0 ? constructionCostInputs : undefined,
-      educationConfigJson: educationConfigInput,
       effectsJson: effectInputs.length > 0 ? effectInputs : undefined,
       tierNumber: tierNumber !== "" ? parseInt(tierNumber, 10) : 0,
       upkeepCostsJson:
@@ -115,7 +97,6 @@ export function useTierDraftForm(): {
     const refIssues = validateBlueprintTierReferencesAgainstWorld(
       {
         constructionCostsJson: constructionCostInputs,
-        educationConfigJson: educationConfigInput,
         effectsJson: effectInputs,
         upkeepCostsJson: upkeepCostInputs,
       },
@@ -130,7 +111,6 @@ export function useTierDraftForm(): {
 
     return {
       constructionCostsJson: parseResult.data.constructionCostsJson,
-      educationConfigJson: parseResult.data.educationConfigJson ?? null,
       effectsJson: parseResult.data.effectsJson,
       tierNumber: parseResult.data.tierNumber,
       upkeepCostsJson: parseResult.data.upkeepCostsJson,
@@ -149,8 +129,6 @@ export function useTierDraftForm(): {
     setUpkeepCosts,
     effects,
     setEffects,
-    educationConfig,
-    setEducationConfig,
     fieldErrors,
     setFieldErrors,
     validate,

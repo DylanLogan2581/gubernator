@@ -30,7 +30,6 @@ function makeBuildingTier(
   return {
     buildingBlueprintId: "blueprint-1",
     constructionCostsJson: [{ amount: 1, resourceId: "wood" }],
-    educationConfigJson: null,
     effectsJson: [],
     id: "tier-1",
     tierNumber: 1,

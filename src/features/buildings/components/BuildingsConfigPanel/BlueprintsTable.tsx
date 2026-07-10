@@ -33,7 +33,6 @@ import {
 import { tiersByBlueprintQueryOptions } from "../../queries/buildingsQueries";
 import {
   formatTierCosts,
-  formatTierEducationConfig,
   formatTierEffects,
 } from "../../utils/tierSummaryFormatting";
 
@@ -275,7 +274,6 @@ function TierSubRows({
               <TableHead scope="col">Construction cost</TableHead>
               <TableHead scope="col">Upkeep</TableHead>
               <TableHead scope="col">Effects</TableHead>
-              <TableHead scope="col">School</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -306,15 +304,7 @@ function TierSubRows({
                           tier.effectsJson,
                           activeResources,
                           activeJobs,
-                        )
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {tier.educationConfigJson !== null
-                      ? formatTierEducationConfig(
-                          tier.educationConfigJson,
                           activeEducationLevels,
-                          activeJobs,
                         )
                       : "—"}
                   </TableCell>

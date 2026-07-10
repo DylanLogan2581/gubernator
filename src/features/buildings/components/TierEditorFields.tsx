@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Switch } from "@/components/ui/switch";
 import { type EducationLevel } from "@/features/education";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
@@ -15,11 +14,12 @@ import { generateLocalId } from "@/lib/uid";
 import type { EffectTypeName } from "../types/buildingTypes";
 import type {
   CostRowState,
-  EducationConfigRowState,
+  EducationLevelTransitionRowState,
   EffectRowState,
 } from "../utils/tierEditorUtils";
 
 const EFFECT_TYPE_LABELS: Record<EffectTypeName, string> = {
+  education: "Education",
   job_capacity_increase: "Job capacity increase",
   passive_resource_production: "Passive resource production",
   population_cap_increase: "Population cap increase",
@@ -121,6 +121,7 @@ export function CostEditor({
 }
 
 export function EffectsEditor({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   disabled,
@@ -128,6 +129,7 @@ export function EffectsEditor({
   rows,
   onChange,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly disabled: boolean;
@@ -143,7 +145,11 @@ export function EffectsEditor({
         effectType: "",
         id: generateLocalId(),
         jobId: "",
+        levels: [],
         resourceId: "",
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: "",
       },
     ]);
   }
@@ -297,6 +303,18 @@ export function EffectsEditor({
                   />
                 </div>
               ) : null}
+
+              {row.effectType === "education" ? (
+                <EducationEffectFields
+                  activeEducationLevels={activeEducationLevels}
+                  activeJobs={activeJobs}
+                  disabled={disabled}
+                  row={row}
+                  onChange={(patch) => {
+                    updateRow(row.id, patch);
+                  }}
+                />
+              ) : null}
             </div>
             <Button
               type="button"
@@ -331,129 +349,181 @@ export function EffectsEditor({
   );
 }
 
-export function EducationConfigEditor({
+function EducationEffectFields({
   activeEducationLevels,
   activeJobs,
-  config,
   disabled,
-  error,
+  row,
   onChange,
 }: {
   readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
-  readonly config: EducationConfigRowState;
   readonly disabled: boolean;
-  readonly error?: string;
-  readonly onChange: (config: EducationConfigRowState) => void;
+  readonly row: EffectRowState;
+  readonly onChange: (patch: Partial<EffectRowState>) => void;
 }): JSX.Element {
-  function update(patch: Partial<EducationConfigRowState>): void {
-    onChange({ ...config, ...patch });
+  const teacherJobs = activeJobs.filter((j) => j.jobType === "teacher");
+
+  function addLevel(): void {
+    onChange({
+      levels: [
+        ...row.levels,
+        { fromLevelId: "", id: generateLocalId(), toLevelId: "", turns: "" },
+      ],
+    });
+  }
+
+  function removeLevel(id: string): void {
+    onChange({ levels: row.levels.filter((l) => l.id !== id) });
+  }
+
+  function updateLevel(
+    id: string,
+    patch: Partial<EducationLevelTransitionRowState>,
+  ): void {
+    onChange({
+      levels: row.levels.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+    });
   }
 
   return (
-    <fieldset className="grid gap-2">
-      <legend className="text-sm text-muted-foreground">Education</legend>
-      <div className="flex items-center gap-2">
-        <Switch
-          id="tier-is-school"
-          checked={config.isSchool}
+    <>
+      <div className="grid gap-1">
+        <Label htmlFor={`effect-teacher-job-${row.id}`}>Teacher job</Label>
+        <NativeSelect
+          id={`effect-teacher-job-${row.id}`}
+          aria-label="Teacher job"
+          className="w-full"
           disabled={disabled}
-          onCheckedChange={(isSchool) => {
-            update({ isSchool });
+          value={row.teacherJobId}
+          onChange={(e) => {
+            onChange({ teacherJobId: e.currentTarget.value });
+          }}
+        >
+          <option value="">Select job</option>
+          {sortByName(teacherJobs).map((j) => (
+            <option key={j.id} value={j.id}>
+              {j.name}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+      <div className="grid gap-1">
+        <Label htmlFor={`effect-teacher-capacity-${row.id}`}>
+          Teacher capacity
+        </Label>
+        <Input
+          id={`effect-teacher-capacity-${row.id}`}
+          disabled={disabled}
+          inputMode="numeric"
+          placeholder="0"
+          value={row.teacherCapacity}
+          onChange={(e) => {
+            onChange({ teacherCapacity: e.currentTarget.value });
           }}
         />
-        <Label htmlFor="tier-is-school">This tier is a school</Label>
       </div>
-      {config.isSchool ? (
-        <div className="grid gap-2 rounded-md border border-border p-3">
-          <div className="grid gap-1">
-            <Label htmlFor="tier-teaches-up-to-level">
-              Teaches up to level
+      <div className="grid gap-1">
+        <Label htmlFor={`effect-students-per-teacher-${row.id}`}>
+          Students per teacher
+        </Label>
+        <Input
+          id={`effect-students-per-teacher-${row.id}`}
+          disabled={disabled}
+          inputMode="numeric"
+          placeholder="0"
+          value={row.studentsPerTeacher}
+          onChange={(e) => {
+            onChange({ studentsPerTeacher: e.currentTarget.value });
+          }}
+        />
+      </div>
+      <fieldset className="grid gap-2">
+        <legend className="text-sm text-muted-foreground">
+          Level transitions
+        </legend>
+        {row.levels.map((level) => (
+          <div key={level.id} className="flex items-center gap-2">
+            <Label className="sr-only" htmlFor={`level-from-${level.id}`}>
+              From level
             </Label>
             <NativeSelect
-              id="tier-teaches-up-to-level"
-              aria-label="Teaches up to level"
+              id={`level-from-${level.id}`}
+              aria-label="From level"
               className="w-full"
               disabled={disabled}
-              value={config.teachesUpToLevelId}
+              value={level.fromLevelId}
               onChange={(e) => {
-                update({ teachesUpToLevelId: e.currentTarget.value });
+                updateLevel(level.id, { fromLevelId: e.currentTarget.value });
+              }}
+            >
+              <option value="">No education</option>
+              {activeEducationLevels.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </NativeSelect>
+            <Label className="sr-only" htmlFor={`level-to-${level.id}`}>
+              To level
+            </Label>
+            <NativeSelect
+              id={`level-to-${level.id}`}
+              aria-label="To level"
+              className="w-full"
+              disabled={disabled}
+              value={level.toLevelId}
+              onChange={(e) => {
+                updateLevel(level.id, { toLevelId: e.currentTarget.value });
               }}
             >
               <option value="">Select level</option>
-              {activeEducationLevels.map((level) => (
-                <option key={level.id} value={level.id}>
-                  {level.name}
+              {activeEducationLevels.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
                 </option>
               ))}
             </NativeSelect>
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="tier-student-capacity">Student capacity</Label>
-            <Input
-              id="tier-student-capacity"
-              disabled={disabled}
-              inputMode="numeric"
-              placeholder="0"
-              value={config.studentCapacity}
-              onChange={(e) => {
-                update({ studentCapacity: e.currentTarget.value });
-              }}
-            />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="tier-turns-per-level">Turns per level</Label>
-            <Input
-              id="tier-turns-per-level"
-              disabled={disabled}
-              inputMode="numeric"
-              placeholder="0"
-              value={config.turnsPerLevel}
-              onChange={(e) => {
-                update({ turnsPerLevel: e.currentTarget.value });
-              }}
-            />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="tier-teacher-job">Teacher job</Label>
-            <NativeSelect
-              id="tier-teacher-job"
-              aria-label="Teacher job"
-              className="w-full"
-              disabled={disabled}
-              value={config.teacherJobId}
-              onChange={(e) => {
-                update({ teacherJobId: e.currentTarget.value });
-              }}
-            >
-              <option value="">Select job</option>
-              {sortByName(activeJobs).map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="tier-students-per-teacher">
-              Students per teacher
+            <Label className="sr-only" htmlFor={`level-turns-${level.id}`}>
+              Turns
             </Label>
             <Input
-              id="tier-students-per-teacher"
+              id={`level-turns-${level.id}`}
+              aria-label="Turns"
+              className="w-20 shrink-0"
               disabled={disabled}
               inputMode="numeric"
               placeholder="0"
-              value={config.studentsPerTeacher}
+              value={level.turns}
               onChange={(e) => {
-                update({ studentsPerTeacher: e.currentTarget.value });
+                updateLevel(level.id, { turns: e.currentTarget.value });
               }}
             />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={() => {
+                removeLevel(level.id);
+              }}
+            >
+              Remove
+            </Button>
           </div>
-        </div>
-      ) : null}
-      {error !== undefined ? (
-        <p className="text-xs text-destructive">{error}</p>
-      ) : null}
-    </fieldset>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-fit"
+          disabled={disabled}
+          onClick={addLevel}
+        >
+          <Plus aria-hidden="true" />
+          Add transition
+        </Button>
+      </fieldset>
+    </>
   );
 }

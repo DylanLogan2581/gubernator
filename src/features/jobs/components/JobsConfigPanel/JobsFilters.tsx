@@ -19,6 +19,7 @@ import type { JobType } from "../../types/jobTypes";
 const JOB_TYPES: readonly JobType[] = [
   "standard",
   "construction",
+  "teacher",
   "deposit",
   "husbandry",
   "culling",
