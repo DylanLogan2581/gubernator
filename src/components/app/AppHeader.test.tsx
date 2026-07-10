@@ -67,56 +67,80 @@ describe("AppHeader", () => {
     window.localStorage.clear();
   });
 
-  it("renders the sidebar trigger", () => {
+  it("renders the sidebar trigger for a signed-in viewer", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader();
     expect(
-      screen.getByRole("button", { name: /toggle sidebar/i }),
+      await screen.findByRole("button", { name: /toggle sidebar/i }),
     ).toBeDefined();
   });
 
-  it("renders the notification bell", () => {
+  it("renders the notification bell for a signed-in viewer", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader();
     expect(
-      screen.getByRole("button", { name: /notifications/i }),
+      await screen.findByRole("button", { name: /notifications/i }),
     ).toBeDefined();
   });
 
   it("opens the command palette when the search button is clicked", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     const onOpenCommandPalette = vi.fn();
     renderAppHeader(<AppHeader onOpenCommandPalette={onOpenCommandPalette} />);
 
-    await user.click(screen.getByRole("button", { name: /search/i }));
+    await user.click(await screen.findByRole("button", { name: /search/i }));
 
     expect(onOpenCommandPalette).toHaveBeenCalledOnce();
   });
 
-  it("shows search button text and the ⌘K hint", () => {
+  it("shows search button text and the ⌘K hint", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader();
 
-    const searchButton = screen.getByRole("button", { name: /search/i });
+    const searchButton = await screen.findByRole("button", {
+      name: /search/i,
+    });
     expect(searchButton.textContent).toContain("Search");
     expect(searchButton.textContent).toContain("K");
   });
 
-  it("does not render a brand label — logo/product name lives in the sidebar only", () => {
+  it("does not render a brand label for a signed-in viewer — logo/product name lives in the sidebar only", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: { user: { id: "user-1" } } }).client,
+    );
+    renderAppHeader();
+    await screen.findByRole("button", { name: /toggle sidebar/i });
+    expect(screen.queryByText("Gubernator")).toBeNull();
+  });
+
+  it("hides the sidebar trigger, command palette trigger, and notification bell for a signed-out viewer", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ session: null }).client,
     );
     renderAppHeader();
-    expect(screen.queryByText("Gubernator")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /toggle sidebar/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /search/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /notifications/i })).toBeNull();
+  });
+
+  it("shows a minimal brand + sign-in state for a signed-out viewer", () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: null }).client,
+    );
+    renderAppHeader(<AppHeader action={<a href="/sign-in">Sign in</a>} />);
+    expect(screen.getByText("Gubernator")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Sign in" })).toBeDefined();
   });
 
   it("shows the unread notification badge when a user has unread rows", async () => {
@@ -162,14 +186,14 @@ describe("AppHeader", () => {
     ).toBeDefined();
   });
 
-  it("renders the header action (user menu) at the far right, after notifications", () => {
+  it("renders the header action (user menu) at the far right, after notifications", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader(<AppHeader action={<a href="/worlds">Worlds</a>} />);
 
     const worldsLink = screen.getByRole("link", { name: "Worlds" });
-    const notificationsButton = screen.getByRole("button", {
+    const notificationsButton = await screen.findByRole("button", {
       name: /notifications/i,
     });
 
