@@ -110,8 +110,11 @@ export type SendEmailResult = {
   readonly renderedHtml?: string;
 };
 
-export type SmtpStatus = {
-  readonly host: string;
-  readonly senderName: string;
-  readonly adminEmail: string;
-};
+export type SmtpStatus =
+  | {
+      readonly configured: true;
+      readonly host: string;
+      readonly senderName: string;
+      readonly adminEmail: string;
+    }
+  | { readonly configured: false; readonly missing: readonly string[] };

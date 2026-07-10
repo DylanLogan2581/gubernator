@@ -162,16 +162,59 @@ describe("GET: SMTP status", () => {
     const response = await handleSendEmailRequest(request);
     const body = (await response.json()) as {
       ok: boolean;
-      data?: { host: string; senderName: string; adminEmail: string };
+      data?: {
+        configured: boolean;
+        host: string;
+        senderName: string;
+        adminEmail: string;
+      };
     };
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(body.data).toEqual({
       adminEmail: "noreply@gubernator.local",
+      configured: true,
       host: "inbucket",
       senderName: "Gubernator",
     });
+  });
+
+  it("returns 200 with configured: false and the missing var names when SMTP env vars are absent", async () => {
+    setupMockFetch({
+      "auth/v1/user": { body: { id: "user-123" }, status: 200 },
+      "rest/v1/rpc/is_super_admin": { body: true, status: 200 },
+    });
+    vi.stubGlobal("Deno", {
+      env: {
+        get: (key: string) =>
+          ({
+            SUPABASE_ANON_KEY,
+            SUPABASE_SERVICE_ROLE_KEY,
+            SUPABASE_URL,
+          })[key],
+      },
+    });
+
+    const request = new Request("https://edge.supabase.co/functions/v1/send-email", {
+      headers: { authorization: "Bearer valid-token" },
+      method: "GET",
+    });
+    const response = await handleSendEmailRequest(request);
+    const body = (await response.json()) as {
+      ok: boolean;
+      data?: { configured: boolean; missing: string[] };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.data?.configured).toBe(false);
+    expect(body.data?.missing).toEqual([
+      "SEND_EMAIL_SMTP_HOST",
+      "SEND_EMAIL_SMTP_PORT",
+      "SEND_EMAIL_SMTP_ADMIN_EMAIL",
+      "SEND_EMAIL_SMTP_SENDER_NAME",
+    ]);
   });
 
   it("returns 403 for a non-superadmin", async () => {

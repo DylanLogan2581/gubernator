@@ -284,12 +284,15 @@ async function handleSmtpStatusRequest(
 
   const smtpConfigResult = getSmtpConfig();
   if (!smtpConfigResult.ok) {
+    // Missing SMTP env vars is a valid, expected state (not yet configured),
+    // not a server error -- respond 200 so the client can render guidance
+    // instead of a generic load failure.
     return respond(
-      createErrorResponse({
-        code: "smtp_config_unavailable",
-        message: "SMTP configuration is unavailable.",
-      }),
-      500,
+      {
+        data: { configured: false, missing: smtpConfigResult.missing },
+        ok: true,
+      },
+      200,
     );
   }
 
@@ -297,6 +300,7 @@ async function handleSmtpStatusRequest(
     {
       data: {
         adminEmail: smtpConfigResult.value.adminEmail,
+        configured: true,
         host: smtpConfigResult.value.host,
         senderName: smtpConfigResult.value.senderName,
       },
@@ -405,7 +409,7 @@ type SmtpConfigResult =
       readonly senderName: string;
     };
   }
-  | { readonly ok: false };
+  | { readonly ok: false; readonly missing: readonly string[] };
 
 function getSmtpConfig(): SmtpConfigResult {
   const host = getRequiredRuntimeEnv("SEND_EMAIL_SMTP_HOST");
@@ -419,12 +423,17 @@ function getSmtpConfig(): SmtpConfigResult {
     host === undefined || portRaw === undefined || adminEmail === undefined ||
     senderName === undefined
   ) {
-    return { ok: false };
+    const missing: string[] = [];
+    if (host === undefined) missing.push("SEND_EMAIL_SMTP_HOST");
+    if (portRaw === undefined) missing.push("SEND_EMAIL_SMTP_PORT");
+    if (adminEmail === undefined) missing.push("SEND_EMAIL_SMTP_ADMIN_EMAIL");
+    if (senderName === undefined) missing.push("SEND_EMAIL_SMTP_SENDER_NAME");
+    return { missing, ok: false };
   }
 
   const port = Number.parseInt(portRaw, 10);
   if (!Number.isFinite(port)) {
-    return { ok: false };
+    return { missing: ["SEND_EMAIL_SMTP_PORT"], ok: false };
   }
 
   return { ok: true, value: { adminEmail, host, pass, port, senderName, user } };

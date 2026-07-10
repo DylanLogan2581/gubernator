@@ -72,11 +72,14 @@ export type EmailRecipient = {
   readonly email: string;
 };
 
-export type SendEmailStatusData = {
-  readonly host: string;
-  readonly senderName: string;
-  readonly adminEmail: string;
-};
+export type SendEmailStatusData =
+  | {
+    readonly configured: true;
+    readonly host: string;
+    readonly senderName: string;
+    readonly adminEmail: string;
+  }
+  | { readonly configured: false; readonly missing: readonly string[] };
 
 export type SendEmailStatusResponse =
   | SendEmailErrorResponse

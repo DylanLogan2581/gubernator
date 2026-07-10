@@ -93,7 +93,7 @@ export function SuperadminEmailPanel(): JSX.Element {
           />
         )}
 
-        {smtpStatusQuery.isSuccess && (
+        {smtpStatusQuery.isSuccess && smtpStatusQuery.data.configured && (
           <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
             <div>
               <dt className="text-muted-foreground">Host</dt>
@@ -110,12 +110,32 @@ export function SuperadminEmailPanel(): JSX.Element {
           </dl>
         )}
 
+        {smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured && (
+          <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+            <p className="font-medium">SMTP not configured</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Set the following environment variables to enable email delivery,
+              then redeploy the <code>send-email</code> edge function:
+            </p>
+            <ul className="mt-2 list-inside list-disc text-xs">
+              {smtpStatusQuery.data.missing.map((name) => (
+                <li key={name} className="font-mono">
+                  {name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <Button
           type="button"
           variant="outline"
           size="sm"
           className="mt-4"
-          disabled={testMutation.isPending}
+          disabled={
+            testMutation.isPending ||
+            (smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured)
+          }
           onClick={handleSendTest}
         >
           Send test email to me
