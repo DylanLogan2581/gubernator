@@ -1,4 +1,4 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { resourceCategoriesByWorldQueryOptions } from "@/features/resourceCategories";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -66,8 +68,15 @@ export function EditResourceForm({
   );
   const [decayRate, setDecayRate] = useState(String(resource.decayRate));
   const [icon, setIcon] = useState<string | null>(resource.icon);
+  const [categoryId, setCategoryId] = useState<string | null>(
+    resource.categoryId,
+  );
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof ResourceFieldErrors>();
+
+  const categoriesQuery = useQuery(
+    resourceCategoriesByWorldQueryOptions(worldId),
+  );
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
@@ -84,6 +93,7 @@ export function EditResourceForm({
 
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
+      categoryId,
       decayRate: decayRate !== "" ? decayRate : undefined,
       icon,
       name,
@@ -207,6 +217,25 @@ export function EditResourceForm({
                 value={icon}
                 onChange={setIcon}
               />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Category</span>
+              <NativeSelect
+                aria-label="Category"
+                disabled={isPending}
+                value={categoryId ?? ""}
+                onChange={(e) => {
+                  const next = e.currentTarget.value;
+                  setCategoryId(next === "" ? null : next);
+                }}
+              >
+                <option value="">Uncategorized</option>
+                {categoriesQuery.data?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </NativeSelect>
             </Label>
           </div>
           <DialogFooter className="sm:justify-between">

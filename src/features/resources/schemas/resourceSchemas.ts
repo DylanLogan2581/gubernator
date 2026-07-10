@@ -49,8 +49,14 @@ const resourceIconSchema = z
   .optional()
   .nullable();
 
+const resourceCategoryIdInputSchema = z
+  .guid("Select a resource category.")
+  .optional()
+  .nullable();
+
 export const createResourceInputSchema = z.strictObject({
   baseStockpileCap: baseStockpileCapSchema.optional(),
+  categoryId: resourceCategoryIdInputSchema,
   decayRate: decayRateSchema.optional(),
   icon: resourceIconSchema,
   name: resourceNameSchema,
@@ -61,6 +67,7 @@ export const createResourceInputSchema = z.strictObject({
 export const updateResourceInputSchema = z
   .strictObject({
     baseStockpileCap: baseStockpileCapSchema.optional(),
+    categoryId: resourceCategoryIdInputSchema,
     decayRate: decayRateSchema.optional(),
     icon: resourceIconSchema,
     name: resourceNameSchema.optional(),
@@ -74,12 +81,13 @@ export const updateResourceInputSchema = z
       value.slug === undefined &&
       value.baseStockpileCap === undefined &&
       value.decayRate === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.categoryId === undefined
     ) {
       ctx.addIssue({
         code: "custom",
         message:
-          "At least one of name, slug, baseStockpileCap, or decayRate must be provided.",
+          "At least one of name, slug, baseStockpileCap, decayRate, icon, or categoryId must be provided.",
         path: ["name"],
       });
     }

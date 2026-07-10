@@ -3403,9 +3403,51 @@ export type Database = {
           },
         ];
       };
+      resource_categories: {
+        Row: {
+          color: string;
+          created_at: string;
+          icon: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          color?: string;
+          created_at?: string;
+          icon?: string | null;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          color?: string;
+          created_at?: string;
+          icon?: string | null;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "resource_categories_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       resources: {
         Row: {
           base_stockpile_cap: number;
+          category_id: string | null;
           created_at: string;
           decay_rate: number;
           icon: string | null;
@@ -3420,6 +3462,7 @@ export type Database = {
         };
         Insert: {
           base_stockpile_cap?: number;
+          category_id?: string | null;
           created_at?: string;
           decay_rate?: number;
           icon?: string | null;
@@ -3434,6 +3477,7 @@ export type Database = {
         };
         Update: {
           base_stockpile_cap?: number;
+          category_id?: string | null;
           created_at?: string;
           decay_rate?: number;
           icon?: string | null;
@@ -3447,6 +3491,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "resources_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "resource_categories";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "resources_world_id_fkey";
             columns: ["world_id"];
@@ -7109,6 +7160,7 @@ export type Database = {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
           base_stockpile_cap: number;
+          category_id: string | null;
           created_at: string;
           decay_rate: number;
           icon: string | null;
@@ -7863,6 +7915,7 @@ export type Database = {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
           base_stockpile_cap: number;
+          category_id: string | null;
           created_at: string;
           decay_rate: number;
           icon: string | null;

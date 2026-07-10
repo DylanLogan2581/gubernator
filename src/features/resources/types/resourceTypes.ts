@@ -1,7 +1,16 @@
 import type { Json } from "@/types/database";
 
+export type ResourceCategoryRef = {
+  readonly color: string;
+  readonly icon: string | null;
+  readonly id: string;
+  readonly name: string;
+};
+
 export type Resource = {
   readonly baseStockpileCap: number;
+  readonly category: ResourceCategoryRef | null;
+  readonly categoryId: string | null;
   readonly createdAt: string;
   readonly decayRate: number;
   readonly icon: string | null;

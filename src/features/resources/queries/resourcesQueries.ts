@@ -70,10 +70,15 @@ export function resourceByIdQueryOptions(
   });
 }
 
+export type ResourcesSortBy = "name" | "category";
+
 export type ResourcesPageParams = {
+  readonly categoryId?: string | null;
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: ResourcesSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -122,6 +127,20 @@ async function getResourcesPage(
 
   if (search !== "") {
     query = query.ilike("name", `%${search}%`);
+  }
+
+  if (params.categoryId !== undefined && params.categoryId !== null) {
+    query = query.eq("category_id", params.categoryId);
+  }
+
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "category") {
+    query = query.order("name", {
+      ascending: sortAscending,
+      nullsFirst: sortAscending,
+      referencedTable: "resource_categories",
+    });
   }
 
   const { data, error, count } = await query

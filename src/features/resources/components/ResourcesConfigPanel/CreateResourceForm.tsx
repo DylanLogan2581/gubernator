@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { resourceCategoriesByWorldQueryOptions } from "@/features/resourceCategories";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -46,8 +49,13 @@ export function CreateResourceForm({
   const [baseStockpileCap, setBaseStockpileCap] = useState("");
   const [decayRate, setDecayRate] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateResourceFieldErrors>();
+
+  const categoriesQuery = useQuery(
+    resourceCategoriesByWorldQueryOptions(worldId),
+  );
 
   const derivedSlug = toSlug(name, {
     maxLength: resourceInputLimits.resourceSlugMax,
@@ -59,6 +67,7 @@ export function CreateResourceForm({
 
     const input: CreateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
+      categoryId,
       decayRate: decayRate !== "" ? decayRate : undefined,
       icon,
       name,
@@ -160,6 +169,25 @@ export function CreateResourceForm({
                 value={icon}
                 onChange={setIcon}
               />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Category</span>
+              <NativeSelect
+                aria-label="Category"
+                disabled={isPending}
+                value={categoryId ?? ""}
+                onChange={(e) => {
+                  const next = e.currentTarget.value;
+                  setCategoryId(next === "" ? null : next);
+                }}
+              >
+                <option value="">Uncategorized</option>
+                {categoriesQuery.data?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </NativeSelect>
             </Label>
           </div>
           <DialogFooter>

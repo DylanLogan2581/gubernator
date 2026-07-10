@@ -1,9 +1,17 @@
 import type { Json } from "@/types/database";
 
-import type { Resource } from "../types/resourceTypes";
+import type { Resource, ResourceCategoryRef } from "../types/resourceTypes";
+
+export type ResourceCategoryRefRow = {
+  readonly color: string;
+  readonly icon: string | null;
+  readonly id: string;
+  readonly name: string;
+};
 
 export type ResourceRow = {
   readonly base_stockpile_cap: number;
+  readonly category_id: string | null;
   readonly created_at: string;
   readonly decay_rate: number;
   readonly icon: string | null;
@@ -12,17 +20,32 @@ export type ResourceRow = {
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: Json;
   readonly name: string;
+  readonly resource_categories: ResourceCategoryRefRow | null;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
 };
 
 export const RESOURCE_SELECT =
-  "id,world_id,name,slug,icon,base_stockpile_cap,decay_rate,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at";
+  "id,world_id,name,slug,icon,base_stockpile_cap,decay_rate,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,resource_categories(id,name,icon,color)";
+
+function toResourceCategoryRef(
+  row: ResourceCategoryRefRow | null | undefined,
+): ResourceCategoryRef | null {
+  if (row === null || row === undefined) return null;
+  return {
+    color: row.color,
+    icon: row.icon,
+    id: row.id,
+    name: row.name,
+  };
+}
 
 export function toResource(row: ResourceRow): Resource {
   return {
     baseStockpileCap: row.base_stockpile_cap,
+    category: toResourceCategoryRef(row.resource_categories),
+    categoryId: row.category_id,
     createdAt: row.created_at,
     decayRate: row.decay_rate,
     icon: row.icon,

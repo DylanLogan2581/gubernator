@@ -37,6 +37,10 @@ export const resourceInputLimits = {
   resourceSlugMax: 64,
 } as const;
 
+export const resourceCategoryInputLimits = {
+  nameMax: 64,
+} as const;
+
 export const npcFlavorInputLimits = {
   poolSizeMax: 100,
   poolEntryMax: 200,

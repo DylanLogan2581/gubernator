@@ -385,6 +385,7 @@ function createQueryClient(): QueryClient {
 
 type TestResourceRow = {
   readonly base_stockpile_cap: number;
+  readonly category_id: string | null;
   readonly created_at: string;
   readonly decay_rate: number;
   readonly icon: string | null;
@@ -393,6 +394,7 @@ type TestResourceRow = {
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
+  readonly resource_categories: null;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -403,6 +405,7 @@ function createResourceRow(
 ): TestResourceRow {
   return {
     base_stockpile_cap: 0,
+    category_id: null,
     created_at: "2026-01-01T00:00:00.000Z",
     decay_rate: 0,
     icon: null,
@@ -411,6 +414,7 @@ function createResourceRow(
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Food",
+    resource_categories: null,
     slug: "food",
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,
@@ -450,12 +454,24 @@ function createClient({
           updateResult,
         );
       }
+      if (table === "resource_categories") {
+        return createEmptyResourceCategoriesQueryBuilder();
+      }
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn(() => ({
       maybeSingle: vi.fn().mockResolvedValue(rpcResult),
     })),
   };
+}
+
+function createEmptyResourceCategoriesQueryBuilder(): Record<string, unknown> {
+  const builder: Record<string, unknown> = {
+    eq: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+  };
+  return { select: vi.fn(() => builder) };
 }
 
 function createResourcesQueryBuilder(

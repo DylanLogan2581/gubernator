@@ -57,6 +57,7 @@ export type {
 export type {
   HardDeleteResourceResult,
   Resource,
+  ResourceCategoryRef,
   ResourceCleanupSummary,
   RestoreResourceResult,
   SoftDeleteResourceResult,
