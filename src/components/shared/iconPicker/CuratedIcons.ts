@@ -175,6 +175,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import {
+  bareGameIconName,
+  createGameIconComponent,
+  isGameIconName,
+} from "@/components/shared/iconPicker/GameIcons";
+
 /**
  * Curated set of game-relevant Lucide icons, keyed by a stable kebab-case
  * name (the value stored in each config entity's `icon` column). Lucide has
@@ -387,12 +393,16 @@ export function resolveEntityIcon(name: string | null | undefined): LucideIcon {
   if (name === null || name === undefined || name.length === 0) {
     return FALLBACK_ICON;
   }
+  if (isGameIconName(name)) {
+    return createGameIconComponent(bareGameIconName(name));
+  }
   return CURATED_ICONS[name] ?? FALLBACK_ICON;
 }
 
 /** Human-readable label for a curated icon name, e.g. "cup-soda" -> "Cup Soda". */
 export function formatIconLabel(name: string): string {
-  return name
+  const bareName = isGameIconName(name) ? bareGameIconName(name) : name;
+  return bareName
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
