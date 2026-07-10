@@ -355,6 +355,30 @@ describe("ResourcesConfigPanel", () => {
       expect(screen.getByText("Gold")).toBeDefined();
     });
   });
+
+  it("re-fetches with server-side order when a sortable column header is clicked", async () => {
+    const orderSpy = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        orderSpy,
+        resourceRows: [createResourceRow({ name: "Gold" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    orderSpy.mockClear();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Storage cap/ }));
+
+    await waitFor(() => {
+      expect(orderSpy).toHaveBeenCalledWith("base_stockpile_cap", {
+        ascending: true,
+      });
+    });
+  });
 });
 
 function renderPanel({
@@ -426,6 +450,7 @@ function createResourceRow(
 
 function createClient({
   insertResult = { data: createResourceRow(), error: null },
+  orderSpy,
   resourceRows,
   rpcResult = { data: null, error: null },
   updateResult = { data: createResourceRow(), error: null },
@@ -434,6 +459,7 @@ function createClient({
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
   };
+  readonly orderSpy?: (...args: unknown[]) => void;
   readonly resourceRows: readonly TestResourceRow[];
   readonly rpcResult?: {
     readonly data: { readonly id: string; readonly world_id: string } | null;
@@ -454,6 +480,7 @@ function createClient({
           resourceRows,
           insertResult,
           updateResult,
+          orderSpy,
         );
       }
       if (table === "resource_categories") {
@@ -486,6 +513,7 @@ function createResourcesQueryBuilder(
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
   },
+  orderSpy?: (...args: unknown[]) => void,
 ): unknown {
   // Emulates enough of the real filter/order/range/returns chain that the
   // panel's server-side search + pagination + trash filtering (#1032)
@@ -511,7 +539,10 @@ function createResourcesQueryBuilder(
         );
         return selectBuilder;
       }),
-      order: vi.fn(() => selectBuilder),
+      order: vi.fn((...args: unknown[]) => {
+        orderSpy?.(...args);
+        return selectBuilder;
+      }),
       range: vi.fn((start: number, end: number) => {
         range = [start, end];
         return selectBuilder;

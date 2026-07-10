@@ -67,7 +67,8 @@ function buildColumns({
   return [
     {
       id: "name",
-      enableSorting: false,
+      accessorFn: (row) => row.name,
+      enableSorting: true,
       header: "Name",
       cell: ({ row }) => {
         const resource = row.original;
@@ -88,6 +89,7 @@ function buildColumns({
     },
     {
       id: "category",
+      accessorFn: (row) => row.category?.name ?? "",
       enableSorting: true,
       header: "Category",
       cell: ({ row }) => {
@@ -112,9 +114,21 @@ function buildColumns({
       },
     },
     {
-      id: "stats",
-      enableSorting: false,
-      header: "Stats",
+      id: "cap",
+      accessorFn: (row) => row.baseStockpileCap,
+      enableSorting: true,
+      header: "Storage cap",
+      cell: ({ row }) => (
+        <span className="tabular-nums text-sm text-muted-foreground">
+          {row.original.baseStockpileCap.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "change",
+      accessorFn: (row) => row.changeAmount,
+      enableSorting: true,
+      header: "Growth / decay",
       cell: ({ row }) => {
         const resource = row.original;
         const changeText = buildChangePreviewText(
@@ -122,9 +136,7 @@ function buildColumns({
           resource.changeAmount,
         );
         return (
-          <span className="tabular-nums text-sm text-muted-foreground">
-            {`Cap ${resource.baseStockpileCap.toLocaleString()} · ${changeText}`}
-          </span>
+          <span className="text-sm text-muted-foreground">{changeText}</span>
         );
       },
     },

@@ -29,6 +29,15 @@ import type { SortingState } from "@tanstack/react-table";
 
 const PAGE_SIZE = 25;
 
+// Maps a DataTable column id to the resources page query's sort column (see
+// resourcesQueries.ts), mirroring the citizens directory table's pattern.
+const SORT_BY_ID: Record<string, ResourcesSortBy> = {
+  cap: "cap",
+  category: "category",
+  change: "change",
+  name: "name",
+};
+
 type ResourcesConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
@@ -55,7 +64,7 @@ export function ResourcesConfigPanel({
 
   const activeSort = sorting[0];
   const sortBy: ResourcesSortBy | undefined =
-    activeSort?.id === "category" ? "category" : undefined;
+    activeSort !== undefined ? SORT_BY_ID[activeSort.id] : undefined;
 
   const resourcesQuery = useQuery(
     resourcesPageQueryOptions(worldId, {
@@ -139,7 +148,7 @@ export function ResourcesConfigPanel({
       />
 
       {resourcesQuery.isPending ? (
-        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={4} rowCount={PAGE_SIZE} />
       ) : resourcesQuery.isError ? (
         <ErrorState
           title="Resources could not be loaded"

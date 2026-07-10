@@ -70,7 +70,7 @@ export function resourceByIdQueryOptions(
   });
 }
 
-export type ResourcesSortBy = "name" | "category";
+export type ResourcesSortBy = "name" | "category" | "cap" | "change";
 
 export type ResourcesPageParams = {
   readonly categoryId?: string | null;
@@ -136,15 +136,26 @@ async function getResourcesPage(
   const sortAscending = params.sortDirection !== "desc";
 
   if (params.sortBy === "category") {
-    query = query.order("name", {
-      ascending: sortAscending,
-      nullsFirst: sortAscending,
-      referencedTable: "resource_categories",
-    });
+    query = query
+      .order("name", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+        referencedTable: "resource_categories",
+      })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "cap") {
+    query = query
+      .order("base_stockpile_cap", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "change") {
+    query = query
+      .order("change_amount", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
   }
 
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<ResourceRow[]>();
