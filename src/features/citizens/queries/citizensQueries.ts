@@ -30,6 +30,9 @@ type CitizenDetailQueryKey = ReturnType<typeof citizensQueryKeys.detail>;
 type PlayerCharactersInNationQueryKey = ReturnType<
   typeof citizensQueryKeys.playerCharactersInNation
 >;
+type SettlementManagersInNationQueryKey = ReturnType<
+  typeof citizensQueryKeys.settlementManagersInNation
+>;
 type UnpairedAliveInWorldQueryKey = ReturnType<
   typeof citizensQueryKeys.unpairedAliveInWorld
 >;
@@ -82,6 +85,12 @@ type PlayerCharactersInNationQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly Citizen[],
   PlayerCharactersInNationQueryKey
+>;
+type SettlementManagersInNationQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  SettlementManagersInNationQueryKey
 >;
 type CitizenSettlementAggregateQueryOptions = UseQueryOptions<
   CitizenAggregateStats,
@@ -290,6 +299,21 @@ export function playerCharactersInNationQueryOptions(
   });
 }
 
+// Current settlement-manager holders for a nation (#1160): scoped by
+// settlement count, not citizen count, so it stays small even in a
+// ~1000-NPC world -- unlike the removed full-candidate-list fetch it
+// replaces alongside the searchable CitizenPicker.
+export function settlementManagersInNationQueryOptions(
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementManagersInNationQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getSettlementManagersInNation(client, nationId),
+    queryKey: citizensQueryKeys.settlementManagersInNation(nationId),
+  });
+}
+
 export function citizenAdminDetailsQueryOptions(
   citizenId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
@@ -480,6 +504,44 @@ async function getPlayerCharactersInNation(
     .or(
       "citizen_type.eq.player_character,and(citizen_type.eq.npc,status.eq.alive)",
     )
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toCitizen);
+}
+
+async function getSettlementManagersInNation(
+  client: GubernatorSupabaseClient,
+  nationId: string,
+): Promise<readonly Citizen[]> {
+  const { data: settlements, error: settlementsError } = await client
+    .from("settlements")
+    .select("id")
+    .eq("nation_id", nationId)
+    .returns<Array<{ readonly id: string }>>();
+
+  if (settlementsError !== null) {
+    throw normalizeSupabaseError(settlementsError);
+  }
+
+  const settlementIds = settlements.map(
+    (row: { readonly id: string }) => row.id,
+  );
+
+  if (settlementIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_SELECT)
+    .in("settlement_id", settlementIds)
+    .eq("role_type", "settlement_manager")
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .returns<CitizenRow[]>();

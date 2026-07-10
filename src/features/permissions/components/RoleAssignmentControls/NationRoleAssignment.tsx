@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { type JSX } from "react";
+import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
-import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   assignCitizenRoleMutationOptions,
+  citizenByIdQueryOptions,
+  CitizenPicker,
   managerScopeLabel,
-  playerCharactersInNationQueryOptions,
   revokeCitizenRoleMutationOptions,
+  settlementManagersInNationQueryOptions,
   type Citizen,
 } from "@/features/citizens";
 import type { Nation } from "@/features/nations";
@@ -51,65 +51,84 @@ function NationRoleAssignmentList({
   readonly isArchived: boolean;
   readonly nation: Nation;
 }): JSX.Element {
-  const playerCharactersQuery = useQuery(
-    playerCharactersInNationQueryOptions(nation.id),
+  const [selectedCitizenId, setSelectedCitizenId] = useState<string | null>(
+    null,
   );
 
-  if (playerCharactersQuery.isPending) {
-    return <LoadingState label="Loading citizens…" />;
+  const managersQuery = useQuery(
+    settlementManagersInNationQueryOptions(nation.id),
+  );
+  const selectedCitizenQuery = useQuery({
+    ...citizenByIdQueryOptions(selectedCitizenId ?? ""),
+    enabled: selectedCitizenId !== null,
+  });
+
+  if (managersQuery.isPending) {
+    return <LoadingState label="Loading settlement managers…" />;
   }
 
-  if (playerCharactersQuery.isError) {
+  if (managersQuery.isError) {
     return (
       <ErrorState
-        title="Citizens could not be loaded"
-        description={getErrorDescription(playerCharactersQuery.error)}
+        title="Settlement managers could not be loaded"
+        description={getErrorDescription(managersQuery.error)}
       />
     );
   }
 
-  const candidates = playerCharactersQuery.data.filter(
-    (citizen) => managerScopeLabel(citizen.roleType) !== "nation",
-  );
-
-  if (candidates.length === 0) {
-    return (
-      <EmptyState
-        title="No assignable citizens"
-        description="Citizens become assignable once created for one of this nation's settlements. Create one from a settlement's Citizens tab. Only alive NPCs and player characters are assignable."
-        action={
-          <Button asChild size="sm" variant="outline">
-            <Link
-              to="/worlds/$worldId/nations/$nationId/settlements"
-              params={{ worldId: nation.worldId, nationId: nation.id }}
-            >
-              View settlements
-            </Link>
-          </Button>
-        }
-      />
-    );
-  }
+  const managers = managersQuery.data;
+  const selectedCitizen = selectedCitizenQuery.data ?? null;
 
   return (
-    <ul className="grid gap-2" aria-label="Citizens">
-      {candidates.map((citizen) => (
-        <NationRoleAssignmentRow
-          key={citizen.id}
-          citizen={citizen}
-          isArchived={isArchived}
+    <div className="grid gap-3">
+      {managers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No settlement managers assigned yet.
+        </p>
+      ) : (
+        <ul className="grid gap-2" aria-label="Settlement managers">
+          {managers.map((citizen) => (
+            <NationRoleAssignmentRow
+              key={citizen.id}
+              citizen={citizen}
+              isArchived={isArchived}
+            />
+          ))}
+        </ul>
+      )}
+      <div className="grid gap-2 rounded-md border border-border bg-background p-3">
+        <span className="text-xs font-medium text-muted-foreground">
+          Assign a settlement manager
+        </span>
+        <CitizenPicker
+          citizenId={selectedCitizenId}
+          nationId={nation.id}
+          onChange={setSelectedCitizenId}
+          statusFilter="alive"
+          worldId={nation.worldId}
         />
-      ))}
-    </ul>
+        {selectedCitizen === null ? null : (
+          <ul className="grid gap-2" aria-label="Selected citizen">
+            <NationRoleAssignmentRow
+              citizen={selectedCitizen}
+              isArchived={isArchived}
+              onAssigned={() => setSelectedCitizenId(null)}
+            />
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
 function NationRoleAssignmentRow({
   citizen,
   isArchived,
+  onAssigned,
 }: {
   readonly citizen: Citizen;
   readonly isArchived: boolean;
+  readonly onAssigned?: () => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const assignMutation = useMutation(
@@ -123,6 +142,7 @@ function NationRoleAssignmentRow({
   const isPending = assignMutation.isPending || revokeMutation.isPending;
   const isSettlementManager =
     managerScopeLabel(citizen.roleType) === "settlement";
+  const isNationManager = managerScopeLabel(citizen.roleType) === "nation";
 
   function handleAssign(): void {
     if (settlementId === null) {
@@ -146,6 +166,7 @@ function NationRoleAssignmentRow({
           notifyMutationSuccess(
             `Assigned Settlement Manager to ${citizen.name}.`,
           );
+          onAssigned?.();
         },
       },
     );
@@ -181,11 +202,19 @@ function NationRoleAssignmentRow({
             </Badge>
           </span>
           <span className="text-xs text-muted-foreground">
-            {isSettlementManager ? "Settlement manager" : "No role"}
+            {isNationManager
+              ? "Nation manager"
+              : isSettlementManager
+                ? "Settlement manager"
+                : "No role"}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isSettlementManager ? (
+          {isNationManager ? (
+            <span className="text-xs text-muted-foreground">
+              Already a Nation Manager
+            </span>
+          ) : isSettlementManager ? (
             <Button
               type="button"
               variant="outline"

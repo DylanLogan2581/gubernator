@@ -301,18 +301,11 @@ describe("RoleAssignmentControls — nation variant", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("lists player characters in the nation whose role is none or settlement_manager", async () => {
+  it("lists the current settlement manager and hides a nation manager from that list", async () => {
     requireSupabaseClient.mockReturnValue(
       createSupabaseClient({
         nationSettlements: [{ id: SETTLEMENT_ID }],
         playerCharacters: [
-          createCitizenRow({
-            citizen_type: "player_character",
-            id: CITIZEN_ELIGIBLE_ID,
-            name: "Eligible",
-            role_type: "none",
-            settlement_id: SETTLEMENT_ID,
-          }),
           createCitizenRow({
             citizen_type: "player_character",
             id: CITIZEN_EXISTING_SM_ID,
@@ -343,13 +336,13 @@ describe("RoleAssignmentControls — nation variant", () => {
       />,
     );
 
-    expect(await screen.findByText("Eligible")).toBeDefined();
-    expect(screen.getByText("Existing SM")).toBeDefined();
-    // Nation manager is excluded from the list (only none / settlement_manager).
+    expect(await screen.findByText("Existing SM")).toBeDefined();
+    // Nation manager isn't a settlement_manager, so it's excluded from the
+    // small server-side "current managers" query -- no full candidate fetch.
     expect(screen.queryByText("Nation Mgr")).toBeNull();
   });
 
-  it("nation manager can assign Settlement Manager via assign_citizen_role", async () => {
+  it("nation manager can search for and assign a settlement manager via the citizen picker", async () => {
     const updatedRow = createCitizenRow({
       citizen_type: "player_character",
       id: CITIZEN_ELIGIBLE_ID,
@@ -362,6 +355,18 @@ describe("RoleAssignmentControls — nation variant", () => {
     });
     requireSupabaseClient.mockReturnValue(
       createSupabaseClient({
+        directoryRows: [
+          {
+            citizen_type: "player_character",
+            id: CITIZEN_ELIGIBLE_ID,
+            name: "Eligible",
+            nation_id: NATION_ID,
+            settlement_id: SETTLEMENT_ID,
+            settlement_name: "Riverside",
+            status: "alive",
+            world_id: WORLD_ID,
+          },
+        ],
         nationSettlements: [{ id: SETTLEMENT_ID }],
         playerCharacters: [
           createCitizenRow({
@@ -392,6 +397,14 @@ describe("RoleAssignmentControls — nation variant", () => {
     );
 
     const user = userEvent.setup();
+    expect(
+      await screen.findByText("No settlement managers assigned yet."),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("combobox"));
+    await user.type(screen.getByPlaceholderText("Search citizens…"), "elig");
+    await user.click(await screen.findByText("Eligible"));
+
     await user.click(
       await screen.findByRole("button", { name: "Assign Settlement Manager" }),
     );
@@ -511,7 +524,19 @@ type SettlementRow = {
   readonly updated_at: string;
 };
 
+type CitizenDirectoryRowFixture = {
+  readonly citizen_type: "npc" | "player_character";
+  readonly id: string;
+  readonly name: string;
+  readonly nation_id: string | null;
+  readonly settlement_id: string | null;
+  readonly settlement_name: string | null;
+  readonly status: "alive" | "dead";
+  readonly world_id: string;
+};
+
 type SupabaseFixtures = {
+  readonly directoryRows?: readonly CitizenDirectoryRowFixture[];
   readonly nationSettlements?: ReadonlyArray<{ readonly id: string }>;
   readonly playerCharacters?: readonly CitizenRowFixture[];
   readonly rpc?: ReturnType<typeof vi.fn>;
@@ -520,6 +545,7 @@ type SupabaseFixtures = {
 
 function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
   const {
+    directoryRows = [],
     nationSettlements = [],
     playerCharacters = [],
     rpc,
@@ -546,29 +572,78 @@ function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
       }),
       order: vi.fn(() => builder),
       returns: vi.fn(() => {
-        const filtered = playerCharacters.filter((row) => {
+        const filtered = filterCitizenRows();
+        return Promise.resolve({ data: filtered, error: null });
+      }),
+      maybeSingle: vi.fn(() => {
+        const filtered = filterCitizenRows();
+        return Promise.resolve({ data: filtered[0] ?? null, error: null });
+      }),
+    };
+
+    function filterCitizenRows(): CitizenRowFixture[] {
+      return playerCharacters.filter((row) => {
+        for (const [column, value] of Object.entries(filters)) {
+          if (row[column as keyof CitizenRowFixture] !== value) {
+            return false;
+          }
+        }
+        if (
+          inFilter !== null &&
+          !inFilter.values.includes(
+            row[inFilter.column as keyof CitizenRowFixture] as string,
+          )
+        ) {
+          return false;
+        }
+        if (orExpression !== null && !matchesOrExpression(orExpression, row)) {
+          return false;
+        }
+        return true;
+      });
+    }
+    return builder;
+  }
+
+  function citizenDirectoryBuilder(): unknown {
+    const filters: Record<string, unknown> = {};
+    let ilikeFilter: { column: string; pattern: string } | null = null;
+    let rangeVals: [number, number] | null = null;
+
+    const builder: Record<string, unknown> = {
+      eq: vi.fn((column: string, value: unknown) => {
+        filters[column] = value;
+        return builder;
+      }),
+      ilike: vi.fn((column: string, pattern: string) => {
+        ilikeFilter = { column, pattern };
+        return builder;
+      }),
+      order: vi.fn(() => builder),
+      range: vi.fn((start: number, end: number) => {
+        rangeVals = [start, end];
+        return builder;
+      }),
+      returns: vi.fn(() => {
+        let filtered = directoryRows.filter((row) => {
           for (const [column, value] of Object.entries(filters)) {
-            if (row[column as keyof CitizenRowFixture] !== value) {
+            if (row[column as keyof CitizenDirectoryRowFixture] !== value) {
               return false;
             }
           }
-          if (
-            inFilter !== null &&
-            !inFilter.values.includes(
-              row[inFilter.column as keyof CitizenRowFixture] as string,
-            )
-          ) {
-            return false;
-          }
-          if (
-            orExpression !== null &&
-            !matchesOrExpression(orExpression, row)
-          ) {
-            return false;
-          }
           return true;
         });
-        return Promise.resolve({ data: filtered, error: null });
+        if (ilikeFilter !== null) {
+          const needle = ilikeFilter.pattern.replace(/%/g, "").toLowerCase();
+          filtered = filtered.filter((row) =>
+            row.name.toLowerCase().includes(needle),
+          );
+        }
+        const count = filtered.length;
+        if (rangeVals !== null) {
+          filtered = filtered.slice(rangeVals[0], rangeVals[1] + 1);
+        }
+        return Promise.resolve({ data: filtered, error: null, count });
       }),
     };
     return builder;
@@ -661,6 +736,11 @@ function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
       if (table === "settlements") {
         return {
           select: vi.fn(() => settlementsBuilder()),
+        };
+      }
+      if (table === "citizen_directory_view") {
+        return {
+          select: vi.fn(() => citizenDirectoryBuilder()),
         };
       }
       throw new Error(`Unexpected table ${table}`);
