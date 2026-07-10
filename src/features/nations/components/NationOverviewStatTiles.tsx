@@ -1,26 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Handshake, Users, Zap } from "lucide-react";
+import { Building2, Coins, Users, Zap } from "lucide-react";
 
 import { StatTile } from "@/components/shared/StatTile";
 import { activeNationEventsQueryOptions } from "@/features/events";
 
-import { nationRelationshipsFromNationQueryOptions } from "../queries/nationRelationshipQueries";
+import { nationCurrencyQueryOptions } from "../queries/currencyQueries";
 import { nationSettlementsQueryOptions } from "../queries/nationsQueries";
+import { formatNationCurrencyType } from "../types/currencyTypes";
 
-import type { NationRelationshipStance } from "../types/nationRelationshipTypes";
 import type { JSX } from "react";
-
-const ACTIVE_STANCES = new Set<NationRelationshipStance>([
-  "friendly",
-  "hostile",
-  "at_war",
-  "allied",
-  "non_aggression_pact",
-]);
-const HOSTILE_STANCES = new Set<NationRelationshipStance>([
-  "hostile",
-  "at_war",
-]);
 
 type NationOverviewStatTilesProps = {
   readonly nationId: string;
@@ -37,9 +25,7 @@ export function NationOverviewStatTiles({
   worldId,
 }: NationOverviewStatTilesProps): JSX.Element {
   const settlementsQuery = useQuery(nationSettlementsQueryOptions(nationId));
-  const relationshipsQuery = useQuery(
-    nationRelationshipsFromNationQueryOptions(nationId),
-  );
+  const currencyQuery = useQuery(nationCurrencyQueryOptions(nationId));
   const activeEventsQuery = useQuery(
     activeNationEventsQueryOptions(worldId, nationId),
   );
@@ -50,13 +36,7 @@ export function NationOverviewStatTiles({
     0,
   );
 
-  const relationships = relationshipsQuery.data ?? [];
-  const activeRelationshipCount = relationships.filter((relationship) =>
-    ACTIVE_STANCES.has(relationship.currentStance),
-  ).length;
-  const hostileRelationshipCount = relationships.filter((relationship) =>
-    HOSTILE_STANCES.has(relationship.currentStance),
-  ).length;
+  const currency = currencyQuery.data ?? null;
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -75,16 +55,19 @@ export function NationOverviewStatTiles({
         isLoading={settlementsQuery.isPending}
       />
       <StatTile
-        icon={Handshake}
-        label="Relationships"
-        value={activeRelationshipCount}
-        context={
-          hostileRelationshipCount > 0
-            ? `${hostileRelationshipCount} hostile or at war`
-            : "Non-neutral stances"
+        icon={Coins}
+        label="Treasury"
+        value={
+          currency === null
+            ? "None"
+            : `${currency.symbol}${currency.moneySupply.toLocaleString()}`
         }
-        tone={hostileRelationshipCount > 0 ? "warning" : "default"}
-        isLoading={relationshipsQuery.isPending}
+        context={
+          currency === null
+            ? "No currency established"
+            : formatNationCurrencyType(currency.currencyType)
+        }
+        isLoading={currencyQuery.isPending}
       />
       <StatTile
         icon={Zap}

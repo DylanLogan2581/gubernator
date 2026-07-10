@@ -28,7 +28,7 @@ export function CharterHeader({
   return (
     <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center">
       <NationFlagAvatar
-        className="size-16 shrink-0"
+        className="w-20 shrink-0"
         flagPath={nation.flagPath}
         nationId={nation.id}
       />

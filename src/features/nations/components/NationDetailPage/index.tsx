@@ -222,9 +222,11 @@ function NationDetailLoaded({
       <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <NationFlagAvatar
-            className="size-12 shrink-0"
+            className="w-16 shrink-0"
             flagPath={nation.flagPath}
+            interactive
             nationId={nation.id}
+            nationName={nation.name}
           />
           <div className="min-w-0 space-y-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2">

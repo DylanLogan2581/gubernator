@@ -219,7 +219,7 @@ function NationListItem({
         className="grid grid-cols-[auto_1fr_auto] items-center gap-4 p-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <NationFlagAvatar
-          className="size-10 shrink-0"
+          className="w-14 shrink-0"
           flagPath={nation.flagPath}
           nationId={nation.id}
         />

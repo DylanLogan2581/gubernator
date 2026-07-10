@@ -53,9 +53,11 @@ export function NationFlagSection({
 
       <div className="flex items-center gap-4">
         <NationFlagAvatar
-          className="size-16"
+          className="w-24"
           flagPath={nation.flagPath}
+          interactive
           nationId={nation.id}
+          nationName={nation.name}
         />
         {canEdit ? <FlagUploadControls nation={nation} /> : null}
       </div>

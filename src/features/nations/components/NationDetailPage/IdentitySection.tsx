@@ -12,9 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { worldCalendarConfigQueryOptions } from "@/features/calendar";
+import {
+  worldCalendarConfigQueryOptions,
+  WorldDatePicker,
+  type CalendarDateInput,
+  type WorldCalendarConfig,
+} from "@/features/calendar";
 import {
   managerScopeLabel,
   playerCharactersInNationQueryOptions,
@@ -52,11 +56,13 @@ import type {
  */
 export function NationIdentitySection({
   canAdminWorld,
+  currentTurnNumber,
   isArchived,
   nation,
   queryClient,
 }: {
   readonly canAdminWorld: boolean;
+  readonly currentTurnNumber: number;
   readonly isArchived: boolean;
   readonly nation: Nation;
   readonly queryClient: QueryClient;
@@ -165,7 +171,12 @@ export function NationIdentitySection({
           label="Founded"
           action={
             canEdit ? (
-              <FoundedTurnEditor nation={nation} queryClient={queryClient} />
+              <FoundedTurnEditor
+                calendarConfig={calendarConfigQuery.data ?? null}
+                currentTurnNumber={currentTurnNumber}
+                nation={nation}
+                queryClient={queryClient}
+              />
             ) : null
           }
         >
@@ -518,51 +529,38 @@ function GovernmentTypeEditor({
 }
 
 function FoundedTurnEditor({
+  calendarConfig,
+  currentTurnNumber,
   nation,
   queryClient,
 }: {
+  readonly calendarConfig: WorldCalendarConfig | null;
+  readonly currentTurnNumber: number;
   readonly nation: Nation;
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
-  const [foundedTurnInput, setFoundedTurnInput] = useState(
-    nation.foundedTurnNumber === null ? "" : String(nation.foundedTurnNumber),
+  const [foundedTurnNumber, setFoundedTurnNumber] = useState<number | null>(
+    nation.foundedTurnNumber,
   );
-  const [error, setError] = useState<string | undefined>(undefined);
 
   const setFoundedTurnMutation = useMutation(
     setNationCapitalAndFoundedTurnMutationOptions({ queryClient }),
   );
 
   function openEditor(): void {
-    setFoundedTurnInput(
-      nation.foundedTurnNumber === null ? "" : String(nation.foundedTurnNumber),
-    );
-    setError(undefined);
+    setFoundedTurnNumber(nation.foundedTurnNumber);
     setFoundedTurnMutation.reset();
     setIsEditing(true);
   }
 
   function closeEditor(): void {
     setIsEditing(false);
-    setError(undefined);
     setFoundedTurnMutation.reset();
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setError(undefined);
-
-    const trimmed = foundedTurnInput.trim();
-    let foundedTurnNumber: number | null = null;
-    if (trimmed.length > 0) {
-      const parsed = Number(trimmed);
-      if (!Number.isInteger(parsed) || parsed < 0) {
-        setError("Founded turn must be a whole number, 0 or greater.");
-        return;
-      }
-      foundedTurnNumber = parsed;
-    }
 
     setFoundedTurnMutation.mutate(
       {
@@ -596,6 +594,27 @@ function FoundedTurnEditor({
     );
   }
 
+  let foundedTurnDate: CalendarDateInput | null = null;
+  if (
+    calendarConfig !== null &&
+    foundedTurnNumber !== null &&
+    foundedTurnNumber >= 1
+  ) {
+    try {
+      const resolved = resolveTurnCalendarDate(
+        calendarConfig,
+        foundedTurnNumber,
+      );
+      foundedTurnDate = {
+        year: resolved.year,
+        monthIndex: resolved.monthIndex,
+        dayOfMonth: resolved.dayOfMonth,
+      };
+    } catch {
+      foundedTurnDate = null;
+    }
+  }
+
   return (
     <form
       aria-label="Edit founded turn"
@@ -603,29 +622,36 @@ function FoundedTurnEditor({
       noValidate
       onSubmit={handleSubmit}
     >
-      <Label className="sr-only" htmlFor="nation-founded-turn-input">
-        Founded turn
-      </Label>
-      <Input
-        aria-invalid={error === undefined ? undefined : true}
-        aria-describedby={
-          error === undefined ? undefined : "nation-founded-turn-error"
-        }
-        className="h-8 w-20"
+      {calendarConfig === null ? (
+        <span className="text-sm text-muted-foreground">Loading…</span>
+      ) : (
+        <div className="w-56">
+          <WorldDatePicker
+            config={calendarConfig}
+            currentTurnNumber={currentTurnNumber}
+            label="Select founded date"
+            value={foundedTurnDate}
+            onTurnNumberChange={setFoundedTurnNumber}
+          />
+        </div>
+      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         disabled={setFoundedTurnMutation.isPending}
-        id="nation-founded-turn-input"
-        inputMode="numeric"
-        value={foundedTurnInput}
-        onChange={(event) => {
-          setFoundedTurnInput(event.currentTarget.value);
-          setError(undefined);
+        onClick={() => {
+          setFoundedTurnNumber(null);
         }}
-      />
+        aria-label="Clear founded turn"
+      >
+        Clear
+      </Button>
       <Button
         type="submit"
         variant="ghost"
         size="sm"
-        disabled={setFoundedTurnMutation.isPending}
+        disabled={setFoundedTurnMutation.isPending || calendarConfig === null}
         aria-label="Save founded turn"
       >
         <Save aria-hidden="true" />
@@ -640,15 +666,6 @@ function FoundedTurnEditor({
       >
         <X aria-hidden="true" />
       </Button>
-      {error === undefined ? null : (
-        <p
-          id="nation-founded-turn-error"
-          role="alert"
-          className="text-xs text-destructive"
-        >
-          {error}
-        </p>
-      )}
     </form>
   );
 }

@@ -31,6 +31,7 @@ function NationOverviewRoute(): JSX.Element {
 
       <NationIdentitySection
         canAdminWorld={effectiveCanAdmin}
+        currentTurnNumber={worldAccess.header.currentTurnNumber}
         isArchived={isArchived}
         nation={nation}
         queryClient={queryClient}

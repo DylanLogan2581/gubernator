@@ -63,6 +63,20 @@ vi.mock("@/features/calendar", () => ({
     queryKey: ["world-calendar-config", worldId],
     queryFn: () => mockCalendarConfigQuery() as Promise<unknown>,
   }),
+  WorldDatePicker: ({
+    onTurnNumberChange,
+  }: {
+    readonly onTurnNumberChange: (turnNumber: number) => void;
+  }) => (
+    <button
+      type="button"
+      onClick={() => {
+        onTurnNumberChange(7);
+      }}
+    >
+      Mock date picker
+    </button>
+  ),
 }));
 
 vi.mock("../../mutations/nationsMutations", () => ({
@@ -183,7 +197,13 @@ function createSettlement(
 
 function renderSection(
   nation: Nation,
-  { canAdminWorld = false }: { readonly canAdminWorld?: boolean } = {},
+  {
+    canAdminWorld = false,
+    currentTurnNumber = 10,
+  }: {
+    readonly canAdminWorld?: boolean;
+    readonly currentTurnNumber?: number;
+  } = {},
 ): void {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -192,6 +212,7 @@ function renderSection(
     <QueryClientProvider client={queryClient}>
       <NationIdentitySection
         canAdminWorld={canAdminWorld}
+        currentTurnNumber={currentTurnNumber}
         isArchived={false}
         nation={nation}
         queryClient={queryClient}
@@ -338,7 +359,16 @@ describe("NationIdentitySection", () => {
     expect(options).toEqual(["None", "Rivermouth", "Stonegate"]);
   });
 
-  it("submits the founded turn edit through the mutation, keeping the existing capital", async () => {
+  it("submits the founded turn edit through the shared date picker, keeping the existing capital", async () => {
+    mockCalendarConfigQuery.mockResolvedValue({
+      dateFormatTemplate: "{month} {day}, {year}",
+      months: [{ dayCount: 30, index: 0, name: "Thaw" }],
+      startingDayOfMonth: 1,
+      startingMonthIndex: 0,
+      startingWeekdayOffset: 0,
+      startingYear: 1,
+      weekdays: [{ index: 0, name: "Firstday" }],
+    });
     mockSetCapitalAndFoundedTurn.mockResolvedValue(
       createNation({ foundedTurnNumber: 7 }),
     );
@@ -354,9 +384,9 @@ describe("NationIdentitySection", () => {
     await user.click(
       await screen.findByRole("button", { name: "Edit founded turn" }),
     );
-    const input = screen.getByLabelText("Founded turn");
-    await user.clear(input);
-    await user.type(input, "7");
+    await user.click(
+      await screen.findByRole("button", { name: "Mock date picker" }),
+    );
     await user.click(screen.getByRole("button", { name: "Save founded turn" }));
 
     await waitFor(() => {
@@ -364,6 +394,49 @@ describe("NationIdentitySection", () => {
         {
           capitalSettlementId: SETTLEMENT_ID,
           foundedTurnNumber: 7,
+          nationId: NATION_ID,
+          worldId: WORLD_ID,
+        },
+        expect.anything(),
+      );
+    });
+  });
+
+  it("clears the founded turn when Clear is pressed before saving", async () => {
+    mockCalendarConfigQuery.mockResolvedValue({
+      dateFormatTemplate: "{month} {day}, {year}",
+      months: [{ dayCount: 30, index: 0, name: "Thaw" }],
+      startingDayOfMonth: 1,
+      startingMonthIndex: 0,
+      startingWeekdayOffset: 0,
+      startingYear: 1,
+      weekdays: [{ index: 0, name: "Firstday" }],
+    });
+    mockSetCapitalAndFoundedTurn.mockResolvedValue(
+      createNation({ foundedTurnNumber: null }),
+    );
+    renderSection(
+      createNation({
+        capitalSettlementId: SETTLEMENT_ID,
+        foundedTurnNumber: 5,
+      }),
+      { canAdminWorld: true },
+    );
+
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit founded turn" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Clear founded turn" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Save founded turn" }));
+
+    await waitFor(() => {
+      expect(mockSetCapitalAndFoundedTurn).toHaveBeenCalledWith(
+        {
+          capitalSettlementId: SETTLEMENT_ID,
+          foundedTurnNumber: null,
           nationId: NATION_ID,
           worldId: WORLD_ID,
         },
