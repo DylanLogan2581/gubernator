@@ -56,6 +56,7 @@ import {
 import {
   createOfficeTypeMutationOptions,
   deleteOfficeTypeMutationOptions,
+  updateOfficeTypeMutationOptions,
 } from "../../mutations/officeTypesMutations";
 import { nationOfficesRosterQueryOptions } from "../../queries/officesQueries";
 import { nationOfficeTypesQueryOptions } from "../../queries/officeTypesQueries";
@@ -575,6 +576,7 @@ function OfficeTypeManagerDialog({
   readonly queryClient: ReturnType<typeof useQueryClient>;
   readonly roster: readonly NationOfficeRosterEntry[];
 }): JSX.Element {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [maxHolders, setMaxHolders] = useState("");
   const [defaultTermTurns, setDefaultTermTurns] = useState("");
@@ -582,6 +584,9 @@ function OfficeTypeManagerDialog({
 
   const createMutation = useMutation(
     createOfficeTypeMutationOptions({ queryClient }),
+  );
+  const updateMutation = useMutation(
+    updateOfficeTypeMutationOptions({ queryClient }),
   );
   const deleteMutation = useMutation(
     deleteOfficeTypeMutationOptions({ queryClient }),
@@ -642,6 +647,54 @@ function OfficeTypeManagerDialog({
     );
   }
 
+  function resetForm(): void {
+    setEditingId(null);
+    setName("");
+    setMaxHolders("");
+    setDefaultTermTurns("");
+    setExcludesFromLabor(true);
+  }
+
+  function handleStartEdit(type: OfficeType): void {
+    setEditingId(type.id);
+    setName(type.name);
+    setMaxHolders(type.maxHolders === null ? "" : String(type.maxHolders));
+    setDefaultTermTurns(
+      type.defaultTermTurns === null ? "" : String(type.defaultTermTurns),
+    );
+    setExcludesFromLabor(type.excludesFromLabor);
+  }
+
+  function handleSave(): void {
+    const trimmed = name.trim();
+    if (trimmed === "") return;
+    if (editingId === null) {
+      handleCreate();
+      return;
+    }
+    updateMutation.mutate(
+      {
+        defaultTermTurns:
+          defaultTermTurns === "" ? null : Number(defaultTermTurns),
+        excludesFromLabor,
+        id: editingId,
+        maxHolders: maxHolders === "" ? null : Number(maxHolders),
+        name: trimmed,
+        nationId: nation.id,
+        worldId: nation.worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to update office type.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(`${trimmed} updated.`);
+          resetForm();
+        },
+      },
+    );
+  }
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-lg">
@@ -681,19 +734,30 @@ function OfficeTypeManagerDialog({
                       ? ""
                       : ` (max ${String(type.maxHolders)})`}
                   </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={
-                      isArchived ||
-                      deleteMutation.isPending ||
-                      (holderCountByType.get(type.id) ?? 0) > 0
-                    }
-                    onClick={() => handleDelete(type)}
-                  >
-                    Delete
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isArchived}
+                      onClick={() => handleStartEdit(type)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={
+                        isArchived ||
+                        deleteMutation.isPending ||
+                        (holderCountByType.get(type.id) ?? 0) > 0
+                      }
+                      onClick={() => handleDelete(type)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -702,7 +766,9 @@ function OfficeTypeManagerDialog({
 
         {isArchived ? null : (
           <div className="grid gap-2 border-t border-border pt-3">
-            <h3 className="text-sm font-medium">New custom office</h3>
+            <h3 className="text-sm font-medium">
+              {editingId === null ? "New custom office" : "Edit custom office"}
+            </h3>
             <div className="grid gap-1">
               <Label htmlFor="new-office-type-name">Name</Label>
               <Input
@@ -748,14 +814,34 @@ function OfficeTypeManagerDialog({
                 Excludes holder from labor
               </Label>
             </div>
-            <Button
-              type="button"
-              onClick={handleCreate}
-              disabled={createMutation.isPending || name.trim() === ""}
-              className="w-fit"
-            >
-              {createMutation.isPending ? "Creating…" : "Create office"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={
+                  createMutation.isPending ||
+                  updateMutation.isPending ||
+                  name.trim() === ""
+                }
+                className="w-fit"
+              >
+                {formSubmitLabel({
+                  isCreating: createMutation.isPending,
+                  isEditing: editingId !== null,
+                  isSaving: updateMutation.isPending,
+                })}
+              </Button>
+              {editingId === null ? null : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetForm}
+                  className="w-fit"
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -812,6 +898,21 @@ function OfficesCardFrame({
       {children}
     </Card>
   );
+}
+
+function formSubmitLabel({
+  isCreating,
+  isEditing,
+  isSaving,
+}: {
+  readonly isCreating: boolean;
+  readonly isEditing: boolean;
+  readonly isSaving: boolean;
+}): string {
+  if (!isEditing) {
+    return isCreating ? "Creating…" : "Create office";
+  }
+  return isSaving ? "Saving…" : "Save changes";
 }
 
 function formatAppointedTurn(

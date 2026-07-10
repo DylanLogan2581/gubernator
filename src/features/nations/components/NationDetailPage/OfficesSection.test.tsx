@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Citizen } from "@/features/citizens";
 import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
 
 import { NationOfficesSection } from "./OfficesSection";
@@ -306,6 +307,61 @@ describe("NationOfficesSection", () => {
       });
     });
   });
+
+  it("lets the nation manager edit their own custom office type", async () => {
+    const user = userEvent.setup();
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: makeNationManager(),
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+
+    const clientFixture = createClientFixture({
+      citizens: [],
+      customOfficeTypes: [
+        {
+          id: "office-type-custom-1",
+          world_id: "world-1",
+          nation_id: "nation-1",
+          name: "Lord Commander",
+          description: null,
+          scope: "nation",
+          icon: null,
+          color: null,
+          max_holders: 1,
+          excludes_from_labor: true,
+          default_term_turns: null,
+        },
+      ],
+      offices: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderOfficesSection({
+      canAdminWorld: false,
+      nation: createNation("republic"),
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Manage office types" }),
+    );
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+
+    const nameInput = screen.getByLabelText("Name");
+    expect(nameInput).toHaveValue("Lord Commander");
+
+    await user.clear(nameInput);
+    await user.type(nameInput, "Lord Commander of the Night Watch");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(clientFixture.update).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Lord Commander of the Night Watch" }),
+      );
+    });
+  });
 });
 
 function renderOfficesSection({
@@ -337,6 +393,36 @@ function createQueryClient(): QueryClient {
   });
 }
 
+function makeNationManager(): Citizen {
+  return {
+    bornOnTurnNumber: null,
+    citizenType: "player_character",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    cultureId: null,
+    deathCause: null,
+    deathCauseCategory: null,
+    educationLevelId: null,
+    givenName: "Manager",
+    id: "citizen-manager-1",
+    name: "Manager Citizen",
+    namesetId: null,
+    parentACitizenId: null,
+    parentBCitizenId: null,
+    profilePhotoUrl: null,
+    religionId: null,
+    roleNationId: "nation-1",
+    roleSettlementId: null,
+    roleType: "nation_manager",
+    settlementId: null,
+    sex: null,
+    status: "alive",
+    surname: null,
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    userId: "user-manager-1",
+    worldId: "world-1",
+  };
+}
+
 function createNation(governmentType: NationGovernmentType): Nation {
   return {
     capitalSettlementId: null,
@@ -359,9 +445,11 @@ function createNation(governmentType: NationGovernmentType): Nation {
 
 function createClientFixture({
   citizens,
+  customOfficeTypes = [],
   offices,
 }: {
   readonly citizens: readonly CitizenRow[];
+  readonly customOfficeTypes?: readonly Record<string, unknown>[];
   readonly offices: readonly {
     readonly id: string;
     readonly world_id: string;
@@ -370,7 +458,11 @@ function createClientFixture({
     readonly citizen_id: string;
     readonly appointed_turn_number: number;
   }[];
-}): { readonly client: unknown; readonly rpc: ReturnType<typeof vi.fn> } {
+}): {
+  readonly client: unknown;
+  readonly rpc: ReturnType<typeof vi.fn>;
+  readonly update: ReturnType<typeof vi.fn>;
+} {
   const rpc = vi.fn((name: string) => {
     if (name === "appoint_nation_office") {
       return Promise.resolve({ data: null, error: null });
@@ -380,6 +472,8 @@ function createClientFixture({
     }
     throw new Error(`Unexpected rpc ${name}`);
   });
+
+  const update = vi.fn<(patch: Record<string, unknown>) => void>();
 
   const from = vi.fn((table: string) => {
     if (table === "nation_offices") {
@@ -415,13 +509,27 @@ function createClientFixture({
               or: () => ({
                 order: () =>
                   Promise.resolve({
-                    data: defaultOfficeTypeRows(),
+                    data: [...defaultOfficeTypeRows(), ...customOfficeTypes],
                     error: null,
                   }),
               }),
             }),
           }),
         }),
+        update: (patch: Record<string, unknown>) => {
+          update(patch);
+          return {
+            eq: () => ({
+              select: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({
+                    data: { id: "office-type-custom-1" },
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        },
       };
     }
     if (table === "citizen_directory_view") {
@@ -476,7 +584,7 @@ function createClientFixture({
     throw new Error(`Unexpected table ${table}`);
   });
 
-  return { client: { from, rpc }, rpc };
+  return { client: { from, rpc }, rpc, update };
 }
 
 // The real supabase-js query builder exposes a type-only `.returns<T>()`

@@ -16,10 +16,7 @@ import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
 import { MilitaryConfigPanel } from "@/features/military";
 import { NamesetsConfigPanel } from "@/features/namesets";
-import {
-  NationDiscoveryConfigPanel,
-  OfficeTypesConfigPanel,
-} from "@/features/nations";
+import { NationDiscoveryConfigPanel } from "@/features/nations";
 import {
   AdminSuppressedNotice,
   currentAccessContextQueryOptions,
@@ -325,18 +322,6 @@ function WorldConfigurationContent({
       return (
         <ConfigPanelShell>
           <NationDiscoveryConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "offices") {
-      return (
-        <ConfigPanelShell>
-          <OfficeTypesConfigPanel
             canAdmin={canAdmin}
             isArchived={header.isArchived}
             worldId={worldId}

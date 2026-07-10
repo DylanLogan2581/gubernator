@@ -2,7 +2,6 @@
 // Implemented in Epic 3.
 export { NationDetailPage } from "./components/NationDetailPage";
 export { NationDiscoveryConfigPanel } from "./components/NationDiscoveryConfigPanel";
-export { OfficeTypesConfigPanel } from "./components/OfficeTypesConfigPanel";
 export { useNationDetailContext } from "./components/NationDetailPage/NationDetailContext";
 export { NationSectionRedirect } from "./components/NationDetailPage/NationSectionRedirect";
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
