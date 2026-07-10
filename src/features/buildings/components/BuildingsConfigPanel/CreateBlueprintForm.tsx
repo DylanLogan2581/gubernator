@@ -160,7 +160,9 @@ export function CreateBlueprintForm({
               ) : null}
             </div>
             <div className="grid gap-1">
-              <Label htmlFor="grace-period-turns">Grace period (turns)</Label>
+              <Label htmlFor="grace-period-turns">
+                Upkeep grace period (turns)
+              </Label>
               <Input
                 id="grace-period-turns"
                 aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
@@ -172,6 +174,10 @@ export function CreateBlueprintForm({
                   setGracePeriodTurns(e.currentTarget.value);
                 }}
               />
+              <p className="text-xs text-muted-foreground">
+                Turns a building can miss upkeep before it is suspended. 0 =
+                suspend on first missed upkeep.
+              </p>
               {fieldErrors.gracePeriodTurns !== undefined ? (
                 <p className="text-xs text-destructive">
                   {fieldErrors.gracePeriodTurns}

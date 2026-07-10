@@ -48,6 +48,9 @@ type PendingAction = {
   readonly id: string;
 };
 
+const GRACE_PERIOD_HINT =
+  "Turns a building can miss upkeep before it is suspended. 0 = suspend on first missed upkeep.";
+
 type BlueprintsTableProps = {
   readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
@@ -121,9 +124,12 @@ function buildColumns({
       id: "gracePeriod",
       accessorFn: (row) => row.gracePeriodTurns,
       enableSorting: true,
-      header: "Grace period",
+      header: () => <span title={GRACE_PERIOD_HINT}>Grace period</span>,
       cell: ({ row }) => (
-        <span className="tabular-nums text-sm text-muted-foreground">
+        <span
+          className="tabular-nums text-sm text-muted-foreground"
+          title={GRACE_PERIOD_HINT}
+        >
           {row.original.gracePeriodTurns.toLocaleString()}
         </span>
       ),
