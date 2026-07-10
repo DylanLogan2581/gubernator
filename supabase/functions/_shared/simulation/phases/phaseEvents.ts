@@ -317,6 +317,7 @@ function applyEffect(
               ...flavor,
               bornOnTurnNumber: Math.max(0, turnNumber - ageTurns),
               cultureId: null,
+              educationLevelId: null,
               givenName,
               namesetId,
               parentACitizenId: null,

@@ -3,6 +3,7 @@ export type EducationLevel = {
   readonly description: string | null;
   readonly id: string;
   readonly name: string;
+  readonly naturalBornPercent: number;
   readonly rank: number;
   readonly updatedAt: string;
   readonly worldId: string;

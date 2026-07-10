@@ -145,6 +145,7 @@ type TestEducationLevelRow = {
   readonly description: string | null;
   readonly id: string;
   readonly name: string;
+  readonly natural_born_percent: number;
   readonly rank: number;
   readonly updated_at: string;
   readonly world_id: string;
@@ -158,6 +159,7 @@ function createEducationLevelRow(
     description: null,
     id: EDUCATION_LEVEL_ID,
     name: "Illiterate",
+    natural_born_percent: 0,
     rank: 1,
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,

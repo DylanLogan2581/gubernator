@@ -229,6 +229,7 @@ export function makeEducationLevel(
 ): SimEducationLevel {
   return {
     name: overrides.id,
+    naturalBornPercent: 0,
     worldId: "w1",
     ...overrides,
   };

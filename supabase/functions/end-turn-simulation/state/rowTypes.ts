@@ -230,6 +230,7 @@ export type SupabaseEducationLevelRow = {
   readonly id: string;
   readonly world_id: string;
   readonly name: string;
+  readonly natural_born_percent: number;
   readonly rank: number;
 };
 
@@ -639,6 +640,7 @@ export function isEducationLevelRow(v: unknown): v is SupabaseEducationLevelRow 
     typeof v.id === "string" &&
     typeof v.world_id === "string" &&
     typeof v.name === "string" &&
+    typeof v.natural_born_percent === "number" &&
     typeof v.rank === "number"
   );
 }

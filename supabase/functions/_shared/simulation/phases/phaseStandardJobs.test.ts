@@ -303,10 +303,17 @@ describe("phaseStandardJobs — enrolled citizen exclusion", () => {
 });
 
 describe("phaseStandardJobs — education requirement enforcement", () => {
-  const BASIC: SimEducationLevel = { id: "lvl-basic", name: "Basic", rank: 1, worldId: "w1" };
+  const BASIC: SimEducationLevel = {
+    id: "lvl-basic",
+    name: "Basic",
+    naturalBornPercent: 0,
+    rank: 1,
+    worldId: "w1",
+  };
   const SKILLED: SimEducationLevel = {
     id: "lvl-skilled",
     name: "Skilled",
+    naturalBornPercent: 0,
     rank: 2,
     worldId: "w1",
   };

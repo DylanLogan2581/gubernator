@@ -530,7 +530,7 @@ export function fetchEducationLevels(
     params: {
       world_id: `eq.${worldId}`,
       order: "id.asc",
-      select: "id,world_id,name,rank",
+      select: "id,world_id,name,rank,natural_born_percent",
     },
   });
 }

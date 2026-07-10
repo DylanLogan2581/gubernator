@@ -32,11 +32,13 @@ import type { EducationLevel } from "../../types/educationLevelTypes";
 type EducationLevelFieldErrors = {
   readonly description?: string;
   readonly name?: string;
+  readonly naturalBornPercent?: string;
 };
 
 type EditEducationLevelFormProps = {
   readonly educationLevel: EducationLevel;
   readonly onClose: () => void;
+  readonly otherLevelsNaturalBornPercentTotal: number;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 };
@@ -44,6 +46,7 @@ type EditEducationLevelFormProps = {
 export function EditEducationLevelForm({
   educationLevel,
   onClose,
+  otherLevelsNaturalBornPercentTotal,
   queryClient,
   worldId,
 }: EditEducationLevelFormProps): JSX.Element {
@@ -58,10 +61,19 @@ export function EditEducationLevelForm({
   const [description, setDescription] = useState(
     educationLevel.description ?? "",
   );
+  const [naturalBornPercent, setNaturalBornPercent] = useState(
+    String(educationLevel.naturalBornPercent),
+  );
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof EducationLevelFieldErrors>();
 
   const isPending = updateMutation.isPending || deleteMutation.isPending;
+  const parsedNaturalBornPercent = Number(naturalBornPercent);
+  const naturalBornPercentValue = Number.isNaN(parsedNaturalBornPercent)
+    ? 0
+    : parsedNaturalBornPercent;
+  const projectedTotal =
+    otherLevelsNaturalBornPercentTotal + naturalBornPercentValue;
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -73,6 +85,7 @@ export function EditEducationLevelForm({
       description,
       educationLevelId: educationLevel.id,
       name,
+      naturalBornPercent: naturalBornPercentValue,
       worldId,
     };
 
@@ -164,6 +177,41 @@ export function EditEducationLevelForm({
                   {fieldErrors.description}
                 </p>
               ) : null}
+            </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="edit-education-level-natural-born-percent"
+            >
+              <span className="text-muted-foreground">Natural born %</span>
+              <Input
+                aria-invalid={fieldErrors.naturalBornPercent !== undefined}
+                aria-label="Natural born %"
+                disabled={isPending}
+                id="edit-education-level-natural-born-percent"
+                max={100}
+                min={0}
+                type="number"
+                value={naturalBornPercent}
+                onChange={(e) => {
+                  setNaturalBornPercent(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.naturalBornPercent !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.naturalBornPercent}
+                </p>
+              ) : (
+                <p
+                  className={
+                    projectedTotal > 100
+                      ? "text-xs text-destructive"
+                      : "text-xs text-muted-foreground"
+                  }
+                >
+                  World total would be {projectedTotal} / 100
+                  {projectedTotal > 100 ? " — over the limit" : ""}
+                </p>
+              )}
             </Label>
           </div>
           <p className="text-xs text-muted-foreground">

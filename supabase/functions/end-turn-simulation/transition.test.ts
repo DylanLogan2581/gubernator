@@ -463,6 +463,7 @@ describe("mapSimulationResultToPayload", () => {
       citizenBirths: [
         {
           cultureId: null,
+          educationLevelId: null,
           givenName: "Newborn",
           namesetId: null,
           npcFlaw: "cowardly",
@@ -677,6 +678,7 @@ describe("numeric precision through JSON", () => {
       citizenBirths: [
         {
           cultureId: null,
+          educationLevelId: null,
           givenName: "Newborn",
           namesetId: null,
           npcFlaw: null,

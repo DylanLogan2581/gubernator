@@ -23,12 +23,14 @@ import {
 type CreateEducationLevelFieldErrors = {
   readonly description?: string;
   readonly name?: string;
+  readonly naturalBornPercent?: string;
 };
 
 type CreateEducationLevelFormProps = {
   readonly isPending: boolean;
   readonly onCancel: () => void;
   readonly onSubmit: (input: CreateEducationLevelInput) => void;
+  readonly otherLevelsNaturalBornPercentTotal: number;
   readonly worldId: string;
 };
 
@@ -36,12 +38,21 @@ export function CreateEducationLevelForm({
   isPending,
   onCancel,
   onSubmit,
+  otherLevelsNaturalBornPercentTotal,
   worldId,
 }: CreateEducationLevelFormProps): JSX.Element {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [naturalBornPercent, setNaturalBornPercent] = useState("0");
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateEducationLevelFieldErrors>();
+
+  const parsedNaturalBornPercent = Number(naturalBornPercent);
+  const naturalBornPercentValue = Number.isNaN(parsedNaturalBornPercent)
+    ? 0
+    : parsedNaturalBornPercent;
+  const projectedTotal =
+    otherLevelsNaturalBornPercentTotal + naturalBornPercentValue;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -50,6 +61,7 @@ export function CreateEducationLevelForm({
     const input: CreateEducationLevelInput = {
       description,
       name,
+      naturalBornPercent: naturalBornPercentValue,
       worldId,
     };
 
@@ -119,6 +131,41 @@ export function CreateEducationLevelForm({
                   {fieldErrors.description}
                 </p>
               ) : null}
+            </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="create-education-level-natural-born-percent"
+            >
+              <span className="text-muted-foreground">Natural born %</span>
+              <Input
+                aria-invalid={fieldErrors.naturalBornPercent !== undefined}
+                aria-label="Natural born %"
+                disabled={isPending}
+                id="create-education-level-natural-born-percent"
+                max={100}
+                min={0}
+                type="number"
+                value={naturalBornPercent}
+                onChange={(e) => {
+                  setNaturalBornPercent(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.naturalBornPercent !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.naturalBornPercent}
+                </p>
+              ) : (
+                <p
+                  className={
+                    projectedTotal > 100
+                      ? "text-xs text-destructive"
+                      : "text-xs text-muted-foreground"
+                  }
+                >
+                  World total would be {projectedTotal} / 100
+                  {projectedTotal > 100 ? " — over the limit" : ""}
+                </p>
+              )}
             </Label>
           </div>
           <DialogFooter>

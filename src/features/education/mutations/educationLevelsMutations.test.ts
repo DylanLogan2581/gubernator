@@ -21,6 +21,7 @@ type EducationLevelRow = {
   readonly description: string | null;
   readonly id: string;
   readonly name: string;
+  readonly natural_born_percent: number;
   readonly rank: number;
   readonly updated_at: string;
   readonly world_id: string;
@@ -69,6 +70,7 @@ describe("createEducationLevelMutationOptions", () => {
     expect(calls.rpc).toHaveBeenCalledWith("create_education_level", {
       p_description: null,
       p_name: "Illiterate",
+      p_natural_born_percent: 0,
       p_world_id: WORLD_ID,
     });
     expect(options.mutationKey).toEqual([
@@ -344,6 +346,7 @@ function createEducationLevelRow(
     description: null,
     id: EDUCATION_LEVEL_ID,
     name: "Illiterate",
+    natural_born_percent: 0,
     rank: 1,
     updated_at: "2026-05-01T00:00:00.000Z",
     world_id: WORLD_ID,

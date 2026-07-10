@@ -1272,6 +1272,7 @@ export type Database = {
           description: string | null;
           id: string;
           name: string;
+          natural_born_percent: number;
           rank: number;
           updated_at: string;
           world_id: string;
@@ -1281,6 +1282,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           name: string;
+          natural_born_percent?: number;
           rank: number;
           updated_at?: string;
           world_id: string;
@@ -1290,6 +1292,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           name?: string;
+          natural_born_percent?: number;
           rank?: number;
           updated_at?: string;
           world_id?: string;
@@ -5319,6 +5322,7 @@ export type Database = {
           p_born_on_turn_number?: number;
           p_citizen_type: string;
           p_culture_id?: string;
+          p_education_level_id?: string;
           p_given_name: string;
           p_nameset_id?: string;
           p_npc_flaw?: string;
@@ -5435,12 +5439,18 @@ export type Database = {
         };
       };
       create_education_level: {
-        Args: { p_description: string; p_name: string; p_world_id: string };
+        Args: {
+          p_description: string;
+          p_name: string;
+          p_natural_born_percent?: number;
+          p_world_id: string;
+        };
         Returns: {
           created_at: string;
           description: string | null;
           id: string;
           name: string;
+          natural_born_percent: number;
           rank: number;
           updated_at: string;
           world_id: string;
@@ -6954,6 +6964,7 @@ export type Database = {
           description: string | null;
           id: string;
           name: string;
+          natural_born_percent: number;
           rank: number;
           updated_at: string;
           world_id: string;

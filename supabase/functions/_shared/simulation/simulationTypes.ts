@@ -98,6 +98,7 @@ export type SimEducationLevel = {
   // ("N citizens completed <name> at the <building>"), so it's included
   // here rather than re-deriving it via an extra lookup table.
   readonly name: string;
+  readonly naturalBornPercent: number;
   readonly rank: number;
 };
 
@@ -628,6 +629,10 @@ export type CitizenBirth = {
   // births roll 50/50 between parentA/parentB culture, independently for
   // religion (see pickInheritedFieldId).
   readonly cultureId: string | null;
+  // Null for parentless spawns and for the remainder of newborns that don't
+  // roll a configured level; weighted-picked from each education level's
+  // natural_born_percent (see pickNaturalBornEducationLevelId).
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly namesetId: string | null;
   readonly npcFlaw: string | null;

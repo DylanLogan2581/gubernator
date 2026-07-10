@@ -38,7 +38,8 @@ type EducationLevelMutationErrorCode =
   | "education_level_input_invalid"
   | "education_level_name_taken"
   | "education_level_not_found"
-  | "education_level_no_adjacent";
+  | "education_level_no_adjacent"
+  | "education_level_percent_exceeds_100";
 
 export type EducationLevelMutationIssue = MutationIssue;
 
@@ -172,6 +173,7 @@ async function createEducationLevel(
       // permits null descriptions.
       p_description: (values.description ?? null) as string,
       p_name: values.name.trim(),
+      p_natural_born_percent: values.naturalBornPercent ?? 0,
       p_world_id: values.worldId,
     })
     .maybeSingle<EducationLevelRow>();
@@ -199,6 +201,7 @@ async function updateEducationLevel(
   const updatePayload: {
     description?: string | null;
     name?: string;
+    natural_born_percent?: number;
   } = {};
 
   if (values.name !== undefined) {
@@ -206,6 +209,9 @@ async function updateEducationLevel(
   }
   if (values.description !== undefined) {
     updatePayload.description = values.description;
+  }
+  if (values.naturalBornPercent !== undefined) {
+    updatePayload.natural_born_percent = values.naturalBornPercent;
   }
 
   const { data, error } = await client
@@ -314,6 +320,13 @@ function translateEducationLevelError(error: {
     return new EducationLevelMutationError({
       code: "education_level_forbidden",
       message: "You do not have permission to manage education levels.",
+    });
+  }
+  if (error.code === "P0001") {
+    return new EducationLevelMutationError({
+      code: "education_level_percent_exceeds_100",
+      message:
+        "Natural born % across this world's education levels cannot exceed 100.",
     });
   }
   return normalizeSupabaseError(error);

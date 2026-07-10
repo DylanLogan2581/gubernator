@@ -4,7 +4,7 @@
 begin;
 
 select
-  plan (23);
+  plan (29);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -467,6 +467,99 @@ select
     '23514',
     null,
     'an overlong description is rejected'
+  );
+
+-- ===========================================================================
+-- natural_born_percent: range check + per-world sum trigger
+-- (world c2000000-0000-0000-0000-000000000003 has no fixture levels)
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    insert into public.education_levels (world_id, name, natural_born_percent)
+    values (
+      'c2000000-0000-0000-0000-000000000003',
+      'Percent Too High',
+      101
+    )
+  $test$,
+    'P0001',
+    null,
+    -- A single value above 100 always also fails the per-world sum trigger
+    -- (0 existing + 101 > 100), and the trigger's BEFORE ROW check runs
+    -- before the range CHECK constraint gets a chance to fire, so this
+    -- surfaces as P0001 rather than the range constraint's 23514.
+    'a natural_born_percent above 100 is rejected'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.education_levels (world_id, name, natural_born_percent)
+    values (
+      'c2000000-0000-0000-0000-000000000003',
+      'Percent Negative',
+      -1
+    )
+  $test$,
+    '23514',
+    null,
+    'a negative natural_born_percent is rejected'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.education_levels (id, world_id, name, natural_born_percent)
+    values (
+      'c3000000-0000-0000-0000-000000000007',
+      'c2000000-0000-0000-0000-000000000003',
+      'Percent A',
+      60
+    )
+  $test$,
+    'a natural_born_percent within the world total is accepted'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.education_levels (world_id, name, natural_born_percent)
+    values (
+      'c2000000-0000-0000-0000-000000000003',
+      'Percent B Over',
+      41
+    )
+  $test$,
+    'P0001',
+    null,
+    'inserting a level that pushes the world total over 100 is rejected'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.education_levels (id, world_id, name, natural_born_percent)
+    values (
+      'c3000000-0000-0000-0000-000000000008',
+      'c2000000-0000-0000-0000-000000000003',
+      'Percent B At Limit',
+      40
+    )
+  $test$,
+    'inserting a level that brings the world total to exactly 100 is accepted'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.education_levels
+    set natural_born_percent = 41
+    where id = 'c3000000-0000-0000-0000-000000000008'
+  $test$,
+    'P0001',
+    null,
+    'updating a level to push the world total over 100 is rejected'
   );
 
 select

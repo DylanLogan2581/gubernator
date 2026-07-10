@@ -28,9 +28,15 @@ const optionalEducationLevelDescriptionSchema = z
   .union([educationLevelDescriptionSchema, z.null()])
   .optional();
 
+const educationLevelNaturalBornPercentSchema = z
+  .number()
+  .min(0, "Natural born % must be at least 0.")
+  .max(100, "Natural born % must be at most 100.");
+
 export const createEducationLevelInputSchema = z.strictObject({
   description: optionalEducationLevelDescriptionSchema,
   name: educationLevelNameSchema,
+  naturalBornPercent: educationLevelNaturalBornPercentSchema.optional(),
   worldId: worldIdSchema,
 });
 
@@ -39,10 +45,15 @@ export const updateEducationLevelInputSchema = z
     description: optionalEducationLevelDescriptionSchema,
     educationLevelId: educationLevelIdSchema,
     name: educationLevelNameSchema.optional(),
+    naturalBornPercent: educationLevelNaturalBornPercentSchema.optional(),
     worldId: worldIdSchema,
   })
   .superRefine((value, ctx): void => {
-    if (value.name === undefined && value.description === undefined) {
+    if (
+      value.name === undefined &&
+      value.description === undefined &&
+      value.naturalBornPercent === undefined
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "At least one of name or description must be provided.",

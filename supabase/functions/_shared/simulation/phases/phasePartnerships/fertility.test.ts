@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createSeededRng } from "../../seededRng.ts";
-import { makeCitizen, makeSettlement } from "../testFixtures.ts";
+import { makeCitizen, makeEducationLevel, makeSettlement } from "../testFixtures.ts";
 
 import { applyFertilityForSettlement } from "./fertility.ts";
 
@@ -14,6 +14,7 @@ import type { SeededRng } from "../../seededRng.ts";
 import type {
   NpcFlavorConfig,
   SimCitizen,
+  SimEducationLevel,
   SimNamingConfig,
   SimPartnership,
   SimSettlement,
@@ -75,6 +76,7 @@ type FertilityArgs = {
   fallbackNamesetId: string | null;
   turnNumber: number;
   rng: SeededRng;
+  educationLevels: readonly SimEducationLevel[];
 };
 
 function makeDefaultArgs(rng: SeededRng): FertilityArgs {
@@ -96,6 +98,7 @@ function makeDefaultArgs(rng: SeededRng): FertilityArgs {
     activePartnerships: [makePartnership({ citizenAId: "cA", citizenBId: "cB" })],
     aliveCountBySettlement: new Map([["s1", 2]]),
     citizenById: new Map([["cA", citizenA], ["cB", citizenB]]),
+    educationLevels: [],
     fallbackNamesetId: null,
     fertilityChance: 1,
     maximumFertilityAgeTurns: null,
@@ -128,6 +131,7 @@ function callFertility(args: FertilityArgs): ReturnType<typeof applyFertilityFor
     args.fallbackNamesetId,
     args.turnNumber,
     args.rng,
+    args.educationLevels,
   );
 }
 
@@ -332,6 +336,7 @@ describe("applyFertilityForSettlement — pop cap and resource gating", () => {
       ],
       aliveCountBySettlement: new Map([["s1", 9]]),
       citizenById,
+      educationLevels: [],
       fallbackNamesetId: null,
       fertilityChance: 1,
       maximumFertilityAgeTurns: null,
@@ -512,5 +517,111 @@ describe("applyFertilityForSettlement — partnership and citizen filtering", ()
     const result = callFertility(args);
 
     expect(result.citizenBirths).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Natural-born education assignment (#1173)
+// ---------------------------------------------------------------------------
+
+function makeManyPartnershipArgs(
+  rng: SeededRng,
+  count: number,
+  educationLevels: readonly SimEducationLevel[],
+): FertilityArgs {
+  const settlement = makeSettlement({ id: "s1" });
+  const citizenById = new Map<string, SimCitizen>();
+  const activePartnerships: SimPartnership[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const aId = `a${index}`;
+    const bId = `b${index}`;
+    citizenById.set(
+      aId,
+      makeCitizen({ bornOnTurnNumber: 0, id: aId, settlementId: "s1", sex: "male" }),
+    );
+    citizenById.set(
+      bId,
+      makeCitizen({ bornOnTurnNumber: 0, id: bId, settlementId: "s1", sex: "female" }),
+    );
+    activePartnerships.push(makePartnership({ citizenAId: aId, citizenBId: bId }));
+  }
+
+  return {
+    activePartnerships,
+    aliveCountBySettlement: new Map([["s1", 0]]),
+    citizenById,
+    educationLevels,
+    fallbackNamesetId: null,
+    fertilityChance: 1,
+    maximumFertilityAgeTurns: null,
+    minimumPartnershipAgeTurns: 0,
+    namesetConfigById: {},
+    npcFlavorConfig: null,
+    popCapBySettlement: new Map([["s1", count * 2]]),
+    rng,
+    settlement,
+    stockpileQty: new Map([["s1:food", 1000], ["s1:water", 1000]]),
+    systemResourceIds: { foodId: "food", freshWaterId: "water" },
+    turnNumber: 10,
+  };
+}
+
+describe("applyFertilityForSettlement — natural-born education assignment", () => {
+  it("is deterministic for a fixed seed", () => {
+    const educationLevels = [
+      makeEducationLevel({ id: "basic", naturalBornPercent: 50, rank: 1 }),
+      makeEducationLevel({ id: "skilled", naturalBornPercent: 30, rank: 2 }),
+    ];
+
+    const result1 = callFertility(
+      makeManyPartnershipArgs(createSeededRng("edu-seed"), 200, educationLevels),
+    );
+    const result2 = callFertility(
+      makeManyPartnershipArgs(createSeededRng("edu-seed"), 200, educationLevels),
+    );
+
+    expect(result1.citizenBirths).toHaveLength(200);
+    expect(result1).toStrictEqual(result2);
+  });
+
+  it("distributes newborn education levels roughly per the configured percentages, remainder null", () => {
+    const educationLevels = [
+      makeEducationLevel({ id: "basic", naturalBornPercent: 50, rank: 1 }),
+      makeEducationLevel({ id: "skilled", naturalBornPercent: 30, rank: 2 }),
+    ];
+
+    const result = callFertility(
+      makeManyPartnershipArgs(createSeededRng("distribution-seed"), 2000, educationLevels),
+    );
+
+    expect(result.citizenBirths).toHaveLength(2000);
+
+    const counts = { basic: 0, skilled: 0, none: 0 };
+    for (const birth of result.citizenBirths) {
+      if (birth.educationLevelId === "basic") counts.basic += 1;
+      else if (birth.educationLevelId === "skilled") counts.skilled += 1;
+      else if (birth.educationLevelId === null) counts.none += 1;
+    }
+
+    // Wide tolerance bands (+/- 7 points) keep this test stable across seeds
+    // while still catching a badly broken weighting (e.g. uniform pick).
+    expect(counts.basic / 2000).toBeGreaterThan(0.43);
+    expect(counts.basic / 2000).toBeLessThan(0.57);
+    expect(counts.skilled / 2000).toBeGreaterThan(0.23);
+    expect(counts.skilled / 2000).toBeLessThan(0.37);
+    expect(counts.none / 2000).toBeGreaterThan(0.13);
+    expect(counts.none / 2000).toBeLessThan(0.27);
+  });
+
+  it("assigns null for every newborn when no education levels are configured", () => {
+    const result = callFertility(
+      makeManyPartnershipArgs(createSeededRng("no-levels-seed"), 50, []),
+    );
+
+    expect(result.citizenBirths).toHaveLength(50);
+    expect(
+      result.citizenBirths.every((birth) => birth.educationLevelId === null),
+    ).toBe(true);
   });
 });

@@ -385,6 +385,7 @@ export function toSimEducationLevel(row: SupabaseEducationLevelRow): SimEducatio
   return {
     id: row.id,
     name: row.name,
+    naturalBornPercent: row.natural_born_percent,
     rank: row.rank,
     worldId: row.world_id,
   };

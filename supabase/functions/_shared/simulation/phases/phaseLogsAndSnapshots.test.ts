@@ -60,6 +60,7 @@ function makeBirth(
 ): CitizenBirth {
   return {
     cultureId: null,
+    educationLevelId: null,
     givenName: "Newborn",
     namesetId: null,
     npcFlaw: null,

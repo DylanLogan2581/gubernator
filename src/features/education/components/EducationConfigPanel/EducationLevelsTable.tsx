@@ -64,6 +64,7 @@ export function EducationLevelsTable({
               <TableHead>Rank</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>Natural born %</TableHead>
               {canEdit ? (
                 <TableHead className="text-right">Actions</TableHead>
               ) : null}
@@ -80,6 +81,9 @@ export function EducationLevelsTable({
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {educationLevel.description ?? ""}
+                </TableCell>
+                <TableCell className="tabular-nums text-muted-foreground">
+                  {educationLevel.naturalBornPercent}
                 </TableCell>
                 {canEdit ? (
                   <TableCell className="text-right">
@@ -133,6 +137,13 @@ export function EducationLevelsTable({
       {editingEducationLevel !== null ? (
         <EditEducationLevelForm
           educationLevel={editingEducationLevel}
+          otherLevelsNaturalBornPercentTotal={educationLevels.reduce(
+            (total, level) =>
+              level.id === editingEducationLevel.id
+                ? total
+                : total + level.naturalBornPercent,
+            0,
+          )}
           queryClient={queryClient}
           worldId={worldId}
           onClose={() => {

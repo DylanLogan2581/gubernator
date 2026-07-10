@@ -41,6 +41,13 @@ export function EducationConfigPanel({
     createEducationLevelMutationOptions({ queryClient }),
   );
 
+  const naturalBornPercentTotal = educationLevelsQuery.isSuccess
+    ? educationLevelsQuery.data.reduce(
+        (total, level) => total + level.naturalBornPercent,
+        0,
+      )
+    : 0;
+
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
@@ -73,17 +80,32 @@ export function EducationConfigPanel({
           description="Add the first education level for this world."
         />
       ) : (
-        <EducationLevelsTable
-          canEdit={canEdit}
-          educationLevels={educationLevelsQuery.data}
-          queryClient={queryClient}
-          worldId={worldId}
-        />
+        <>
+          <p
+            className={
+              naturalBornPercentTotal > 100
+                ? "text-sm font-medium text-destructive"
+                : "text-sm text-muted-foreground"
+            }
+          >
+            Natural born % total: {naturalBornPercentTotal} / 100
+            {naturalBornPercentTotal > 100
+              ? " — exceeds 100, newborn assignment will be inconsistent."
+              : ""}
+          </p>
+          <EducationLevelsTable
+            canEdit={canEdit}
+            educationLevels={educationLevelsQuery.data}
+            queryClient={queryClient}
+            worldId={worldId}
+          />
+        </>
       )}
 
       {canEdit && showForm ? (
         <CreateEducationLevelForm
           isPending={createMutation.isPending}
+          otherLevelsNaturalBornPercentTotal={naturalBornPercentTotal}
           worldId={worldId}
           onCancel={() => {
             setShowForm(false);

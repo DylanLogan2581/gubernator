@@ -2,12 +2,14 @@
 
 import { pickChildNamesetId } from "./childNameset.ts";
 import { pickInheritedFieldId } from "./inheritedField.ts";
+import { pickNaturalBornEducationLevelId } from "./naturalBornEducation.ts";
 
 import type { SeededRng } from "../../seededRng.ts";
 import type {
   CitizenBirth,
   NpcFlavorConfig,
   SimCitizen,
+  SimEducationLevel,
   SimNamingConfig,
   SimPartnership,
   SimSettlement,
@@ -137,6 +139,7 @@ export function applyFertilityForSettlement(
   fallbackNamesetId: string | null,
   turnNumber: number,
   rng: SeededRng,
+  educationLevels: readonly SimEducationLevel[],
 ): FertilityResult {
   const sid = settlement.id;
   const foodStock = stockpileQty.get(`${sid}:${systemResourceIds.foodId}`) ?? 0;
@@ -206,10 +209,15 @@ export function applyFertilityForSettlement(
       citizenA.religionId,
       citizenB.religionId,
     );
+    const educationLevelId = pickNaturalBornEducationLevelId(
+      rng,
+      educationLevels,
+    );
 
     citizenBirths.push({
       ...flavor,
       cultureId,
+      educationLevelId,
       givenName,
       namesetId: childNamesetId,
       parentACitizenId: partnership.citizenAId,
