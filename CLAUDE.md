@@ -1,12 +1,6 @@
-# AGENTS.md
+# CLAUDE.md
 
 Do not read `README.md` or `CONTRIBUTING.md` unless task asks.
-
-## Voice
-
-- Use `caveman` skill at `ultra` level for assistant replies in this repo.
-- Keep code, command output, commits, PR text, destructive warnings, and security warnings normal.
-- Disable caveman only when user says `normal mode` or `stop caveman`, or when clarity needs it.
 
 ## Golden Rules
 
@@ -49,7 +43,9 @@ Auth and styling notes:
 - Local auth uses seeded test accounts (password `password123` for all; see `e2e/roles.ts`): `superadmin@gubernator.local`, `worldadmin@gubernator.local`, `other@gubernator.local` (nation manager), `test@gubernator.local` (settlement manager), `player@gubernator.local`. Sign in at `/sign-in`. Requires local Supabase running with seed data (`supabase db reset` if accounts are missing).
 - Reuse existing components and design tokens from `src/components/ui` (shadcn/ui primitives), `src/components/app`, and `src/components/shared` instead of inventing new styles; match the visual patterns of existing pages.
 
-## Truth
+## Source of Truth
+
+These directories define actual behavior. When docs, comments, or memory disagree with them, they win:
 
 - `src/routes`
 - `src/features`
@@ -66,7 +62,8 @@ Edge/shared changes must preserve explicit `.ts` imports and browser-vs-Deno bou
 
 ## Skills
 
-- `caveman`: use at `ultra` for repo replies. Repo skill lives at `.codex/skills/caveman/SKILL.md`.
+- `issue-intake`: use when turning a list of bugs/features into detailed GitHub issues against a milestone
+- `open-pr`: use when opening a PR from the current branch and driving its CI checks to green
 - `project-structure-placement`: use for route/layout rules, placement, imports, naming, query/schema/type organization
 - `frontend-ui-patterns`: use for React/Tailwind/shadcn/ui/Sonner/accessibility frontend work
 - `supabase-edge-shared`: use for Supabase, RLS, auth, migrations, seeded access, `src/shared`, Edge Functions
