@@ -18,7 +18,7 @@ dist-ssr
 
 # Playwright
 e2e/.auth
-screenshots/auto
+screenshots
 test-results
 playwright-report
 
