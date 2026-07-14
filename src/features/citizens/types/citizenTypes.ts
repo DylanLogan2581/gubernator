@@ -1,3 +1,5 @@
+import type { PartnershipStatus } from "@/features/partnerships";
+
 export type CitizenType = "npc" | "player_character";
 export type CitizenStatus = "alive" | "dead";
 export type CitizenRoleType = "none" | "nation_manager" | "settlement_manager";
@@ -81,7 +83,10 @@ export type FamilyTreeNode = {
   readonly generation: number;
   readonly name: string | null;
   readonly nodePath: string;
+  readonly parentACitizenId: string | null;
+  readonly parentBCitizenId: string | null;
   readonly parentPath: string | null;
+  readonly partnershipStatus: PartnershipStatus | null;
   readonly status: CitizenStatus | null;
 };
 

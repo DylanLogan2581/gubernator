@@ -1,7 +1,7 @@
 -- pgTAP tests for public.get_citizen_family_tree(uuid). Run with:
 --   npx supabase test db
 --
--- Fixture shape (issue #1180):
+-- Fixture shape (issue #1180, extended for #1184):
 --   Ancestors (parent_a only, parent_b always unknown):
 --     GreatGreatGrandparent (gen -4, must NOT appear -- past the 3-gen cap)
 --       -> GreatGrandparent (gen -3)
@@ -15,11 +15,16 @@
 --                        "unknown child" placeholder)
 --   Partners:
 --     Center <-active-> ActivePartner (must appear)
---     Center <-dissolved-> ExPartner (must NOT appear)
+--     Center <-dissolved-> ExPartner (must appear, partnership_status = 'dissolved')
+--     Center <-widowed-> LatePartner (must appear, partnership_status = 'widowed')
+--   Collapsed-unknown case (issue #1184):
+--     CollapseCenter -> CollapseParent (gen -1, parent_a known)
+--       CollapseParent's own parents are BOTH unknown -- gen -2 must emit a
+--       single collapsed 'unknown' terminator, not one per parent slot.
 begin;
 
 select
-  plan (9);
+  plan (12);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -213,7 +218,7 @@ values
     '1a000000-0000-0000-0000-000000000022'
   );
 
--- Partners: one active, one dissolved.
+-- Partners: one active, one dissolved, one widowed.
 insert into
   public.citizens (
     id,
@@ -242,6 +247,29 @@ values
   );
 
 insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    death_cause,
+    death_cause_category
+  )
+values
+  (
+    '1a000000-0000-0000-0000-000000000032',
+    '1a000000-0000-0000-0000-000000000002',
+    '1a000000-0000-0000-0000-000000000004',
+    'npc',
+    'LatePartner',
+    'dead',
+    'Unknown',
+    'unknown'
+  );
+
+insert into
   public.partnerships (
     citizen_a_id,
     citizen_b_id,
@@ -263,6 +291,56 @@ values
     'dissolved',
     1,
     2
+  ),
+  (
+    '1a000000-0000-0000-0000-000000000010',
+    '1a000000-0000-0000-0000-000000000032',
+    'widowed',
+    1,
+    3
+  );
+
+-- Collapsed-unknown fixture: CollapseParent's own parents are both
+-- unrecorded, so CollapseCenter's generation -2 must yield a single
+-- collapsed Unknown terminator instead of two.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status
+  )
+values
+  (
+    '1a000000-0000-0000-0000-000000000041',
+    '1a000000-0000-0000-0000-000000000002',
+    '1a000000-0000-0000-0000-000000000004',
+    'npc',
+    'CollapseParent',
+    'alive'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    parent_a_citizen_id
+  )
+values
+  (
+    '1a000000-0000-0000-0000-000000000040',
+    '1a000000-0000-0000-0000-000000000002',
+    '1a000000-0000-0000-0000-000000000004',
+    'npc',
+    'CollapseCenter',
+    'alive',
+    '1a000000-0000-0000-0000-000000000041'
   );
 
 -- ---------------------------------------------------------------------------
@@ -393,9 +471,56 @@ select
         public.get_citizen_family_tree ('1a000000-0000-0000-0000-000000000010')
       where
         citizen_id = '1a000000-0000-0000-0000-000000000031'
+        and direction = 'partner'
+        and partnership_status = 'dissolved'
     ),
-    0,
-    'a dissolved partnership does not appear in the tree'
+    1,
+    'a dissolved (former) partnership appears in the tree, tagged dissolved'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.get_citizen_family_tree ('1a000000-0000-0000-0000-000000000010')
+      where
+        citizen_id = '1a000000-0000-0000-0000-000000000032'
+        and direction = 'partner'
+        and partnership_status = 'widowed'
+    ),
+    1,
+    'a widowed partnership appears in the tree, tagged widowed'
+  );
+
+select
+  is (
+    (
+      select
+        parent_a_citizen_id
+      from
+        public.get_citizen_family_tree ('1a000000-0000-0000-0000-000000000010')
+      where
+        citizen_id = '1a000000-0000-0000-0000-000000000012'
+    ),
+    '1a000000-0000-0000-0000-000000000013'::uuid,
+    'ancestor rows expose their own parent_a_citizen_id for client-side edge derivation'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.get_citizen_family_tree ('1a000000-0000-0000-0000-000000000040')
+      where
+        direction = 'unknown'
+        and generation = -2
+    ),
+    1,
+    'an ancestor with both parent slots unrecorded collapses into a single Unknown terminator, not one per slot'
   );
 
 select

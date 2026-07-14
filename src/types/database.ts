@@ -6036,7 +6036,10 @@ export type Database = {
           generation: number;
           name: string;
           node_path: string;
+          parent_a_citizen_id: string;
+          parent_b_citizen_id: string;
           parent_path: string;
+          partnership_status: string;
           status: string;
         }[];
       };

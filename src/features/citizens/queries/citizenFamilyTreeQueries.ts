@@ -1,6 +1,7 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import type { PartnershipStatus } from "@/features/partnerships";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -28,7 +29,10 @@ type FamilyTreeRow = {
   readonly generation: number;
   readonly name: string | null;
   readonly node_path: string;
+  readonly parent_a_citizen_id: string | null;
+  readonly parent_b_citizen_id: string | null;
   readonly parent_path: string | null;
+  readonly partnership_status: PartnershipStatus | null;
   readonly status: "alive" | "dead" | null;
 };
 
@@ -65,7 +69,10 @@ function toFamilyTreeNode(row: FamilyTreeRow): FamilyTreeNode {
     generation: row.generation,
     name: row.name,
     nodePath: row.node_path,
+    parentACitizenId: row.parent_a_citizen_id,
+    parentBCitizenId: row.parent_b_citizen_id,
     parentPath: row.parent_path,
+    partnershipStatus: row.partnership_status,
     status: row.status,
   };
 }
