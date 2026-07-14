@@ -30,6 +30,25 @@ Do not read `README.md` or `CONTRIBUTING.md` unless task asks.
 - Do not expose service-role keys or third-party secrets to browser code.
 - Review every change for security impact before finish.
 
+## UI Verification (required)
+
+Any change that affects UI (components, styles, layout, routing, data displayed) is not complete until verified in the browser with the `dev-browser` skill. Never report UI work as done based only on code compiling or type-checking.
+
+After making UI changes:
+
+1. Ensure the dev server is running: `npm run dev` (Vite, port 5173). Start it if needed.
+2. Use `dev-browser` to open the affected page(s) at `http://localhost:5173`.
+3. Take a screenshot and actually look at it. Check for: broken layout, overlapping/clipped elements, missing content, unstyled elements, placeholder text, obviously wrong spacing or alignment.
+4. Interact with the new feature the way a user would — click buttons, fill forms, open modals, navigate flows. Verify each interaction produces the expected result.
+5. Check the browser console for errors and warnings, and network requests for failures. Fix any that relate to the change.
+6. Test at desktop and mobile viewport widths for layout changes.
+7. Iterate: fix issues found, re-verify, repeat until a screenshot review passes. Only then report the work complete, and include a brief summary of what was verified.
+
+Auth and styling notes:
+
+- Local auth uses seeded test accounts (password `password123` for all; see `e2e/roles.ts`): `superadmin@gubernator.local`, `worldadmin@gubernator.local`, `other@gubernator.local` (nation manager), `test@gubernator.local` (settlement manager), `player@gubernator.local`. Sign in at `/sign-in`. Requires local Supabase running with seed data (`supabase db reset` if accounts are missing).
+- Reuse existing components and design tokens from `src/components/ui` (shadcn/ui primitives), `src/components/app`, and `src/components/shared` instead of inventing new styles; match the visual patterns of existing pages.
+
 ## Truth
 
 - `src/routes`
