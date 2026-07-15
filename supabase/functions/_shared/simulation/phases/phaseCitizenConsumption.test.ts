@@ -67,6 +67,9 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
       category: "starvation",
       citizenId: "c1",
     });
+    // Human-readable, not the old raw "food: 0/10, water: 0/5" debug string.
+    expect(result.citizenDeaths[0].detail).toMatch(/^Died of starvation on turn 1 —/);
+    expect(result.citizenDeaths[0].detail).not.toMatch(/^[a-z]+: [\d.]+\/[\d.]+/i);
     expect(result.notifications).toHaveLength(1);
     expect(result.notifications[0].notificationType).toBe(
       "settlement.starvation_occurred",
