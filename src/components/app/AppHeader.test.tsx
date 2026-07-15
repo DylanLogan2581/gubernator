@@ -20,8 +20,9 @@ const WORLD_ID = "00000000-0000-0000-0000-000000000101";
 const NATION_ID = "nation-1";
 const SETTLEMENT_ID = "settlement-1";
 
-const { requireSupabaseClient, useParams } = vi.hoisted(() => ({
+const { requireSupabaseClient, useLocation, useParams } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
+  useLocation: vi.fn<() => { pathname: string }>(),
   useParams: vi.fn<() => Record<string, string | undefined>>(),
 }));
 
@@ -48,7 +49,7 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
-  useLocation: () => ({ pathname: "/" }),
+  useLocation,
   useNavigate: () => vi.fn(),
   useParams,
   useRouter: () => ({
@@ -59,6 +60,8 @@ vi.mock("@tanstack/react-router", () => ({
 describe("AppHeader", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    useLocation.mockReset();
+    useLocation.mockReturnValue({ pathname: "/" });
     useParams.mockReset();
     useParams.mockReturnValue({});
     // useAppShellWorldContext persists the current route world to
@@ -141,6 +144,15 @@ describe("AppHeader", () => {
     renderAppHeader(<AppHeader action={<a href="/sign-in">Sign in</a>} />);
     expect(screen.getByText("Gubernator")).toBeDefined();
     expect(screen.getByRole("link", { name: "Sign in" })).toBeDefined();
+  });
+
+  it("hides the sign-in action on the sign-in page itself", () => {
+    useLocation.mockReturnValue({ pathname: "/sign-in" });
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: null }).client,
+    );
+    renderAppHeader(<AppHeader action={<a href="/sign-in">Sign in</a>} />);
+    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
   });
 
   it("shows the unread notification badge when a user has unread rows", async () => {

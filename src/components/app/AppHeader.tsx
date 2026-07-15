@@ -89,7 +89,7 @@ export function AppHeader({
             worldId={worldId}
           />
         ) : null}
-        {action}
+        {location.pathname === "/sign-in" ? null : action}
       </div>
     </header>
   );

@@ -5,16 +5,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SignInPage } from "./SignInPage";
 
-const { toastError } = vi.hoisted(() => ({
-  toastError: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: {
-    error: toastError,
-  },
-}));
-
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -25,7 +15,6 @@ vi.mock("@/lib/supabase", () => ({
 
 describe("SignInPage", () => {
   beforeEach(() => {
-    toastError.mockReset();
     requireSupabaseClient.mockReset();
     requireSupabaseClient.mockReturnValue(createClient());
   });
@@ -45,7 +34,7 @@ describe("SignInPage", () => {
     expect(screen.getByText("Enter your password.")).toBeDefined();
   });
 
-  it("shows a safe message for authentication failures", async () => {
+  it("shows a safe inline message for authentication failures", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -61,14 +50,9 @@ describe("SignInPage", () => {
     await user.type(screen.getByLabelText("Password"), "bad-password");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith(
-        "Email or password is incorrect.",
-      );
-    });
-    expect(toastError).not.toHaveBeenCalledWith(
-      "Database host details leaked.",
-    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Email or password is incorrect.");
+    expect(screen.queryByText("Database host details leaked.")).toBeNull();
   });
 
   it("calls the success handler after successful sign-in", async () => {

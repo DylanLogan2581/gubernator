@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LoaderCircle, LogIn } from "lucide-react";
+import { LoaderCircle, LogIn, TriangleAlert } from "lucide-react";
 import {
   useId,
   useState,
@@ -7,8 +7,8 @@ import {
   type FormEvent,
   type JSX,
 } from "react";
-import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,9 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
   const [credentials, setCredentials] =
     useState<SignInCredentials>(initialCredentials);
   const [fieldErrors, setFieldErrors] = useState<SignInFieldErrors>({});
+  const [signInErrorMessage, setSignInErrorMessage] = useState<string | null>(
+    null,
+  );
   const isSubmitting = signInMutation.isPending;
 
   function handleEmailChange(event: ChangeEvent<HTMLInputElement>): void {
@@ -74,6 +77,7 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
     }
 
     setFieldErrors({});
+    setSignInErrorMessage(null);
 
     try {
       const signInResult = await signInMutation.mutateAsync(result.data);
@@ -81,12 +85,12 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
       await onSignInSuccess();
     } catch (error) {
-      toast.error(getSafeSignInErrorMessage(error));
+      setSignInErrorMessage(getSafeSignInErrorMessage(error));
     }
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl items-center gap-8 py-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
+    <div className="mx-auto grid min-h-[calc(100dvh-3.5rem)] w-full max-w-5xl items-center gap-8 py-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
       <section
         aria-hidden="true"
         className="hidden flex-col justify-center gap-6 rounded-xl bg-gradient-to-br from-primary/15 via-card to-card p-10 ring-1 ring-foreground/10 lg:flex"
@@ -106,14 +110,20 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
       </section>
 
       <section className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm sm:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-          <p
-            id={formDescriptionId}
-            className="mt-2 text-sm text-muted-foreground"
-          >
-            Use your Gubernator account to continue to your worlds.
-          </p>
+        <div className="mb-6 flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
+          <div className="flex items-center gap-2 lg:hidden">
+            <img src="/logo.png" alt="" className="size-6" />
+            <span className="font-semibold">Gubernator</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+            <p
+              id={formDescriptionId}
+              className="mt-2 text-sm text-muted-foreground"
+            >
+              Use your Gubernator account to continue to your worlds.
+            </p>
+          </div>
         </div>
 
         <form
@@ -130,6 +140,8 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
               type="email"
               autoComplete="email"
               inputMode="email"
+              required
+              aria-required="true"
               value={credentials.email}
               aria-describedby={
                 fieldErrors.email === undefined ? undefined : emailErrorId
@@ -152,6 +164,8 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
               name="password"
               type="password"
               autoComplete="current-password"
+              required
+              aria-required="true"
               value={credentials.password}
               aria-describedby={
                 fieldErrors.password === undefined ? undefined : passwordErrorId
@@ -168,6 +182,13 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
               </p>
             )}
           </div>
+
+          {signInErrorMessage === null ? null : (
+            <Alert variant="destructive">
+              <TriangleAlert aria-hidden="true" />
+              <AlertDescription>{signInErrorMessage}</AlertDescription>
+            </Alert>
+          )}
 
           <Button type="submit" className="mt-1 w-full" disabled={isSubmitting}>
             {isSubmitting ? (
