@@ -481,17 +481,71 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     await screen.findByText("No accessible worlds");
-    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    const trashToggle = screen.getByRole("button", { name: "Trash" });
+    expect(trashToggle).toHaveAttribute("aria-pressed", "false");
+    await user.click(trashToggle);
     await screen.findByText("Trashed World");
 
-    expect(screen.getByText("Permanent deletion happens in")).toBeDefined();
-    expect(screen.getByRole("link", { name: "Superadmin" })).toHaveAttribute(
-      "href",
-      "/superadmin/worlds",
-    );
+    expect(
+      screen.getByText("Permanent deletion happens in", { exact: false }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: "the Superadmin area" }),
+    ).toHaveAttribute("href", "/superadmin/worlds");
     expect(
       screen.queryByRole("button", { name: "Delete permanently" }),
     ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Back to worlds" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("toggles back to the active world list from the trash view", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+        trashedWorldRows: [
+          createWorldRow({ name: "Trashed World", is_trashed: true }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Test World");
+    await user.click(screen.getByRole("button", { name: "Trash" }));
+    await screen.findByText("Trashed World");
+
+    await user.click(screen.getByRole("button", { name: "Back to worlds" }));
+
+    await screen.findByText("Test World");
+    expect(screen.queryByText("Trashed World")).toBeNull();
+  });
+
+  it("toggles the trash view via keyboard activation", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        trashedWorldRows: [
+          createWorldRow({ name: "Trashed World", is_trashed: true }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No accessible worlds");
+    const trashToggle = screen.getByRole("button", { name: "Trash" });
+    trashToggle.focus();
+    await user.keyboard("{Enter}");
+
+    await screen.findByText("Trashed World");
   });
 
   it("restores a trashed world", async () => {
@@ -531,7 +585,7 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     await screen.findByText("No accessible worlds");
-    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await user.click(screen.getByRole("button", { name: "Trash" }));
     await screen.findByText("Trashed World");
     await user.click(screen.getByRole("button", { name: "Restore" }));
 

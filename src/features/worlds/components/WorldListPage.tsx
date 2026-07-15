@@ -161,114 +161,45 @@ function WorldListContent({
     );
   }
 
-  if (showTrash && accessContext.isSuperAdmin) {
-    const trashed = trashedWorldsQuery.data ?? [];
-    return (
-      <WorldListFrame>
-        <div className="grid gap-4">
-          <PageHeader
-            icon={Trash2}
-            title="Trash"
-            actions={
-              <TrashToggleButton
-                showTrash
-                onToggle={() => {
-                  setShowTrash(false);
-                }}
-              />
-            }
-          />
-          <p className="text-sm text-muted-foreground">
-            Permanent deletion happens in{" "}
-            <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link to="/superadmin/worlds">Superadmin</Link>
-            </Button>
-          </p>
-          {trashedWorldsQuery.isPending ? (
-            <LoadingState label="Loading trashed worlds…" />
-          ) : trashedWorldsQuery.isError ? (
-            <ErrorState
-              title="Trashed worlds could not be loaded"
-              description={getErrorDescription(trashedWorldsQuery.error)}
-            />
-          ) : trashed.length === 0 ? (
-            <AccessDeniedState
-              title="No worlds in trash"
-              description="Worlds you move to trash will appear here."
-            />
-          ) : (
-            <ul className="grid gap-2" aria-label="Trashed worlds">
-              {trashed.map((world) => (
-                <TrashedWorldRow
-                  key={world.id}
-                  queryClient={queryClient}
-                  world={world}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      </WorldListFrame>
-    );
-  }
-
+  const effectiveShowTrash = showTrash && accessContext.isSuperAdmin;
   const activeWorlds = worldsQuery.data;
+  const trashed = trashedWorldsQuery.data ?? [];
 
   return (
     <WorldListFrame>
       <div className="grid gap-4">
         <PageHeader
-          icon={Globe2}
-          title="Worlds"
+          icon={effectiveShowTrash ? Trash2 : Globe2}
+          title={effectiveShowTrash ? "Trash" : "Worlds"}
           actions={
-            <>
-              {accessContext.isSuperAdmin ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowCreateDialog(true);
-                  }}
-                >
-                  <Plus aria-hidden="true" />
-                  Create world
-                </Button>
-              ) : null}
-              {accessContext.isSuperAdmin ? (
-                <WorldTemplateImportButton queryClient={queryClient} />
-              ) : null}
-              {accessContext.isSuperAdmin ? (
-                <TrashToggleButton
-                  showTrash={false}
-                  onToggle={() => {
-                    setShowTrash(true);
-                  }}
-                />
-              ) : null}
-            </>
+            <WorldListActions
+              accessContext={accessContext}
+              effectiveShowTrash={effectiveShowTrash}
+              queryClient={queryClient}
+              onCreateWorld={() => {
+                setShowCreateDialog(true);
+              }}
+              onToggleTrash={() => {
+                setShowTrash(!effectiveShowTrash);
+              }}
+            />
           }
         />
 
-        {activeWorlds.length === 0 ? (
-          <AccessDeniedState
-            title="No accessible worlds"
-            description="Your Gubernator account does not currently have access to any worlds."
+        {effectiveShowTrash ? (
+          <TrashSection
+            error={trashedWorldsQuery.error}
+            isError={trashedWorldsQuery.isError}
+            isPending={trashedWorldsQuery.isPending}
+            queryClient={queryClient}
+            trashed={trashed}
           />
         ) : (
-          <ul
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-            aria-label="Accessible worlds"
-          >
-            {activeWorlds.map((world) => (
-              <WorldListItem
-                key={world.id}
-                isSuperAdmin={accessContext.isSuperAdmin}
-                queryClient={queryClient}
-                world={world}
-              />
-            ))}
-          </ul>
+          <ActiveWorldsSection
+            activeWorlds={activeWorlds}
+            isSuperAdmin={accessContext.isSuperAdmin}
+            queryClient={queryClient}
+          />
         )}
       </div>
 
@@ -281,6 +212,138 @@ function WorldListContent({
         />
       ) : null}
     </WorldListFrame>
+  );
+}
+
+function WorldListActions({
+  accessContext,
+  effectiveShowTrash,
+  queryClient,
+  onCreateWorld,
+  onToggleTrash,
+}: {
+  readonly accessContext: AccessContext;
+  readonly effectiveShowTrash: boolean;
+  readonly queryClient: QueryClient;
+  readonly onCreateWorld: () => void;
+  readonly onToggleTrash: () => void;
+}): JSX.Element {
+  if (effectiveShowTrash) {
+    return (
+      <TrashToggleButton
+        showTrash={effectiveShowTrash}
+        onToggle={onToggleTrash}
+      />
+    );
+  }
+
+  return (
+    <>
+      {accessContext.isSuperAdmin ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCreateWorld}
+        >
+          <Plus aria-hidden="true" />
+          Create world
+        </Button>
+      ) : null}
+      {accessContext.isSuperAdmin ? (
+        <WorldTemplateImportButton queryClient={queryClient} />
+      ) : null}
+      {accessContext.isSuperAdmin ? (
+        <TrashToggleButton
+          showTrash={effectiveShowTrash}
+          onToggle={onToggleTrash}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function TrashSection({
+  isError,
+  isPending,
+  error,
+  queryClient,
+  trashed,
+}: {
+  readonly isError: boolean;
+  readonly isPending: boolean;
+  readonly error: unknown;
+  readonly queryClient: QueryClient;
+  readonly trashed: readonly AccessibleWorld[];
+}): JSX.Element {
+  return (
+    <>
+      <p className="text-sm text-muted-foreground">
+        Permanent deletion happens in{" "}
+        <Button asChild variant="link" size="sm" className="h-auto p-0">
+          <Link to="/superadmin/worlds">the Superadmin area</Link>
+        </Button>
+        .
+      </p>
+      {isPending ? (
+        <LoadingState label="Loading trashed worlds…" />
+      ) : isError ? (
+        <ErrorState
+          title="Trashed worlds could not be loaded"
+          description={getErrorDescription(error)}
+        />
+      ) : trashed.length === 0 ? (
+        <AccessDeniedState
+          title="No worlds in trash"
+          description="Worlds you move to trash will appear here."
+        />
+      ) : (
+        <ul className="grid gap-2" aria-label="Trashed worlds">
+          {trashed.map((world) => (
+            <TrashedWorldRow
+              key={world.id}
+              queryClient={queryClient}
+              world={world}
+            />
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+function ActiveWorldsSection({
+  activeWorlds,
+  isSuperAdmin,
+  queryClient,
+}: {
+  readonly activeWorlds: readonly AccessibleWorld[];
+  readonly isSuperAdmin: boolean;
+  readonly queryClient: QueryClient;
+}): JSX.Element {
+  if (activeWorlds.length === 0) {
+    return (
+      <AccessDeniedState
+        title="No accessible worlds"
+        description="Your Gubernator account does not currently have access to any worlds."
+      />
+    );
+  }
+
+  return (
+    <ul
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      aria-label="Accessible worlds"
+    >
+      {activeWorlds.map((world) => (
+        <WorldListItem
+          key={world.id}
+          isSuperAdmin={isSuperAdmin}
+          queryClient={queryClient}
+          world={world}
+        />
+      ))}
+    </ul>
   );
 }
 
@@ -299,7 +362,10 @@ function TrashToggleButton({
   readonly showTrash: boolean;
   readonly onToggle: () => void;
 }): JSX.Element {
-  const label = showTrash ? "Hide trash" : "Show trash";
+  const label = showTrash ? "Back to worlds" : "Trash";
+  const description = showTrash
+    ? "Back to active worlds"
+    : "Show trashed worlds";
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -307,15 +373,14 @@ function TrashToggleButton({
           type="button"
           variant="ghost"
           size="sm"
-          aria-label={label}
           aria-pressed={showTrash}
           onClick={onToggle}
         >
           <Trash2 aria-hidden="true" />
-          Trash
+          {label}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent>{description}</TooltipContent>
     </Tooltip>
   );
 }
