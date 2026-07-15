@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -62,6 +62,7 @@ vi.mock("@tanstack/react-router", () => ({
       </a>
     );
   },
+  useBlocker: () => ({ status: "idle" as const }),
   useNavigate: () => navigateMock,
 }));
 
@@ -148,6 +149,35 @@ describe("CitizenDetailPage", () => {
 
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
+  });
+
+  it("preserves a dirty core-info draft when switching tabs and back", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ name: "Aldra" }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Aldra" });
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editForm = screen.getByRole("form", { name: "Edit citizen core" });
+    const givenNameInput = within(editForm).getAllByRole("textbox")[0];
+    await userEvent.clear(givenNameInput);
+    await userEvent.type(givenNameInput, "Draft");
+
+    await userEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
+
+    expect(
+      within(
+        screen.getByRole("form", { name: "Edit citizen core" }),
+      ).getAllByRole("textbox")[0],
+    ).toHaveValue("Draft");
   });
 
   it("renders the deceased status and revive control for dead citizens viewed by admins", async () => {

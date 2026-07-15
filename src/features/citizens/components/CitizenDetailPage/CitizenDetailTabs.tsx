@@ -14,6 +14,7 @@ import { CitizenCoreSection } from "./CoreEditForm";
 import { CitizenCultureReligionEditSection } from "./CultureReligionEditSection";
 import { CitizenEducationEditSection } from "./EducationEditSection";
 import { CitizenFamilyTreeSection } from "./FamilyTreeSection";
+import { useCitizenCoreEditState } from "./hooks/UseCitizenCoreEditState";
 import { CitizenLifecycleSection } from "./LifecycleControls";
 import { CitizenMemoriesSection } from "./MemoriesSection";
 import { CitizenNpcFlavorSection } from "./NpcFlavorSection";
@@ -41,6 +42,7 @@ export function CitizenDetailTabs({
   readonly worldId: string;
 }): JSX.Element {
   const canEdit = canAdmin && !isArchived;
+  const coreEditState = useCitizenCoreEditState(citizen);
   const showLinkedUserReadout =
     citizen.citizenType === "player_character" &&
     (canAdmin || isOwnLivingCharacter);
@@ -101,6 +103,7 @@ export function CitizenDetailTabs({
           <CitizenCoreSection
             canEdit={canEdit}
             citizen={citizen}
+            editState={coreEditState}
             queryClient={queryClient}
           />
           <CitizenCultureReligionEditSection
