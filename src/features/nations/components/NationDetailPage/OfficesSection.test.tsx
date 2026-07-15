@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Citizen } from "@/features/citizens";
 import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
 
@@ -362,6 +363,112 @@ describe("NationOfficesSection", () => {
       );
     });
   });
+
+  it("requires confirmation before deleting a custom office type", async () => {
+    const user = userEvent.setup();
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: makeNationManager(),
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+
+    const clientFixture = createClientFixture({
+      citizens: [],
+      customOfficeTypes: [
+        {
+          id: "office-type-custom-1",
+          world_id: "world-1",
+          nation_id: "nation-1",
+          name: "Lord Commander",
+          description: null,
+          scope: "nation",
+          icon: null,
+          color: null,
+          max_holders: 1,
+          excludes_from_labor: true,
+          default_term_turns: null,
+        },
+      ],
+      offices: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderOfficesSection({
+      canAdminWorld: false,
+      nation: createNation("republic"),
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Manage office types" }),
+    );
+    await user.click(await screen.findByRole("button", { name: "Delete" }));
+
+    expect(clientFixture.deleteOfficeType).not.toHaveBeenCalled();
+
+    const confirmDialog = await screen.findByRole("alertdialog");
+    await user.click(
+      within(confirmDialog).getByRole("button", { name: "Delete" }),
+    );
+
+    await waitFor(() => {
+      expect(clientFixture.deleteOfficeType).toHaveBeenCalledWith(
+        "office-type-custom-1",
+      );
+    });
+  });
+
+  it("disables appointing an office holder when the nation has no offices", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        citizens: [],
+        includeDefaultOfficeTypes: false,
+        offices: [],
+      }).client,
+    );
+
+    renderOfficesSection({
+      canAdminWorld: true,
+      nation: createNation("republic"),
+    });
+
+    const appointButton = await screen.findByRole("button", {
+      name: "Appoint office holder",
+    });
+    expect(appointButton).toBeDisabled();
+  });
+
+  it("shows None for world defaults when the world defines no default offices", async () => {
+    const user = userEvent.setup();
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: makeNationManager(),
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        citizens: [],
+        includeDefaultOfficeTypes: false,
+        offices: [],
+      }).client,
+    );
+
+    renderOfficesSection({
+      canAdminWorld: false,
+      nation: createNation("republic"),
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Manage office types" }),
+    );
+
+    expect(await screen.findByText("World defaults")).toBeDefined();
+    expect(screen.getByText("None")).toBeDefined();
+  });
 });
 
 function renderOfficesSection({
@@ -375,11 +482,13 @@ function renderOfficesSection({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <NationOfficesSection
-        canAdminWorld={canAdminWorld}
-        isArchived={isArchived}
-        nation={nation}
-      />
+      <TooltipProvider>
+        <NationOfficesSection
+          canAdminWorld={canAdminWorld}
+          isArchived={isArchived}
+          nation={nation}
+        />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -446,10 +555,12 @@ function createNation(governmentType: NationGovernmentType): Nation {
 function createClientFixture({
   citizens,
   customOfficeTypes = [],
+  includeDefaultOfficeTypes = true,
   offices,
 }: {
   readonly citizens: readonly CitizenRow[];
   readonly customOfficeTypes?: readonly Record<string, unknown>[];
+  readonly includeDefaultOfficeTypes?: boolean;
   readonly offices: readonly {
     readonly id: string;
     readonly world_id: string;
@@ -460,6 +571,7 @@ function createClientFixture({
   }[];
 }): {
   readonly client: unknown;
+  readonly deleteOfficeType: ReturnType<typeof vi.fn>;
   readonly rpc: ReturnType<typeof vi.fn>;
   readonly update: ReturnType<typeof vi.fn>;
 } {
@@ -474,6 +586,7 @@ function createClientFixture({
   });
 
   const update = vi.fn<(patch: Record<string, unknown>) => void>();
+  const deleteOfficeType = vi.fn<(id: string) => void>();
 
   const from = vi.fn((table: string) => {
     if (table === "nation_offices") {
@@ -509,7 +622,12 @@ function createClientFixture({
               or: () => ({
                 order: () =>
                   Promise.resolve({
-                    data: [...defaultOfficeTypeRows(), ...customOfficeTypes],
+                    data: [
+                      ...(includeDefaultOfficeTypes
+                        ? defaultOfficeTypeRows()
+                        : []),
+                      ...customOfficeTypes,
+                    ],
                     error: null,
                   }),
               }),
@@ -530,6 +648,16 @@ function createClientFixture({
             }),
           };
         },
+        delete: () => ({
+          eq: (_column: string, id: string) => ({
+            select: () => ({
+              maybeSingle: () => {
+                deleteOfficeType(id);
+                return Promise.resolve({ data: { id }, error: null });
+              },
+            }),
+          }),
+        }),
       };
     }
     if (table === "citizen_directory_view") {
@@ -584,7 +712,7 @@ function createClientFixture({
     throw new Error(`Unexpected table ${table}`);
   });
 
-  return { client: { from, rpc }, rpc, update };
+  return { client: { from, rpc }, deleteOfficeType, rpc, update };
 }
 
 // The real supabase-js query builder exposes a type-only `.returns<T>()`

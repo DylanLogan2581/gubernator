@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -35,6 +36,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { playerCharactersInNationQueryOptions } from "@/features/citizens";
 import type { Citizen } from "@/features/citizens";
@@ -111,6 +117,7 @@ export function NationOfficesSection({
     return (
       <OfficesCardFrame
         canManage={canManage}
+        hasAppointableTypes={false}
         onAppoint={undefined}
         onManageTypes={undefined}
       >
@@ -123,6 +130,7 @@ export function NationOfficesSection({
     return (
       <OfficesCardFrame
         canManage={canManage}
+        hasAppointableTypes={false}
         onAppoint={undefined}
         onManageTypes={undefined}
       >
@@ -202,6 +210,7 @@ export function NationOfficesSection({
     <>
       <OfficesCardFrame
         canManage={canManage}
+        hasAppointableTypes={appointableTypes.length > 0}
         onAppoint={isArchived ? undefined : () => setIsAppointing(true)}
         onManageTypes={
           isArchived || !isNationManager
@@ -483,7 +492,7 @@ function AppointOfficeDialog({
               }}
             >
               <SelectTrigger id="office-type-select" aria-label="Office type">
-                <SelectValue />
+                <SelectValue placeholder="Select an office" />
               </SelectTrigger>
               <SelectContent>
                 {appointableTypes.map((type) => (
@@ -581,6 +590,7 @@ function OfficeTypeManagerDialog({
   const [maxHolders, setMaxHolders] = useState("");
   const [defaultTermTurns, setDefaultTermTurns] = useState("");
   const [excludesFromLabor, setExcludesFromLabor] = useState(true);
+  const [deletingType, setDeletingType] = useState<OfficeType | null>(null);
 
   const createMutation = useMutation(
     createOfficeTypeMutationOptions({ queryClient }),
@@ -631,7 +641,9 @@ function OfficeTypeManagerDialog({
     );
   }
 
-  function handleDelete(type: OfficeType): void {
+  function handleDeleteConfirm(): void {
+    if (deletingType === null) return;
+    const type = deletingType;
     deleteMutation.mutate(
       { id: type.id, nationId: type.nationId, worldId: type.worldId },
       {
@@ -642,6 +654,7 @@ function OfficeTypeManagerDialog({
           notifyMutationSuccess(
             `${formatNationOfficeType(type.name)} deleted.`,
           );
+          setDeletingType(null);
         },
       },
     );
@@ -696,176 +709,214 @@ function OfficeTypeManagerDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Manage office types</DialogTitle>
-          <DialogDescription>
-            Invent custom offices for {nation.name}. World-default offices are
-            managed by world admins.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage office types</DialogTitle>
+            <DialogDescription>
+              Invent custom offices for {nation.name}. World-default offices are
+              managed by world admins.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid gap-2">
-          <h3 className="text-sm font-medium">World defaults</h3>
-          <ul className="grid gap-1 text-sm text-muted-foreground">
-            {defaultTypes.map((type) => (
-              <li key={type.id}>{formatNationOfficeType(type.name)}</li>
-            ))}
-          </ul>
-        </div>
+          <div className="grid gap-2">
+            <h3 className="text-sm font-medium">World defaults</h3>
+            {defaultTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">None</p>
+            ) : (
+              <ul className="grid gap-1 text-sm text-muted-foreground">
+                {defaultTypes.map((type) => (
+                  <li key={type.id}>{formatNationOfficeType(type.name)}</li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-        <div className="grid gap-2">
-          <h3 className="text-sm font-medium">Custom offices</h3>
-          {customTypes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No custom offices yet.
-            </p>
-          ) : (
-            <ul className="grid gap-2">
-              {customTypes.map((type) => (
-                <li
-                  key={type.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-sm"
-                >
-                  <span>
-                    {type.name}
-                    {type.maxHolders === null
-                      ? ""
-                      : ` (max ${String(type.maxHolders)})`}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isArchived}
-                      onClick={() => handleStartEdit(type)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={
-                        isArchived ||
-                        deleteMutation.isPending ||
-                        (holderCountByType.get(type.id) ?? 0) > 0
-                      }
-                      onClick={() => handleDelete(type)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+          <div className="grid gap-2">
+            <h3 className="text-sm font-medium">Custom offices</h3>
+            {customTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No custom offices yet.
+              </p>
+            ) : (
+              <ul className="grid gap-2">
+                {customTypes.map((type) => (
+                  <li
+                    key={type.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-sm"
+                  >
+                    <span>
+                      {type.name}
+                      {type.maxHolders === null
+                        ? ""
+                        : ` (max ${String(type.maxHolders)})`}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isArchived}
+                        onClick={() => handleStartEdit(type)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          isArchived ||
+                          deleteMutation.isPending ||
+                          (holderCountByType.get(type.id) ?? 0) > 0
+                        }
+                        onClick={() => setDeletingType(type)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-        {isArchived ? null : (
-          <div className="grid gap-2 border-t border-border pt-3">
-            <h3 className="text-sm font-medium">
-              {editingId === null ? "New custom office" : "Edit custom office"}
-            </h3>
-            <div className="grid gap-1">
-              <Label htmlFor="new-office-type-name">Name</Label>
-              <Input
-                id="new-office-type-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Lord Commander of the Night Watch"
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="new-office-type-max-holders">
-                Max holders (optional)
-              </Label>
-              <Input
-                id="new-office-type-max-holders"
-                type="number"
-                min={1}
-                value={maxHolders}
-                onChange={(e) => setMaxHolders(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="new-office-type-default-term-turns">
-                Default term length in turns (optional, indefinite if blank)
-              </Label>
-              <Input
-                id="new-office-type-default-term-turns"
-                type="number"
-                min={1}
-                value={defaultTermTurns}
-                onChange={(e) => setDefaultTermTurns(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="new-office-type-excludes-labor"
-                checked={excludesFromLabor}
-                onCheckedChange={(checked) =>
-                  setExcludesFromLabor(checked === true)
-                }
-              />
-              <Label htmlFor="new-office-type-excludes-labor">
-                Excludes holder from labor
-              </Label>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                onClick={handleSave}
-                disabled={
-                  createMutation.isPending ||
-                  updateMutation.isPending ||
-                  name.trim() === ""
-                }
-                className="w-fit"
-              >
-                {formSubmitLabel({
-                  isCreating: createMutation.isPending,
-                  isEditing: editingId !== null,
-                  isSaving: updateMutation.isPending,
-                })}
-              </Button>
-              {editingId === null ? null : (
+          {isArchived ? null : (
+            <div className="grid gap-2 border-t border-border pt-3">
+              <h3 className="text-sm font-medium">
+                {editingId === null
+                  ? "New custom office"
+                  : "Edit custom office"}
+              </h3>
+              <div className="grid gap-1">
+                <Label htmlFor="new-office-type-name">Name</Label>
+                <Input
+                  id="new-office-type-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Lord Commander of the Night Watch"
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="new-office-type-max-holders">
+                  Max holders (optional)
+                </Label>
+                <Input
+                  id="new-office-type-max-holders"
+                  type="number"
+                  min={1}
+                  value={maxHolders}
+                  onChange={(e) => setMaxHolders(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="new-office-type-default-term-turns">
+                  Default term length in turns (optional, indefinite if blank)
+                </Label>
+                <Input
+                  id="new-office-type-default-term-turns"
+                  type="number"
+                  min={1}
+                  value={defaultTermTurns}
+                  onChange={(e) => setDefaultTermTurns(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="new-office-type-excludes-labor"
+                  checked={excludesFromLabor}
+                  onCheckedChange={(checked) =>
+                    setExcludesFromLabor(checked === true)
+                  }
+                />
+                <Label htmlFor="new-office-type-excludes-labor">
+                  Excludes holder from labor
+                </Label>
+              </div>
+              <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={resetForm}
+                  onClick={handleSave}
+                  disabled={
+                    createMutation.isPending ||
+                    updateMutation.isPending ||
+                    name.trim() === ""
+                  }
                   className="w-fit"
                 >
-                  Cancel
+                  {formSubmitLabel({
+                    isCreating: createMutation.isPending,
+                    isEditing: editingId !== null,
+                    isSaving: updateMutation.isPending,
+                  })}
                 </Button>
-              )}
+                {editingId === null ? null : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetForm}
+                    className="w-fit"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deletingType !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingType(null);
+        }}
+        title="Delete office type?"
+        description={
+          deletingType === null
+            ? ""
+            : `This will permanently delete ${formatNationOfficeType(deletingType.name)}. This action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+      />
+    </>
   );
 }
 
 function OfficesCardFrame({
   canManage,
   children,
+  hasAppointableTypes,
   onAppoint,
   onManageTypes,
 }: {
   readonly canManage: boolean;
   readonly children: JSX.Element;
+  readonly hasAppointableTypes: boolean;
   readonly onAppoint: (() => void) | undefined;
   readonly onManageTypes: (() => void) | undefined;
 }): JSX.Element {
+  const appointButton =
+    canManage && onAppoint !== undefined ? (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={!hasAppointableTypes}
+        onClick={onAppoint}
+      >
+        Appoint office holder
+      </Button>
+    ) : null;
   return (
     <Card aria-labelledby="nation-offices-heading" className="grid gap-3 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -883,16 +934,18 @@ function OfficesCardFrame({
               Manage office types
             </Button>
           ) : null}
-          {canManage && onAppoint !== undefined ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onAppoint}
-            >
-              Appoint office holder
-            </Button>
-          ) : null}
+          {appointButton !== null && !hasAppointableTypes ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>{appointButton}</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                This nation&apos;s government has no offices to appoint.
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            appointButton
+          )}
         </div>
       </div>
       {children}
