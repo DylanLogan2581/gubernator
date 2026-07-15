@@ -303,22 +303,39 @@ export function AppSidebar(): JSX.Element | null {
   ];
 
   // No resolvable scope (fresh admin, no pin, no PC home settlement) ->
-  // collapse to a single entry pointing at the nations list, where a
-  // settlement can be picked (docs/ui-redesign.md §3.2).
+  // collapse to a single entry pointing at a settlement listing: the current
+  // nation's Settlements page when a nation is scoped, otherwise the world
+  // nations list where a nation (and then a settlement) can be picked
+  // (docs/ui-redesign.md §3.2).
   const settlementItems: NavGroupItem[] =
     settlementId === null || nationId === null
       ? [
-          {
-            key: "settlement-choose",
-            label: "Choose a settlement…",
-            isActive: false,
-            link: (
-              <Link to="/worlds/$worldId/nations" params={{ worldId }}>
-                <MapPin aria-hidden="true" />
-                <span>Choose a settlement…</span>
-              </Link>
-            ),
-          },
+          nationId !== null
+            ? {
+                key: "settlement-choose",
+                label: "Choose a settlement…",
+                isActive: false,
+                link: (
+                  <Link
+                    to="/worlds/$worldId/nations/$nationId/settlements"
+                    params={{ nationId, worldId }}
+                  >
+                    <MapPin aria-hidden="true" />
+                    <span>Choose a settlement…</span>
+                  </Link>
+                ),
+              }
+            : {
+                key: "settlement-choose",
+                label: "Choose a nation…",
+                isActive: false,
+                link: (
+                  <Link to="/worlds/$worldId/nations" params={{ worldId }}>
+                    <MapPin aria-hidden="true" />
+                    <span>Choose a nation…</span>
+                  </Link>
+                ),
+              },
         ]
       : [
           settlementSectionItem("overview", {
