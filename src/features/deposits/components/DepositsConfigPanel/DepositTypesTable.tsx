@@ -76,7 +76,6 @@ function buildColumns({
             <IconChip
               icon={resolveEntityIcon(depositType.icon)}
               tone={hashToCategoricalSlot(depositType.id)}
-              size="sm"
             />
             <span className="font-medium">{depositType.name}</span>
           </div>

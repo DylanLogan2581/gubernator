@@ -422,7 +422,6 @@ function DuplicateBuildingGroupRows({
               <IconChip
                 icon={resolveEntityIcon(first.blueprintIcon)}
                 tone={hashToCategoricalSlot(first.buildingBlueprintId)}
-                size="sm"
               />
               {name} ×{buildings.length}
             </Button>
@@ -469,7 +468,6 @@ function DuplicateBuildingGroupRows({
           <IconChip
             icon={resolveEntityIcon(first.blueprintIcon)}
             tone={hashToCategoricalSlot(first.buildingBlueprintId)}
-            size="sm"
           />
           {name} ×{buildings.length}
         </Button>

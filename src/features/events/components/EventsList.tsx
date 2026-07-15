@@ -479,7 +479,6 @@ function EventRow({
           <IconChip
             icon={DOMAIN_ICON_CHIPS.events.icon}
             tone={DOMAIN_ICON_CHIPS.events.tone}
-            size="sm"
           />
           {displayName}
         </span>
@@ -548,7 +547,6 @@ function GroupedEventRow({
           <IconChip
             icon={DOMAIN_ICON_CHIPS.events.icon}
             tone={DOMAIN_ICON_CHIPS.events.tone}
-            size="sm"
           />
           {displayName}
         </span>

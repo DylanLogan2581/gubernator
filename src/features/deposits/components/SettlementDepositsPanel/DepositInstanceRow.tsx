@@ -102,7 +102,6 @@ export function DepositInstanceRow({
             <IconChip
               icon={resolveEntityIcon(instance.depositTypeIcon)}
               tone={hashToCategoricalSlot(instance.depositTypeId)}
-              size="sm"
             />
             {instance.name}
             {isDepletion ? (

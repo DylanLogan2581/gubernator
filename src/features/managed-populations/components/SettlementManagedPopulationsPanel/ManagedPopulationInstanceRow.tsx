@@ -212,7 +212,6 @@ export function ManagedPopulationInstanceRow({
             <IconChip
               icon={resolveEntityIcon(type?.icon ?? null)}
               tone={hashToCategoricalSlot(type?.id ?? instance.id)}
-              size="sm"
             />
             {instance.name}
             {instance.status === "extinct" ? (

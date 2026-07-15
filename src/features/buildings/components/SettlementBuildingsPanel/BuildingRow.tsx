@@ -151,7 +151,6 @@ export function BuildingRow({
             <IconChip
               icon={resolveEntityIcon(building.blueprintIcon)}
               tone={hashToCategoricalSlot(building.buildingBlueprintId)}
-              size="sm"
             />
             {building.name ?? building.blueprintName}
           </span>

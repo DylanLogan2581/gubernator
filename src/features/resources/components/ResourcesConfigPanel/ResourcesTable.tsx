@@ -77,7 +77,6 @@ function buildColumns({
             <IconChip
               icon={resolveEntityIcon(resource.icon)}
               tone={hashToCategoricalSlot(resource.id)}
-              size="sm"
             />
             <span className="font-medium">{resource.name}</span>
             {resource.isSystemResource ? (

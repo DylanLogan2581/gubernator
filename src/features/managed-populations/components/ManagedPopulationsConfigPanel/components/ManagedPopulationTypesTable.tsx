@@ -89,7 +89,6 @@ function buildColumns({
             <IconChip
               icon={resolveEntityIcon(populationType.icon)}
               tone={hashToCategoricalSlot(populationType.id)}
-              size="sm"
             />
             <span className="font-medium">{populationType.name}</span>
             {showTrash ? <Badge variant="outline">trashed</Badge> : null}

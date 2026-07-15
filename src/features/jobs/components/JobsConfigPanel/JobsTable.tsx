@@ -80,7 +80,6 @@ function buildColumns({
             <IconChip
               icon={resolveEntityIcon(job.icon)}
               tone={hashToCategoricalSlot(job.id)}
-              size="sm"
             />
             <span className="font-medium">{job.name}</span>
           </div>

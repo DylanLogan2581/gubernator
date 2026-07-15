@@ -101,7 +101,6 @@ function buildColumns({
             <IconChip
               icon={resolveEntityIcon(blueprint.icon)}
               tone={hashToCategoricalSlot(blueprint.id)}
-              size="sm"
             />
             <span className="font-medium">{blueprint.name}</span>
           </div>

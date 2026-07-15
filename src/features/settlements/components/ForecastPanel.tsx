@@ -264,7 +264,6 @@ function ForecastPanelContent({
             <IconChip
               icon={resolveEntityIcon(info?.icon ?? null)}
               tone={hashToCategoricalSlot(delta.resourceId)}
-              size="sm"
             />
             <span>{name}</span>
           </div>

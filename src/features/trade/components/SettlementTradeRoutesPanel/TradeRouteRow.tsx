@@ -97,7 +97,6 @@ export function TradeRouteRow({
             <IconChip
               icon={DOMAIN_ICON_CHIPS.trade.icon}
               tone={DOMAIN_ICON_CHIPS.trade.tone}
-              size="sm"
             />
             {counterpart}
           </span>

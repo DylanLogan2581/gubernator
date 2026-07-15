@@ -87,7 +87,6 @@ export function ResourceCategoriesTable({
                       <IconChip
                         icon={resolveEntityIcon(category.icon)}
                         tone={hashToCategoricalSlot(category.id)}
-                        size="sm"
                       />
                       <span
                         aria-hidden="true"

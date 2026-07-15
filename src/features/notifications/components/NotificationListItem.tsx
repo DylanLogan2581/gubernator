@@ -40,7 +40,6 @@ export function NotificationListItem({
       <IconChip
         icon={getNotificationTypeIcon(notification.notificationType)}
         tone={severityIconTone(notification.severity)}
-        size="sm"
       />
 
       <div className="min-w-0 flex-1">

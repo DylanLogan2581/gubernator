@@ -294,7 +294,6 @@ function StockpileRow({
           <IconChip
             icon={resolveEntityIcon(stockpile.resourceIcon)}
             tone={hashToCategoricalSlot(stockpile.resourceId)}
-            size="sm"
           />
           <span>{stockpile.resourceName}</span>
           {stockpile.isSystemResource ? (
