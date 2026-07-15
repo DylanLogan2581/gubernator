@@ -77,7 +77,7 @@ export function NationDiscoveryConfigPanel({
   }
 
   const nations = nationsQuery.data;
-  const filteredNations =
+  const matchedNations =
     search.trim().length === 0
       ? nations
       : nations.filter((nation) =>
@@ -209,9 +209,9 @@ export function NationDiscoveryConfigPanel({
         }}
       />
 
-      {filteredNations.length < 2 ? (
+      {matchedNations.length === 0 ? (
         <EmptyState
-          title="No matching pairs"
+          title="No matching nations"
           description="Adjust your search to see nation pairs."
         />
       ) : (
@@ -220,9 +220,10 @@ export function NationDiscoveryConfigPanel({
             <NationDiscoveryGrid
               bulkPendingNationId={bulkPendingNationId}
               canEdit={canEdit}
-              nations={filteredNations}
+              columns={nations}
               pairsByKey={pairsByKey}
               pendingKey={pendingKey}
+              rows={matchedNations}
               onClearAll={(nation) => {
                 void handleClearAll(nation);
               }}
@@ -235,9 +236,10 @@ export function NationDiscoveryConfigPanel({
           <div className="md:hidden">
             <NationDiscoveryList
               canEdit={canEdit}
-              nations={filteredNations}
+              columns={nations}
               pairsByKey={pairsByKey}
               pendingKey={pendingKey}
+              rows={matchedNations}
               onToggle={handleToggle}
             />
           </div>

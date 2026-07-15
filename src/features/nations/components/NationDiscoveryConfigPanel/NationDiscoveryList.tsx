@@ -9,7 +9,8 @@ import type { Nation, NationDiscoveryPair } from "../../types/nationTypes";
 
 type NationDiscoveryListProps = {
   readonly canEdit: boolean;
-  readonly nations: readonly Nation[];
+  readonly rows: readonly Nation[];
+  readonly columns: readonly Nation[];
   readonly pairsByKey: ReadonlyMap<string, NationDiscoveryPair>;
   readonly pendingKey: string | null;
   readonly onToggle: (nationA: Nation, nationB: Nation, met: boolean) => void;
@@ -17,17 +18,29 @@ type NationDiscoveryListProps = {
 
 export function NationDiscoveryList({
   canEdit,
-  nations,
+  rows,
+  columns,
   pairsByKey,
   pendingKey,
   onToggle,
 }: NationDiscoveryListProps): JSX.Element {
   const pairs: { readonly a: Nation; readonly b: Nation }[] = [];
-  for (let i = 0; i < nations.length; i += 1) {
-    for (let j = i + 1; j < nations.length; j += 1) {
-      pairs.push({ a: nations[i], b: nations[j] });
-    }
-  }
+  rows.forEach((row, rowIndex) => {
+    columns.forEach((column) => {
+      if (column.id === row.id) {
+        return;
+      }
+      // Skip pairs already listed from the other nation's row (see
+      // NationDiscoveryGrid for the same de-duplication rule).
+      const mirrorRowIndex = rows.findIndex(
+        (candidate) => candidate.id === column.id,
+      );
+      if (mirrorRowIndex !== -1 && mirrorRowIndex < rowIndex) {
+        return;
+      }
+      pairs.push({ a: row, b: column });
+    });
+  });
 
   if (pairs.length === 0) {
     return (

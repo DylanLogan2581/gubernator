@@ -59,6 +59,61 @@ describe("NationDiscoveryConfigPanel", () => {
     });
   });
 
+  it("shows the matched nation's pairs against all nations when search matches exactly one", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      discoveryRows: [],
+      nationRows: [
+        { id: "nation-1", name: "Saltmarsh League" },
+        { id: "nation-2", name: "Aldermoor" },
+        { id: "nation-3", name: "Corvia" },
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("table");
+    await user.type(
+      screen.getByRole("textbox", { name: "Search nations" }),
+      "salt",
+    );
+
+    expect(screen.queryByText("No matching pairs")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Saltmarsh League ↔ Aldermoor: not discovered",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Saltmarsh League ↔ Corvia: not discovered",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'No matching nations' when the search matches nothing", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      discoveryRows: [],
+      nationRows: [
+        { id: "nation-1", name: "Nation A" },
+        { id: "nation-2", name: "Nation B" },
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("table");
+    await user.type(
+      screen.getByRole("textbox", { name: "Search nations" }),
+      "zzz-no-match",
+    );
+
+    expect(await screen.findByText("No matching nations")).toBeInTheDocument();
+  });
+
   it("disables toggles for a non-admin viewer", async () => {
     const clientFixture = createClientFixture({
       discoveryRows: [

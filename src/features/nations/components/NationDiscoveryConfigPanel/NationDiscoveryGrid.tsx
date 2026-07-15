@@ -10,7 +10,8 @@ import type { Nation, NationDiscoveryPair } from "../../types/nationTypes";
 
 type NationDiscoveryGridProps = {
   readonly canEdit: boolean;
-  readonly nations: readonly Nation[];
+  readonly rows: readonly Nation[];
+  readonly columns: readonly Nation[];
   readonly pairsByKey: ReadonlyMap<string, NationDiscoveryPair>;
   readonly pendingKey: string | null;
   readonly bulkPendingNationId: string | null;
@@ -23,17 +24,18 @@ const CELL_SIZE = "size-14";
 const CELL_PX = 56;
 const NAME_COLUMN_PX = 132;
 
-// Full N x N matrix is rendered so the grid reads symmetrically, but only the
-// upper triangle (columnIndex > rowIndex) is interactive: each unordered pair
-// has exactly one control there. The diagonal and lower triangle mirror the
-// same state, muted and non-interactive, purely so rows/columns stay easy to
-// scan. Columns are labeled with an index rather than a rotated name so
+// Rows and columns are independent lists: columns are always every nation in
+// the world (for context), while rows are the nations matching the current
+// search (all of them when the search is empty). When a matched nation also
+// appears as a column, only the first occurrence by row order stays
+// interactive — the other is shown muted so the same pair never has two
+// controls. Columns are labeled with an index rather than a rotated name so
 // headers stay legible regardless of name length; the legend below maps
-// indices back to full names and is also exposed to row headers and
-// screen readers.
+// indices back to full names and is also exposed to screen readers.
 export function NationDiscoveryGrid({
   canEdit,
-  nations,
+  rows,
+  columns,
   pairsByKey,
   pendingKey,
   bulkPendingNationId,
@@ -51,18 +53,18 @@ export function NationDiscoveryGrid({
 
   return (
     <div className="flex flex-col gap-3">
-      <DiscoveryLegend nations={nations} />
+      <DiscoveryLegend nations={columns} />
       <div
         className="max-h-[70vh] w-fit max-w-full overflow-auto rounded-md border border-border"
         onMouseLeave={clearHover}
       >
         <table
           className="table-fixed border-separate border-spacing-0 text-sm"
-          style={{ width: NAME_COLUMN_PX + nations.length * CELL_PX }}
+          style={{ width: NAME_COLUMN_PX + columns.length * CELL_PX }}
         >
           <colgroup>
             <col style={{ width: NAME_COLUMN_PX }} />
-            {nations.map((column) => (
+            {columns.map((column) => (
               <col key={column.id} style={{ width: CELL_PX }} />
             ))}
           </colgroup>
@@ -74,7 +76,7 @@ export function NationDiscoveryGrid({
               >
                 Nation
               </th>
-              {nations.map((column, columnIndex) => (
+              {columns.map((column, columnIndex) => (
                 <th
                   key={column.id}
                   scope="col"
@@ -100,7 +102,7 @@ export function NationDiscoveryGrid({
             </tr>
           </thead>
           <tbody>
-            {nations.map((row, rowIndex) => {
+            {rows.map((row, rowIndex) => {
               const isRowBulkPending = bulkPendingNationId === row.id;
 
               return (
@@ -118,12 +120,6 @@ export function NationDiscoveryGrid({
                   >
                     <div className="flex min-w-0 items-center gap-1">
                       <span className="min-w-0 flex-1 truncate">
-                        <span
-                          aria-hidden="true"
-                          className="text-muted-foreground"
-                        >
-                          {rowIndex + 1}.
-                        </span>{" "}
                         {row.name}
                       </span>
                       {canEdit ? (
@@ -158,12 +154,22 @@ export function NationDiscoveryGrid({
                       ) : null}
                     </div>
                   </th>
-                  {nations.map((column, columnIndex) => {
+                  {columns.map((column) => {
                     const key = discoveryPairKey(row.id, column.id);
                     const pair = pairsByKey.get(key);
                     const met = pair !== undefined;
-                    const isDiagonal = columnIndex === rowIndex;
-                    const isInteractive = columnIndex > rowIndex;
+                    const isDiagonal = column.id === row.id;
+                    // When a pair's nations both appear as rows (e.g. the
+                    // search matched more than one nation), the pair would
+                    // otherwise render twice — once per row. Only the first
+                    // occurrence (by row order) stays interactive; the other
+                    // is shown muted, mirroring the upper/lower triangle
+                    // convention from the unfiltered square matrix.
+                    const mirrorRowIndex = rows.findIndex(
+                      (candidate) => candidate.id === column.id,
+                    );
+                    const isInteractive =
+                      mirrorRowIndex === -1 || mirrorRowIndex > rowIndex;
                     const isHighlighted =
                       hoveredRowId === row.id || hoveredColumnId === column.id;
                     const pairLabel = `${row.name} ↔ ${column.name}: ${

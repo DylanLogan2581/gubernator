@@ -35,7 +35,8 @@ describe("NationDiscoveryGrid", () => {
       <NationDiscoveryGrid
         bulkPendingNationId={null}
         canEdit
-        nations={[nationA, nationB]}
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
         pairsByKey={buildDiscoveryPairMap([])}
         pendingKey={null}
         onClearAll={vi.fn()}
@@ -67,7 +68,8 @@ describe("NationDiscoveryGrid", () => {
       <NationDiscoveryGrid
         bulkPendingNationId={null}
         canEdit
-        nations={[nationA, nationB]}
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
         pairsByKey={buildDiscoveryPairMap([pair])}
         pendingKey={null}
         onClearAll={vi.fn()}
@@ -97,7 +99,8 @@ describe("NationDiscoveryGrid", () => {
       <NationDiscoveryGrid
         bulkPendingNationId={null}
         canEdit
-        nations={[nationA, nationB, nationC]}
+        rows={[nationA, nationB, nationC]}
+        columns={[nationA, nationB, nationC]}
         pairsByKey={buildDiscoveryPairMap([])}
         pendingKey={null}
         onClearAll={onClearAll}
@@ -126,7 +129,8 @@ describe("NationDiscoveryGrid", () => {
       <NationDiscoveryGrid
         bulkPendingNationId={nationA.id}
         canEdit
-        nations={[nationA, nationB]}
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
         pairsByKey={buildDiscoveryPairMap([])}
         pendingKey={null}
         onClearAll={vi.fn()}
@@ -147,7 +151,8 @@ describe("NationDiscoveryGrid", () => {
       <NationDiscoveryGrid
         bulkPendingNationId={null}
         canEdit={false}
-        nations={[nationA, nationB]}
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
         pairsByKey={buildDiscoveryPairMap([])}
         pendingKey={null}
         onClearAll={vi.fn()}
