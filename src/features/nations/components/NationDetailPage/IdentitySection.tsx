@@ -1,6 +1,6 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Landmark, Pencil, Save, X } from "lucide-react";
+import { Landmark, Pencil, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -580,20 +580,6 @@ function FoundedTurnEditor({
     );
   }
 
-  if (!isEditing) {
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={openEditor}
-        aria-label="Edit founded turn"
-      >
-        <Pencil aria-hidden="true" />
-      </Button>
-    );
-  }
-
   let foundedTurnDate: CalendarDateInput | null = null;
   if (
     calendarConfig !== null &&
@@ -616,56 +602,78 @@ function FoundedTurnEditor({
   }
 
   return (
-    <form
-      aria-label="Edit founded turn"
-      className="flex items-center gap-1"
-      noValidate
-      onSubmit={handleSubmit}
-    >
-      {calendarConfig === null ? (
-        <span className="text-sm text-muted-foreground">Loading…</span>
-      ) : (
-        <div className="w-56">
-          <WorldDatePicker
-            config={calendarConfig}
-            currentTurnNumber={currentTurnNumber}
-            label="Select founded date"
-            value={foundedTurnDate}
-            onTurnNumberChange={setFoundedTurnNumber}
-          />
-        </div>
-      )}
+    <>
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        disabled={setFoundedTurnMutation.isPending}
-        onClick={() => {
-          setFoundedTurnNumber(null);
+        onClick={openEditor}
+        aria-label="Edit founded turn"
+      >
+        <Pencil aria-hidden="true" />
+      </Button>
+      <Dialog
+        open={isEditing}
+        onOpenChange={(open) => {
+          if (!open) closeEditor();
         }}
-        aria-label="Clear founded turn"
       >
-        Clear
-      </Button>
-      <Button
-        type="submit"
-        variant="ghost"
-        size="sm"
-        disabled={setFoundedTurnMutation.isPending || calendarConfig === null}
-        aria-label="Save founded turn"
-      >
-        <Save aria-hidden="true" />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={closeEditor}
-        disabled={setFoundedTurnMutation.isPending}
-        aria-label="Cancel edit"
-      >
-        <X aria-hidden="true" />
-      </Button>
-    </form>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit founded turn</DialogTitle>
+          </DialogHeader>
+          <form
+            aria-label="Edit founded turn"
+            className="grid gap-3"
+            noValidate
+            onSubmit={handleSubmit}
+          >
+            {calendarConfig === null ? (
+              <span className="text-sm text-muted-foreground">Loading…</span>
+            ) : (
+              <WorldDatePicker
+                config={calendarConfig}
+                currentTurnNumber={currentTurnNumber}
+                label="Select founded date"
+                value={foundedTurnDate}
+                onTurnNumberChange={setFoundedTurnNumber}
+              />
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={setFoundedTurnMutation.isPending}
+                onClick={() => {
+                  setFoundedTurnNumber(null);
+                }}
+                aria-label="Clear founded turn"
+              >
+                Clear
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeEditor}
+                disabled={setFoundedTurnMutation.isPending}
+                aria-label="Cancel edit"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  setFoundedTurnMutation.isPending || calendarConfig === null
+                }
+                aria-label="Save founded turn"
+              >
+                <Save aria-hidden="true" />
+                {setFoundedTurnMutation.isPending ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
