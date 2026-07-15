@@ -85,6 +85,22 @@ function NotificationPreferencesList({
     setNotificationPreferenceMutationOptions({ queryClient }),
   );
 
+  const categories = groupNotificationPreferencesByCategory(
+    preferencesQuery.data ?? [],
+  );
+
+  const [categoriesInitialized, setCategoriesInitialized] = useState(false);
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
+
+  if (!categoriesInitialized && preferencesQuery.data !== undefined) {
+    setCategoriesInitialized(true);
+    setOpenCategories(
+      categories
+        .filter((category) => category.isMixed)
+        .map((category) => category.key),
+    );
+  }
+
   if (preferencesQuery.isPending) {
     return <LoadingState label="Loading notification preferences…" />;
   }
@@ -130,29 +146,32 @@ function NotificationPreferencesList({
     }
   };
 
-  const categories = groupNotificationPreferencesByCategory(
-    preferencesQuery.data,
-  );
-  const defaultOpenCategories = categories
-    .filter((category) => category.isMixed)
-    .map((category) => category.key);
-
   return (
-    <Accordion type="multiple" defaultValue={defaultOpenCategories}>
+    <Accordion
+      type="multiple"
+      value={openCategories}
+      onValueChange={setOpenCategories}
+    >
       {categories.map((category) => (
         <AccordionItem key={category.key} value={category.key}>
-          <div className="flex items-center gap-2">
-            <AccordionTrigger className="flex-1">
-              <span className="flex flex-1 items-center justify-between pr-2">
-                <span>{category.label}</span>
-                <span className="font-normal text-muted-foreground">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-2 px-2">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex w-full items-center justify-between gap-2 pr-2">
+                <span className="truncate">{category.label}</span>
+                <span className="shrink-0 font-normal text-muted-foreground">
                   {category.enabledCount}/{category.preferences.length} on
                 </span>
               </span>
             </AccordionTrigger>
             <Switch
-              aria-label={`Toggle all ${category.label} notifications`}
+              aria-label={
+                category.isMixed
+                  ? `Toggle all ${category.label} notifications (currently ${category.enabledCount} of ${category.preferences.length} on)`
+                  : `Toggle all ${category.label} notifications`
+              }
               checked={category.allEnabled}
+              data-mixed={category.isMixed}
+              className="data-mixed:!bg-primary/40"
               onCheckedChange={(enabled) => {
                 handleToggleCategory(category, enabled);
               }}
