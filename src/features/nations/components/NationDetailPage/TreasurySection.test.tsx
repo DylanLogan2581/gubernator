@@ -95,7 +95,9 @@ describe("NationTreasurySection", () => {
       await screen.findByText(
         (_, element) =>
           element?.tagName === "P" &&
-          (element.textContent ?? "").includes("Estimated next-turn intake: —"),
+          (element.textContent ?? "").includes(
+            "Estimated next-turn intake: No tax data yet — no turn has been processed",
+          ),
       ),
     ).toBeDefined();
   });
@@ -212,7 +214,7 @@ describe("NationTreasurySection", () => {
         },
       ],
       resources: [{ id: "resource-1", name: "Grain" }],
-      stockpile: [],
+      stockpile: [{ resource_id: "resource-1", quantity: 20, name: "Grain" }],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -289,6 +291,75 @@ describe("NationTreasurySection", () => {
     expect(
       await screen.findByText(/Nation stockpile is insufficient/),
     ).toBeDefined();
+  });
+
+  it("disables subsidize when the nation stockpile holds none of the required resources", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      projects: [
+        {
+          id: "project-1",
+          settlement_id: "settlement-1",
+          settlement_name: "Ironhaven Keep",
+          blueprint_name: "Granary",
+          tier_number: 1,
+          costs: [{ resource_id: "resource-1", amount: 20 }],
+        },
+      ],
+      resources: [{ id: "resource-1", name: "Grain" }],
+      stockpile: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    render(
+      <TestHarness>
+        <NationTreasurySection
+          canAdminWorld={true}
+          isArchived={false}
+          nation={createNation()}
+        />
+      </TestHarness>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: "Subsidize construction" }),
+    );
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Construction project" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Ironhaven Keep/ }),
+    );
+
+    expect(await screen.findByText(/would transfer nothing/)).toBeDefined();
+    expect(screen.getByRole("button", { name: "Subsidize" })).toBeDisabled();
+  });
+
+  it("hides the quantity field in the grant dialog when the nation holds no resources", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlements: [{ id: "settlement-1", name: "Ironhaven Keep" }],
+      stockpile: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    render(
+      <TestHarness>
+        <NationTreasurySection
+          canAdminWorld={true}
+          isArchived={false}
+          nation={createNation()}
+        />
+      </TestHarness>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: "Grant resources" }),
+    );
+
+    await screen.findByText("The nation does not hold any resources to grant.");
+    expect(screen.queryByLabelText(/Quantity/)).toBeNull();
   });
 
   it("lists active subsidies with committed vs required amounts and progress", async () => {

@@ -356,7 +356,7 @@ function TaxRateControl({
         {snapshotIsPending
           ? "…"
           : snapshot === null
-            ? "—"
+            ? "No tax data yet — no turn has been processed"
             : snapshot.totalTaxCollected.toLocaleString()}
       </p>
     </div>
@@ -488,21 +488,25 @@ function GrantResourcesDialog({
               </Select>
             )}
           </div>
-          <div className="grid gap-1">
-            <Label htmlFor="grant-quantity-input">
-              Quantity{" "}
-              {resourceId !== "" ? `(max ${maxQuantity.toLocaleString()})` : ""}
-            </Label>
-            <Input
-              id="grant-quantity-input"
-              type="number"
-              min={0}
-              max={maxQuantity}
-              value={quantity}
-              disabled={resourceId === ""}
-              onChange={(event) => setQuantity(event.target.value)}
-            />
-          </div>
+          {grantable.length === 0 ? null : (
+            <div className="grid gap-1">
+              <Label htmlFor="grant-quantity-input">
+                Quantity{" "}
+                {resourceId !== ""
+                  ? `(max ${maxQuantity.toLocaleString()})`
+                  : ""}
+              </Label>
+              <Input
+                id="grant-quantity-input"
+                type="number"
+                min={0}
+                max={maxQuantity}
+                value={quantity}
+                disabled={resourceId === ""}
+                onChange={(event) => setQuantity(event.target.value)}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
@@ -555,6 +559,11 @@ function SubsidizeConstructionDialog({
     selectedProject !== undefined &&
     selectedProject.costs.some(
       (cost) => (stockpileByResource.get(cost.resourceId) ?? 0) < cost.amount,
+    );
+  const hasZeroTransfer =
+    selectedProject !== undefined &&
+    selectedProject.costs.every(
+      (cost) => (stockpileByResource.get(cost.resourceId) ?? 0) <= 0,
     );
 
   function handleSubmit(): void {
@@ -629,48 +638,12 @@ function SubsidizeConstructionDialog({
                 </SelectContent>
               </Select>
               {selectedProject !== undefined ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Resource</TableHead>
-                      <TableHead className="text-right">Required</TableHead>
-                      <TableHead className="text-right">
-                        Nation stockpile
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedProject.costs.map((cost) => {
-                      const held =
-                        stockpileByResource.get(cost.resourceId) ?? 0;
-                      const insufficient = held < cost.amount;
-                      return (
-                        <TableRow key={cost.resourceId}>
-                          <TableCell>{cost.resourceName}</TableCell>
-                          <TableCell className="text-right">
-                            {cost.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell
-                            className={
-                              insufficient
-                                ? "text-right text-destructive"
-                                : "text-right"
-                            }
-                          >
-                            {held.toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : null}
-              {hasInsufficientStock ? (
-                <p className="text-xs text-destructive">
-                  Nation stockpile is insufficient for one or more required
-                  resources. The subsidy will transfer as much as is available
-                  and clamp the rest.
-                </p>
+                <SubsidizeProjectDetails
+                  hasInsufficientStock={hasInsufficientStock}
+                  hasZeroTransfer={hasZeroTransfer}
+                  selectedProject={selectedProject}
+                  stockpileByResource={stockpileByResource}
+                />
               ) : null}
             </div>
           )}
@@ -683,7 +656,9 @@ function SubsidizeConstructionDialog({
             type="button"
             onClick={handleSubmit}
             disabled={
-              subsidizeMutation.isPending || selectedProject === undefined
+              subsidizeMutation.isPending ||
+              selectedProject === undefined ||
+              hasZeroTransfer
             }
           >
             {subsidizeMutation.isPending ? "Subsidizing…" : "Subsidize"}
@@ -691,5 +666,63 @@ function SubsidizeConstructionDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SubsidizeProjectDetails({
+  hasInsufficientStock,
+  hasZeroTransfer,
+  selectedProject,
+  stockpileByResource,
+}: {
+  readonly hasInsufficientStock: boolean;
+  readonly hasZeroTransfer: boolean;
+  readonly selectedProject: NationActiveConstructionProject;
+  readonly stockpileByResource: ReadonlyMap<string, number>;
+}): JSX.Element {
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Resource</TableHead>
+            <TableHead className="text-right">Required</TableHead>
+            <TableHead className="text-right">Nation stockpile</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {selectedProject.costs.map((cost) => {
+            const held = stockpileByResource.get(cost.resourceId) ?? 0;
+            const insufficient = held < cost.amount;
+            return (
+              <TableRow key={cost.resourceId}>
+                <TableCell>{cost.resourceName}</TableCell>
+                <TableCell className="text-right">
+                  {cost.amount.toLocaleString()}
+                </TableCell>
+                <TableCell
+                  className={
+                    insufficient ? "text-right text-destructive" : "text-right"
+                  }
+                >
+                  {held.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      {hasZeroTransfer ? (
+        <p className="text-xs text-destructive">
+          Nation stockpile holds none of the required resources, so this subsidy
+          would transfer nothing.
+        </p>
+      ) : hasInsufficientStock ? (
+        <p className="text-xs text-destructive">
+          Nation stockpile is insufficient for one or more required resources.
+          The subsidy will transfer as much as is available and clamp the rest.
+        </p>
+      ) : null}
+    </>
   );
 }
