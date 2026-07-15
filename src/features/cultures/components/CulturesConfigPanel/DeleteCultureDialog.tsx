@@ -20,6 +20,7 @@ import {
   cultureUsageQueryOptions,
 } from "../../queries/culturesQueries";
 
+import type { CultureUsage } from "../../queries/culturesQueries";
 import type { Culture } from "../../types/cultureTypes";
 
 type DeleteCultureDialogProps = {
@@ -28,6 +29,87 @@ type DeleteCultureDialogProps = {
   readonly queryClient: QueryClient;
   readonly worldId: string;
 };
+
+type DeleteCultureDialogBodyProps = {
+  readonly culture: Culture;
+  readonly isReassignDisabled: boolean;
+  readonly otherCultures: readonly Culture[];
+  readonly reassignToId: string | null;
+  readonly setReassignToId: (id: string | null) => void;
+  readonly usageQuery: {
+    readonly data: CultureUsage | undefined;
+    readonly isError: boolean;
+    readonly isPending: boolean;
+  };
+};
+
+function DeleteCultureDialogBody({
+  culture,
+  isReassignDisabled,
+  otherCultures,
+  reassignToId,
+  setReassignToId,
+  usageQuery,
+}: DeleteCultureDialogBodyProps): JSX.Element {
+  if (usageQuery.isPending) {
+    return <p className="text-muted-foreground">Checking usage…</p>;
+  }
+  if (usageQuery.isError) {
+    return (
+      <p className="text-muted-foreground">Usage counts could not be loaded.</p>
+    );
+  }
+
+  const usage = usageQuery.data;
+  const hasReferences =
+    usage !== undefined && (usage.citizenCount > 0 || usage.nationCount > 0);
+
+  if (!hasReferences) {
+    return (
+      <p className="text-muted-foreground">
+        Delete "{culture.name}"? Nothing references it.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <p className="text-muted-foreground">
+        {usage.citizenCount} citizen{usage.citizenCount === 1 ? "" : "s"} and{" "}
+        {usage.nationCount} nation{usage.nationCount === 1 ? "" : "s"} currently
+        reference "{culture.name}".
+      </p>
+      {otherCultures.length > 0 ? (
+        <Label className="grid gap-1">
+          <span className="text-muted-foreground">
+            What should happen to those references?
+          </span>
+          <NativeSelect
+            aria-label="Reassign references to"
+            disabled={isReassignDisabled}
+            value={reassignToId ?? ""}
+            onChange={(event) => {
+              const next = event.currentTarget.value;
+              setReassignToId(next === "" ? null : next);
+            }}
+          >
+            <option value="">Clear (unassigned)</option>
+            {otherCultures.map((option) => (
+              <option key={option.id} value={option.id}>
+                Reassign to {option.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </Label>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          References will be cleared — no other cultures exist in this world to
+          reassign to.
+        </p>
+      )}
+    </>
+  );
+}
 
 export function DeleteCultureDialog({
   culture,
@@ -73,41 +155,14 @@ export function DeleteCultureDialog({
           <DialogTitle>Delete culture</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 text-sm">
-          <p className="text-muted-foreground">
-            {usageQuery.isPending
-              ? "Checking usage…"
-              : usageQuery.isError
-                ? "Usage counts could not be loaded."
-                : `${usageQuery.data.citizenCount} citizen${usageQuery.data.citizenCount === 1 ? "" : "s"} and ${usageQuery.data.nationCount} nation${usageQuery.data.nationCount === 1 ? "" : "s"} currently reference "${culture.name}".`}
-          </p>
-          {otherCultures.length > 0 ? (
-            <Label className="grid gap-1">
-              <span className="text-muted-foreground">
-                What should happen to those references?
-              </span>
-              <NativeSelect
-                aria-label="Reassign references to"
-                disabled={deleteMutation.isPending}
-                value={reassignToId ?? ""}
-                onChange={(event) => {
-                  const next = event.currentTarget.value;
-                  setReassignToId(next === "" ? null : next);
-                }}
-              >
-                <option value="">Clear (unassigned)</option>
-                {otherCultures.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    Reassign to {option.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Label>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              References will be cleared -- no other cultures exist in this
-              world to reassign to.
-            </p>
-          )}
+          <DeleteCultureDialogBody
+            culture={culture}
+            isReassignDisabled={deleteMutation.isPending}
+            otherCultures={otherCultures}
+            reassignToId={reassignToId}
+            setReassignToId={setReassignToId}
+            usageQuery={usageQuery}
+          />
         </div>
         <DialogFooter>
           <Button

@@ -109,7 +109,7 @@ describe("DeleteReligionDialog", () => {
 
   it("clears the reassignment option when only one religion exists", async () => {
     mockClient({
-      citizenCount: 0,
+      citizenCount: 1,
       religionRows: [RELIGION],
       nationCount: 0,
     });
@@ -118,11 +118,31 @@ describe("DeleteReligionDialog", () => {
 
     expect(
       await screen.findByText(
-        /References will be cleared -- no other religions exist/,
+        /References will be cleared — no other religions exist/,
       ),
     ).toBeDefined();
     expect(
       screen.queryByRole("combobox", { name: "Reassign references to" }),
+    ).toBeNull();
+  });
+
+  it("shows a plain confirm and no reassignment UI when nothing references the religion", async () => {
+    mockClient({
+      citizenCount: 0,
+      religionRows: [RELIGION, OTHER_RELIGION],
+      nationCount: 0,
+    });
+
+    renderDialog();
+
+    expect(
+      await screen.findByText('Delete "Sun Cult"? Nothing references it.'),
+    ).toBeDefined();
+    expect(
+      screen.queryByRole("combobox", { name: "Reassign references to" }),
+    ).toBeNull();
+    expect(
+      screen.queryByText(/What should happen to those references/),
     ).toBeNull();
   });
 });

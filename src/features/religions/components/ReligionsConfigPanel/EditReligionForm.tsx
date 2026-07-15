@@ -92,7 +92,7 @@ export function EditReligionForm({
 
   return (
     <Dialog
-      open={true}
+      open={!showDeleteDialog}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}

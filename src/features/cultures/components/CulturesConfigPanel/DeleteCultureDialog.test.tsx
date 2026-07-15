@@ -109,7 +109,7 @@ describe("DeleteCultureDialog", () => {
 
   it("clears the reassignment option when only one culture exists", async () => {
     mockClient({
-      citizenCount: 0,
+      citizenCount: 1,
       cultureRows: [CULTURE],
       nationCount: 0,
     });
@@ -118,11 +118,31 @@ describe("DeleteCultureDialog", () => {
 
     expect(
       await screen.findByText(
-        /References will be cleared -- no other cultures exist/,
+        /References will be cleared — no other cultures exist/,
       ),
     ).toBeDefined();
     expect(
       screen.queryByRole("combobox", { name: "Reassign references to" }),
+    ).toBeNull();
+  });
+
+  it("shows a plain confirm and no reassignment UI when nothing references the culture", async () => {
+    mockClient({
+      citizenCount: 0,
+      cultureRows: [CULTURE, OTHER_CULTURE],
+      nationCount: 0,
+    });
+
+    renderDialog();
+
+    expect(
+      await screen.findByText('Delete "Coastal Folk"? Nothing references it.'),
+    ).toBeDefined();
+    expect(
+      screen.queryByRole("combobox", { name: "Reassign references to" }),
+    ).toBeNull();
+    expect(
+      screen.queryByText(/What should happen to those references/),
     ).toBeNull();
   });
 });
