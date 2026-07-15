@@ -8,6 +8,8 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,7 @@ import {
   useSettlementTransitionOutcome,
   type TurnTransitionOutcome,
 } from "@/features/turns";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementBuildingsBySettlementQueryOptions } from "../../queries/settlementBuildingsQueries";
@@ -416,6 +419,11 @@ function DuplicateBuildingGroupRows({
               }}
             >
               <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              <IconChip
+                icon={resolveEntityIcon(first.blueprintIcon)}
+                tone={hashToCategoricalSlot(first.buildingBlueprintId)}
+                size="sm"
+              />
               {name} ×{buildings.length}
             </Button>
           </TableCell>
@@ -458,6 +466,11 @@ function DuplicateBuildingGroupRows({
           }}
         >
           <ChevronDown aria-hidden="true" className="h-4 w-4 -rotate-90" />
+          <IconChip
+            icon={resolveEntityIcon(first.blueprintIcon)}
+            tone={hashToCategoricalSlot(first.buildingBlueprintId)}
+            size="sm"
+          />
           {name} ×{buildings.length}
         </Button>
       </TableCell>
