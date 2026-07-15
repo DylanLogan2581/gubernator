@@ -1,3 +1,5 @@
+import { render } from "@testing-library/react";
+import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -51,5 +53,25 @@ describe("loadGameIconsData", () => {
   it("resolves the bundled offline collection", async () => {
     const data = await loadGameIconsData();
     expect(Object.keys(data.icons).length).toBeGreaterThan(1000);
+  });
+});
+
+describe("createGameIconComponent rendering", () => {
+  it("renders the fallback glyph for an unknown game-icon name once loaded", async () => {
+    await loadGameIconsData();
+    const Glyph = createGameIconComponent("totally-nonexistent-icon-name");
+    const { container } = render(createElement(Glyph));
+    expect(
+      container.querySelector("svg.lucide-circle-question-mark"),
+    ).not.toBeNull();
+  });
+
+  it("renders the iconify glyph for a known game-icon name once loaded", async () => {
+    await loadGameIconsData();
+    const Glyph = createGameIconComponent("viking-longhouse");
+    const { container } = render(createElement(Glyph));
+    expect(
+      container.querySelector("svg.lucide-circle-question-mark"),
+    ).toBeNull();
   });
 });

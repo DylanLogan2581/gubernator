@@ -61,6 +61,16 @@ export function getGameIconNames(): readonly string[] {
   return gameIconsData === null ? [] : Object.keys(gameIconsData.icons);
 }
 
+/** Whether a bare game-icons.net name exists in the loaded collection. */
+function isKnownGameIconName(bareName: string): boolean {
+  if (gameIconsData === null) {
+    return false;
+  }
+  return (
+    bareName in gameIconsData.icons || bareName in (gameIconsData.aliases ?? {})
+  );
+}
+
 /**
  * Coarse, keyword-derived categories for the game-icons.net set. The
  * upstream collection ships no per-icon category metadata offline, so
@@ -276,7 +286,7 @@ export function createGameIconComponent(bareName: string): LucideIcon {
       };
     }, [ready]);
 
-    if (!ready) {
+    if (!ready || !isKnownGameIconName(bareName)) {
       return createElement(CircleHelp, { className });
     }
     return createElement(IconifyIcon, {
