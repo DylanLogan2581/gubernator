@@ -252,18 +252,18 @@ export function NationDiscoveryGrid({
 
 function DiscoveryLegend(): JSX.Element {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
       <span className="flex items-center gap-1.5">
-        <span className="flex size-5 items-center justify-center rounded-sm bg-primary text-primary-foreground">
-          <Check aria-hidden="true" className="size-3" />
+        <span className="flex size-6 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+          <Check aria-hidden="true" className="size-4" />
         </span>
         Met
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="flex size-5 items-center justify-center rounded-sm border border-border">
+        <span className="flex size-6 items-center justify-center rounded-sm border border-border">
           <Circle
             aria-hidden="true"
-            className="size-2.5 text-muted-foreground/40"
+            className="size-3.5 text-muted-foreground"
           />
         </span>
         Not met

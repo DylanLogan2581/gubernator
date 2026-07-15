@@ -90,116 +90,127 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
   }
 
   return (
-    <div className="mx-auto grid min-h-[calc(100dvh-3.5rem)] w-full max-w-5xl items-center gap-8 py-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
-      <section
-        aria-hidden="true"
-        className="hidden flex-col justify-center gap-6 rounded-xl bg-gradient-to-br from-primary/15 via-card to-card p-10 ring-1 ring-foreground/10 lg:flex"
-      >
-        <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 p-4">
-          <img src="/logo.png" alt="" className="size-full object-contain" />
-        </div>
-        <div className="flex flex-col gap-3">
-          <h2 className="text-3xl font-semibold tracking-tight text-balance">
-            Gubernator
-          </h2>
-          <p className="max-w-sm text-muted-foreground text-balance">
-            A turn-based world simulation game: found nations, grow settlements,
-            and steer generations of citizens through the outcome of every turn.
-          </p>
-        </div>
-      </section>
-
-      <section className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm sm:p-8">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-          <div className="flex items-center gap-2 lg:hidden">
-            <img src="/logo.png" alt="" className="size-6" />
-            <span className="font-semibold">Gubernator</span>
+    <div className="flex min-h-[calc(100dvh-3.5rem)] w-full items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background">
+      <div className="mx-auto grid w-full max-w-5xl items-center gap-8 px-4 py-10 lg:grid-cols-2 lg:gap-16 lg:py-16">
+        <section
+          aria-hidden="true"
+          className="hidden flex-col justify-center gap-6 rounded-xl bg-gradient-to-br from-primary/15 via-card to-card p-10 ring-1 ring-foreground/10 lg:flex"
+        >
+          <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 p-4">
+            <img src="/logo.png" alt="" className="size-full object-contain" />
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-            <p
-              id={formDescriptionId}
-              className="mt-2 text-sm text-muted-foreground"
-            >
-              Use your Gubernator account to continue to your worlds.
+          <div className="flex flex-col gap-3">
+            <h2 className="text-3xl font-semibold tracking-tight text-balance">
+              Gubernator
+            </h2>
+            <p className="max-w-sm text-muted-foreground text-balance">
+              A turn-based world simulation game: found nations, grow
+              settlements, and steer generations of citizens through the outcome
+              of every turn.
             </p>
           </div>
-        </div>
+        </section>
 
-        <form
-          noValidate
-          aria-describedby={formDescriptionId}
-          className="flex flex-col gap-4"
-          onSubmit={handleSubmit}
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sign-in-email">Email</Label>
-            <Input
-              id="sign-in-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              required
-              aria-required="true"
-              value={credentials.email}
-              aria-describedby={
-                fieldErrors.email === undefined ? undefined : emailErrorId
-              }
-              aria-invalid={fieldErrors.email === undefined ? undefined : true}
-              disabled={isSubmitting}
-              onChange={handleEmailChange}
-            />
-            {fieldErrors.email === undefined ? null : (
-              <p id={emailErrorId} className="text-sm text-destructive">
-                {fieldErrors.email}
+        <section className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm sm:p-8">
+          <div className="mb-6 flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
+            <div className="flex items-center gap-2 lg:hidden">
+              <img src="/logo.png" alt="" className="size-6" />
+              <span className="font-semibold">Gubernator</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+              <p
+                id={formDescriptionId}
+                className="mt-2 text-sm text-muted-foreground"
+              >
+                Use your Gubernator account to continue to your worlds.
               </p>
-            )}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sign-in-password">Password</Label>
-            <Input
-              id="sign-in-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              aria-required="true"
-              value={credentials.password}
-              aria-describedby={
-                fieldErrors.password === undefined ? undefined : passwordErrorId
-              }
-              aria-invalid={
-                fieldErrors.password === undefined ? undefined : true
-              }
+          <form
+            noValidate
+            aria-describedby={formDescriptionId}
+            className="flex flex-col gap-4"
+            onSubmit={handleSubmit}
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sign-in-email">Email</Label>
+              <Input
+                id="sign-in-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                required
+                aria-required="true"
+                value={credentials.email}
+                aria-describedby={
+                  fieldErrors.email === undefined ? undefined : emailErrorId
+                }
+                aria-invalid={
+                  fieldErrors.email === undefined ? undefined : true
+                }
+                disabled={isSubmitting}
+                onChange={handleEmailChange}
+              />
+              {fieldErrors.email === undefined ? null : (
+                <p id={emailErrorId} className="text-sm text-destructive">
+                  {fieldErrors.email}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sign-in-password">Password</Label>
+              <Input
+                id="sign-in-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                aria-required="true"
+                value={credentials.password}
+                aria-describedby={
+                  fieldErrors.password === undefined
+                    ? undefined
+                    : passwordErrorId
+                }
+                aria-invalid={
+                  fieldErrors.password === undefined ? undefined : true
+                }
+                disabled={isSubmitting}
+                onChange={handlePasswordChange}
+              />
+              {fieldErrors.password === undefined ? null : (
+                <p id={passwordErrorId} className="text-sm text-destructive">
+                  {fieldErrors.password}
+                </p>
+              )}
+            </div>
+
+            {signInErrorMessage === null ? null : (
+              <Alert variant="destructive">
+                <TriangleAlert aria-hidden="true" />
+                <AlertDescription>{signInErrorMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              className="mt-1 w-full"
               disabled={isSubmitting}
-              onChange={handlePasswordChange}
-            />
-            {fieldErrors.password === undefined ? null : (
-              <p id={passwordErrorId} className="text-sm text-destructive">
-                {fieldErrors.password}
-              </p>
-            )}
-          </div>
-
-          {signInErrorMessage === null ? null : (
-            <Alert variant="destructive">
-              <TriangleAlert aria-hidden="true" />
-              <AlertDescription>{signInErrorMessage}</AlertDescription>
-            </Alert>
-          )}
-
-          <Button type="submit" className="mt-1 w-full" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <LoaderCircle className="animate-spin" aria-hidden="true" />
-            ) : (
-              <LogIn aria-hidden="true" />
-            )}
-            Sign in
-          </Button>
-        </form>
-      </section>
+            >
+              {isSubmitting ? (
+                <LoaderCircle className="animate-spin" aria-hidden="true" />
+              ) : (
+                <LogIn aria-hidden="true" />
+              )}
+              Sign in
+            </Button>
+          </form>
+        </section>
+      </div>
     </div>
   );
 }

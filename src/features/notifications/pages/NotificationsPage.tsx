@@ -49,7 +49,7 @@ import { NOTIFICATION_TYPE_OPTIONS } from "../utils/notificationTypeLabels";
 const PAGE_SIZE = 20;
 
 const READ_STATUS_OPTIONS = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All statuses" },
   { value: "unread", label: "Unread" },
   { value: "read", label: "Read" },
 ];

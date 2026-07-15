@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { createAccessContext } from "@/features/permissions";
 import type { WorldPermissionContext } from "@/features/worlds";
 
@@ -862,13 +863,15 @@ function renderSettlementReadinessListPanel({
 } = {}): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <SettlementReadinessListPanel
-        accessContext={accessContext}
-        canAdmin={canAdmin}
-        canManage={canManage}
-        isArchived={isArchived}
-        worldId="world-1"
-      />
+      <TooltipProvider>
+        <SettlementReadinessListPanel
+          accessContext={accessContext}
+          canAdmin={canAdmin}
+          canManage={canManage}
+          isArchived={isArchived}
+          worldId="world-1"
+        />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
