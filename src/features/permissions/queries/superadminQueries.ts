@@ -1,3 +1,8 @@
+import {
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
+} from "@supabase/supabase-js";
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
@@ -240,6 +245,30 @@ function isSendEmailStatusErrorResponse(
   );
 }
 
+const EDGE_FUNCTION_UNREACHABLE_MESSAGE =
+  "Couldn't reach the email service. If running locally, make sure Supabase edge functions are being served.";
+
+/**
+ * A local/unserved edge runtime surfaces as a gateway-level non-2xx (e.g. Kong
+ * 503) rather than a real response from the function, so it's indistinguishable
+ * from other FunctionsHttpError statuses except by status code.
+ */
+function isEdgeFunctionUnreachableError(error: unknown): boolean {
+  if (
+    error instanceof FunctionsFetchError ||
+    error instanceof FunctionsRelayError
+  ) {
+    return true;
+  }
+
+  if (error instanceof FunctionsHttpError) {
+    const status = (error.context as { status?: unknown } | undefined)?.status;
+    return status === 502 || status === 503 || status === 504;
+  }
+
+  return false;
+}
+
 async function getSmtpStatus(
   client: GubernatorSupabaseClient,
 ): Promise<SmtpStatus> {
@@ -248,6 +277,11 @@ async function getSmtpStatus(
   });
 
   if (response.error !== null) {
+    if (isEdgeFunctionUnreachableError(response.error)) {
+      throw normalizeSupabaseError(
+        new Error(EDGE_FUNCTION_UNREACHABLE_MESSAGE),
+      );
+    }
     throw normalizeSupabaseError(response.error);
   }
 

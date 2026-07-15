@@ -46,3 +46,4 @@ description: >-
 
 - `supabase start`, `supabase db reset` (migrations + seed). Seed: 5 accounts (password `password123`, `*@gubernator.local`), world "Aldermoor" at turn 32; `test@` = settlement manager, `other@` = nation manager. Missing accounts → `db reset`.
 - Local quirk: ES256 JWT verification can fail in local Docker; `end-turn-simulation` has an `IS_LOCAL_DEV=true` dev-only path — never replicate that outside local guards.
+- Edge functions (incl. `send-email` for `/superadmin/email` and `end-turn-simulation` for turn advancement) only respond once the edge-runtime container from `supabase start` is up — if it's stopped, crashed, or never started, calls fail as a Kong 503 (`FunctionsHttpError`/unreachable), not a normal function error. `supabase status` shows whether it's healthy; `supabase stop && supabase start` restarts it.
