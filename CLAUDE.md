@@ -24,6 +24,23 @@ Do not read `README.md` or `CONTRIBUTING.md` unless task asks.
 - Do not expose service-role keys or third-party secrets to browser code.
 - Review every change for security impact before finish.
 
+## Verification economy
+
+- To spot-check types after edits, load the `LSP` tool once (`ToolSearch` query `select:LSP`) and use per-file diagnostics — do not run `npx tsc -b` (5–10 min) as an iteration loop. Reserve `tsc -b` for one final pass before committing; the commit hook runs it anyway.
+- Scope test runs to the files you touched (`npx vitest run <paths>`); the full suite is a CI gate.
+- Prefer the dedicated Grep/Glob/Read tools (or `ctx_search`/`ctx_glob`/`ctx_read`) over `grep`/`find`/`cat`/`sed` in Bash, and glob for a file before guessing its path.
+
+## Committing
+
+Commit hooks run in this order: lint-staged (pre-commit), then commitlint on the message, then `tsc -b` typecheck + affected vitest tests (commit-msg). The typecheck routinely takes 5–10 minutes. Run `git commit` in the foreground with a generous timeout (600000 ms) and simply wait for it to finish. Do not run the commit as a background task, poll it, or use ScheduleWakeup while it runs — slow is normal, not hung.
+
+Commit message rules (commitlint rejects violations; see `commitlint.config.ts`):
+
+- Header ≤ 72 characters (stricter than the conventional default).
+- Scope is required and must be from the enum in `commitlint.config.ts` (feature domains like `nations`, `citizens`, plus `app`, `config`, `repo`, …).
+- Type and subject lower-case; body/footer lines ≤ 100 characters.
+- No `Co-Authored-By` trailers.
+
 ## UI Verification (required)
 
 Any change that affects UI (components, styles, layout, routing, data displayed) is not complete until verified in the browser with the `dev-browser` skill. Never report UI work as done based only on code compiling or type-checking.
@@ -40,6 +57,7 @@ After making UI changes:
 
 Auth and styling notes:
 
+- dev-browser persists browser state between sessions, so you are usually already signed in. Navigate to the target page first and only go through `/sign-in` if you actually land on it — do not wait for the email input on a page that redirected away. dev-browser screenshots are saved under `~/.dev-browser/tmp/`.
 - Local auth uses seeded test accounts (password `password123` for all; see `e2e/roles.ts`): `superadmin@gubernator.local`, `worldadmin@gubernator.local`, `other@gubernator.local` (nation manager), `test@gubernator.local` (settlement manager), `player@gubernator.local`. Sign in at `/sign-in`. Requires local Supabase running with seed data (`supabase db reset` if accounts are missing).
 - Reuse existing components and design tokens from `src/components/ui` (shadcn/ui primitives), `src/components/app`, and `src/components/shared` instead of inventing new styles; match the visual patterns of existing pages.
 

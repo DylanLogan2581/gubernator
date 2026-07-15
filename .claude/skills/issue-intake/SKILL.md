@@ -28,7 +28,7 @@ gh api repos/:owner/:repo/milestones --jq '.[] | "\(.number) | \(.title)"'
 
 For each bullet, find the real code. Do not write issues from the bullet text alone.
 
-- Fan out **`caveman:cavecrew-investigator`** agents in parallel, grouped by area (3–5 agents, one message). Ask each for a concise `file:line` table + one-line "what it does" — no fixes.
+- Fan out **Explore** agents in parallel, grouped by area (3–5 agents, one message). Ask each for a concise `file:line` table + one-line "what it does" — no fixes.
 - For **bugs**, demand a root cause: the failing line, the mismatch, the missing policy. Read the 1–3 key files yourself to confirm (e.g. a schema vs payload, a query-key mismatch, an RLS/grant gap).
 - For **features**, locate the schema/table, the config UI, the mutation, and (if it touches a turn) the simulation phase + insertion point. Note what already exists to reuse.
 - Capture exact strings (error text, column names) — they go in the issue.
@@ -66,7 +66,7 @@ Always add a `type: <fix|feat|refactor|chore|...>` and at least one `area: <scop
 - Give concrete, testable **Acceptance Criteria**.
 - For schema/DB/edge work, add a one-line decisions block per repo rules: **migration · RLS/policy · DB test · typegen** (and "deterministic, no RNG" for simulation phases).
 - Cross-link related/duplicate issues by number (`follow-up to #NNN`).
-- Body text stays normal prose (not caveman), like commit/PR text.
+- Body text stays normal prose, like commit/PR text.
 
 ## 4. Create
 
