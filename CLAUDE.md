@@ -32,7 +32,7 @@ Do not read `README.md` or `CONTRIBUTING.md` unless task asks.
 
 ## Committing
 
-Commit hooks run in this order: lint-staged (pre-commit), then commitlint on the message, then `tsc -b` typecheck + affected vitest tests (commit-msg). The typecheck routinely takes 5–10 minutes. Run `git commit` in the foreground with a generous timeout (600000 ms) and simply wait for it to finish. Do not run the commit as a background task, poll it, or use ScheduleWakeup while it runs — slow is normal, not hung.
+Commit hooks run in this order: lint-staged (pre-commit), then commitlint on the message, then `tsc -b` typecheck + vitest on staged-adjacent test files (commit-msg). The slow checks typically take 1–2 minutes but can run longer. Run `git commit` in the foreground with a generous timeout (600000 ms) and simply wait for it to finish. Do not run the commit as a background task, poll it, or use ScheduleWakeup while it runs — slow is normal, not hung.
 
 Commit message rules (commitlint rejects violations; see `commitlint.config.ts`):
 

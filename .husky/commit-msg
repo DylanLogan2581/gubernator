@@ -12,11 +12,13 @@ staged() {
   git diff --cached --name-only --diff-filter=ACMR
 }
 
-# App typecheck + affected unit tests — only when app TypeScript is staged.
+# App typecheck + nearby unit tests — only when app TypeScript is staged.
 # `tsc -b` is incremental (project references + .tsbuildinfo), so it only
-# rebuilds changed projects. `vitest --changed` runs just the tests whose
-# module graph touches the working-tree changes; forks are capped in
-# vitest.config.ts so this cannot oversubscribe the machine.
+# rebuilds changed projects (~30s warm). Tests are scoped to the staged test
+# files plus *.test.* siblings in the staged sources' directories: the old
+# `vitest --changed HEAD` pulled in most of the suite through feature barrel
+# imports (200 files / ~4 min for a 6-file change, vs ~13s scoped). Cross-
+# cutting regressions are covered by CI and the batch-end gate instead.
 if staged | grep -qE '\.(ts|tsx)$'; then
   echo "🔍 Typechecking..."
   tsc_out=$(npx tsc -b 2>&1)
@@ -26,12 +28,25 @@ if staged | grep -qE '\.(ts|tsx)$'; then
     exit "$tsc_code"
   fi
 
-  echo "🔍 Running affected tests..."
-  test_out=$(npx vitest run --changed HEAD --passWithNoTests 2>&1)
-  test_code=$?
-  if [ "$test_code" -ne 0 ]; then
-    printf '%s\n' "$test_out"
-    exit "$test_code"
+  test_files=$(
+    staged | grep -E '\.(ts|tsx)$' | while IFS= read -r f; do
+      case "$f" in
+        *.test.ts|*.test.tsx) [ -f "$f" ] && printf '%s\n' "$f" ;;
+        *) d=$(dirname "$f")
+           [ -d "$d" ] && find "$d" -maxdepth 1 \
+             \( -name '*.test.ts' -o -name '*.test.tsx' \) ;;
+      esac
+    done | sort -u
+  )
+  if [ -n "$test_files" ]; then
+    echo "🔍 Running staged-adjacent tests..."
+    # shellcheck disable=SC2086 # word-split intentional: one arg per file.
+    test_out=$(npx vitest run --passWithNoTests $test_files 2>&1)
+    test_code=$?
+    if [ "$test_code" -ne 0 ]; then
+      printf '%s\n' "$test_out"
+      exit "$test_code"
+    fi
   fi
 fi
 
