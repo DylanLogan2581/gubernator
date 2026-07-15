@@ -7,6 +7,10 @@ import { buildDiscoveryPairMap } from "./NationDiscoveryUtils";
 
 import type { Nation, NationDiscoveryPair } from "../../types/nationTypes";
 
+vi.mock("../../queries/nationImageQueries", () => ({
+  useNationImageSignedUrl: () => ({ isLoading: false, url: null }),
+}));
+
 function makeNation(id: string, name: string): Nation {
   return {
     capitalSettlementId: null,
@@ -56,7 +60,7 @@ describe("NationDiscoveryGrid", () => {
     expect(onToggle).toHaveBeenCalledTimes(2);
   });
 
-  it("marks a discovered pair as pressed and mutes the mirrored lower-triangle cell", () => {
+  it("marks both mirrored cells of a discovered pair as pressed and keeps them in sync", () => {
     const pair: NationDiscoveryPair = {
       createdByUserId: null,
       metAtTurnNumber: 4,
@@ -78,19 +82,61 @@ describe("NationDiscoveryGrid", () => {
       />,
     );
 
-    const cell = screen.getByRole("button", {
-      name: "Aldoria ↔ Bruma: discovered",
-    });
-    expect(cell).toHaveAttribute("aria-pressed", "true");
-
-    // Only one interactive control exists per unordered pair; the mirrored
-    // lower-triangle cell is a muted, non-interactive placeholder.
+    // Both triangles are interactive and mirror the same underlying pair.
     expect(
-      screen.queryByRole("button", { name: "Bruma ↔ Aldoria: discovered" }),
+      screen.getByRole("button", { name: "Aldoria ↔ Bruma: discovered" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: "Bruma ↔ Aldoria: discovered" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("toggling the mirrored (lower-triangle) cell calls onToggle with the same pair", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+
+    render(
+      <NationDiscoveryGrid
+        bulkPendingNationId={null}
+        canEdit
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
+        pairsByKey={buildDiscoveryPairMap([])}
+        pendingKey={null}
+        onClearAll={vi.fn()}
+        onDiscoverAll={vi.fn()}
+        onToggle={onToggle}
+      />,
+    );
+
+    const mirroredCell = screen.getByRole("button", {
+      name: "Bruma ↔ Aldoria: not discovered",
+    });
+    await user.click(mirroredCell);
+    expect(onToggle).toHaveBeenCalledWith(nationB, nationA, true);
+  });
+
+  it("does not render a control for the diagonal (self) cell", () => {
+    render(
+      <NationDiscoveryGrid
+        bulkPendingNationId={null}
+        canEdit
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
+        pairsByKey={buildDiscoveryPairMap([])}
+        pendingKey={null}
+        onClearAll={vi.fn()}
+        onDiscoverAll={vi.fn()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Aldoria ↔ Aldoria/ }),
     ).not.toBeInTheDocument();
   });
 
-  it("calls onDiscoverAll and onClearAll for a row's bulk actions", async () => {
+  it("calls onDiscoverAll and onClearAll from a row's actions menu", async () => {
     const user = userEvent.setup();
     const onDiscoverAll = vi.fn();
     const onClearAll = vi.fn();
@@ -110,21 +156,19 @@ describe("NationDiscoveryGrid", () => {
     );
 
     await user.click(
-      screen.getByRole("button", {
-        name: "Mark Aldoria as met with all nations",
-      }),
+      screen.getByRole("button", { name: "Actions for Aldoria" }),
     );
+    await user.click(screen.getByRole("menuitem", { name: "Discover all" }));
     expect(onDiscoverAll).toHaveBeenCalledWith(nationA);
 
     await user.click(
-      screen.getByRole("button", {
-        name: "Mark Aldoria as unmet with all nations",
-      }),
+      screen.getByRole("button", { name: "Actions for Aldoria" }),
     );
+    await user.click(screen.getByRole("menuitem", { name: "Clear all" }));
     expect(onClearAll).toHaveBeenCalledWith(nationA);
   });
 
-  it("disables bulk actions for the row currently processing", () => {
+  it("disables the actions menu for the row currently processing", () => {
     render(
       <NationDiscoveryGrid
         bulkPendingNationId={nationA.id}
@@ -140,13 +184,11 @@ describe("NationDiscoveryGrid", () => {
     );
 
     expect(
-      screen.getByRole("button", {
-        name: "Mark Aldoria as met with all nations",
-      }),
+      screen.getByRole("button", { name: "Actions for Aldoria" }),
     ).toBeDisabled();
   });
 
-  it("hides bulk row actions when the viewer cannot edit", () => {
+  it("hides the row actions menu when the viewer cannot edit", () => {
     render(
       <NationDiscoveryGrid
         bulkPendingNationId={null}
@@ -162,9 +204,28 @@ describe("NationDiscoveryGrid", () => {
     );
 
     expect(
-      screen.queryByRole("button", {
-        name: "Mark Aldoria as met with all nations",
-      }),
+      screen.queryByRole("button", { name: "Actions for Aldoria" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows each column's nation name as a hover title on the flag header", () => {
+    render(
+      <NationDiscoveryGrid
+        bulkPendingNationId={null}
+        canEdit
+        rows={[nationA, nationB]}
+        columns={[nationA, nationB]}
+        pairsByKey={buildDiscoveryPairMap([])}
+        pendingKey={null}
+        onClearAll={vi.fn()}
+        onDiscoverAll={vi.fn()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("columnheader", { name: "Bruma" })).toHaveAttribute(
+      "title",
+      "Bruma",
+    );
   });
 });

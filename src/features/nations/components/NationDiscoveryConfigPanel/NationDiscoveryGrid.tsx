@@ -1,8 +1,16 @@
-import { Check, Circle, CircleCheck, CircleX, Minus } from "lucide-react";
+import { Check, Circle, MoreHorizontal, Minus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+
+import { NationFlagAvatar } from "../NationFlagAvatar";
 
 import { discoveryPairKey } from "./NationDiscoveryUtils";
 
@@ -22,16 +30,17 @@ type NationDiscoveryGridProps = {
 
 const CELL_SIZE = "size-14";
 const CELL_PX = 56;
-const NAME_COLUMN_PX = 132;
+const NAME_COLUMN_PX = 220;
 
 // Rows and columns are independent lists: columns are always every nation in
 // the world (for context), while rows are the nations matching the current
-// search (all of them when the search is empty). When a matched nation also
-// appears as a column, only the first occurrence by row order stays
-// interactive — the other is shown muted so the same pair never has two
-// controls. Columns are labeled with an index rather than a rotated name so
-// headers stay legible regardless of name length; the legend below maps
-// indices back to full names and is also exposed to screen readers.
+// search (all of them when the search is empty). Both triangles are
+// interactive: a cell's row/column pair maps to the same order-independent
+// discoveryPairKey regardless of which nation is the row and which is the
+// column, so the two mirrored cells for a pair always render identically and
+// toggling either one flips the same underlying record. Column headers show
+// each nation's flag with the full name on hover/focus via the native title
+// tooltip (and exposed to screen readers via sr-only text).
 export function NationDiscoveryGrid({
   canEdit,
   rows,
@@ -53,7 +62,7 @@ export function NationDiscoveryGrid({
 
   return (
     <div className="flex flex-col gap-3">
-      <DiscoveryLegend nations={columns} />
+      <DiscoveryLegend />
       <div
         className="max-h-[70vh] w-fit max-w-full overflow-auto rounded-md border border-border"
         onMouseLeave={clearHover}
@@ -76,25 +85,26 @@ export function NationDiscoveryGrid({
               >
                 Nation
               </th>
-              {columns.map((column, columnIndex) => (
+              {columns.map((column) => (
                 <th
                   key={column.id}
                   scope="col"
                   title={column.name}
                   className={cn(
                     CELL_SIZE,
-                    "sticky top-0 z-20 border-b border-border bg-card p-1 text-center align-middle font-medium",
+                    "sticky top-0 z-20 border-b border-border bg-card p-1 align-middle font-medium",
                     hoveredColumnId === column.id && "bg-accent",
                   )}
                   onMouseEnter={() => {
                     setHoveredColumnId(column.id);
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="text-xs text-muted-foreground"
-                  >
-                    {columnIndex + 1}
+                  <span className="flex items-center justify-center">
+                    <NationFlagAvatar
+                      className="w-10"
+                      flagPath={column.flagPath}
+                      nationId={column.id}
+                    />
                   </span>
                   <span className="sr-only">{column.name}</span>
                 </th>
@@ -102,7 +112,7 @@ export function NationDiscoveryGrid({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, rowIndex) => {
+            {rows.map((row) => {
               const isRowBulkPending = bulkPendingNationId === row.id;
 
               return (
@@ -119,38 +129,39 @@ export function NationDiscoveryGrid({
                     }}
                   >
                     <div className="flex min-w-0 items-center gap-1">
-                      <span className="min-w-0 flex-1 truncate">
+                      <span className="min-w-0 flex-1 break-words">
                         {row.name}
                       </span>
                       {canEdit ? (
-                        <>
-                          <Button
-                            aria-label={`Mark ${row.name} as met with all nations`}
-                            disabled={isRowBulkPending}
-                            size="icon-sm"
-                            title="Discover all"
-                            type="button"
-                            variant="ghost"
-                            onClick={() => {
-                              onDiscoverAll(row);
-                            }}
-                          >
-                            <CircleCheck />
-                          </Button>
-                          <Button
-                            aria-label={`Mark ${row.name} as unmet with all nations`}
-                            disabled={isRowBulkPending}
-                            size="icon-sm"
-                            title="Clear all"
-                            type="button"
-                            variant="ghost"
-                            onClick={() => {
-                              onClearAll(row);
-                            }}
-                          >
-                            <CircleX />
-                          </Button>
-                        </>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-label={`Actions for ${row.name}`}
+                              disabled={isRowBulkPending}
+                              size="icon-sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <MoreHorizontal aria-hidden="true" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                onDiscoverAll(row);
+                              }}
+                            >
+                              Discover all
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                onClearAll(row);
+                              }}
+                            >
+                              Clear all
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : null}
                     </div>
                   </th>
@@ -159,17 +170,6 @@ export function NationDiscoveryGrid({
                     const pair = pairsByKey.get(key);
                     const met = pair !== undefined;
                     const isDiagonal = column.id === row.id;
-                    // When a pair's nations both appear as rows (e.g. the
-                    // search matched more than one nation), the pair would
-                    // otherwise render twice — once per row. Only the first
-                    // occurrence (by row order) stays interactive; the other
-                    // is shown muted, mirroring the upper/lower triangle
-                    // convention from the unfiltered square matrix.
-                    const mirrorRowIndex = rows.findIndex(
-                      (candidate) => candidate.id === column.id,
-                    );
-                    const isInteractive =
-                      mirrorRowIndex === -1 || mirrorRowIndex > rowIndex;
                     const isHighlighted =
                       hoveredRowId === row.id || hoveredColumnId === column.id;
                     const pairLabel = `${row.name} ↔ ${column.name}: ${
@@ -191,38 +191,6 @@ export function NationDiscoveryGrid({
                               aria-hidden="true"
                               className="size-3 text-muted-foreground/40"
                             />
-                          </span>
-                        </td>
-                      );
-                    }
-
-                    if (!isInteractive) {
-                      // Lower triangle: mirror the upper-triangle state, muted
-                      // and non-interactive so the matrix still reads
-                      // symmetrically at a glance.
-                      return (
-                        <td
-                          key={column.id}
-                          aria-hidden="true"
-                          className={cn(
-                            CELL_SIZE,
-                            "border-r border-b border-border p-0",
-                            met ? "bg-primary/15" : "bg-muted/20",
-                            isHighlighted && "bg-accent",
-                          )}
-                        >
-                          <span className="flex size-full items-center justify-center">
-                            {met ? (
-                              <Check
-                                aria-hidden="true"
-                                className="size-3 text-primary/50"
-                              />
-                            ) : (
-                              <Circle
-                                aria-hidden="true"
-                                className="size-2 text-muted-foreground/30"
-                              />
-                            )}
                           </span>
                         </td>
                       );
@@ -282,50 +250,27 @@ export function NationDiscoveryGrid({
   );
 }
 
-function DiscoveryLegend({
-  nations,
-}: {
-  readonly nations: readonly Nation[];
-}): JSX.Element {
+function DiscoveryLegend(): JSX.Element {
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="flex size-5 items-center justify-center rounded-sm bg-primary text-primary-foreground">
-            <Check aria-hidden="true" className="size-3" />
-          </span>
-          Met
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5">
+        <span className="flex size-5 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+          <Check aria-hidden="true" className="size-3" />
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="flex size-5 items-center justify-center rounded-sm border border-border">
-            <Circle
-              aria-hidden="true"
-              className="size-2.5 text-muted-foreground/40"
-            />
-          </span>
-          Not met
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
+        Met
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="flex size-5 items-center justify-center rounded-sm border border-border">
+          <Circle
             aria-hidden="true"
-            className="flex size-5 items-center justify-center rounded-sm bg-muted/40"
-          >
-            <Check aria-hidden="true" className="size-3 text-primary/50" />
-          </span>
-          Mirrored (read-only)
+            className="size-2.5 text-muted-foreground/40"
+          />
         </span>
-        <span className="text-muted-foreground/80">
-          Click a cell in the upper triangle to toggle
-        </span>
-      </div>
-      <ol className="flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-2 text-muted-foreground">
-        {nations.map((nation, index) => (
-          <li key={nation.id}>
-            <span className="font-medium text-foreground">{index + 1}.</span>{" "}
-            {nation.name}
-          </li>
-        ))}
-      </ol>
+        Not met
+      </span>
+      <span className="text-muted-foreground/80">
+        Click a cell to toggle whether the row and column nations have met
+      </span>
     </div>
   );
 }
