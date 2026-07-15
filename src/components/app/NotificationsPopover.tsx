@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Bell, ChevronRight, X } from "lucide-react";
+import { Bell, Check, ChevronRight } from "lucide-react";
 import { type JSX, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,11 @@ import {
   getDeepLink,
   markNotificationReadMutationOptions,
   notificationQueryKeys,
+  NotificationPreferencesSheet,
   useMarkAllNotificationsRead,
   useNotificationsRealtime,
 } from "@/features/notifications";
+import { formatRelativeTime } from "@/lib/formatDate";
 
 type NotificationsPopoverProps = {
   readonly className?: string;
@@ -85,7 +87,9 @@ export function NotificationsPopover({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-semibold">Notifications</h2>
-                <p className="text-xs text-muted-foreground">All unread</p>
+                <p className="text-xs text-muted-foreground">
+                  Showing unread only
+                </p>
               </div>
               {unreadCount > 0 ? (
                 <Button
@@ -122,17 +126,24 @@ export function NotificationsPopover({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <p className="text-sm">{notification.messageText}</p>
+                          <div className="flex items-center gap-1.5">
+                            {!notification.isRead ? (
+                              <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-primary"
+                              />
+                            ) : null}
+                            <p className="text-sm">
+                              {notification.messageText}
+                            </p>
+                          </div>
                           {contextParts.length > 0 ? (
                             <p className="text-xs text-muted-foreground">
                               {contextParts.join(" · ")}
                             </p>
                           ) : null}
                           <p className="text-xs text-muted-foreground">
-                            {/* eslint-disable-next-line no-restricted-syntax */}
-                            {new Date(
-                              notification.generatedAt,
-                            ).toLocaleString()}
+                            {formatRelativeTime(notification.generatedAt)}
                           </p>
                         </div>
                         {!notification.isRead ? (
@@ -145,7 +156,7 @@ export function NotificationsPopover({
                               aria-label="Mark as read"
                               className="shrink-0"
                             >
-                              <X className="size-4" />
+                              <Check className="size-4" />
                             </Button>
                             {deepLink !== null ? (
                               <Button
@@ -175,12 +186,13 @@ export function NotificationsPopover({
               )}
             </div>
           </ScrollArea>
-          <div className="border-t px-4 py-2">
-            <Button variant="ghost" className="w-full" size="sm" asChild>
+          <div className="flex items-center gap-2 border-t px-4 py-2">
+            <Button variant="ghost" className="flex-1" size="sm" asChild>
               <Link to="/notifications" onClick={() => setOpen(false)}>
                 View all notifications
               </Link>
             </Button>
+            <NotificationPreferencesSheet userId={userId} />
           </div>
         </div>
       </PopoverContent>
