@@ -52,6 +52,23 @@ vi.mock("@/features/citizens", async () => {
   );
   return {
     ...actual,
+    citizensInSettlementQueryOptions: () => ({
+      queryFn: () => Promise.resolve([]),
+      queryKey: ["citizens-in-settlement"],
+    }),
+    playerCharactersInNationQueryOptions: () => ({
+      queryFn: () => Promise.resolve([]),
+      queryKey: ["player-characters-in-nation"],
+    }),
+  };
+});
+
+vi.mock("@/features/citizens/queries/citizensQueries", async () => {
+  const actual = await vi.importActual(
+    "@/features/citizens/queries/citizensQueries",
+  );
+  return {
+    ...actual,
     citizenByIdQueryOptions: (citizenId: string) => ({
       queryFn: () =>
         Promise.resolve(
@@ -61,6 +78,15 @@ vi.mock("@/features/citizens", async () => {
         ),
       queryKey: ["citizen-by-id", citizenId],
     }),
+  };
+});
+
+vi.mock("@/features/citizens/queries/citizenDirectoryQueries", async () => {
+  const actual = await vi.importActual(
+    "@/features/citizens/queries/citizenDirectoryQueries",
+  );
+  return {
+    ...actual,
     citizensDirectoryQueryOptions: () => ({
       queryFn: () =>
         Promise.resolve({
@@ -68,14 +94,6 @@ vi.mock("@/features/citizens", async () => {
           totalCount: 1,
         }),
       queryKey: ["citizens-directory"],
-    }),
-    citizensInSettlementQueryOptions: () => ({
-      queryFn: () => Promise.resolve([]),
-      queryKey: ["citizens-in-settlement"],
-    }),
-    playerCharactersInNationQueryOptions: () => ({
-      queryFn: () => Promise.resolve([]),
-      queryKey: ["player-characters-in-nation"],
     }),
   };
 });

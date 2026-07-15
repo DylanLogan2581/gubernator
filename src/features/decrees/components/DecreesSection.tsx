@@ -39,6 +39,7 @@ import {
   type WorldCalendarConfig,
 } from "@/features/calendar";
 import {
+  CitizenPicker,
   playerCharactersInNationQueryOptions,
   citizensInSettlementQueryOptions,
 } from "@/features/citizens";
@@ -54,8 +55,6 @@ import {
   nationDecreesQueryOptions,
   settlementDecreesQueryOptions,
 } from "../queries/decreesQueries";
-
-import { DecreeIssuerCombobox } from "./DecreeIssuerCombobox";
 
 import type { Decree } from "../types/decreeTypes";
 
@@ -413,8 +412,9 @@ function IssueDecreeDialog({
           {issuedByCitizenId === null ? (
             <div className="grid gap-1">
               <Label htmlFor="decree-issuer">Issued by</Label>
-              <DecreeIssuerCombobox
+              <CitizenPicker
                 citizenId={pickedCitizenId}
+                id="decree-issuer"
                 nationId={scopeContext.nationId}
                 onChange={setPickedCitizenId}
                 settlementId={

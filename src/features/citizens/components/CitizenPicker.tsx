@@ -1,13 +1,13 @@
-// Reusable searchable citizen picker (#1160): debounced server-side name
-// search over citizen_directory_view with a player/NPC filter toggle and
-// settlement + status metadata per row. Built to replace full-population
-// candidate lists that don't scale past a few hundred citizens -- the
-// settlement manager assignment flow is the first adopter; decrees and
-// government body composition can adopt it too instead of growing their
-// own combobox variants (see DecreeIssuerCombobox, TurnLogCitizenCombobox).
+// Reusable searchable citizen picker (#1160, #1189): debounced server-side
+// name search over citizen_directory_view with a player/NPC filter toggle
+// and settlement + role metadata per row. Shared by the settlement manager
+// assignment flow and decree issuance instead of each growing its own
+// combobox variant (see TurnLogCitizenCombobox, which stays separate since
+// its "All citizens" option and undefined-based clearing serve a filter bar
+// rather than a staged selection).
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { cn } from "@/lib/utils";
 
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
+import { citizenByIdQueryOptions } from "../queries/citizensQueries";
 
 import type { CitizenStatus, CitizenType } from "../types/citizenTypes";
 
@@ -39,7 +40,7 @@ type CitizenPickerProps = {
   readonly citizenId: string | null;
   readonly id?: string;
   readonly nationId?: string;
-  readonly onChange: (citizenId: string) => void;
+  readonly onChange: (citizenId: string | null) => void;
   readonly placeholder?: string;
   readonly settlementId?: string;
   readonly statusFilter?: CitizenStatus;
@@ -47,13 +48,14 @@ type CitizenPickerProps = {
 };
 
 const PAGE_SIZE = 20;
+const SEARCH_PLACEHOLDER = "Search citizens…";
 
 export function CitizenPicker({
   citizenId,
   id,
   nationId,
   onChange,
-  placeholder = "Search citizens…",
+  placeholder = "Select citizen…",
   settlementId,
   statusFilter,
   worldId,
@@ -62,6 +64,11 @@ export function CitizenPicker({
   const [searchInput, setSearchInput] = useState("");
   const [typeFilter, setTypeFilter] = useState<CitizenTypeFilter>("all");
   const debouncedSearch = useDebouncedValue(searchInput, 300);
+
+  const selectedQuery = useQuery({
+    ...citizenByIdQueryOptions(citizenId ?? ""),
+    enabled: citizenId !== null,
+  });
 
   const searchQuery = useQuery({
     ...citizensDirectoryQueryOptions(
@@ -79,27 +86,61 @@ export function CitizenPicker({
   });
 
   const options = searchQuery.data?.rows ?? [];
+  const isTruncated =
+    searchQuery.data !== undefined &&
+    searchQuery.data.totalCount > options.length;
+  const triggerLabel =
+    citizenId === null ? placeholder : (selectedQuery.data?.name ?? "Loading…");
+
+  function handleClear(): void {
+    onChange(null);
+    setOpen(false);
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-expanded={open}
-          id={id}
-          role="combobox"
-          type="button"
-          variant="outline"
-          className="w-full justify-between font-normal"
-        >
-          <span className="truncate">{placeholder}</span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-0">
+      <div className="relative">
+        <PopoverTrigger asChild>
+          <Button
+            aria-expanded={open}
+            id={id}
+            role="combobox"
+            type="button"
+            variant="outline"
+            className={cn(
+              "w-full justify-between font-normal",
+              citizenId !== null && "pr-8",
+            )}
+          >
+            <span className="truncate">{triggerLabel}</span>
+            <ChevronsUpDown
+              aria-hidden="true"
+              className="ml-2 size-4 shrink-0 opacity-50"
+            />
+          </Button>
+        </PopoverTrigger>
+        {citizenId === null ? null : (
+          <button
+            aria-label="Clear selection"
+            className="absolute top-1/2 right-7 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleClear();
+            }}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-3.5" />
+          </button>
+        )}
+      </div>
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             onValueChange={setSearchInput}
-            placeholder={placeholder}
+            placeholder={SEARCH_PLACEHOLDER}
             value={searchInput}
           />
           <div className="border-b border-border p-2">
@@ -141,6 +182,15 @@ export function CitizenPicker({
               {searchQuery.isFetching ? "Searching…" : "No citizens found."}
             </CommandEmpty>
             <CommandGroup>
+              {citizenId === null ? null : (
+                <CommandItem
+                  className="text-muted-foreground"
+                  onSelect={handleClear}
+                  value="__clear__"
+                >
+                  Clear selection
+                </CommandItem>
+              )}
               {options.map((citizen) => (
                 <CommandItem
                   key={citizen.id}
@@ -166,7 +216,7 @@ export function CitizenPicker({
                             : "outline"
                         }
                       >
-                        {citizen.citizenType === "npc" ? "NPC" : "PC"}
+                        {citizen.citizenType === "npc" ? "NPC" : "Player"}
                       </Badge>
                       {citizen.status === "dead" ? (
                         <Badge variant="destructive">Dead</Badge>
@@ -174,12 +224,20 @@ export function CitizenPicker({
                     </span>
                     <span className="truncate text-xs text-muted-foreground">
                       {citizen.settlementName ?? "No settlement"}
+                      {citizen.officeTypes === null
+                        ? ""
+                        : ` · ${citizen.officeTypes}`}
                     </span>
                   </span>
                 </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>
+          {isTruncated ? (
+            <p className="border-t border-border px-2 py-1.5 text-xs text-muted-foreground">
+              Showing first {PAGE_SIZE} — refine your search
+            </p>
+          ) : null}
         </Command>
       </PopoverContent>
     </Popover>

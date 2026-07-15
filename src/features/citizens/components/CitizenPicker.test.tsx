@@ -14,6 +14,7 @@ vi.mock("../queries/citizenDirectoryQueries", () => ({
       readonly citizenType?: string;
       readonly nationId?: string;
       readonly search?: string;
+      readonly settlementId?: string;
       readonly status?: string;
     },
   ) => ({
@@ -21,6 +22,7 @@ vi.mock("../queries/citizenDirectoryQueries", () => ({
       "citizens-directory",
       filters.search,
       filters.citizenType,
+      filters.settlementId,
       filters.status,
     ],
     queryFn: () => {
@@ -30,6 +32,7 @@ vi.mock("../queries/citizenDirectoryQueries", () => ({
           citizenType: "player_character",
           id: "citizen-1",
           name: "Alice",
+          officeTypes: null,
           settlementName: "Riverside",
           status: "alive",
         },
@@ -37,8 +40,17 @@ vi.mock("../queries/citizenDirectoryQueries", () => ({
           citizenType: "npc",
           id: "citizen-2",
           name: "Bob",
+          officeTypes: null,
           settlementName: "Riverside",
           status: "dead",
+        },
+        {
+          citizenType: "player_character",
+          id: "citizen-3",
+          name: "Deirdre Dunmore",
+          officeTypes: "Settlement Manager",
+          settlementName: "Riverside",
+          status: "alive",
         },
       ]
         .filter((row) =>
@@ -59,9 +71,20 @@ vi.mock("../queries/citizenDirectoryQueries", () => ({
   }),
 }));
 
+vi.mock("../queries/citizensQueries", () => ({
+  citizenByIdQueryOptions: (citizenId: string) => ({
+    queryKey: ["citizen-by-id", citizenId],
+    queryFn: () =>
+      Promise.resolve(
+        citizenId === "citizen-1" ? { id: citizenId, name: "Alice" } : null,
+      ),
+  }),
+}));
+
 function renderPicker(
   citizenId: string | null,
-  onChange: (citizenId: string) => void,
+  onChange: (citizenId: string | null) => void,
+  props: { readonly settlementId?: string } = {},
 ): ReturnType<typeof render> {
   const queryClient = new QueryClient();
   return render(
@@ -71,12 +94,23 @@ function renderPicker(
         nationId="nation-1"
         onChange={onChange}
         worldId="world-1"
+        {...props}
       />
     </QueryClientProvider>,
   );
 }
 
 describe("CitizenPicker", () => {
+  it("shows a placeholder when no citizen is selected", () => {
+    renderPicker(null, vi.fn());
+    expect(screen.getByRole("combobox")).toHaveTextContent("Select citizen…");
+  });
+
+  it("shows the resolved name of the selected citizen in the trigger", async () => {
+    renderPicker("citizen-1", vi.fn());
+    expect(await screen.findByText("Alice")).toBeDefined();
+  });
+
   it("searches server-side with debounce as the admin types", async () => {
     const user = userEvent.setup();
     renderPicker(null, vi.fn());
@@ -92,14 +126,30 @@ describe("CitizenPicker", () => {
     expect(await screen.findByText("Bob")).toBeDefined();
   });
 
-  it("shows settlement and status metadata per result row", async () => {
+  it("scopes the search to a settlement when provided", async () => {
+    const user = userEvent.setup();
+    renderPicker(null, vi.fn(), { settlementId: "settlement-1" });
+
+    await user.click(screen.getByRole("combobox"));
+
+    await waitFor(() => {
+      expect(searchFn).toHaveBeenCalledWith(
+        expect.objectContaining({ settlementId: "settlement-1" }),
+      );
+    });
+  });
+
+  it("shows settlement and role metadata per result row, distinguishing duplicate names", async () => {
     const user = userEvent.setup();
     renderPicker(null, vi.fn());
 
     await user.click(screen.getByRole("combobox"));
 
-    expect(await screen.findAllByText("Riverside")).toHaveLength(2);
+    expect(
+      await screen.findAllByText("Riverside", { exact: false }),
+    ).not.toHaveLength(0);
     expect(screen.getByText("Dead")).toBeDefined();
+    expect(screen.getByText(/Settlement Manager/)).toBeDefined();
   });
 
   it("filters to players only via the type toggle", async () => {
@@ -140,5 +190,35 @@ describe("CitizenPicker", () => {
     await user.click(option);
 
     expect(onChange).toHaveBeenCalledWith("citizen-1");
+  });
+
+  it("clears the staged selection from the trigger", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    renderPicker("citizen-1", onChange);
+
+    await screen.findByText("Alice");
+    await user.click(screen.getByRole("button", { name: "Clear selection" }));
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it("clears the staged selection from the list", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    renderPicker("citizen-1", onChange);
+
+    await screen.findByText("Alice");
+    await user.click(screen.getByRole("combobox"));
+    await user.click(await screen.findByText("Clear selection"));
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it("does not render a clear affordance when nothing is selected", () => {
+    renderPicker(null, vi.fn());
+    expect(
+      screen.queryByRole("button", { name: "Clear selection" }),
+    ).toBeNull();
   });
 });

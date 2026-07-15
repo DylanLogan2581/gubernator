@@ -198,7 +198,7 @@ function NationRoleAssignmentRow({
             <Badge
               variant={citizen.citizenType === "npc" ? "secondary" : "outline"}
             >
-              {citizen.citizenType === "npc" ? "NPC" : "Player character"}
+              {citizen.citizenType === "npc" ? "NPC" : "Player"}
             </Badge>
           </span>
           <span className="text-xs text-muted-foreground">
