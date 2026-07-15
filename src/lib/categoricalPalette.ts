@@ -59,7 +59,11 @@ export function categoricalForegroundCssVar(slot: CategoricalSlot): string {
 export function hashToCategoricalSlot(seed: string): CategoricalSlot {
   let hash = 0;
   for (const char of seed) {
-    hash = (hash * 31 + char.charCodeAt(0)) % CATEGORICAL_SLOT_COUNT;
+    // `| 0` keeps the accumulator within 32-bit signed range (avoiding float
+    // precision loss for long seeds) without collapsing the hash space early —
+    // the reduction to CATEGORICAL_SLOT_COUNT happens once, after the full seed
+    // has been folded in, so adjacent UUIDs don't cluster onto adjacent slots.
+    hash = (hash * 31 + char.charCodeAt(0)) | 0;
   }
-  return (hash + 1) as CategoricalSlot;
+  return ((Math.abs(hash) % CATEGORICAL_SLOT_COUNT) + 1) as CategoricalSlot;
 }
