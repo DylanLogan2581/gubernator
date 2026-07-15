@@ -71,7 +71,7 @@ import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
 import { readWorldScopePin } from "../utils/worldScopePin";
 import { computeDryRunReport } from "../utils/worldTemplateDryRun";
 
-import { WorldAvatar } from "./WorldAvatar";
+import { WorldCardImage } from "./WorldCardImage";
 import {
   DryRunSummary,
   ImportErrorDialog,
@@ -429,36 +429,38 @@ function WorldListItem({
   }
 
   return (
-    <li className="group grid gap-3 rounded-md border border-border bg-card p-3 text-card-foreground">
+    <li className="group grid gap-3 overflow-hidden rounded-md border border-border bg-card text-card-foreground">
       <Link
         to="/worlds/$worldId"
         params={{ worldId: world.id }}
         className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <div className="flex min-w-0 items-center gap-3">
-          <WorldIcon world={world} />
-          <div className="min-w-0 flex-1 space-y-1">
-            <h2 className="truncate text-base font-medium">{world.name}</h2>
-            <WorldBadge world={world} />
+        <WorldCardImage world={world} />
+        <div className="grid gap-3 px-3 pb-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="min-w-0 flex-1 space-y-1">
+              <h2 className="truncate text-base font-medium">{world.name}</h2>
+              <WorldBadge world={world} />
+            </div>
+            <ArrowRight
+              className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
           </div>
-          <ArrowRight
-            className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
+          <dl className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+            <div>
+              <dt className="font-medium text-foreground">Planning turn</dt>
+              <dd>{world.planningTurnNumber}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">In-world date</dt>
+              <dd>{world.inWorldDateLabel}</dd>
+            </div>
+          </dl>
         </div>
-        <dl className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-          <div>
-            <dt className="font-medium text-foreground">Planning turn</dt>
-            <dd>{world.planningTurnNumber}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-foreground">In-world date</dt>
-            <dd>{world.inWorldDateLabel}</dd>
-          </div>
-        </dl>
       </Link>
       {resumeTarget !== null || isSuperAdmin ? (
-        <div className="flex items-center justify-between gap-2">
+        <div className="-mt-3 flex items-center justify-between gap-2 px-3 pb-3">
           {resumeTarget !== null ? (
             <Button asChild variant="outline" size="sm">
               {resumeTarget.settlementId !== null ? (
@@ -627,22 +629,6 @@ function WorldBadge({
       <Globe2 className="size-3" aria-hidden="true" />
       Public
     </Badge>
-  );
-}
-
-function WorldIcon({
-  world,
-}: {
-  readonly world: AccessibleWorld;
-}): JSX.Element {
-  return (
-    <WorldAvatar
-      className="shrink-0"
-      size="lg"
-      thumbnailPath={world.thumbnailPath}
-      worldId={world.id}
-      worldName={world.name}
-    />
   );
 }
 

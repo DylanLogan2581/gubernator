@@ -19,9 +19,9 @@ type WorldDashboardHeroBannerProps = {
 };
 
 /**
- * Compact world dashboard header: a small hero thumbnail (or gradient
- * fallback when unset) beside the world name, status/visibility badges, and
- * in-world date.
+ * Full-width world dashboard header: a big hero photo (or gradient fallback
+ * when unset) with the world name, status/visibility badges, and in-world
+ * date overlaid at the bottom.
  */
 export function WorldDashboardHeroBanner({
   inWorldDateLabel,
@@ -37,19 +37,18 @@ export function WorldDashboardHeroBanner({
   return (
     <section
       aria-labelledby="world-shell-title"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3"
+      className="relative h-48 w-full overflow-hidden rounded-md border border-border bg-gradient-to-br from-muted to-muted/40 sm:h-64 md:h-80"
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="relative size-10 shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-muted to-muted/40">
-          <WorldHeroImage
-            className="absolute inset-0 size-full object-cover"
-            heroPath={heroPath}
-          />
-        </div>
+      <WorldHeroImage
+        className="absolute inset-0 size-full object-cover"
+        heroPath={heroPath}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-4">
         <div className="min-w-0 space-y-1">
           <h1
             id="world-shell-title"
-            className="truncate text-xl font-semibold tracking-normal"
+            className="truncate text-2xl font-semibold tracking-normal text-white drop-shadow-sm sm:text-3xl"
           >
             {name}
           </h1>
@@ -68,10 +67,8 @@ export function WorldDashboardHeroBanner({
             ) : null}
           </div>
         </div>
+        <p className="shrink-0 text-sm text-white/90">{inWorldDateLabel}</p>
       </div>
-      <p className="shrink-0 text-sm text-muted-foreground">
-        {inWorldDateLabel}
-      </p>
     </section>
   );
 }
