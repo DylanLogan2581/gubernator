@@ -39,6 +39,10 @@ function buildDioramaSeries(): readonly DioramaTick[] {
 
 export const DIORAMA_TICK_INTERVAL_MS = 1600;
 
+// Start partway through the series so the first paint already shows a
+// meaningful chart trend instead of a single point.
+export const DIORAMA_INITIAL_TICK_INDEX = 3;
+
 // Precomputed once at module load, not per render: every visitor sees the
 // same deterministic sequence of fake turns.
 export const DIORAMA_SERIES: readonly DioramaTick[] = buildDioramaSeries();

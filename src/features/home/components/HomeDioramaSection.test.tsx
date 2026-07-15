@@ -1,7 +1,11 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DIORAMA_SERIES, DIORAMA_TICK_INTERVAL_MS } from "../lib/dioramaSeries";
+import {
+  DIORAMA_INITIAL_TICK_INDEX,
+  DIORAMA_SERIES,
+  DIORAMA_TICK_INTERVAL_MS,
+} from "../lib/dioramaSeries";
 
 import { HomeDioramaSection } from "./HomeDioramaSection";
 
@@ -28,12 +32,14 @@ describe("HomeDioramaSection", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the first frame of the deterministic series", () => {
+  it("renders the seeded frame of the deterministic series on first paint", () => {
     mockMatchMedia(false);
     render(<HomeDioramaSection />);
 
     expect(
-      screen.getByText(String(DIORAMA_SERIES[0].population)),
+      screen.getByText(
+        String(DIORAMA_SERIES[DIORAMA_INITIAL_TICK_INDEX].population),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -46,7 +52,9 @@ describe("HomeDioramaSection", () => {
     });
 
     expect(
-      screen.getByText(String(DIORAMA_SERIES[1].population)),
+      screen.getByText(
+        String(DIORAMA_SERIES[DIORAMA_INITIAL_TICK_INDEX + 1].population),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -59,7 +67,9 @@ describe("HomeDioramaSection", () => {
     });
 
     expect(
-      screen.getByText(String(DIORAMA_SERIES[0].population)),
+      screen.getByText(
+        String(DIORAMA_SERIES[DIORAMA_INITIAL_TICK_INDEX].population),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -70,9 +80,11 @@ describe("HomeDioramaSection", () => {
     expect(screen.queryByText("Harvest festival")).not.toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(DIORAMA_TICK_INTERVAL_MS * 4);
+      vi.advanceTimersByTime(
+        DIORAMA_TICK_INTERVAL_MS * (12 - DIORAMA_INITIAL_TICK_INDEX),
+      );
     });
 
-    expect(screen.getByText("Harvest festival")).toBeInTheDocument();
+    expect(screen.getByText("Trade route established")).toBeInTheDocument();
   });
 });
