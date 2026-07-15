@@ -118,7 +118,12 @@ export type {
   ResolveWorldScopeInput,
   WorldScopePin,
 } from "./utils/resolveWorldScope";
-export { readWorldScopePin, writeWorldScopePin } from "./utils/worldScopePin";
+export {
+  nextWorldScopePin,
+  readWorldScopePin,
+  writeWorldScopePin,
+} from "./utils/worldScopePin";
+export type { NextWorldScopePinInput } from "./utils/worldScopePin";
 export {
   clearLastWorldPin,
   readLastWorldPin,

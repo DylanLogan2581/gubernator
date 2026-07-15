@@ -41,3 +41,37 @@ export function readWorldScopePin(worldId: string): WorldScopePin {
 export function writeWorldScopePin(worldId: string, pin: WorldScopePin): void {
   writeLocalStorageItem(storageKey(worldId), JSON.stringify(pin));
 }
+
+export type NextWorldScopePinInput = {
+  readonly routeNationId: string | null;
+  readonly routeSettlementId: string | null;
+  readonly storedPin: WorldScopePin;
+};
+
+// Folds a route change into the persisted pin (docs/ui-redesign.md §3.2).
+// A settlement only ever belongs to one nation, so carrying the old
+// settlementId forward across a bare nation-scope change (no settlementId in
+// the new route) would pair it with a nation it doesn't belong to -- the
+// sidebar's SETTLEMENT links would then mix ids across nations. When the
+// route supplies a new nationId without a settlementId, the stored
+// settlement is cleared instead of carried over, dropping the SETTLEMENT
+// group back to its "choose a settlement" state until a settlement under
+// the new nation is actually visited.
+export function nextWorldScopePin({
+  routeNationId,
+  routeSettlementId,
+  storedPin,
+}: NextWorldScopePinInput): WorldScopePin {
+  if (routeNationId === null && routeSettlementId === null) {
+    return storedPin;
+  }
+
+  const nationChanged =
+    routeNationId !== null && routeNationId !== storedPin.nationId;
+
+  return {
+    nationId: routeNationId ?? storedPin.nationId,
+    settlementId:
+      routeSettlementId ?? (nationChanged ? null : storedPin.settlementId),
+  };
+}
