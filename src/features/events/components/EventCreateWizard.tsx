@@ -27,6 +27,7 @@ import { EventCreateNameDescriptionStep } from "./steps/EventCreateNameDescripti
 import { EventCreateStep1 } from "./steps/EventCreateStep1";
 import { EventCreateStep2 } from "./steps/EventCreateStep2";
 import { EventCreateStep3 } from "./steps/EventCreateStep3";
+import { EventScopeReadOnly } from "./steps/EventScopeReadOnly";
 
 import type { CreateEventGroupInput } from "../schemas/eventSchemas";
 import type { EventMemoryDraft } from "./steps/EventCreateForecastStep";
@@ -64,6 +65,8 @@ type EditEventData = {
   readonly groupName: string;
   readonly groupDescription: string | null;
   readonly scopeType: string;
+  readonly scopeNationId: string | null;
+  readonly scopeSettlementId: string | null;
   readonly durationType: string;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
@@ -196,10 +199,10 @@ export function EventCreateWizard({
   // Initialize state based on mode
   const [state, setState] = useState<EventCreateWizardState>(() => {
     if (isEditMode && editEventData !== undefined) {
-      // In edit mode, scope/targets are locked, so open directly on the
-      // effects step; Basics (name/description/duration) is one Previous away.
+      // In edit mode, scope/targets are locked (shown read-only on step 1),
+      // but the wizard still opens on the Basics step like create mode.
       return {
-        step: 2,
+        step: 1,
         scopeType:
           (editEventData.scopeType as "world" | "nation" | "settlement") ??
           null,
@@ -606,7 +609,15 @@ export function EventCreateWizard({
                 }}
               />
 
-              {!isEditMode && (
+              {isEditMode ? (
+                state.scopeType !== null && (
+                  <EventScopeReadOnly
+                    scopeType={state.scopeType}
+                    scopeNationId={editEventData?.scopeNationId ?? null}
+                    scopeSettlementId={editEventData?.scopeSettlementId ?? null}
+                  />
+                )
+              ) : (
                 <>
                   <EventCreateStep1
                     scopeType={state.scopeType}
