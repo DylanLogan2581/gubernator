@@ -4,6 +4,7 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
+  AdminPausedHint,
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
   type AccessContext,
@@ -191,6 +192,7 @@ function CitizenDetailContent({
       currentTurnNumber={worldAccess.header.currentTurnNumber}
       isArchived={worldAccess.header.isArchived}
       isOwnLivingCharacter={isOwnLivingCharacter}
+      rawCanAdmin={worldAccess.canAdmin}
       worldId={worldId}
     />
   );
@@ -202,6 +204,7 @@ function CitizenDetailLoaded({
   currentTurnNumber,
   isArchived,
   isOwnLivingCharacter,
+  rawCanAdmin,
   worldId,
 }: {
   readonly canAdmin: boolean;
@@ -209,6 +212,7 @@ function CitizenDetailLoaded({
   readonly currentTurnNumber: number;
   readonly isArchived: boolean;
   readonly isOwnLivingCharacter: boolean;
+  readonly rawCanAdmin: boolean;
   readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
@@ -229,6 +233,8 @@ function CitizenDetailLoaded({
 
   return (
     <CitizenDetailFrame settlementNav={settlementNav} worldId={worldId}>
+      <AdminPausedHint canAdmin={rawCanAdmin} />
+
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] lg:items-start">
         <CitizenIdentityCard citizen={citizen} settlement={settlement} />
 

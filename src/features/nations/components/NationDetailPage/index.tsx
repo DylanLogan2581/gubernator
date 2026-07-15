@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import {
+  AdminPausedHint,
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
   type AccessContext,
@@ -250,6 +251,8 @@ function NationDetailLoaded({
           </Link>
         </Button>
       </header>
+
+      <AdminPausedHint canAdmin={worldAccess.canAdmin} />
 
       <NationDetailContext
         value={{

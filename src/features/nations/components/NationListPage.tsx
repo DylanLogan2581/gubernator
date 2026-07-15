@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AdminPausedHint,
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
 } from "@/features/permissions";
@@ -174,6 +175,8 @@ function NationListContent({
           ) : null
         }
       />
+
+      <AdminPausedHint canAdmin={worldAccess.canAdmin} />
 
       {nationsQuery.isPending ? (
         <LoadingState label="Loading nations…" />
