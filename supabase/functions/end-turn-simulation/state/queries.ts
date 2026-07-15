@@ -67,6 +67,15 @@ async function fetchRows({
   }
 
   if (!response.ok) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "http_error",
+        table,
+        status: response.status,
+        timestamp: new Date().toISOString(),
+      }),
+    );
     return {
       ok: false,
       reason: {
@@ -133,6 +142,16 @@ async function fetchRowsPaginated({
     }
 
     if (!response.ok) {
+      // eslint-disable-next-line no-restricted-syntax
+      console.log(
+        JSON.stringify({
+          event: "http_error",
+          table,
+          status: response.status,
+          timestamp: new Date().toISOString(),
+          offset,
+        }),
+      );
       return {
         ok: false,
         reason: {
@@ -261,6 +280,15 @@ export async function fetchWorldRow(
   }
 
   if (!response.ok) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "http_error",
+        table: "worlds",
+        status: response.status,
+        timestamp: new Date().toISOString(),
+      }),
+    );
     return {
       ok: false,
       reason: {
@@ -304,7 +332,7 @@ export function fetchSettlements(
       "nations.world_id": `eq.${worldId}`,
       order: "id.asc",
       select:
-        "id,name,nameset_id,nation_id,is_ready_current_turn,auto_ready_enabled,nations!inner(nameset_id,world_id)",
+        "id,name,nameset_id,nation_id,is_ready_current_turn,auto_ready_enabled,nations!settlements_nation_id_fkey!inner(nameset_id,world_id)",
     },
   });
 }

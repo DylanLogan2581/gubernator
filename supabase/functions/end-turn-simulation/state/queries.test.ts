@@ -104,6 +104,17 @@ describe("fetchSettlements", () => {
     expect(url).toContain("/rest/v1/settlements");
     expect(url).toContain(`nations.world_id=eq.${WORLD_ID}`);
   });
+
+  it("disambiguates the nations embed with an explicit FK hint", async () => {
+    const { calls } = stubFetch([]);
+
+    await fetchSettlements(ctx, WORLD_ID);
+
+    const url = calls[0];
+    expect(decodeURIComponent(url)).toContain(
+      "nations!settlements_nation_id_fkey!inner(nameset_id,world_id)",
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
