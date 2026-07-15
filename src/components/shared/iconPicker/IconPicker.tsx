@@ -76,7 +76,12 @@ export function IconPicker({
           <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent
+        className="w-96 p-0"
+        align="start"
+        side="bottom"
+        avoidCollisions={false}
+      >
         <Tabs defaultValue="curated">
           <TabsList className="m-2">
             <TabsTrigger value="curated">Curated</TabsTrigger>
@@ -121,11 +126,11 @@ export function IconPicker({
                         title={label}
                         aria-label={label}
                         className={cn(
-                          "relative col-span-1 flex h-12 items-center justify-center px-0",
+                          "relative col-span-1 flex h-14 items-center justify-center px-0",
                           isSelected && "bg-accent text-accent-foreground",
                         )}
                       >
-                        <IconChip icon={resolveEntityIcon(name)} size="sm" />
+                        <IconChip icon={resolveEntityIcon(name)} size="lg" />
                         {isSelected && (
                           <Check className="absolute right-0.5 top-0.5 size-3" />
                         )}

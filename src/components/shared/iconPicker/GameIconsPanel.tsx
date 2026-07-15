@@ -94,7 +94,7 @@ export function GameIconsPanel({
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => 48,
+    estimateSize: () => 56,
     overscan: 8,
   });
 
@@ -172,13 +172,13 @@ export function GameIconsPanel({
                         aria-label={label}
                         onClick={() => onSelect(fullName)}
                         className={cn(
-                          "relative flex h-12 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground",
+                          "relative flex h-14 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground",
                           isSelected && "bg-accent text-accent-foreground",
                         )}
                       >
                         <IconChip
                           icon={resolveEntityIcon(fullName)}
-                          size="sm"
+                          size="lg"
                         />
                         {isSelected && (
                           <Check className="absolute right-0.5 top-0.5 size-3" />
