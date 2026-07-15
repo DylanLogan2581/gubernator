@@ -60,7 +60,7 @@ export function NationSettlementPopulationChart({
   return (
     <div className="space-y-3">
       <ChartContainer config={chartConfig} className={CHART_HEIGHT_CLASSNAME}>
-        <BarChart data={data} layout="vertical" margin={{ left: 8 }}>
+        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 20 }}>
           <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
           <YAxis
             type="category"

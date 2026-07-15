@@ -59,7 +59,7 @@ export function NationArmyStrengthSparkline({
       config={armyStrengthConfig}
       className={CHART_HEIGHT_CLASSNAME}
     >
-      <LineChart data={data}>
+      <LineChart data={data} margin={{ right: 24 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="turnLabel"

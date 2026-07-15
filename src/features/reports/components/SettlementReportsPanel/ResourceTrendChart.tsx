@@ -120,7 +120,7 @@ export function ResourceTrendChart({
               config={resourceChartConfig}
               className="h-40 w-full"
             >
-              <AreaChart data={chartData}>
+              <AreaChart data={chartData} margin={{ right: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="turnLabel"
@@ -164,7 +164,7 @@ export function ResourceTrendChart({
               config={resourceChartConfig}
               className="h-40 w-full"
             >
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={{ right: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="turnLabel"

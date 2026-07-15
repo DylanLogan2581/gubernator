@@ -100,7 +100,7 @@ export function PopulationTrendChart({
           Population over time
         </h3>
         <ChartContainer config={populationLineConfig} className="h-56 w-full">
-          <LineChart data={lineData}>
+          <LineChart data={lineData} margin={{ right: 24 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="turnLabel"
@@ -172,7 +172,7 @@ export function PopulationTrendChart({
           Births and deaths per turn
         </h3>
         <ChartContainer config={eventsBarConfig} className="h-48 w-full">
-          <BarChart data={barData}>
+          <BarChart data={barData} margin={{ right: 24 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="turnLabel"
