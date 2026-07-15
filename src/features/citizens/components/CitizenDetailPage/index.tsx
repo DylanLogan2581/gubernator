@@ -236,7 +236,11 @@ function CitizenDetailLoaded({
       <AdminPausedHint canAdmin={rawCanAdmin} />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] lg:items-start">
-        <CitizenIdentityCard citizen={citizen} settlement={settlement} />
+        <CitizenIdentityCard
+          citizen={citizen}
+          currentTurnNumber={currentTurnNumber}
+          settlement={settlement}
+        />
 
         <CitizenDetailTabs
           canAdmin={canAdmin}

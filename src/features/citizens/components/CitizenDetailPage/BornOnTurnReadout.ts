@@ -1,12 +1,15 @@
 import type { Citizen } from "../../types/citizenTypes";
 
 export function bornOnTurnReadout(citizen: Pick<Citizen, "bornOnTurnNumber">): {
-  readonly tooltip?: string;
+  readonly tooltip: string;
   readonly value: string | null;
 } {
   const { bornOnTurnNumber } = citizen;
   if (bornOnTurnNumber === null) {
-    return { value: null };
+    return {
+      tooltip: "This citizen's birth turn was not recorded",
+      value: null,
+    };
   }
   if (bornOnTurnNumber < 0) {
     return {
@@ -14,5 +17,8 @@ export function bornOnTurnReadout(citizen: Pick<Citizen, "bornOnTurnNumber">): {
       value: "Before simulation",
     };
   }
-  return { value: String(bornOnTurnNumber) };
+  return {
+    tooltip: "The turn number this citizen was born on",
+    value: String(bornOnTurnNumber),
+  };
 }

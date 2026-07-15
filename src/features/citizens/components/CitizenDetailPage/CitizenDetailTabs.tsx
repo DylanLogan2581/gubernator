@@ -70,7 +70,8 @@ export function CitizenDetailTabs({
         {showNpcAdminInfo ? (
           <CitizenNpcAdminSections
             canEdit={false}
-            citizenId={citizen.id}
+            citizen={citizen}
+            currentTurnNumber={currentTurnNumber}
             queryClient={queryClient}
             worldId={worldId}
           />
@@ -133,7 +134,8 @@ export function CitizenDetailTabs({
           {citizen.citizenType === "npc" ? (
             <CitizenNpcAdminSections
               canEdit={canEdit}
-              citizenId={citizen.id}
+              citizen={citizen}
+              currentTurnNumber={currentTurnNumber}
               queryClient={queryClient}
               worldId={worldId}
             />
@@ -151,17 +153,19 @@ export function CitizenDetailTabs({
 
 function CitizenNpcAdminSections({
   canEdit,
-  citizenId,
+  citizen,
+  currentTurnNumber,
   queryClient,
   worldId,
 }: {
   readonly canEdit: boolean;
-  readonly citizenId: string;
+  readonly citizen: Citizen;
+  readonly currentTurnNumber: number;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
   const adminDetailsQuery = useQuery(
-    citizenAdminDetailsQueryOptions(citizenId),
+    citizenAdminDetailsQueryOptions(citizen.id),
   );
 
   if (adminDetailsQuery.isPending) {
@@ -184,14 +188,15 @@ function CitizenNpcAdminSections({
       <CitizenNpcNotesSection
         adminDetails={adminDetails}
         canEdit={canEdit}
-        citizenId={citizenId}
+        citizenId={citizen.id}
         queryClient={queryClient}
         worldId={worldId}
       />
       <CitizenNpcFlavorSection
         adminDetails={adminDetails}
         canEdit={canEdit}
-        citizenId={citizenId}
+        citizen={citizen}
+        currentTurnNumber={currentTurnNumber}
         queryClient={queryClient}
         worldId={worldId}
       />

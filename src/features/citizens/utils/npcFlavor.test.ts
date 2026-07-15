@@ -89,15 +89,15 @@ describe("renderNpcFlavorLine", () => {
     );
   });
 
-  it("substitutes the Unassigned label when role is null", () => {
+  it("substitutes the unassigned label when role is null", () => {
     expect(renderNpcFlavorLine(flavor, null)).toContain(
-      `A ${UNASSIGNED_ROLE_LABEL} who is`,
+      `An ${UNASSIGNED_ROLE_LABEL} who is`,
     );
   });
 
-  it("substitutes the Unassigned label when role is blank", () => {
+  it("substitutes the unassigned label when role is blank", () => {
     expect(renderNpcFlavorLine(flavor, "   ")).toContain(
-      `A ${UNASSIGNED_ROLE_LABEL} who is`,
+      `An ${UNASSIGNED_ROLE_LABEL} who is`,
     );
   });
 

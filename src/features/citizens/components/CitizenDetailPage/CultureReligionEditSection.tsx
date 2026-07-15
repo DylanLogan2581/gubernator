@@ -70,6 +70,9 @@ export function CitizenCultureReligionEditSection({
       >
         Culture and religion
       </h2>
+      <p className="text-xs text-muted-foreground sm:col-span-2">
+        Changes save immediately.
+      </p>
       <Label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Culture</span>
         <NativeSelect

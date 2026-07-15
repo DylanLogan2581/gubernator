@@ -28,7 +28,7 @@ const EMPTY_FLAVOR: NpcFlavor = {
   trait2: "",
 };
 
-export const UNASSIGNED_ROLE_LABEL = "Unassigned";
+export const UNASSIGNED_ROLE_LABEL = "unassigned citizen";
 
 export function generateNpcFlavor(
   config: NpcFlavorConfig,
@@ -56,8 +56,9 @@ export function renderNpcFlavorLine(
   flavor: NpcFlavor,
   role: string | null,
 ): string {
-  const roleLabel =
-    role === null || role.trim() === "" ? UNASSIGNED_ROLE_LABEL : role.trim();
+  const isUnassigned = role === null || role.trim() === "";
+  const article = isUnassigned ? "An" : "A";
+  const roleLabel = isUnassigned ? UNASSIGNED_ROLE_LABEL : role.trim();
   const trait1 = orFallback(flavor.trait1, "mysterious");
   const trait2 = orFallback(flavor.trait2, "unreadable");
   const contradiction = orFallback(
@@ -66,7 +67,7 @@ export function renderNpcFlavorLine(
   );
   const goal = orFallback(flavor.goal, "something they have yet to name");
   const flaw = orFallback(flavor.flaw, "something they will not admit");
-  return `A ${roleLabel} who is ${trait1}, ${trait2}, but secretly ${contradiction}. They want ${goal} but are prevented by ${flaw}.`;
+  return `${article} ${roleLabel} who is ${trait1}, ${trait2}, but secretly ${contradiction}. They want ${goal} but are prevented by ${flaw}.`;
 }
 
 // Derives the "role" slot for the flavor line from a citizen's current

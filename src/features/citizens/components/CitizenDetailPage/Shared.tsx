@@ -7,20 +7,23 @@ import {
 } from "@/components/ui/tooltip";
 
 import type { Citizen, DeathCauseCategory } from "../../types/citizenTypes";
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 export function Readout({
   block,
+  children,
   label,
   mono,
   tooltip,
   value,
 }: {
   readonly block?: boolean;
+  // Custom content for the value slot (e.g. a chip). Takes precedence over `value`.
+  readonly children?: ReactNode;
   readonly label: string;
   readonly mono?: boolean;
   readonly tooltip?: string;
-  readonly value: string | null;
+  readonly value?: string | null;
 }): JSX.Element {
   return (
     <div
@@ -50,7 +53,9 @@ export function Readout({
           block === true ? "whitespace-pre-wrap" : ""
         }`}
       >
-        {value === null || value === "" ? (
+        {children !== undefined ? (
+          children
+        ) : value === null || value === undefined || value === "" ? (
           <span className="italic text-muted-foreground">Not set</span>
         ) : (
           value

@@ -381,7 +381,7 @@ describe("CitizensPanel", () => {
 
     // Wait for data to load, then verify header count paragraph shows count without cap
     await screen.findByText("Living citizens");
-    const heading = screen.getByRole("heading", { name: "Citizens" });
+    const heading = screen.getByRole("heading", { name: "Citizen summary" });
     const headerDiv = heading.parentElement;
     const countEl = headerDiv?.querySelector("p");
     expect(countEl?.textContent).toBe("2");

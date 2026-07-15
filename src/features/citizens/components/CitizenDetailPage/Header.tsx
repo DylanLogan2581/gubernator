@@ -11,10 +11,10 @@ export function CitizenDetailHeader({
   return (
     <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-normal">
+          {citizen.name}
+        </h1>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {citizen.name}
-          </h1>
           <StatusChip status={citizen.status} />
           <TypeChip citizenType={citizen.citizenType} />
           {citizen.status === "dead" && citizen.deathCauseCategory !== null ? (

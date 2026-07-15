@@ -23,6 +23,9 @@ export function CitizenEducationEditSection({
   const educationLevelsQuery = useQuery(
     educationLevelsByWorldQueryOptions(citizen.worldId),
   );
+  const educationLevels = educationLevelsQuery.data ?? [];
+  const noEducationSystem =
+    educationLevelsQuery.isSuccess && educationLevels.length === 0;
   const mutation = useMutation(
     setCitizenEducationMutationOptions({ queryClient }),
   );
@@ -50,25 +53,36 @@ export function CitizenEducationEditSection({
       <h2 id="citizen-education-heading" className="text-base font-medium">
         Education level
       </h2>
-      <Label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Education level</span>
-        <NativeSelect
-          aria-label="Education level"
-          disabled={!canEdit || mutation.isPending}
-          value={citizen.educationLevelId ?? ""}
-          onChange={(event) => {
-            const next = event.currentTarget.value;
-            handleEducationChange(next === "" ? null : next);
-          }}
-        >
-          <option value="">Uneducated</option>
-          {educationLevelsQuery.data?.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </NativeSelect>
-      </Label>
+      {noEducationSystem ? null : (
+        <p className="text-xs text-muted-foreground">
+          Changes save immediately.
+        </p>
+      )}
+      {noEducationSystem ? (
+        <p className="text-sm italic text-muted-foreground">
+          No education system configured for this world.
+        </p>
+      ) : (
+        <Label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Education level</span>
+          <NativeSelect
+            aria-label="Education level"
+            disabled={!canEdit || mutation.isPending}
+            value={citizen.educationLevelId ?? ""}
+            onChange={(event) => {
+              const next = event.currentTarget.value;
+              handleEducationChange(next === "" ? null : next);
+            }}
+          >
+            <option value="">Uneducated</option>
+            {educationLevels.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </Label>
+      )}
     </Card>
   );
 }

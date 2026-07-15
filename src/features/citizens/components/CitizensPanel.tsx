@@ -90,103 +90,112 @@ const SORT_COLUMN_BY_ID: Record<string, CitizenDirectorySortColumn> = {
   status: "status",
 };
 
-const SETTLEMENT_CITIZENS_COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
-  {
-    id: "name",
-    accessorFn: (row) => row.name ?? "—",
-    header: "Name",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.name ?? "—"}</span>
-    ),
-  },
-  {
-    id: "age",
-    accessorFn: (row) => row.ageTurns,
-    header: "Age",
-    cell: ({ row }) => (
-      <span className="tabular-nums text-muted-foreground">
-        {row.original.ageTurns ?? "—"}
-      </span>
-    ),
-  },
-  {
-    id: "sex",
-    enableSorting: false,
-    header: "Sex",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
-    ),
-  },
-  {
-    id: "assignment",
-    enableSorting: false,
-    header: "Job / assignment",
-    cell: ({ row }) => {
-      const officeTypes = row.original.officeTypes;
-      if (officeTypes !== null) {
-        const officeLabel = formatOfficeTypesLabel(officeTypes);
+function buildSettlementCitizensColumns(
+  hasEducationLevels: boolean,
+): ColumnDef<CitizenDirectoryRow, unknown>[] {
+  return [
+    {
+      id: "name",
+      accessorFn: (row) => row.name ?? "—",
+      header: "Name",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.name ?? "—"}</span>
+      ),
+    },
+    {
+      id: "age",
+      accessorFn: (row) => row.ageTurns,
+      header: "Age",
+      cell: ({ row }) => (
+        <span className="tabular-nums text-muted-foreground">
+          {row.original.ageTurns ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "sex",
+      enableSorting: false,
+      header: "Sex",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
+      ),
+    },
+    {
+      id: "assignment",
+      enableSorting: false,
+      header: "Job / assignment",
+      cell: ({ row }) => {
+        const officeTypes = row.original.officeTypes;
+        if (officeTypes !== null) {
+          const officeLabel = formatOfficeTypesLabel(officeTypes);
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="cursor-default">
+                  In office: {officeLabel}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                Works for the nation this turn — no settlement job output while
+                in office.
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
         return (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="outline" className="cursor-default">
-                In office: {officeLabel}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              Works for the nation this turn — no settlement job output while in
-              office.
-            </TooltipContent>
-          </Tooltip>
+          <Badge
+            variant={
+              row.original.assignmentLabel === null ? "outline" : "secondary"
+            }
+          >
+            {row.original.assignmentLabel ?? "Unassigned"}
+          </Badge>
         );
-      }
-      return (
+      },
+    },
+    {
+      id: "type",
+      enableSorting: false,
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {CITIZEN_TYPE_LABELS[row.original.citizenType]}
+        </Badge>
+      ),
+    },
+    {
+      id: "education",
+      enableSorting: false,
+      header: "Education",
+      cell: ({ row }) =>
+        hasEducationLevels ? (
+          <Badge
+            variant={
+              row.original.educationLevelName === null ? "outline" : "secondary"
+            }
+          >
+            {row.original.educationLevelName ?? "Uneducated"}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "status",
+      accessorFn: (row) => row.status,
+      header: "Status",
+      cell: ({ row }) => (
         <Badge
           variant={
-            row.original.assignmentLabel === null ? "outline" : "secondary"
+            row.original.status === "alive" ? "secondary" : "destructive"
           }
         >
-          {row.original.assignmentLabel ?? "Unassigned"}
+          {STATUS_LABELS[row.original.status]}
         </Badge>
-      );
+      ),
     },
-  },
-  {
-    id: "type",
-    enableSorting: false,
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="secondary">
-        {CITIZEN_TYPE_LABELS[row.original.citizenType]}
-      </Badge>
-    ),
-  },
-  {
-    id: "education",
-    enableSorting: false,
-    header: "Education",
-    cell: ({ row }) => (
-      <Badge
-        variant={
-          row.original.educationLevelName === null ? "outline" : "secondary"
-        }
-      >
-        {row.original.educationLevelName ?? "Uneducated"}
-      </Badge>
-    ),
-  },
-  {
-    id: "status",
-    accessorFn: (row) => row.status,
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant={row.original.status === "alive" ? "secondary" : "destructive"}
-      >
-        {STATUS_LABELS[row.original.status]}
-      </Badge>
-    ),
-  },
-];
+  ];
+}
 
 export function CitizensPanel({
   canAdmin,
@@ -215,7 +224,7 @@ export function CitizensPanel({
       <div className="flex items-start justify-between gap-2 px-4 pt-4">
         <div className="space-y-1">
           <h2 id="citizens-panel-heading" className="text-base font-medium">
-            Citizens
+            {canAdmin ? "Citizens" : "Citizen summary"}
           </h2>
           {livingCount !== null ? (
             <p
@@ -529,6 +538,9 @@ function BulkSetEducationDialog({
   const educationLevelsQuery = useQuery(
     educationLevelsByWorldQueryOptions(worldId),
   );
+  const educationLevels = educationLevelsQuery.data ?? [];
+  const noEducationSystem =
+    educationLevelsQuery.isSuccess && educationLevels.length === 0;
   const [educationLevelId, setEducationLevelId] = useState<string | null>(null);
 
   const bulkMutation = useMutation(
@@ -564,34 +576,40 @@ function BulkSetEducationDialog({
             Applies to every alive citizen in this settlement.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3">
-          <Label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Education level</span>
-            <NativeSelect
-              aria-label="Education level"
-              disabled={bulkMutation.isPending}
-              value={educationLevelId ?? ""}
-              onChange={(event) => {
-                const next = event.currentTarget.value;
-                setEducationLevelId(next === "" ? null : next);
-              }}
-            >
-              <option value="">Uneducated</option>
-              {educationLevelsQuery.data?.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </Label>
-        </div>
+        {noEducationSystem ? (
+          <p className="text-sm italic text-muted-foreground">
+            No education system configured for this world.
+          </p>
+        ) : (
+          <div className="grid gap-3">
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Education level</span>
+              <NativeSelect
+                aria-label="Education level"
+                disabled={bulkMutation.isPending}
+                value={educationLevelId ?? ""}
+                onChange={(event) => {
+                  const next = event.currentTarget.value;
+                  setEducationLevelId(next === "" ? null : next);
+                }}
+              >
+                <option value="">Uneducated</option>
+                {educationLevels.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Label>
+          </div>
+        )}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
             type="button"
-            disabled={bulkMutation.isPending}
+            disabled={bulkMutation.isPending || noEducationSystem}
             onClick={handleSubmit}
           >
             {bulkMutation.isPending ? "Setting…" : "Set"}
@@ -613,6 +631,11 @@ function CitizensAdminList({
 }): JSX.Element {
   const [pageIndex, setPageIndex] = useState(0);
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const hasEducationLevels = (educationLevelsQuery.data?.length ?? 0) > 0;
 
   const activeSort = sorting[0];
   const order =
@@ -674,7 +697,7 @@ function CitizensAdminList({
           </p>
 
           <DataTable
-            columns={SETTLEMENT_CITIZENS_COLUMNS}
+            columns={buildSettlementCitizensColumns(hasEducationLevels)}
             data={rows}
             getRowId={(row) => row.id}
             sorting={sorting}
