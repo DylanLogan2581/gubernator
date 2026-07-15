@@ -216,109 +216,120 @@ begin
   select id into v_res_water from public.resources where world_id = v_world and slug = 'fresh-water';
 
   -- Resources -----------------------------------------------------------
-  insert into public.resources (id, world_id, name, slug, base_stockpile_cap) values
-    (v_res_grain,         v_world, 'Grain',         'grain',         2000),
-    (v_res_salted_pork,   v_world, 'Cured Pork',    'salted-pork',    500),
-    (v_res_smoked_mutton, v_world, 'Smoked Mutton', 'smoked-mutton',  500),
-    (v_res_honey,         v_world, 'Honey',         'honey',          300),
-    (v_res_ale,           v_world, 'Ale',           'ale',            400),
-    (v_res_linen_cloth,   v_world, 'Linen Cloth',   'linen-cloth',    300),
-    (v_res_wool,          v_world, 'Wool',          'wool',           500),
-    (v_res_hardwood_logs, v_world, 'Hardwood Logs', 'hardwood-logs', 1000),
-    (v_res_stone_block,   v_world, 'Stone Block',   'stone-block',   1200),
-    (v_res_iron_ore,      v_world, 'Iron Ore',      'iron-ore',       800),
-    (v_res_copper_ingot,  v_world, 'Copper Ingot',  'copper-ingot',   400),
-    (v_res_peat,          v_world, 'Peat',          'peat',           600),
-    (v_res_sea_salt,      v_world, 'Sea Salt',      'sea-salt',       400);
+  insert into public.resources (id, world_id, name, slug, base_stockpile_cap, icon) values
+    (v_res_grain,         v_world, 'Grain',         'grain',         2000, 'game:wheat'),
+    (v_res_salted_pork,   v_world, 'Cured Pork',    'salted-pork',    500, 'game:bacon'),
+    (v_res_smoked_mutton, v_world, 'Smoked Mutton', 'smoked-mutton',  500, 'game:meat'),
+    (v_res_honey,         v_world, 'Honey',         'honey',          300, 'game:honeycomb'),
+    (v_res_ale,           v_world, 'Ale',           'ale',            400, 'game:beer-stein'),
+    (v_res_linen_cloth,   v_world, 'Linen Cloth',   'linen-cloth',    300, 'game:rolled-cloth'),
+    (v_res_wool,          v_world, 'Wool',          'wool',           500, 'game:wool'),
+    (v_res_hardwood_logs, v_world, 'Hardwood Logs', 'hardwood-logs', 1000, 'game:wood-pile'),
+    (v_res_stone_block,   v_world, 'Stone Block',   'stone-block',   1200, 'game:stone-block'),
+    (v_res_iron_ore,      v_world, 'Iron Ore',      'iron-ore',       800, 'game:ore'),
+    (v_res_copper_ingot,  v_world, 'Copper Ingot',  'copper-ingot',   400, 'game:metal-bar'),
+    (v_res_peat,          v_world, 'Peat',          'peat',           600, 'game:brick-pile'),
+    (v_res_sea_salt,      v_world, 'Sea Salt',      'sea-salt',       400, 'game:salt-shaker');
 
   -- Jobs: standard producers/consumers ---------------------------------
-  insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, inputs_json, outputs_json) values
+  insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, inputs_json, outputs_json, icon) values
     (v_job_field_hand, v_world, 'Field Hand', 'field-hand', 'standard', 30,
        '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text, 'amount_per_worker', 4))),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text, 'amount_per_worker', 4)),
+       'game:farmer'),
     (v_job_water_bearer, v_world, 'Water Bearer', 'water-bearer', 'standard', 24,
        '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_water::text, 'amount_per_worker', 5))),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_water::text, 'amount_per_worker', 5)),
+       'game:full-wood-bucket-handle'),
     (v_job_grain_farmer, v_world, 'Grain Farmer', 'grain-farmer', 'standard', 16,
        '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 3))),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 3)),
+       'game:sickle'),
     (v_job_brewer, v_world, 'Brewer', 'brewer', 'standard', 6,
        jsonb_build_array(
          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 2),
          jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_worker', 0.5)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_ale::text, 'amount_per_worker', 1))),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_ale::text, 'amount_per_worker', 1)),
+       'game:cauldron'),
     (v_job_cloth_weaver, v_world, 'Cloth Weaver', 'cloth-weaver', 'standard', 8,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_worker', 2)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 1))),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 1)),
+       'game:sewing-needle'),
     (v_job_fisher, v_world, 'Fisher', 'fisher', 'standard', 12,
        '[]'::jsonb,
        jsonb_build_array(
          jsonb_build_object('resource_id', v_res_food::text, 'amount_per_worker', 2),
-         jsonb_build_object('resource_id', v_res_sea_salt::text, 'amount_per_worker', 1)));
+         jsonb_build_object('resource_id', v_res_sea_salt::text, 'amount_per_worker', 1)),
+       'game:fishing-pole');
 
   -- Construction + trader ----------------------------------------------
-  insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity) values
-    (v_job_stone_mason, v_world, 'Stone Mason', 'stone-mason', 'construction', 6);
-  insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker) values
-    (v_job_caravan_trader, v_world, 'Caravan Trader', 'caravan-trader', 'trader', 3);
+  insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, icon) values
+    (v_job_stone_mason, v_world, 'Stone Mason', 'stone-mason', 'construction', 6, 'game:trowel');
+  insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker, icon) values
+    (v_job_caravan_trader, v_world, 'Caravan Trader', 'caravan-trader', 'trader', 3, 'game:caravan');
 
   -- Deposit jobs (linked_deposit_type_id via DEFERRABLE FK) -------------
-  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_deposit_type_id) values
-    (v_job_iron_miner,   v_world, 'Iron Miner',      'iron-miner',      'deposit', v_dep_iron_vein),
-    (v_job_copper_miner, v_world, 'Copper Miner',    'copper-miner',    'deposit', v_dep_copper_vein),
-    (v_job_stone_quarry, v_world, 'Stone Quarryman', 'stone-quarryman', 'deposit', v_dep_stone_quarry),
-    (v_job_lumberjack,   v_world, 'Lumberjack',      'lumberjack',      'deposit', v_dep_hardwood_grove),
-    (v_job_peat_cutter,  v_world, 'Peat Cutter',     'peat-cutter',     'deposit', v_dep_peat_bog);
+  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_deposit_type_id, icon) values
+    (v_job_iron_miner,   v_world, 'Iron Miner',      'iron-miner',      'deposit', v_dep_iron_vein,      'pickaxe'),
+    (v_job_copper_miner, v_world, 'Copper Miner',    'copper-miner',    'deposit', v_dep_copper_vein,    'game:mining-helmet'),
+    (v_job_stone_quarry, v_world, 'Stone Quarryman', 'stone-quarryman', 'deposit', v_dep_stone_quarry,   'game:rock'),
+    (v_job_lumberjack,   v_world, 'Lumberjack',      'lumberjack',      'deposit', v_dep_hardwood_grove, 'axe'),
+    (v_job_peat_cutter,  v_world, 'Peat Cutter',     'peat-cutter',     'deposit', v_dep_peat_bog,       'shovel');
 
   -- Husbandry + culling jobs -------------------------------------------
-  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_managed_population_type_id) values
-    (v_job_shepherd,       v_world, 'Shepherd',       'shepherd',       'husbandry', v_pop_sheep_herd),
-    (v_job_beekeeper,      v_world, 'Beekeeper',      'beekeeper',      'husbandry', v_pop_bee_colony),
-    (v_job_swineherd,      v_world, 'Swineherd',      'swineherd',      'husbandry', v_pop_pig_herd),
-    (v_job_mutton_butcher, v_world, 'Mutton Butcher', 'mutton-butcher', 'culling',   v_pop_sheep_herd),
-    (v_job_honey_gatherer, v_world, 'Honey Gatherer', 'honey-gatherer', 'culling',   v_pop_bee_colony),
-    (v_job_pork_butcher,   v_world, 'Pork Butcher',   'pork-butcher',   'culling',   v_pop_pig_herd);
+  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_managed_population_type_id, icon) values
+    (v_job_shepherd,       v_world, 'Shepherd',       'shepherd',       'husbandry', v_pop_sheep_herd, 'game:shepherds-crook'),
+    (v_job_beekeeper,      v_world, 'Beekeeper',      'beekeeper',      'husbandry', v_pop_bee_colony, 'game:beehive'),
+    (v_job_swineherd,      v_world, 'Swineherd',      'swineherd',      'husbandry', v_pop_pig_herd,   'game:pig'),
+    (v_job_mutton_butcher, v_world, 'Mutton Butcher', 'mutton-butcher', 'culling',   v_pop_sheep_herd, 'game:cleaver'),
+    (v_job_honey_gatherer, v_world, 'Honey Gatherer', 'honey-gatherer', 'culling',   v_pop_bee_colony, 'game:honey-jar'),
+    (v_job_pork_butcher,   v_world, 'Pork Butcher',   'pork-butcher',   'culling',   v_pop_pig_herd,   'game:meat-cleaver');
 
   -- Deposit types ------------------------------------------------------
-  insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json) values
+  insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json, icon) values
     (v_dep_iron_vein,      v_world, 'Iron Vein',      'iron-vein',      v_job_iron_miner,   5,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 0.5))),
-    (v_dep_copper_vein,    v_world, 'Copper Vein',    'copper-vein',    v_job_copper_miner, 4, '[]'::jsonb),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 0.5)),
+       'game:minerals'),
+    (v_dep_copper_vein,    v_world, 'Copper Vein',    'copper-vein',    v_job_copper_miner, 4, '[]'::jsonb, 'game:metal-bar'),
     (v_dep_stone_quarry,   v_world, 'Stone Quarry',   'stone-quarry',   v_job_stone_quarry, 8,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount_per_worker', 0.5))),
-    (v_dep_hardwood_grove, v_world, 'Hardwood Grove', 'hardwood-grove', v_job_lumberjack,   6, '[]'::jsonb),
-    (v_dep_peat_bog,       v_world, 'Peat Bog',       'peat-bog',       v_job_peat_cutter,  6, '[]'::jsonb);
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount_per_worker', 0.5)),
+       'mountain'),
+    (v_dep_hardwood_grove, v_world, 'Hardwood Grove', 'hardwood-grove', v_job_lumberjack,   6, '[]'::jsonb, 'trees'),
+    (v_dep_peat_bog,       v_world, 'Peat Bog',       'peat-bog',       v_job_peat_cutter,  6, '[]'::jsonb, 'game:swamp');
 
   -- Managed population types -------------------------------------------
   insert into public.managed_population_types (
     id, world_id, name, slug, husbandry_job_id, culling_job_id,
     husbandry_workers_per_n_animals, growth_rate,
-    maintenance_rules_json, culling_outputs_json, regular_outputs_json
+    maintenance_rules_json, culling_outputs_json, regular_outputs_json, icon
   ) values
     (v_pop_sheep_herd, v_world, 'Sheep Herd', 'sheep-herd', v_job_shepherd, v_job_mutton_butcher,
        10, 0.10,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 0.5)),
        jsonb_build_array(jsonb_build_object('resource_id', v_res_smoked_mutton::text, 'amount_per_n_animals', 0.5)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_n_animals', 0.25))),
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_n_animals', 0.25)),
+       'game:sheep'),
     (v_pop_bee_colony, v_world, 'Bee Colony', 'bee-colony', v_job_beekeeper, v_job_honey_gatherer,
        20, 0.05,
        '[]'::jsonb,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_n_animals', 2)),
-       '[]'::jsonb),
+       '[]'::jsonb,
+       'game:hive'),
     (v_pop_pig_herd, v_world, 'Pig Herd', 'pig-herd', v_job_swineherd, v_job_pork_butcher,
        8, 0.15,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 1)),
        jsonb_build_array(jsonb_build_object('resource_id', v_res_salted_pork::text, 'amount_per_n_animals', 2)),
-       '[]'::jsonb);
+       '[]'::jsonb,
+       'game:pig-face');
 
   -- Building blueprints ------------------------------------------------
-  insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement) values
-    (v_bp_granary,    v_world, 'Granary',           'granary',          'A raised granary that yields food passively and widens the field-hand rota.', 0, null),
-    (v_bp_cistern,    v_world, 'Cistern',           'cistern',          'A stone cistern that gathers fresh water and supports the water-bearers.', 0, null),
-    (v_bp_storehouse, v_world, 'Storehouse',        'storehouse',       'Roofed storage adding stockpile capacity for grain and cured goods.', 1, 4),
-    (v_bp_workshop,   v_world, 'Weaver''s Workshop','weavers-workshop', 'A workshop where weavers raise the settlement''s cloth output.', 0, 4),
-    (v_bp_longhouse,  v_world, 'Longhouse',         'longhouse',        'A communal hall that raises the settlement''s sustainable population.', 2, 8),
-    (v_bp_smithy,     v_world, 'Smithy',            'smithy',           'A two-tier smithy that expands iron storage and bolsters the mason corps.', 1, 2);
+  insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon) values
+    (v_bp_granary,    v_world, 'Granary',           'granary',          'A raised granary that yields food passively and widens the field-hand rota.', 0, null, 'game:granary'),
+    (v_bp_cistern,    v_world, 'Cistern',           'cistern',          'A stone cistern that gathers fresh water and supports the water-bearers.', 0, null, 'game:well'),
+    (v_bp_storehouse, v_world, 'Storehouse',        'storehouse',       'Roofed storage adding stockpile capacity for grain and cured goods.', 1, 4, 'warehouse'),
+    (v_bp_workshop,   v_world, 'Weaver''s Workshop','weavers-workshop', 'A workshop where weavers raise the settlement''s cloth output.', 0, 4, 'game:yarn'),
+    (v_bp_longhouse,  v_world, 'Longhouse',         'longhouse',        'A communal hall that raises the settlement''s sustainable population.', 2, 8, 'game:viking-longhouse'),
+    (v_bp_smithy,     v_world, 'Smithy',            'smithy',           'A two-tier smithy that expands iron storage and bolsters the mason corps.', 1, 2, 'game:anvil');
 
   -- Building blueprint tiers -------------------------------------------
   insert into public.building_blueprint_tiers (
