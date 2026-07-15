@@ -82,7 +82,7 @@ export function SettlementStockpilesPanel({
   return (
     <Card
       aria-labelledby="settlement-stockpiles-heading"
-      className="grid gap-3"
+      className="grid min-w-0 grid-cols-1 gap-3"
     >
       <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <h2
@@ -169,42 +169,44 @@ function StockpilesTable({
     stockpiles.find((s) => s.resourceId === selectedResourceId) ?? null;
 
   const list = (
-    <Table className="w-full text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead scope="col">Resource</TableHead>
-          <TableHead scope="col" className="tabular-nums">
-            Capacity
-          </TableHead>
-          <TableHead scope="col" className="tabular-nums">
-            Forecast
-          </TableHead>
-          <TableHead scope="col" className="w-16" aria-label="Status" />
-          <TableHead scope="col" className="w-24" aria-label="Actions" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {stockpiles.map((stockpile) => (
-          <StockpileRow
-            key={stockpile.resourceId}
-            canEdit={canEdit}
-            forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
-            isForecastError={isForecastError}
-            isForecastPending={isForecastPending}
-            isSelected={stockpile.resourceId === selectedResourceId}
-            nationId={nationId}
-            stockpile={stockpile}
-            worldId={worldId}
-            onEdit={() => {
-              setEditingStockpile(stockpile);
-            }}
-            onSelect={() => {
-              setSelectedResourceId(stockpile.resourceId);
-            }}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="w-full text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Resource</TableHead>
+            <TableHead scope="col" className="whitespace-nowrap tabular-nums">
+              Capacity
+            </TableHead>
+            <TableHead scope="col" className="whitespace-nowrap tabular-nums">
+              Forecast
+            </TableHead>
+            <TableHead scope="col" className="w-16" aria-label="Status" />
+            <TableHead scope="col" className="w-24" aria-label="Actions" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {stockpiles.map((stockpile) => (
+            <StockpileRow
+              key={stockpile.resourceId}
+              canEdit={canEdit}
+              forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
+              isForecastError={isForecastError}
+              isForecastPending={isForecastPending}
+              isSelected={stockpile.resourceId === selectedResourceId}
+              nationId={nationId}
+              stockpile={stockpile}
+              worldId={worldId}
+              onEdit={() => {
+                setEditingStockpile(stockpile);
+              }}
+              onSelect={() => {
+                setSelectedResourceId(stockpile.resourceId);
+              }}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 
   return (

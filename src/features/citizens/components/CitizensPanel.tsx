@@ -220,7 +220,10 @@ export function CitizensPanel({
     livingCount !== null && popCap !== null && livingCount >= popCap;
 
   return (
-    <Card aria-labelledby="citizens-panel-heading" className="grid gap-3">
+    <Card
+      aria-labelledby="citizens-panel-heading"
+      className="grid min-w-0 grid-cols-1 gap-3"
+    >
       <div className="flex items-start justify-between gap-2 px-4 pt-4">
         <div className="space-y-1">
           <h2 id="citizens-panel-heading" className="text-base font-medium">

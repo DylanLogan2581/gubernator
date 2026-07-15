@@ -99,7 +99,7 @@ export function SettlementTradeRoutesPanel({
   return (
     <Card
       aria-labelledby="settlement-trade-routes-heading"
-      className="grid gap-3"
+      className="grid min-w-0 grid-cols-1 gap-3"
     >
       <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <h2

@@ -86,7 +86,10 @@ export function SettlementDepositsPanel({
     instancesQuery.data?.find((i) => i.id === selectedInstanceId) ?? null;
 
   return (
-    <Card aria-labelledby="settlement-deposits-heading" className="grid gap-3">
+    <Card
+      aria-labelledby="settlement-deposits-heading"
+      className="grid min-w-0 grid-cols-1 gap-3"
+    >
       <div className="px-4 pt-4">
         <DepositsPanelHeader
           canAdmin={canAdmin && !isArchived}
@@ -361,7 +364,7 @@ function DepositsStatusGroup({
         {label} ({instances.length})
       </button>
       {!isCollapsed ? (
-        <div id={panelId}>
+        <div className="overflow-x-auto rounded-md border" id={panelId}>
           <Table className="w-full text-sm">
             <TableHeader>
               <TableRow className="text-muted-foreground">

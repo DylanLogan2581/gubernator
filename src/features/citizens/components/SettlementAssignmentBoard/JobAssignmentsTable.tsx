@@ -345,32 +345,34 @@ export function JobAssignmentsTable({
         </p>
       ) : null}
       {hasBulkOrPerTarget ? (
-        <Table className="w-full text-sm">
-          <TableHeader>
-            <TableRow className="text-muted-foreground">
-              <TableHead scope="col">Job</TableHead>
-              <TableHead scope="col">Assigned / Capacity</TableHead>
-              {canEdit ? <TableHead scope="col">Set count</TableHead> : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row, idx) => (
-              <RowRenderer
-                key={getRowKey(row, idx)}
-                row={row}
-                canEdit={canEdit}
-                countByDeposit={countByDeposit}
-                countByHusbandry={countByHusbandry}
-                countByCulling={countByCulling}
-                countByTradeRouteEnd={countByTradeRouteEnd}
-                settlementId={settlementId}
-                unassignedNpcCount={stats.unassignedNpcCount}
-                worldId={worldId}
-                onDirtyChange={handleDirtyChange}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="min-w-0 overflow-x-auto rounded-md border">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="text-muted-foreground">
+                <TableHead scope="col">Job</TableHead>
+                <TableHead scope="col">Assigned / Capacity</TableHead>
+                {canEdit ? <TableHead scope="col">Set count</TableHead> : null}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row, idx) => (
+                <RowRenderer
+                  key={getRowKey(row, idx)}
+                  row={row}
+                  canEdit={canEdit}
+                  countByDeposit={countByDeposit}
+                  countByHusbandry={countByHusbandry}
+                  countByCulling={countByCulling}
+                  countByTradeRouteEnd={countByTradeRouteEnd}
+                  settlementId={settlementId}
+                  unassignedNpcCount={stats.unassignedNpcCount}
+                  worldId={worldId}
+                  onDirtyChange={handleDirtyChange}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
         <EmptyState
           title="No jobs"

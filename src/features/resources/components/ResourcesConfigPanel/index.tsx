@@ -133,7 +133,7 @@ export function ResourcesConfigPanel({
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 grid-cols-1 gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold tracking-normal">Resources</h2>
         <div className="flex flex-wrap items-center gap-2">
