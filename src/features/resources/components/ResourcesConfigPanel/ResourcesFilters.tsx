@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { ResourceCategory } from "@/features/resourceCategories";
 
+import { UNCATEGORIZED_RESOURCE_CATEGORY_FILTER } from "../../queries/resourcesQueries";
+
 type ResourcesFiltersProps = {
   readonly categories: readonly ResourceCategory[];
   readonly categoryId: string | null;
@@ -40,6 +42,9 @@ export function ResourcesFilters({
         }}
       >
         <option value="">All categories</option>
+        <option value={UNCATEGORIZED_RESOURCE_CATEGORY_FILTER}>
+          Uncategorized
+        </option>
         {categories.map((category) => (
           <option key={category.id} value={category.id}>
             {category.name}

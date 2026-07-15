@@ -72,6 +72,11 @@ export function resourceByIdQueryOptions(
 
 export type ResourcesSortBy = "name" | "category" | "cap" | "change";
 
+// Sentinel for the "Uncategorized" filter option, distinct from any real
+// resource_categories.id (a uuid), so the page query can tell "no filter"
+// (categoryId === null) apart from "filter to resources with no category".
+export const UNCATEGORIZED_RESOURCE_CATEGORY_FILTER = "uncategorized";
+
 export type ResourcesPageParams = {
   readonly categoryId?: string | null;
   readonly page: number;
@@ -129,7 +134,9 @@ async function getResourcesPage(
     query = query.ilike("name", `%${search}%`);
   }
 
-  if (params.categoryId !== undefined && params.categoryId !== null) {
+  if (params.categoryId === UNCATEGORIZED_RESOURCE_CATEGORY_FILTER) {
+    query = query.is("category_id", null);
+  } else if (params.categoryId !== undefined && params.categoryId !== null) {
     query = query.eq("category_id", params.categoryId);
   }
 

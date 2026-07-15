@@ -29,7 +29,7 @@ export function ManageResourceCategoriesDialog({
       }}
     >
       <DialogContent className="max-w-2xl">
-        <DialogHeader>
+        <DialogHeader className="sr-only">
           <DialogTitle>Manage resource categories</DialogTitle>
         </DialogHeader>
         <ResourceCategoriesConfigPanel

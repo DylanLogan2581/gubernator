@@ -44,6 +44,46 @@ type ResourcesConfigPanelProps = {
   readonly worldId: string;
 };
 
+function ResourcesEmptyState({
+  categoryId,
+  debouncedSearch,
+  onClearFilters,
+  showTrash,
+}: {
+  readonly categoryId: string | null;
+  readonly debouncedSearch: string;
+  readonly onClearFilters: () => void;
+  readonly showTrash: boolean;
+}): JSX.Element {
+  if (showTrash) {
+    return <EmptyState title="No resources in trash" />;
+  }
+  if (debouncedSearch !== "" || categoryId !== null) {
+    return (
+      <EmptyState
+        title="No matching resources"
+        description="Try a different search or filter."
+        action={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onClearFilters}
+          >
+            Clear filters
+          </Button>
+        }
+      />
+    );
+  }
+  return (
+    <EmptyState
+      title="No resources yet"
+      description="Add the first resource for this world."
+    />
+  );
+}
+
 export function ResourcesConfigPanel({
   canAdmin,
   isArchived,
@@ -155,19 +195,16 @@ export function ResourcesConfigPanel({
           description={getErrorDescription(resourcesQuery.error)}
         />
       ) : items.length === 0 ? (
-        showTrash ? (
-          <EmptyState title="No resources in trash" />
-        ) : debouncedSearch !== "" ? (
-          <EmptyState
-            title="No matching resources"
-            description="Try a different search."
-          />
-        ) : (
-          <EmptyState
-            title="No resources yet"
-            description="Add the first resource for this world."
-          />
-        )
+        <ResourcesEmptyState
+          categoryId={categoryId}
+          debouncedSearch={debouncedSearch}
+          showTrash={showTrash}
+          onClearFilters={() => {
+            setSearch("");
+            setCategoryId(null);
+            resetToFirstPage();
+          }}
+        />
       ) : (
         <>
           <p className="text-xs text-muted-foreground" role="status">

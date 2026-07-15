@@ -97,6 +97,9 @@ export function CreateResourceCategoryForm({
                 value={name}
                 onChange={(e) => {
                   setName(e.currentTarget.value);
+                  if (fieldErrors.name !== undefined) {
+                    clear();
+                  }
                 }}
               />
               {fieldErrors.name !== undefined ? (

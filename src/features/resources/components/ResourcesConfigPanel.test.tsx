@@ -356,6 +356,94 @@ describe("ResourcesConfigPanel", () => {
     });
   });
 
+  it("shows a filter-specific empty state, not the pristine empty state, when a category filter matches nothing", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        categoryRows: [
+          createResourceCategoryRow({
+            id: "00000000-0000-0000-0000-000000000020",
+            name: "Metals",
+          }),
+        ],
+        resourceRows: [createResourceRow({ name: "Gold" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter by category" }),
+      "Metals",
+    );
+
+    expect(await screen.findByText("No matching resources")).toBeDefined();
+    expect(screen.queryByText("No resources yet")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(await screen.findByText("Gold")).toBeDefined();
+  });
+
+  it("filters to resources with no category via the Uncategorized option", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        categoryRows: [
+          createResourceCategoryRow({
+            id: "00000000-0000-0000-0000-000000000020",
+            name: "Metals",
+          }),
+        ],
+        resourceRows: [
+          createResourceRow({ category_id: null, name: "Gold" }),
+          createResourceRow({
+            category_id: "00000000-0000-0000-0000-000000000020",
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Iron",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    expect(screen.getByText("Iron")).toBeDefined();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter by category" }),
+      "Uncategorized",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Iron")).toBeNull();
+      expect(screen.getByText("Gold")).toBeDefined();
+    });
+  });
+
+  it("hides the manage categories dialog's own title so the panel heading isn't duplicated", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ resourceRows: [] }));
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("No resources yet");
+    await user.click(screen.getByRole("button", { name: "Manage categories" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Manage resource categories",
+    });
+    const dialogTitle = within(dialog).getByText("Manage resource categories");
+    expect(dialogTitle.closest('[data-slot="dialog-header"]')).toHaveClass(
+      "sr-only",
+    );
+    expect(
+      within(dialog).getByRole("heading", { name: "Resource categories" }),
+    ).toBeDefined();
+  });
+
   it("re-fetches with server-side order when a sortable column header is clicked", async () => {
     const orderSpy = vi.fn();
     requireSupabaseClient.mockReturnValue(
@@ -448,13 +536,42 @@ function createResourceRow(
   };
 }
 
+type TestResourceCategoryRow = {
+  readonly color: string;
+  readonly created_at: string;
+  readonly icon: string | null;
+  readonly id: string;
+  readonly name: string;
+  readonly sort_order: number;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+function createResourceCategoryRow(
+  overrides: Partial<TestResourceCategoryRow> = {},
+): TestResourceCategoryRow {
+  return {
+    color: "#6b7280",
+    created_at: "2026-01-01T00:00:00.000Z",
+    icon: null,
+    id: "00000000-0000-0000-0000-000000000020",
+    name: "Metals",
+    sort_order: 0,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
 function createClient({
+  categoryRows = [],
   insertResult = { data: createResourceRow(), error: null },
   orderSpy,
   resourceRows,
   rpcResult = { data: null, error: null },
   updateResult = { data: createResourceRow(), error: null },
 }: {
+  readonly categoryRows?: readonly TestResourceCategoryRow[];
   readonly insertResult?: {
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
@@ -484,7 +601,7 @@ function createClient({
         );
       }
       if (table === "resource_categories") {
-        return createEmptyResourceCategoriesQueryBuilder();
+        return createResourceCategoriesQueryBuilder(categoryRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -494,11 +611,13 @@ function createClient({
   };
 }
 
-function createEmptyResourceCategoriesQueryBuilder(): Record<string, unknown> {
+function createResourceCategoriesQueryBuilder(
+  categoryRows: readonly TestResourceCategoryRow[] = [],
+): Record<string, unknown> {
   const builder: Record<string, unknown> = {
     eq: vi.fn(() => builder),
     order: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+    returns: vi.fn().mockResolvedValue({ data: categoryRows, error: null }),
   };
   return { select: vi.fn(() => builder) };
 }
@@ -525,6 +644,12 @@ function createResourcesQueryBuilder(
 
     const selectBuilder: Record<string, unknown> = {
       eq: vi.fn((column: string, value: unknown) => {
+        filtered = filtered.filter(
+          (row) => row[column as keyof TestResourceRow] === value,
+        );
+        return selectBuilder;
+      }),
+      is: vi.fn((column: string, value: unknown) => {
         filtered = filtered.filter(
           (row) => row[column as keyof TestResourceRow] === value,
         );
