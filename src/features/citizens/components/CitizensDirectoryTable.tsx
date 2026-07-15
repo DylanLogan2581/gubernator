@@ -73,26 +73,17 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
                 : undefined
             }
           />
-          <span className="flex flex-col">
-            <span className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "font-medium",
-                  isDeceased && "text-muted-foreground",
-                )}
-              >
-                {citizen.name ?? "—"}
-              </span>
-              {isPlayerCharacter ? (
-                <Badge variant="default">Player</Badge>
-              ) : null}
-              {isDeceased ? (
-                <Badge variant="destructive">Deceased</Badge>
-              ) : null}
+          <span className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                "font-medium",
+                isDeceased && "text-muted-foreground",
+              )}
+            >
+              {citizen.name ?? "—"}
             </span>
-            <span className="font-mono text-[11px] text-muted-foreground">
-              {citizen.id.slice(0, 8)}
-            </span>
+            {isPlayerCharacter ? <Badge variant="default">Player</Badge> : null}
+            {isDeceased ? <Badge variant="destructive">Deceased</Badge> : null}
           </span>
         </>
       );

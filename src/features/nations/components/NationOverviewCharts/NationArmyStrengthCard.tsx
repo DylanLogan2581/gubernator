@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   armiesByNationQueryOptions,
   armyLatestSnapshotsQueryOptions,
@@ -81,10 +81,10 @@ export function NationArmyStrengthCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Army strength</CardTitle>
+        <h3 className="text-base leading-snug font-medium">Army strength</h3>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="flex flex-wrap gap-4 text-sm">
+        <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Soldiers</p>
             <p className="font-semibold">

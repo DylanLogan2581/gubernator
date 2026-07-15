@@ -59,7 +59,12 @@ export function NationFlagSection({
           nationId={nation.id}
           nationName={nation.name}
         />
-        {canEdit ? <FlagUploadControls nation={nation} /> : null}
+        <div className="flex flex-col gap-2">
+          {nation.flagPath === null ? (
+            <p className="text-sm text-muted-foreground">No flag uploaded.</p>
+          ) : null}
+          {canEdit ? <FlagUploadControls nation={nation} /> : null}
+        </div>
       </div>
     </Card>
   );

@@ -121,7 +121,10 @@ export function NationReadinessSection({
                 {formatVoteState(ruler.vote)}
               </p>
             )}
-            <p className="text-sm text-muted-foreground">{ruler.name}</p>
+            <p className="text-sm text-muted-foreground">
+              Ruler:{" "}
+              <span className="font-medium text-foreground">{ruler.name}</span>
+            </p>
           </>
         )}
       </ReadinessCardFrame>

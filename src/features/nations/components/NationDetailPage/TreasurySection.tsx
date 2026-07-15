@@ -343,12 +343,12 @@ function TaxRateControl({
         onValueCommit={handleCommit}
         className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50"
       >
-        <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-muted">
+        <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-muted ring-1 ring-inset ring-border">
           <SliderPrimitive.Range className="absolute h-full bg-primary select-none" />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
           aria-label="Tax rate"
-          className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+          className="relative block size-4 shrink-0 rounded-full border-2 border-primary bg-background shadow-sm ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
         />
       </SliderPrimitive.Root>
       <p className="text-xs text-muted-foreground">

@@ -46,7 +46,7 @@ export function StatTile({
       {isLoading ? (
         <Skeleton className="h-3 w-28" />
       ) : context !== undefined ? (
-        <p className="truncate text-xs text-muted-foreground">{context}</p>
+        <p className="text-xs text-muted-foreground">{context}</p>
       ) : null}
       {!isLoading && children !== undefined ? children : null}
     </Card>

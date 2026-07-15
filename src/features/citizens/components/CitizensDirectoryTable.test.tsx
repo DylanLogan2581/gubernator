@@ -140,7 +140,6 @@ describe("CitizensDirectoryTable", () => {
     expect(screen.getByText("Amberhold")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.getByText("Blacksmith")).toBeDefined();
-    expect(screen.getByText("citizen-1".slice(0, 8))).toBeDefined();
     expect(screen.queryByText("Player")).toBeNull();
     expect(screen.queryByText("Deceased")).toBeNull();
   });
