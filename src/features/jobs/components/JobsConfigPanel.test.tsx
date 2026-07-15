@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { JobsConfigPanel } from "./JobsConfigPanel";
@@ -11,6 +12,16 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => <a className={className}>{children}</a>,
 }));
 
 const { toastError, toastSuccess } = vi.hoisted(() => ({
@@ -98,6 +109,44 @@ describe("JobsConfigPanel", () => {
     await screen.findByText("Scribe");
     const table = screen.getByRole("table");
     expect(await within(table).findByText("Literate")).toBeDefined();
+  });
+
+  it("shows the education level filter select once education levels exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        educationLevelRows: [createEducationLevelRow({ name: "Literate" })],
+        jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(
+      await screen.findByRole("combobox", {
+        name: "Filter by required education level",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a hint linking to Education instead of the filter select when no education levels exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Filter by required education level",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Add one in Configuration → Education"),
+    ).toBeInTheDocument();
   });
 
   it("shows no requirement in the education column when there is no requirement", async () => {

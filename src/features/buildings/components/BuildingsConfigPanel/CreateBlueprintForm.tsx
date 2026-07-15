@@ -279,6 +279,7 @@ export function CreateBlueprintForm({
                 activeResources={resourcesQuery.data}
                 defaultTierNumber={nextTierNumber}
                 disabled={isCreating}
+                worldId={worldId}
                 onAdd={(draft) => {
                   setPendingTiers((prev) => [...prev, draft]);
                   setShowAddTierForm(false);

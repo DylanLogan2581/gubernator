@@ -32,6 +32,7 @@ export function TierDraftFields({
   upkeepCosts,
   workerTurns,
   workerTurnsInputId,
+  worldId,
 }: {
   readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
@@ -50,6 +51,7 @@ export function TierDraftFields({
   readonly upkeepCosts: readonly CostRowState[];
   readonly workerTurns: string;
   readonly workerTurnsInputId: string;
+  readonly worldId: string;
 }): JSX.Element {
   return (
     <>
@@ -112,6 +114,7 @@ export function TierDraftFields({
         disabled={disabled}
         error={fieldErrors.effectsJson}
         rows={effects}
+        worldId={worldId}
         onChange={onEffectsChange}
       />
     </>

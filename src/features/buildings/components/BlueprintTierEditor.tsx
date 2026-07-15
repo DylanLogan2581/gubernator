@@ -227,6 +227,7 @@ function BlueprintTierEditorContent({
                   activeResources={activeResources}
                   queryClient={queryClient}
                   tier={tier}
+                  worldId={worldId}
                   onClose={() => {
                     setEditingTierId(null);
                   }}
@@ -296,6 +297,7 @@ function BlueprintTierEditorContent({
           blueprintId={blueprint.id}
           isPending={createMutation.isPending}
           tiers={tiers}
+          worldId={worldId}
           onCancel={() => {
             setShowCreateForm(false);
           }}
@@ -443,6 +445,7 @@ function CreateTierForm({
   blueprintId,
   isPending,
   tiers,
+  worldId,
   onCancel,
   onSubmit,
 }: {
@@ -452,6 +455,7 @@ function CreateTierForm({
   readonly blueprintId: string;
   readonly isPending: boolean;
   readonly tiers: readonly BuildingBlueprintTier[];
+  readonly worldId: string;
   readonly onCancel: () => void;
   readonly onSubmit: (input: CreateTierInput) => void;
 }): JSX.Element {
@@ -513,6 +517,7 @@ function CreateTierForm({
           upkeepCosts={form.upkeepCosts}
           workerTurns={form.workerTurns}
           workerTurnsInputId="worker-turns-required"
+          worldId={worldId}
         />
       </div>
       <div className="flex gap-2">
@@ -539,6 +544,7 @@ function EditTierForm({
   activeResources,
   queryClient,
   tier,
+  worldId,
   onClose,
 }: {
   readonly activeEducationLevels: readonly EducationLevel[];
@@ -546,6 +552,7 @@ function EditTierForm({
   readonly activeResources: readonly Resource[];
   readonly queryClient: QueryClient;
   readonly tier: BuildingBlueprintTier;
+  readonly worldId: string;
   readonly onClose: () => void;
 }): JSX.Element {
   const updateMutation = useMutation(
@@ -622,6 +629,7 @@ function EditTierForm({
           upkeepCosts={form.upkeepCosts}
           workerTurns={form.workerTurns}
           workerTurnsInputId="edit-worker-turns-required"
+          worldId={worldId}
         />
       </div>
       <div className="flex gap-2">

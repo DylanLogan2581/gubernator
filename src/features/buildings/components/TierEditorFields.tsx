@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type JSX } from "react";
 
@@ -127,6 +128,7 @@ export function EffectsEditor({
   disabled,
   error,
   rows,
+  worldId,
   onChange,
 }: {
   readonly activeEducationLevels: readonly EducationLevel[];
@@ -135,6 +137,7 @@ export function EffectsEditor({
   readonly disabled: boolean;
   readonly error?: string;
   readonly rows: readonly EffectRowState[];
+  readonly worldId: string;
   readonly onChange: (rows: EffectRowState[]) => void;
 }): JSX.Element {
   function addRow(): void {
@@ -310,6 +313,7 @@ export function EffectsEditor({
                   activeJobs={activeJobs}
                   disabled={disabled}
                   row={row}
+                  worldId={worldId}
                   onChange={(patch) => {
                     updateRow(row.id, patch);
                   }}
@@ -354,12 +358,14 @@ function EducationEffectFields({
   activeJobs,
   disabled,
   row,
+  worldId,
   onChange,
 }: {
   readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly disabled: boolean;
   readonly row: EffectRowState;
+  readonly worldId: string;
   readonly onChange: (patch: Partial<EffectRowState>) => void;
 }): JSX.Element {
   const teacherJobs = activeJobs.filter((j) => j.jobType === "teacher");
@@ -442,87 +448,106 @@ function EducationEffectFields({
         <legend className="text-sm text-muted-foreground">
           Level transitions
         </legend>
-        {row.levels.map((level) => (
-          <div key={level.id} className="flex items-center gap-2">
-            <Label className="sr-only" htmlFor={`level-from-${level.id}`}>
-              From level
-            </Label>
-            <NativeSelect
-              id={`level-from-${level.id}`}
-              aria-label="From level"
-              className="w-full"
-              disabled={disabled}
-              value={level.fromLevelId}
-              onChange={(e) => {
-                updateLevel(level.id, { fromLevelId: e.currentTarget.value });
-              }}
+        {activeEducationLevels.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No education levels configured yet.{" "}
+            <Link
+              to="/worlds/$worldId/configuration"
+              params={{ worldId }}
+              search={{ tab: "education" }}
+              className="text-primary hover:underline"
             >
-              <option value="">No education</option>
-              {activeEducationLevels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </NativeSelect>
-            <Label className="sr-only" htmlFor={`level-to-${level.id}`}>
-              To level
-            </Label>
-            <NativeSelect
-              id={`level-to-${level.id}`}
-              aria-label="To level"
-              className="w-full"
-              disabled={disabled}
-              value={level.toLevelId}
-              onChange={(e) => {
-                updateLevel(level.id, { toLevelId: e.currentTarget.value });
-              }}
-            >
-              <option value="">Select level</option>
-              {activeEducationLevels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </NativeSelect>
-            <Label className="sr-only" htmlFor={`level-turns-${level.id}`}>
-              Turns
-            </Label>
-            <Input
-              id={`level-turns-${level.id}`}
-              aria-label="Turns"
-              className="w-20 shrink-0"
-              disabled={disabled}
-              inputMode="numeric"
-              placeholder="0"
-              value={level.turns}
-              onChange={(e) => {
-                updateLevel(level.id, { turns: e.currentTarget.value });
-              }}
-            />
+              Add one in Configuration → Education
+            </Link>{" "}
+            to set up level transitions.
+          </p>
+        ) : (
+          <>
+            {row.levels.map((level) => (
+              <div key={level.id} className="flex items-center gap-2">
+                <Label className="sr-only" htmlFor={`level-from-${level.id}`}>
+                  From level
+                </Label>
+                <NativeSelect
+                  id={`level-from-${level.id}`}
+                  aria-label="From level"
+                  className="w-full"
+                  disabled={disabled}
+                  value={level.fromLevelId}
+                  onChange={(e) => {
+                    updateLevel(level.id, {
+                      fromLevelId: e.currentTarget.value,
+                    });
+                  }}
+                >
+                  <option value="">No education</option>
+                  {activeEducationLevels.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+                <Label className="sr-only" htmlFor={`level-to-${level.id}`}>
+                  To level
+                </Label>
+                <NativeSelect
+                  id={`level-to-${level.id}`}
+                  aria-label="To level"
+                  className="w-full"
+                  disabled={disabled}
+                  value={level.toLevelId}
+                  onChange={(e) => {
+                    updateLevel(level.id, { toLevelId: e.currentTarget.value });
+                  }}
+                >
+                  <option value="">Select level</option>
+                  {activeEducationLevels.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+                <Label className="sr-only" htmlFor={`level-turns-${level.id}`}>
+                  Turns
+                </Label>
+                <Input
+                  id={`level-turns-${level.id}`}
+                  aria-label="Turns"
+                  className="w-20 shrink-0"
+                  disabled={disabled}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={level.turns}
+                  onChange={(e) => {
+                    updateLevel(level.id, { turns: e.currentTarget.value });
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => {
+                    removeLevel(level.id);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="w-fit"
               disabled={disabled}
-              onClick={() => {
-                removeLevel(level.id);
-              }}
+              onClick={addLevel}
             >
-              Remove
+              <Plus aria-hidden="true" />
+              Add transition
             </Button>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-fit"
-          disabled={disabled}
-          onClick={addLevel}
-        >
-          <Plus aria-hidden="true" />
-          Add transition
-        </Button>
+          </>
+        )}
       </fieldset>
     </>
   );

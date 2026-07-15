@@ -172,6 +172,7 @@ export function JobsConfigPanel({
         educationLevels={educationLevels}
         search={search}
         types={typesFilter}
+        worldId={worldId}
         onEducationLevelIdChange={(next) => {
           setEducationLevelId(next);
           resetToFirstPage();

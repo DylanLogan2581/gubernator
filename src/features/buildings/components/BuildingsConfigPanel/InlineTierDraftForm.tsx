@@ -17,6 +17,7 @@ export default function InlineTierDraftForm({
   activeResources,
   defaultTierNumber,
   disabled,
+  worldId,
   onAdd,
   onCancel,
 }: {
@@ -25,6 +26,7 @@ export default function InlineTierDraftForm({
   readonly activeResources: readonly Resource[];
   readonly defaultTierNumber: number;
   readonly disabled: boolean;
+  readonly worldId: string;
   readonly onAdd: (draft: PendingTierDraft) => void;
   readonly onCancel: () => void;
 }): JSX.Element {
@@ -83,6 +85,7 @@ export default function InlineTierDraftForm({
           upkeepCosts={form.upkeepCosts}
           workerTurns={form.workerTurns}
           workerTurnsInputId="inline-worker-turns-required"
+          worldId={worldId}
         />
       </div>
       <div className="flex gap-2">

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,7 @@ const JOB_TYPES: readonly JobType[] = [
 type JobsFiltersProps = {
   readonly educationLevelId: string | null;
   readonly educationLevels: readonly EducationLevel[];
+  readonly worldId: string;
   readonly onEducationLevelIdChange: (educationLevelId: string | null) => void;
   readonly onSearchChange: (search: string) => void;
   readonly onTypesChange: (types: readonly JobType[]) => void;
@@ -39,6 +41,7 @@ type JobsFiltersProps = {
 export function JobsFilters({
   educationLevelId,
   educationLevels,
+  worldId,
   onEducationLevelIdChange,
   onSearchChange,
   onTypesChange,
@@ -97,22 +100,37 @@ export function JobsFilters({
           </div>
         </PopoverContent>
       </Popover>
-      <NativeSelect
-        aria-label="Filter by required education level"
-        className="sm:w-[220px]"
-        value={educationLevelId ?? ""}
-        onChange={(event) => {
-          const next = event.currentTarget.value;
-          onEducationLevelIdChange(next === "" ? null : next);
-        }}
-      >
-        <option value="">All education levels</option>
-        {educationLevels.map((level) => (
-          <option key={level.id} value={level.id}>
-            {level.name}
-          </option>
-        ))}
-      </NativeSelect>
+      {educationLevels.length > 0 ? (
+        <NativeSelect
+          aria-label="Filter by required education level"
+          className="sm:w-[220px]"
+          value={educationLevelId ?? ""}
+          onChange={(event) => {
+            const next = event.currentTarget.value;
+            onEducationLevelIdChange(next === "" ? null : next);
+          }}
+        >
+          <option value="">All education levels</option>
+          {educationLevels.map((level) => (
+            <option key={level.id} value={level.id}>
+              {level.name}
+            </option>
+          ))}
+        </NativeSelect>
+      ) : (
+        <p className="w-full basis-full text-xs text-muted-foreground">
+          No education levels configured yet.{" "}
+          <Link
+            to="/worlds/$worldId/configuration"
+            params={{ worldId }}
+            search={{ tab: "education" }}
+            className="text-primary hover:underline"
+          >
+            Add one in Configuration → Education
+          </Link>{" "}
+          to filter by education level.
+        </p>
+      )}
     </div>
   );
 }
