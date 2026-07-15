@@ -137,6 +137,10 @@ export function CreateEducationLevelForm({
               htmlFor="create-education-level-natural-born-percent"
             >
               <span className="text-muted-foreground">Natural born %</span>
+              <p className="text-xs text-muted-foreground">
+                Share of newborns that start at this education level; all levels
+                together may total at most 100%.
+              </p>
               <Input
                 aria-invalid={fieldErrors.naturalBornPercent !== undefined}
                 aria-label="Natural born %"
@@ -154,18 +158,17 @@ export function CreateEducationLevelForm({
                 <p className="text-xs text-destructive">
                   {fieldErrors.naturalBornPercent}
                 </p>
-              ) : (
-                <p
-                  className={
-                    projectedTotal > 100
-                      ? "text-xs text-destructive"
-                      : "text-xs text-muted-foreground"
-                  }
-                >
-                  World total would be {projectedTotal} / 100
-                  {projectedTotal > 100 ? " — over the limit" : ""}
-                </p>
-              )}
+              ) : null}
+              <p
+                className={
+                  projectedTotal > 100
+                    ? "text-xs text-destructive"
+                    : "text-xs text-muted-foreground"
+                }
+              >
+                World total would be {projectedTotal} / 100
+                {projectedTotal > 100 ? " — over the limit" : ""}
+              </p>
             </Label>
           </div>
           <DialogFooter>
