@@ -73,7 +73,9 @@ export function HeaderEndTurnControl({
         data-command-palette-action="end-turn"
       >
         <StepForward aria-hidden="true" />
-        {endTurnMutation.isPending ? "Running..." : readinessLabel}
+        <span className="max-w-24 truncate sm:max-w-none">
+          {endTurnMutation.isPending ? "Running..." : readinessLabel}
+        </span>
       </Button>
 
       {isConfirming && readinessSummaryQuery.isSuccess ? (

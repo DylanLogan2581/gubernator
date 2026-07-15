@@ -284,6 +284,21 @@
   }
 }
 
+/* #1196: Sonner's own mobile stylesheet (`@media (max-width: 600px)`) sets
+   `left`, `right`, AND `width: 100%` on its fixed toaster container at once.
+   That's over-constrained — browsers keep `left` + `width` and ignore
+   `right`, so the box extends past the viewport by the mobile offset on
+   every route, causing horizontal page scroll. Recompute width from the
+   offsets (box-sizing: border-box is already set upstream) so the box stays
+   inside the viewport. */
+@media (max-width: 600px) {
+  [data-sonner-toaster] {
+    width: calc(
+      100% - var(--mobile-offset-left) - var(--mobile-offset-right)
+    ) !important;
+  }
+}
+
 /* #1122: nation charter print stylesheet -- hides app chrome (sidebar,
    header) that isn't part of the printed document, and forces every
    <details> (collapsed law documents) to render its content regardless of

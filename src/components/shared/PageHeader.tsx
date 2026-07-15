@@ -18,12 +18,12 @@ export function PageHeader({
 }: PageHeaderProps): JSX.Element {
   const Icon = icon;
   return (
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         {Icon !== undefined ? (
           <Icon className="size-5 text-muted-foreground" aria-hidden="true" />
         ) : null}
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold">{title}</h1>
           {description !== undefined ? (
             <p className="text-sm text-muted-foreground">{description}</p>
@@ -31,7 +31,7 @@ export function PageHeader({
         </div>
       </div>
       {actions !== undefined ? (
-        <div className="flex items-center gap-2">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
       ) : null}
     </div>
   );

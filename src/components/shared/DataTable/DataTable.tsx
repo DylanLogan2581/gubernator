@@ -134,7 +134,7 @@ export function DataTable<TData>({
   const columnCount = columns.length + (canExpand ? 1 : 0);
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>

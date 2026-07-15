@@ -153,7 +153,7 @@ function CommandPaletteTrigger({
       onClick={onOpen}
     >
       <Search className="size-4" aria-hidden="true" />
-      <span>Search…</span>
+      <span className="hidden sm:inline">Search…</span>
       <kbd className="pointer-events-none ml-2 hidden h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
         <span aria-hidden="true">⌘</span>K
       </kbd>
