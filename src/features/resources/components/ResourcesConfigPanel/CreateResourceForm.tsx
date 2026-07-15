@@ -24,7 +24,10 @@ import {
   createResourceInputSchema,
   type CreateResourceInput,
 } from "../../schemas/resourceSchemas";
-import { buildChangePreviewText } from "../../utils/changePreviewText";
+import {
+  buildChangePreviewText,
+  isPercentChangeBelowMinimum,
+} from "../../utils/changePreviewText";
 
 import type { ResourceChangeMode } from "../../types/resourceTypes";
 
@@ -65,9 +68,11 @@ export function CreateResourceForm({
     maxLength: resourceInputLimits.resourceSlugMax,
   });
 
-  const changePreview = buildChangePreviewText(
+  const parsedChangeAmount = changeAmount !== "" ? parseFloat(changeAmount) : 0;
+  const changePreview = buildChangePreviewText(changeMode, parsedChangeAmount);
+  const isChangeAmountBelowMinimum = isPercentChangeBelowMinimum(
     changeMode,
-    changeAmount !== "" ? parseFloat(changeAmount) : 0,
+    parsedChangeAmount,
   );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -180,6 +185,10 @@ export function CreateResourceForm({
               {fieldErrors.changeAmount !== undefined ? (
                 <p className="text-xs text-destructive">
                   {fieldErrors.changeAmount}
+                </p>
+              ) : isChangeAmountBelowMinimum ? (
+                <p className="text-xs text-destructive">
+                  Percent decay cannot exceed 100% per turn.
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">{changePreview}</p>

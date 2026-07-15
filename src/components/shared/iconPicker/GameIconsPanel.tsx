@@ -62,7 +62,11 @@ export function GameIconsPanel({
   const allNames = useMemo(() => getGameIconNames(), [ready]);
 
   const filteredNames = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const queryTokens = search
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
     return allNames.filter((name) => {
       if (
         category !== ALL_CATEGORIES &&
@@ -70,10 +74,13 @@ export function GameIconsPanel({
       ) {
         return false;
       }
-      if (query.length === 0) {
+      if (queryTokens.length === 0) {
         return true;
       }
-      return name.replace(/-/g, " ").includes(query);
+      // Token match rather than one contiguous substring, so a multi-word
+      // query matches regardless of word order in the icon's kebab-case name.
+      const haystack = name.replace(/-/g, " ");
+      return queryTokens.every((token) => haystack.includes(token));
     });
   }, [allNames, search, category]);
 

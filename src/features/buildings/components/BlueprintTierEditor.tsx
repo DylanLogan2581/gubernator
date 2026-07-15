@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -182,15 +182,17 @@ function BlueprintTierEditorContent({
   return (
     <div className="grid gap-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="grid gap-0.5">
-          <Link
-            to="/worlds/$worldId/configuration"
-            params={{ worldId }}
-            search={{ tab: "buildings" }}
-            className="text-xs text-primary hover:underline"
-          >
-            ← Blueprints
-          </Link>
+        <div className="grid gap-2">
+          <Button asChild variant="outline" size="sm" className="w-fit">
+            <Link
+              to="/worlds/$worldId/configuration"
+              params={{ worldId }}
+              search={{ tab: "buildings" }}
+            >
+              <ArrowLeft aria-hidden="true" />
+              Blueprints
+            </Link>
+          </Button>
           <h2
             id="blueprint-tiers-title"
             className="text-lg font-semibold tracking-normal"

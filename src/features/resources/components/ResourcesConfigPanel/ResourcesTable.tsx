@@ -118,6 +118,7 @@ function buildColumns({
       accessorFn: (row) => row.baseStockpileCap,
       enableSorting: true,
       header: "Storage cap",
+      meta: { align: "right" },
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-muted-foreground">
           {row.original.baseStockpileCap.toLocaleString()}
@@ -131,6 +132,12 @@ function buildColumns({
       header: "Growth / decay",
       cell: ({ row }) => {
         const resource = row.original;
+        if (
+          resource.changeAmount === 0 ||
+          Number.isNaN(resource.changeAmount)
+        ) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
         const changeText = buildChangePreviewText(
           resource.changeMode,
           resource.changeAmount,

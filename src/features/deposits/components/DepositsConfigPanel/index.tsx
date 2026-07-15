@@ -155,6 +155,20 @@ export function DepositsConfigPanel({
           <EmptyState
             title="No matching deposit types"
             description="Try a different search or filter."
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch("");
+                  setJobId(null);
+                  resetToFirstPage();
+                }}
+              >
+                Clear filters
+              </Button>
+            }
           />
         ) : (
           <EmptyState

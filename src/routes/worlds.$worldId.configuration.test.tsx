@@ -82,6 +82,33 @@ describe("world configuration route", () => {
     ).toHaveTextContent("Resources");
   });
 
+  it("corrects an unknown ?tab= to the default tab in the URL", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000505";
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: worldId }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: worldId,
+            name: "Admin World",
+            visibility: "private",
+          }),
+        ],
+      }),
+    );
+
+    const router = renderAt(`/worlds/${worldId}/configuration?tab=bogus`);
+
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Resources");
+
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ tab: "resources" });
+    });
+  });
+
   it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

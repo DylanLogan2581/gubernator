@@ -125,6 +125,7 @@ function buildColumns({
       accessorFn: (row) => row.baseCapacity,
       enableSorting: true,
       header: "Capacity",
+      meta: { align: "right" },
       cell: ({ row }) => {
         const job = row.original;
         if (
@@ -147,6 +148,7 @@ function buildColumns({
       accessorFn: (row) => row.traderCapacityPerWorker,
       enableSorting: true,
       header: "Traders per worker",
+      meta: { align: "right" },
       cell: ({ row }) => {
         const job = row.original;
         if (job.jobType !== "trader" || job.traderCapacityPerWorker === null) {

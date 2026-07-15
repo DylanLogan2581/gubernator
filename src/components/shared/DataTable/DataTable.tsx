@@ -3,6 +3,7 @@ import {
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
+  type RowData,
   type SortingState,
 } from "@tanstack/react-table";
 import {
@@ -23,6 +24,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+
+declare module "@tanstack/react-table" {
+  // Declaration merging requires an `interface` with the exact type
+  // parameter list tanstack-table declared (name and constraints included),
+  // even though neither is referenced in this augmentation's own members.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions, unused-imports/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    /** Right-aligns the header and cell content, e.g. for numeric columns. */
+    readonly align?: "right";
+  }
+}
 
 export type DataTableProps<TData> = {
   readonly columns: readonly ColumnDef<TData, unknown>[];
@@ -148,15 +161,21 @@ export function DataTable<TData>({
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const direction = header.column.getIsSorted();
+                  const alignRight =
+                    header.column.columnDef.meta?.align === "right";
                   return (
                     <TableHead
                       key={header.id}
                       aria-sort={canSort ? ariaSortFor(direction) : undefined}
+                      className={alignRight ? "text-right" : undefined}
                     >
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
-                          className="flex items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                          className={cn(
+                            "flex items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                            alignRight && "ml-auto",
+                          )}
                           onClick={() => {
                             toggleSort(header.column.id);
                           }}
@@ -230,8 +249,15 @@ export function DataTable<TData>({
                           cell.column.columnDef.cell,
                           cell.getContext(),
                         );
+                        const cellAlignRight =
+                          cell.column.columnDef.meta?.align === "right";
                         return (
-                          <TableCell key={cell.id}>
+                          <TableCell
+                            key={cell.id}
+                            className={
+                              cellAlignRight ? "text-right" : undefined
+                            }
+                          >
                             {cellIndex === 0 && renderRowLink !== undefined
                               ? renderRowLink(row.original, cellContent)
                               : cellContent}

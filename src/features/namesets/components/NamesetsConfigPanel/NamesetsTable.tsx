@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { cn } from "@/lib/utils";
 import type { NameConvention } from "@/lib/worldNamingConfigSchemas";
 
 import {
@@ -108,11 +109,13 @@ function ariaSortFor(
 }
 
 function SortableHead({
+  align,
   children,
   column,
   sort,
   onSortChange,
 }: {
+  readonly align?: "right";
   readonly children: ReactNode;
   readonly column: SortColumn;
   readonly onSortChange: (sort: Sort) => void;
@@ -122,10 +125,16 @@ function SortableHead({
     sort?.column === column ? (sort.desc ? "desc" : "asc") : false;
 
   return (
-    <TableHead aria-sort={ariaSortFor(direction)}>
+    <TableHead
+      aria-sort={ariaSortFor(direction)}
+      className={align === "right" ? "text-right" : undefined}
+    >
       <button
         type="button"
-        className="flex items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        className={cn(
+          "flex items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+          align === "right" && "ml-auto",
+        )}
         onClick={() => {
           onSortChange({
             column,
@@ -178,6 +187,7 @@ export function NamesetsTable({
                 Type
               </SortableHead>
               <SortableHead
+                align="right"
                 column="givenNames"
                 sort={sort}
                 onSortChange={setSort}
@@ -185,6 +195,7 @@ export function NamesetsTable({
                 Given names
               </SortableHead>
               <SortableHead
+                align="right"
                 column="surnames"
                 sort={sort}
                 onSortChange={setSort}
@@ -301,12 +312,12 @@ function NamesetRow({
         </Badge>
       </TableCell>
       <TableCell
-        className="tabular-nums text-sm text-muted-foreground"
+        className="text-right tabular-nums text-sm text-muted-foreground"
         title={`${nameset.configJson.male_given_names.length.toString()} male · ${nameset.configJson.female_given_names.length.toString()} female`}
       >
         {givenNamesCount(nameset)}
       </TableCell>
-      <TableCell className="tabular-nums text-sm text-muted-foreground">
+      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
         {nameset.configJson.surnames.length}
       </TableCell>
       {canEdit ? (
@@ -417,10 +428,10 @@ function TrashedNamesetRow({
           {CONVENTION_LABELS[nameset.configJson.convention]}
         </Badge>
       </TableCell>
-      <TableCell className="tabular-nums text-sm text-muted-foreground">
+      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
         {givenNamesCount(nameset)}
       </TableCell>
-      <TableCell className="tabular-nums text-sm text-muted-foreground">
+      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
         {nameset.configJson.surnames.length}
       </TableCell>
       <TableCell className="text-right">

@@ -116,6 +116,31 @@ describe("ResourcesConfigPanel", () => {
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
+  it("flags a percent decay below -100% as the user types, before submit", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ resourceRows: [] }));
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Resources" });
+    await user.click(screen.getByRole("button", { name: "Add resource" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create resource",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Change amount" }),
+      "-150",
+    );
+
+    expect(
+      within(dialog).getByText("Percent decay cannot exceed 100% per turn."),
+    ).toBeDefined();
+    expect(
+      within(dialog).queryByText(/Decreases by 150% each turn\./),
+    ).toBeNull();
+  });
+
   it("shows a system badge for system resources", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

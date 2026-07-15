@@ -171,6 +171,19 @@ function BlueprintListPanel({
           <EmptyState
             title="No matching buildings"
             description="Try a different search."
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch("");
+                  resetToFirstPage();
+                }}
+              >
+                Clear filters
+              </Button>
+            }
           />
         ) : (
           <EmptyState

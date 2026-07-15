@@ -102,6 +102,7 @@ function buildColumns({
       accessorFn: (row) => row.outputUnitsPerWorker,
       enableSorting: true,
       header: "Output / worker",
+      meta: { align: "right" },
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-muted-foreground">
           {row.original.outputUnitsPerWorker.toLocaleString()}

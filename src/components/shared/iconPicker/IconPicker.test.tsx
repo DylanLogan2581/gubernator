@@ -113,4 +113,24 @@ describe("IconPicker", () => {
     render(<IconPicker value="game:anvil" onChange={vi.fn()} />);
     expect(screen.getByRole("combobox")).toHaveTextContent("Anvil");
   });
+
+  it("matches game icons by word regardless of query word order", async () => {
+    const user = userEvent.setup();
+    render(<IconPicker value={null} onChange={vi.fn()} />);
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByRole("tab", { name: "Game Icons" }));
+    await user.type(
+      await screen.findByPlaceholderText(
+        "Search game icons…",
+        {},
+        { timeout: 5000 },
+      ),
+      "spear thrown",
+    );
+
+    expect(
+      await screen.findByRole("option", { name: "Thrown Spear" }),
+    ).toBeDefined();
+  }, 10000);
 });

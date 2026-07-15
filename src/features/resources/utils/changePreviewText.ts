@@ -1,6 +1,18 @@
 import type { ResourceChangeMode } from "../types/resourceTypes";
 
 /**
+ * Mirrors `checkPercentChangeAmountRange` in resourceSchemas.ts so forms can
+ * flag an out-of-range percent decay as the user types, instead of only on
+ * submit.
+ */
+export function isPercentChangeBelowMinimum(
+  mode: ResourceChangeMode,
+  amount: number,
+): boolean {
+  return mode === "percent" && amount < -100;
+}
+
+/**
  * Human-readable preview of a resource's configured per-turn change, e.g.
  * "Increases by 5% each turn." or "Removes 50 each turn."
  */

@@ -157,6 +157,35 @@ describe("DataTable", () => {
     expect(link.getAttribute("href")).toBe("/rows/1");
   });
 
+  it("right-aligns the header and cell for a column with meta.align right", () => {
+    const columns: ColumnDef<Row, unknown>[] = [
+      { id: "name", accessorKey: "name", header: "Name" },
+      {
+        id: "age",
+        accessorKey: "age",
+        header: "Age",
+        meta: { align: "right" },
+      },
+    ];
+    render(
+      <DataTable
+        columns={columns}
+        data={ROWS}
+        getRowId={(row) => row.id}
+        sorting={[]}
+        onSortingChange={vi.fn()}
+        pageIndex={0}
+        pageCount={1}
+        onPageChange={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("columnheader", { name: /Age/ }).className,
+    ).toContain("text-right");
+    expect(screen.getByText("30").className).toContain("text-right");
+  });
+
   it("calls onPageChange from the pagination control", async () => {
     const onPageChange = vi.fn();
     render(

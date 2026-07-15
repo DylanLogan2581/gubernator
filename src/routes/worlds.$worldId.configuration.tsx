@@ -1,4 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { requireAuthenticatedRoute } from "@/features/auth";
@@ -16,17 +22,23 @@ import type { JSX } from "react";
 
 const configurationSearchSchema = z.object({
   blueprint: z.string().optional(),
-  tab: z.enum(CONFIG_TAB_IDS).optional(),
+  tab: z.string().optional(),
 });
+
+function isKnownConfigTab(tab: string): tab is ConfigTabId {
+  return (CONFIG_TAB_IDS as readonly string[]).includes(tab);
+}
 
 function parseConfigurationSearch(search: unknown): {
   readonly blueprint?: string;
   readonly tab: ConfigTabId;
 } {
   const result = configurationSearchSchema.safeParse(search);
-  const tab = result.success
-    ? (result.data.tab ?? DEFAULT_CONFIG_TAB)
-    : DEFAULT_CONFIG_TAB;
+  const rawTab = result.success ? result.data.tab : undefined;
+  const tab =
+    rawTab !== undefined && isKnownConfigTab(rawTab)
+      ? rawTab
+      : DEFAULT_CONFIG_TAB;
   const blueprint = result.success ? result.data.blueprint : undefined;
   return { blueprint, tab };
 }
@@ -34,6 +46,26 @@ function parseConfigurationSearch(search: unknown): {
 function WorldConfigurationRoute(): JSX.Element {
   const { worldId } = Route.useParams();
   const { blueprint, tab } = Route.useSearch();
+  const navigate = useNavigate();
+
+  // parseConfigurationSearch silently falls back an unknown `?tab=` to the
+  // default tab — this corrects the URL itself instead of leaving a
+  // stale/invalid `tab` param displayed while the default tab's content
+  // renders underneath it.
+  const rawTab = useRouterState({
+    select: (state) => new URLSearchParams(state.location.searchStr).get("tab"),
+  });
+
+  useEffect(() => {
+    if (rawTab === null || isKnownConfigTab(rawTab)) return;
+    void navigate({
+      to: "/worlds/$worldId/configuration",
+      params: { worldId },
+      search: { blueprint, tab: DEFAULT_CONFIG_TAB },
+      replace: true,
+    });
+  }, [blueprint, navigate, rawTab, worldId]);
+
   return (
     <WorldConfigurationPage
       activeTab={tab}

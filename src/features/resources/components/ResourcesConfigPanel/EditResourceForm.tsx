@@ -30,7 +30,10 @@ import {
   updateResourceInputSchema,
   type UpdateResourceInput,
 } from "../../schemas/resourceSchemas";
-import { buildChangePreviewText } from "../../utils/changePreviewText";
+import {
+  buildChangePreviewText,
+  isPercentChangeBelowMinimum,
+} from "../../utils/changePreviewText";
 import { buildCleanupDescription } from "../../utils/cleanupDescription";
 
 import type { Resource, ResourceChangeMode } from "../../types/resourceTypes";
@@ -86,9 +89,11 @@ export function EditResourceForm({
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
-  const changePreview = buildChangePreviewText(
+  const parsedChangeAmount = changeAmount !== "" ? parseFloat(changeAmount) : 0;
+  const changePreview = buildChangePreviewText(changeMode, parsedChangeAmount);
+  const isChangeAmountBelowMinimum = isPercentChangeBelowMinimum(
     changeMode,
-    changeAmount !== "" ? parseFloat(changeAmount) : 0,
+    parsedChangeAmount,
   );
 
   function handleNameChange(value: string): void {
@@ -233,6 +238,10 @@ export function EditResourceForm({
               {fieldErrors.changeAmount !== undefined ? (
                 <p className="text-xs text-destructive">
                   {fieldErrors.changeAmount}
+                </p>
+              ) : isChangeAmountBelowMinimum ? (
+                <p className="text-xs text-destructive">
+                  Percent decay cannot exceed 100% per turn.
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">{changePreview}</p>

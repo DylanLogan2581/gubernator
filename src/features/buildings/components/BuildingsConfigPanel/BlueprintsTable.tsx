@@ -111,8 +111,13 @@ function buildColumns({
     {
       id: "tierCount",
       accessorFn: (row) => row.tierCount,
+      // Tier count comes from an embedded PostgREST count join
+      // (BLUEPRINT_SUMMARY_SELECT in buildingsQueries.ts), which can't be
+      // ordered without a computed column/view — a schema change out of
+      // scope for this UI polish pass (#1207).
       enableSorting: false,
       header: "Tiers",
+      meta: { align: "right" },
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-muted-foreground">
           {row.original.tierCount}
@@ -124,6 +129,7 @@ function buildColumns({
       accessorFn: (row) => row.gracePeriodTurns,
       enableSorting: true,
       header: () => <span title={GRACE_PERIOD_HINT}>Grace period</span>,
+      meta: { align: "right" },
       cell: ({ row }) => (
         <span
           className="tabular-nums text-sm text-muted-foreground"
@@ -138,6 +144,7 @@ function buildColumns({
       accessorFn: (row) => row.maxInstancesPerSettlement ?? "",
       enableSorting: true,
       header: "Max / settlement",
+      meta: { align: "right" },
       cell: ({ row }) => {
         const max = row.original.maxInstancesPerSettlement;
         if (max === null) {

@@ -5,6 +5,7 @@ import {
   ConfigCrudPanel,
   handleCrudError,
 } from "@/components/shared/ConfigCrudPanel";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -84,9 +85,21 @@ export function NamesetsConfigPanel({
                 worldId={worldId}
               />
             ) : items.length > 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No matching namesets.
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  No matching namesets.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                  }}
+                >
+                  Clear filters
+                </Button>
+              </div>
             ) : null}
 
             {canEditProp && showForm && !showTrash ? (

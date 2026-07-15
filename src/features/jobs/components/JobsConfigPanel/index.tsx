@@ -49,22 +49,30 @@ type JobsConfigPanelProps = {
 function JobsEmptyState({
   debouncedSearch,
   educationLevelId,
+  onClearFilters,
   showTrash,
   typesFilter,
 }: {
   readonly debouncedSearch: string;
   readonly educationLevelId: string | null;
+  readonly onClearFilters: () => void;
   readonly showTrash: boolean;
   readonly typesFilter: readonly JobType[];
 }): JSX.Element {
   if (showTrash) {
     return <EmptyState title="No jobs in trash" />;
   }
+  const clearFiltersAction = (
+    <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
+      Clear filters
+    </Button>
+  );
   if (debouncedSearch !== "") {
     return (
       <EmptyState
         title="No matching jobs"
         description="Try a different search."
+        action={clearFiltersAction}
       />
     );
   }
@@ -72,6 +80,7 @@ function JobsEmptyState({
     return (
       <EmptyState
         title={`No ${JOB_TYPE_LABELS[typesFilter[0]].toLowerCase()} jobs`}
+        action={clearFiltersAction}
       />
     );
   }
@@ -80,6 +89,7 @@ function JobsEmptyState({
       <EmptyState
         title="No matching jobs"
         description="Try different filters."
+        action={clearFiltersAction}
       />
     );
   }
@@ -200,6 +210,12 @@ export function JobsConfigPanel({
           educationLevelId={educationLevelId}
           showTrash={showTrash}
           typesFilter={typesFilter}
+          onClearFilters={() => {
+            setSearch("");
+            setEducationLevelId(null);
+            setTypesFilter([]);
+            resetToFirstPage();
+          }}
         />
       ) : (
         <>
