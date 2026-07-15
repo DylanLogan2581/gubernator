@@ -228,7 +228,7 @@ function NationListItem({
         />
         <div className="grid min-w-0 gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2 className="truncate text-base font-medium">{nation.name}</h2>
+            <h2 className="min-w-0 text-base font-medium">{nation.name}</h2>
             <span className="inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {formatNationGovernmentType(nation.governmentType)}
             </span>

@@ -52,9 +52,9 @@ export function HeaderEndTurnControl({
     return null;
   }
 
-  const readinessLabel = readinessSummaryQuery.isSuccess
-    ? `End Turn · ${readinessSummaryQuery.data.readySettlementCount.toString()}/${readinessSummaryQuery.data.totalSettlementCount.toString()} ready`
-    : "End Turn";
+  const readinessSuffix = readinessSummaryQuery.isSuccess
+    ? ` · ${readinessSummaryQuery.data.readySettlementCount.toString()}/${readinessSummaryQuery.data.totalSettlementCount.toString()} ready`
+    : "";
   const disabledReason = getControlDescription({
     isArchived,
     isPending: endTurnMutation.isPending,
@@ -73,8 +73,15 @@ export function HeaderEndTurnControl({
         data-command-palette-action="end-turn"
       >
         <StepForward aria-hidden="true" />
-        <span className="max-w-24 truncate sm:max-w-none">
-          {endTurnMutation.isPending ? "Running..." : readinessLabel}
+        <span className="truncate">
+          {endTurnMutation.isPending ? (
+            "Running..."
+          ) : (
+            <>
+              End Turn
+              <span className="hidden sm:inline">{readinessSuffix}</span>
+            </>
+          )}
         </span>
       </Button>
 

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -66,9 +66,9 @@ describe("HeaderEndTurnControl", () => {
 
     renderHeaderEndTurnControl();
 
-    expect(
-      await screen.findByRole("button", { name: "End Turn · 1/2 ready" }),
-    ).toBeDefined();
+    const button = await screen.findByRole("button", { name: "End Turn" });
+
+    expect(await within(button).findByText("· 1/2 ready")).toBeDefined();
   });
 
   it("opens the confirmation dialog and runs the same end-turn mutation as the full card", async () => {
@@ -85,9 +85,7 @@ describe("HeaderEndTurnControl", () => {
 
     renderHeaderEndTurnControl();
 
-    await user.click(
-      await screen.findByRole("button", { name: "End Turn · 1/1 ready" }),
-    );
+    await user.click(await screen.findByRole("button", { name: "End Turn" }));
     await user.click(
       await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
