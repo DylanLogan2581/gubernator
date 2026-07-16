@@ -32,11 +32,13 @@ export function ManageResourceCategoriesDialog({
         <DialogHeader className="sr-only">
           <DialogTitle>Manage resource categories</DialogTitle>
         </DialogHeader>
-        <ResourceCategoriesConfigPanel
-          canAdmin={canAdmin}
-          isArchived={isArchived}
-          worldId={worldId}
-        />
+        <div className="pr-9">
+          <ResourceCategoriesConfigPanel
+            canAdmin={canAdmin}
+            isArchived={isArchived}
+            worldId={worldId}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

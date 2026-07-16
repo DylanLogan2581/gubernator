@@ -164,6 +164,7 @@ function buildColumns({
       id: "actions",
       enableSorting: false,
       header: "Actions",
+      meta: { align: "right", fit: true },
       cell: ({ row }) => {
         const job = row.original;
 

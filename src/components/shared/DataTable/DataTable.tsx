@@ -34,6 +34,8 @@ declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
     /** Right-aligns the header and cell content, e.g. for numeric columns. */
     readonly align?: "right";
+    /** Shrinks the column to its content width instead of stretching, e.g. for an actions column. */
+    readonly fit?: boolean;
   }
 }
 
@@ -163,11 +165,15 @@ export function DataTable<TData>({
                   const direction = header.column.getIsSorted();
                   const alignRight =
                     header.column.columnDef.meta?.align === "right";
+                  const fitContent = header.column.columnDef.meta?.fit === true;
                   return (
                     <TableHead
                       key={header.id}
                       aria-sort={canSort ? ariaSortFor(direction) : undefined}
-                      className={alignRight ? "text-right" : undefined}
+                      className={cn(
+                        alignRight && "text-right",
+                        fitContent && "w-px",
+                      )}
                     >
                       {header.isPlaceholder ? null : canSort ? (
                         <button

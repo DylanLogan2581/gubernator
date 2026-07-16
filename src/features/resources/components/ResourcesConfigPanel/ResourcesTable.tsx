@@ -129,6 +129,7 @@ function buildColumns({
       accessorFn: (row) => row.changeAmount,
       enableSorting: true,
       header: "Growth / decay",
+      meta: { align: "right" },
       cell: ({ row }) => {
         const resource = row.original;
         if (
@@ -150,6 +151,7 @@ function buildColumns({
       id: "actions",
       enableSorting: false,
       header: "Actions",
+      meta: { align: "right", fit: true },
       cell: ({ row }) => {
         const resource = row.original;
 
