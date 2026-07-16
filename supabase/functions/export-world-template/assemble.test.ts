@@ -238,9 +238,12 @@ function makeMinimalData(): WorldConfigData {
         id: MANAGED_POP_ID,
         name: "Sheep",
         slug: "sheep",
-        husbandry_job_id: HUSBANDRY_JOB_ID,
-        culling_job_id: CULLING_JOB_ID,
-        husbandry_workers_per_n_animals: 5,
+        managed_population_husbandry_jobs: [
+          { id: "hj-1", job_id: HUSBANDRY_JOB_ID, workers_per_n_animals: 5 },
+        ],
+        managed_population_culling_jobs: [
+          { id: "cj-1", job_id: CULLING_JOB_ID, max_cull_per_worker: 10 },
+        ],
         growth_rate: 0.05,
         maintenance_rules_json: [{ resource_id: RESOURCE_ID, amount_per_n_animals: 0.1 }],
         culling_outputs_json: [],
@@ -375,8 +378,8 @@ describe("assembleWorldTemplate", () => {
     const template = assembleWorldTemplate(makeMinimalData());
     expect(template.managed_population_types[0]).toMatchObject({
       slug: "sheep",
-      husbandry_job_slug: "husbandry",
-      culling_job_slug: "culling",
+      husbandry_jobs: [{ job_slug: "husbandry", workers_per_n_animals: 5 }],
+      culling_jobs: [{ job_slug: "culling", max_cull_per_worker: 10 }],
       icon: "sheep",
     });
   });

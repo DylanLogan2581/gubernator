@@ -249,7 +249,7 @@ export function JobAssignmentsTable({
     rows.push({
       kind: "husbandry",
       population,
-      jobName: population.husbandryJobName,
+      jobName: population.managedPopulationTypeName,
       targetId: population.id,
       targetName: population.name,
     });
@@ -260,7 +260,7 @@ export function JobAssignmentsTable({
     rows.push({
       kind: "culling",
       population,
-      jobName: population.cullingJobName,
+      jobName: population.managedPopulationTypeName,
       targetId: population.id,
       targetName: population.name,
     });

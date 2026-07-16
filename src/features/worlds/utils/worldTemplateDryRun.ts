@@ -168,15 +168,19 @@ export function computeDryRunReport(template: WorldTemplate): DryRunReport {
 
   // Check managed population types
   for (const m of template.managed_population_types) {
-    if (!jobSlugs.has(m.husbandry_job_slug)) {
-      danglingRefs.push(
-        `Managed pop type "${m.slug}" husbandry_job_slug references unknown job "${m.husbandry_job_slug}"`,
-      );
+    for (const job of m.husbandry_jobs) {
+      if (!jobSlugs.has(job.job_slug)) {
+        danglingRefs.push(
+          `Managed pop type "${m.slug}" husbandry job references unknown job "${job.job_slug}"`,
+        );
+      }
     }
-    if (!jobSlugs.has(m.culling_job_slug)) {
-      danglingRefs.push(
-        `Managed pop type "${m.slug}" culling_job_slug references unknown job "${m.culling_job_slug}"`,
-      );
+    for (const job of m.culling_jobs) {
+      if (!jobSlugs.has(job.job_slug)) {
+        danglingRefs.push(
+          `Managed pop type "${m.slug}" culling job references unknown job "${job.job_slug}"`,
+        );
+      }
     }
     for (const rule of m.maintenance_rules) {
       if (!resourceSlugs.has(rule.resource_slug)) {

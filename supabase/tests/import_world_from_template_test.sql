@@ -232,9 +232,8 @@ values
       "managed_population_types": [
         {
           "name": "Chicken", "slug": "chicken",
-          "husbandry_job_slug": "farmer",
-          "culling_job_slug": "woodcutter",
-          "husbandry_workers_per_n_animals": 10,
+          "husbandry_jobs": [{"job_slug": "farmer", "workers_per_n_animals": 10}],
+          "culling_jobs": [{"job_slug": "woodcutter", "max_cull_per_worker": 10}],
           "growth_rate": 0.05,
           "maintenance_rules": [
             {"resource_slug": "food", "amount_per_n_animals": 0.1}

@@ -170,9 +170,10 @@ export async function fetchWorldConfigData(
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
       select: [
-        "id,name,slug,husbandry_job_id,culling_job_id",
-        "husbandry_workers_per_n_animals,growth_rate",
+        "id,name,slug,growth_rate",
         "maintenance_rules_json,culling_outputs_json,regular_outputs_json,icon,icon_color,is_trashed",
+        "managed_population_husbandry_jobs(id,job_id,workers_per_n_animals)",
+        "managed_population_culling_jobs(id,job_id,max_cull_per_worker)",
       ].join(","),
     }),
     fetchRows<RawUnitTypeRow>(ctx, "unit_types", {

@@ -152,24 +152,39 @@ values
 
 -- Managed population types (needed for events constraints)
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'e8000000-0000-0000-0000-000000000001',
     'e5000000-0000-0000-0000-000000000001',
     'Managed Pop Type A',
-    'managed-pop-a',
+    'managed-pop-a'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'e8000000-0000-0000-0000-000000000001',
     'e7800000-0000-0000-0000-000000000001',
-    'e7800000-0000-0000-0000-000000000002',
     1
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'e8000000-0000-0000-0000-000000000001',
+    'e7800000-0000-0000-0000-000000000002',
+    10
   );
 
 -- ===========================================================================

@@ -45,8 +45,6 @@ type TestInstanceRow = {
   readonly managed_population_type_id: string;
   readonly managed_population_types: {
     readonly name: string;
-    readonly husbandry_job: { readonly name: string };
-    readonly culling_job: { readonly name: string };
   };
   readonly name: string;
   readonly current_count: number;
@@ -65,8 +63,6 @@ function createInstanceRow(
     managed_population_type_id: TYPE_ID_1,
     managed_population_types: {
       name: "Cattle",
-      husbandry_job: { name: "Cattle Herder" },
-      culling_job: { name: "Butcher" },
     },
     name: "North Herd",
     current_count: 100,
@@ -78,14 +74,27 @@ function createInstanceRow(
   };
 }
 
+type TestManagedPopulationHusbandryJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+type TestManagedPopulationCullingJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
+};
+
 type TestTypeRow = {
   readonly id: string;
   readonly world_id: string;
   readonly name: string;
   readonly slug: string;
-  readonly husbandry_job_id: string;
-  readonly culling_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
+  readonly managed_population_husbandry_jobs: readonly TestManagedPopulationHusbandryJobRow[];
+  readonly managed_population_culling_jobs: readonly TestManagedPopulationCullingJobRow[];
   readonly growth_rate: number;
   readonly maintenance_rules_json: unknown[];
   readonly culling_outputs_json: unknown[];
@@ -102,9 +111,22 @@ function createTypeRow(overrides: Partial<TestTypeRow> = {}): TestTypeRow {
     world_id: WORLD_ID,
     name: "Cattle",
     slug: "cattle",
-    husbandry_job_id: JOB_ID_1,
-    culling_job_id: JOB_ID_2,
-    husbandry_workers_per_n_animals: 10,
+    icon: null,
+    icon_color: null,
+    managed_population_husbandry_jobs: [
+      {
+        id: "husbandry-job-row-1",
+        job_id: JOB_ID_1,
+        workers_per_n_animals: 10,
+      },
+    ],
+    managed_population_culling_jobs: [
+      {
+        id: "culling-job-row-1",
+        job_id: JOB_ID_2,
+        max_cull_per_worker: 10,
+      },
+    ],
     growth_rate: 0.05,
     maintenance_rules_json: [],
     culling_outputs_json: [],
@@ -198,8 +220,7 @@ type TestAssignmentRow = {
     readonly id: string;
     readonly name: string;
     readonly managed_population_types: {
-      readonly husbandry_job: { readonly name: string };
-      readonly culling_job: { readonly name: string };
+      readonly name: string;
     };
   } | null;
   readonly trade_route: null;
@@ -223,8 +244,7 @@ function createAssignmentRow(
       id: INSTANCE_ID_1,
       name: "North Herd",
       managed_population_types: {
-        husbandry_job: { name: "Cattle Herder" },
-        culling_job: { name: "Butcher" },
+        name: "Cattle",
       },
     },
     trade_route: null,
@@ -1034,7 +1054,7 @@ describe("SettlementManagedPopulationsPanel", () => {
     expect(screen.getByText(/Grain: 50\.0/)).toBeDefined();
   });
 
-  it("shows husbandry job name and worker count", async () => {
+  it("shows husbandry worker count against the required count", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         instanceRows: [
@@ -1043,7 +1063,7 @@ describe("SettlementManagedPopulationsPanel", () => {
             managed_population_type_id: TYPE_ID_1,
           }),
         ],
-        typeRows: [createTypeRow({ husbandry_workers_per_n_animals: 10 })],
+        typeRows: [createTypeRow()],
         assignmentRows: [createAssignmentRow()],
       }),
     );
@@ -1051,9 +1071,9 @@ describe("SettlementManagedPopulationsPanel", () => {
     renderPanel({ canAdmin: false, canManage: false });
 
     await screen.findByText("North Herd");
-    expect(screen.getByText("Cattle Herder")).toBeDefined();
-    // required = ceil(50/10) = 5, assigned = 1
-    expect(screen.getByText("(1/5)")).toBeDefined();
+    // required = ceil(50/10) = 5 (average workersPerNAnimals across the
+    // population type's linked husbandry jobs, #1247), assigned = 1
+    expect(screen.getByText("1/5")).toBeDefined();
   });
 
   it("shows sufficient indicator when husbandry workers meet requirement", async () => {
@@ -1065,7 +1085,7 @@ describe("SettlementManagedPopulationsPanel", () => {
             managed_population_type_id: TYPE_ID_1,
           }),
         ],
-        typeRows: [createTypeRow({ husbandry_workers_per_n_animals: 10 })],
+        typeRows: [createTypeRow()],
         // 1 assignment for 50 animals / 10 = 5 required — insufficient
         assignmentRows: [
           createAssignmentRow(),
@@ -1101,7 +1121,7 @@ describe("SettlementManagedPopulationsPanel", () => {
             managed_population_type_id: TYPE_ID_1,
           }),
         ],
-        typeRows: [createTypeRow({ husbandry_workers_per_n_animals: 10 })],
+        typeRows: [createTypeRow()],
         assignmentRows: [createAssignmentRow()],
       }),
     );

@@ -147,52 +147,63 @@ values
 
 -- Active managed population type
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'e5000000-0000-0000-0000-000000000001',
     'e2000000-0000-0000-0000-000000000001',
     'CMPI Sheep',
     'cmpi-sheep',
-    'e6000000-0000-0000-0000-000000000001',
-    'e6000000-0000-0000-0000-000000000002',
-    10,
     0.05
   );
 
 -- Trashed managed population type
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate,
-    is_trashed
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate, is_trashed)
 values
   (
     'e5000000-0000-0000-0000-000000000002',
     'e2000000-0000-0000-0000-000000000001',
     'CMPI Old Goat',
     'cmpi-old-goat',
-    'e6000000-0000-0000-0000-000000000003',
-    'e6000000-0000-0000-0000-000000000004',
-    5,
     0.02,
     true
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'e5000000-0000-0000-0000-000000000001',
+    'e6000000-0000-0000-0000-000000000001',
+    10
+  ),
+  (
+    'e5000000-0000-0000-0000-000000000002',
+    'e6000000-0000-0000-0000-000000000003',
+    5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'e5000000-0000-0000-0000-000000000001',
+    'e6000000-0000-0000-0000-000000000002',
+    10
+  ),
+  (
+    'e5000000-0000-0000-0000-000000000002',
+    'e6000000-0000-0000-0000-000000000004',
+    10
   );
 
 -- Nation manager citizen

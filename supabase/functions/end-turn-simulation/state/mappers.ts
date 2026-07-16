@@ -7,6 +7,9 @@ import {
   isDepositRow,
   isDepositTypeJobRow,
   isDepositTypeRow,
+  isManagedPopCullingJobRow,
+  isManagedPopHusbandryJobRow,
+  isManagedPopTypeRow,
   isTierRow,
 } from "./rowTypes.ts";
 
@@ -22,6 +25,8 @@ import type {
   SupabaseEventEffectRow,
   SupabaseEventRow,
   SupabaseJobRow,
+  SupabaseManagedPopCullingJobRow,
+  SupabaseManagedPopHusbandryJobRow,
   SupabaseManagedPopRow,
   SupabaseManagedPopTypeRow,
   SupabaseNationCurrencyLedgerRow,
@@ -61,6 +66,8 @@ import type {
   SimJob,
   SimJobIoEntry,
   SimManagedPopulation,
+  SimManagedPopulationCullingJob,
+  SimManagedPopulationHusbandryJob,
   SimManagedPopulationType,
   SimNation,
   SimNationCurrency,
@@ -274,15 +281,34 @@ export function toSimManagedPopType(
   row: SupabaseManagedPopTypeRow,
 ): SimManagedPopulationType {
   return {
-    cullingJobId: row.culling_job_id,
     cullingOutputsJson: toSimPopResourceEntries(row.culling_outputs_json),
     growthRate: row.growth_rate,
-    husbandryJobId: row.husbandry_job_id,
-    husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
     id: row.id,
     maintenanceRulesJson: toSimPopResourceEntries(row.maintenance_rules_json),
     name: row.name,
     regularOutputsJson: toSimPopResourceEntries(row.regular_outputs_json),
+  };
+}
+
+export function toSimManagedPopHusbandryJob(
+  row: SupabaseManagedPopHusbandryJobRow,
+): SimManagedPopulationHusbandryJob {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    managedPopulationTypeId: row.managed_population_type_id,
+    workersPerNAnimals: row.workers_per_n_animals,
+  };
+}
+
+export function toSimManagedPopCullingJob(
+  row: SupabaseManagedPopCullingJobRow,
+): SimManagedPopulationCullingJob {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    managedPopulationTypeId: row.managed_population_type_id,
+    maxCullPerWorker: row.max_cull_per_worker,
   };
 }
 
@@ -617,6 +643,31 @@ export function toDepositTypesAndJobs(rows: readonly unknown[]): {
   }
 
   return { depositTypeJobs, depositTypes };
+}
+
+export function toManagedPopulationTypesAndJobs(rows: readonly unknown[]): {
+  readonly managedPopulationCullingJobs: SimManagedPopulationCullingJob[];
+  readonly managedPopulationHusbandryJobs: SimManagedPopulationHusbandryJob[];
+  readonly managedPopulationTypes: SimManagedPopulationType[];
+} {
+  const managedPopulationTypes: SimManagedPopulationType[] = [];
+  const managedPopulationHusbandryJobs: SimManagedPopulationHusbandryJob[] = [];
+  const managedPopulationCullingJobs: SimManagedPopulationCullingJob[] = [];
+
+  for (const raw of rows) {
+    if (!isManagedPopTypeRow(raw)) continue;
+    managedPopulationTypes.push(toSimManagedPopType(raw));
+    for (const job of raw.managed_population_husbandry_jobs) {
+      if (!isManagedPopHusbandryJobRow(job)) continue;
+      managedPopulationHusbandryJobs.push(toSimManagedPopHusbandryJob(job));
+    }
+    for (const job of raw.managed_population_culling_jobs) {
+      if (!isManagedPopCullingJobRow(job)) continue;
+      managedPopulationCullingJobs.push(toSimManagedPopCullingJob(job));
+    }
+  }
+
+  return { managedPopulationCullingJobs, managedPopulationHusbandryJobs, managedPopulationTypes };
 }
 
 export function toDeposits(rows: readonly unknown[]): SimDeposit[] {

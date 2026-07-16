@@ -125,13 +125,22 @@ export type RawPopulationResourceRow = {
   readonly amount_per_n_animals: number;
 };
 
+export type RawManagedPopulationHusbandryJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+export type RawManagedPopulationCullingJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
+};
+
 export type RawManagedPopulationTypeRow = {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
-  readonly husbandry_job_id: string;
-  readonly culling_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
   readonly growth_rate: number;
   readonly maintenance_rules_json: readonly RawPopulationResourceRow[];
   readonly culling_outputs_json: readonly RawPopulationResourceRow[];
@@ -139,6 +148,8 @@ export type RawManagedPopulationTypeRow = {
   readonly icon: string | null;
   readonly icon_color: number | null;
   readonly is_trashed: boolean;
+  readonly managed_population_husbandry_jobs: readonly RawManagedPopulationHusbandryJobRow[];
+  readonly managed_population_culling_jobs: readonly RawManagedPopulationCullingJobRow[];
 };
 
 export type RawResourceCategoryRow = {
@@ -376,9 +387,14 @@ export type WorldTemplateOutput = {
   readonly managed_population_types: readonly {
     readonly name: string;
     readonly slug: string;
-    readonly husbandry_job_slug: string;
-    readonly culling_job_slug: string;
-    readonly husbandry_workers_per_n_animals: number;
+    readonly husbandry_jobs: readonly {
+      readonly job_slug: string;
+      readonly workers_per_n_animals: number;
+    }[];
+    readonly culling_jobs: readonly {
+      readonly job_slug: string;
+      readonly max_cull_per_worker: number;
+    }[];
     readonly growth_rate: number;
     readonly maintenance_rules: readonly {
       readonly resource_slug: string;

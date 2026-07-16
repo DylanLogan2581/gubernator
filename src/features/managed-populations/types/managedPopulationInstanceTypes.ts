@@ -3,9 +3,7 @@ export type ManagedPopulationInstanceStatus = "active" | "extinct";
 export type ManagedPopulationInstance = {
   readonly configuredCullQuantity: number;
   readonly createdAt: string;
-  readonly cullingJobName: string;
   readonly currentCount: number;
-  readonly husbandryJobName: string;
   readonly id: string;
   readonly managedPopulationTypeId: string;
   readonly managedPopulationTypeName: string;

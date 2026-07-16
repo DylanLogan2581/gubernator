@@ -174,9 +174,8 @@ const BASE_TEMPLATE: WorldTemplate = {
     {
       name: "Sheep",
       slug: "sheep",
-      husbandry_job_slug: "farming",
-      culling_job_slug: "farming",
-      husbandry_workers_per_n_animals: 5,
+      husbandry_jobs: [{ job_slug: "farming", workers_per_n_animals: 5 }],
+      culling_jobs: [{ job_slug: "farming", max_cull_per_worker: 10 }],
       growth_rate: 0.05,
       maintenance_rules: [
         { resource_slug: "grain", amount_per_n_animals: 0.1 },
@@ -353,7 +352,8 @@ describe("computeDryRunReport", () => {
       { resource_slug: "missing-resource", amount_per_worker: 2 },
     ];
     template.deposit_types[0].jobs[0].job_slug = "missing-job";
-    template.managed_population_types[0].husbandry_job_slug = "missing-job";
+    template.managed_population_types[0].husbandry_jobs[0].job_slug =
+      "missing-job";
     const report = computeDryRunReport(template);
     expect(report.danglingRefs).toContain(
       'Job "farming" output references unknown resource "missing-resource"',
@@ -362,7 +362,7 @@ describe("computeDryRunReport", () => {
       'Deposit type "iron-vein" references unknown job "missing-job"',
     );
     expect(report.danglingRefs).toContain(
-      'Managed pop type "sheep" husbandry_job_slug references unknown job "missing-job"',
+      'Managed pop type "sheep" husbandry job references unknown job "missing-job"',
     );
   });
 });

@@ -2148,6 +2148,96 @@ export type Database = {
           },
         ];
       };
+      managed_population_culling_jobs: {
+        Row: {
+          created_at: string;
+          id: string;
+          job_id: string;
+          managed_population_type_id: string;
+          max_cull_per_worker: number;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          job_id: string;
+          managed_population_type_id: string;
+          max_cull_per_worker: number;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          job_id?: string;
+          managed_population_type_id?: string;
+          max_cull_per_worker?: number;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "managed_population_culling_jobs_job_world_fk";
+            columns: ["job_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "managed_population_culling_jobs_type_world_fk";
+            columns: ["managed_population_type_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id", "world_id"];
+          },
+        ];
+      };
+      managed_population_husbandry_jobs: {
+        Row: {
+          created_at: string;
+          id: string;
+          job_id: string;
+          managed_population_type_id: string;
+          updated_at: string;
+          workers_per_n_animals: number;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          job_id: string;
+          managed_population_type_id: string;
+          updated_at?: string;
+          workers_per_n_animals: number;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          job_id?: string;
+          managed_population_type_id?: string;
+          updated_at?: string;
+          workers_per_n_animals?: number;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "managed_population_husbandry_jobs_job_world_fk";
+            columns: ["job_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "managed_population_husbandry_jobs_type_world_fk";
+            columns: ["managed_population_type_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id", "world_id"];
+          },
+        ];
+      };
       managed_population_instances: {
         Row: {
           configured_cull_quantity: number;
@@ -2202,11 +2292,8 @@ export type Database = {
       managed_population_types: {
         Row: {
           created_at: string;
-          culling_job_id: string;
           culling_outputs_json: Json;
           growth_rate: number;
-          husbandry_job_id: string;
-          husbandry_workers_per_n_animals: number;
           icon: string | null;
           icon_color: number | null;
           id: string;
@@ -2220,11 +2307,8 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
-          culling_job_id: string;
           culling_outputs_json?: Json;
           growth_rate?: number;
-          husbandry_job_id: string;
-          husbandry_workers_per_n_animals: number;
           icon?: string | null;
           icon_color?: number | null;
           id?: string;
@@ -2238,11 +2322,8 @@ export type Database = {
         };
         Update: {
           created_at?: string;
-          culling_job_id?: string;
           culling_outputs_json?: Json;
           growth_rate?: number;
-          husbandry_job_id?: string;
-          husbandry_workers_per_n_animals?: number;
           icon?: string | null;
           icon_color?: number | null;
           id?: string;
@@ -2255,20 +2336,6 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "managed_population_types_culling_job_fk";
-            columns: ["culling_job_id"];
-            isOneToOne: false;
-            referencedRelation: "job_definitions";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "managed_population_types_husbandry_job_fk";
-            columns: ["husbandry_job_id"];
-            isOneToOne: false;
-            referencedRelation: "job_definitions";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "managed_population_types_world_id_fkey";
             columns: ["world_id"];
@@ -7364,11 +7431,8 @@ export type Database = {
         Args: { p_mpt_id: string; p_world_id: string };
         Returns: {
           created_at: string;
-          culling_job_id: string;
           culling_outputs_json: Json;
           growth_rate: number;
-          husbandry_job_id: string;
-          husbandry_workers_per_n_animals: number;
           icon: string | null;
           icon_color: number | null;
           id: string;
@@ -8120,11 +8184,8 @@ export type Database = {
         Args: { p_mpt_id: string; p_world_id: string };
         Returns: {
           created_at: string;
-          culling_job_id: string;
           culling_outputs_json: Json;
           growth_rate: number;
-          husbandry_job_id: string;
-          husbandry_workers_per_n_animals: number;
           icon: string | null;
           icon_color: number | null;
           id: string;

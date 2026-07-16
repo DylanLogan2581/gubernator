@@ -307,24 +307,39 @@ values
 
 -- Managed population type in World B
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'e1a00000-0000-0000-0000-000000000001',
     'e1200000-0000-0000-0000-000000000002',
     'ATTCW Flock Type B',
-    'attcw-flock-type-b',
+    'attcw-flock-type-b'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'e1a00000-0000-0000-0000-000000000001',
     'e1900000-0000-0000-0000-000000000002',
-    'e1900000-0000-0000-0000-000000000003',
     5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'e1a00000-0000-0000-0000-000000000001',
+    'e1900000-0000-0000-0000-000000000003',
+    10
   );
 
 -- Managed population instance in World B's settlement B1

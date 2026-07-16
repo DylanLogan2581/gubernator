@@ -88,15 +88,14 @@ describe("toCitizenAssignment", () => {
     expect(result.job).toBeNull();
   });
 
-  it("maps a husbandry assignment with joined population type and job names", () => {
+  it("maps a husbandry assignment with joined population type name", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "husbandry",
       managed_population_instance: {
         id: "pop-1",
         managed_population_types: {
-          culling_job: { name: "Slaughter" },
-          husbandry_job: { name: "Shepherd" },
+          name: "Sheep",
         },
         name: "Flock A",
       },
@@ -106,23 +105,21 @@ describe("toCitizenAssignment", () => {
 
     expect(result.assignmentType).toBe("husbandry");
     expect(result.managedPopulationInstance).toEqual({
-      cullingJobName: "Slaughter",
-      husbandryJobName: "Shepherd",
       id: "pop-1",
+      managedPopulationTypeName: "Sheep",
       name: "Flock A",
     });
     expect(result.job).toBeNull();
   });
 
-  it("maps a culling assignment with joined population type and job names", () => {
+  it("maps a culling assignment with joined population type name", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "culling",
       managed_population_instance: {
         id: "pop-1",
         managed_population_types: {
-          culling_job: { name: "Slaughter" },
-          husbandry_job: { name: "Shepherd" },
+          name: "Sheep",
         },
         name: "Flock A",
       },
@@ -131,8 +128,9 @@ describe("toCitizenAssignment", () => {
     const result = toCitizenAssignment(row);
 
     expect(result.assignmentType).toBe("culling");
-    expect(result.managedPopulationInstance?.cullingJobName).toBe("Slaughter");
-    expect(result.managedPopulationInstance?.husbandryJobName).toBe("Shepherd");
+    expect(result.managedPopulationInstance?.managedPopulationTypeName).toBe(
+      "Sheep",
+    );
     expect(result.managedPopulationInstance?.name).toBe("Flock A");
   });
 

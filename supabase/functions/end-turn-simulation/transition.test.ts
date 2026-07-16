@@ -76,6 +76,8 @@ function makeBaseInput(
     educationLevels: [],
     events: [],
     jobs: [],
+    managedPopulationCullingJobs: [],
+    managedPopulationHusbandryJobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
     nationCurrencies: [],

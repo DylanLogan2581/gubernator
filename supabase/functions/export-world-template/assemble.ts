@@ -267,37 +267,43 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
   // Managed population types (non-trashed, sorted by slug asc from query)
   const managedPopulationTypes = data.managedPopulationTypes
     .filter((m) => !m.is_trashed)
-    .flatMap((m) => {
-      const husbandryJobSlug = jobSlugById.get(m.husbandry_job_id);
-      const cullingJobSlug = jobSlugById.get(m.culling_job_id);
-      if (husbandryJobSlug === undefined || cullingJobSlug === undefined) return [];
-      return [
-        {
-          name: m.name,
-          slug: m.slug,
-          husbandry_job_slug: husbandryJobSlug,
-          culling_job_slug: cullingJobSlug,
-          husbandry_workers_per_n_animals: m.husbandry_workers_per_n_animals,
-          growth_rate: m.growth_rate,
-          maintenance_rules: m.maintenance_rules_json.flatMap((e) => {
-            const resourceSlug = resourceSlugById.get(e.resource_id);
-            if (resourceSlug === undefined) return [];
-            return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
-          }),
-          culling_outputs: m.culling_outputs_json.flatMap((e) => {
-            const resourceSlug = resourceSlugById.get(e.resource_id);
-            if (resourceSlug === undefined) return [];
-            return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
-          }),
-          regular_outputs: m.regular_outputs_json.flatMap((e) => {
-            const resourceSlug = resourceSlugById.get(e.resource_id);
-            if (resourceSlug === undefined) return [];
-            return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
-          }),
-          icon: m.icon,
-          icon_color: m.icon_color,
-        },
-      ];
+    .map((m) => {
+      return {
+        name: m.name,
+        slug: m.slug,
+        husbandry_jobs: m.managed_population_husbandry_jobs.flatMap((hj) => {
+          const jobSlug = jobSlugById.get(hj.job_id);
+          if (jobSlug === undefined) return [];
+          return [
+            { job_slug: jobSlug, workers_per_n_animals: hj.workers_per_n_animals },
+          ];
+        }),
+        culling_jobs: m.managed_population_culling_jobs.flatMap((cj) => {
+          const jobSlug = jobSlugById.get(cj.job_id);
+          if (jobSlug === undefined) return [];
+          return [
+            { job_slug: jobSlug, max_cull_per_worker: cj.max_cull_per_worker },
+          ];
+        }),
+        growth_rate: m.growth_rate,
+        maintenance_rules: m.maintenance_rules_json.flatMap((e) => {
+          const resourceSlug = resourceSlugById.get(e.resource_id);
+          if (resourceSlug === undefined) return [];
+          return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
+        }),
+        culling_outputs: m.culling_outputs_json.flatMap((e) => {
+          const resourceSlug = resourceSlugById.get(e.resource_id);
+          if (resourceSlug === undefined) return [];
+          return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
+        }),
+        regular_outputs: m.regular_outputs_json.flatMap((e) => {
+          const resourceSlug = resourceSlugById.get(e.resource_id);
+          if (resourceSlug === undefined) return [];
+          return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
+        }),
+        icon: m.icon,
+        icon_color: m.icon_color,
+      };
     });
 
   // Unit types (sorted by name asc from query)

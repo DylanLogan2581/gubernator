@@ -28,6 +28,8 @@ const DEPOSIT_TYPE_JOB_ID = "00000000-0000-0000-0000-000000000063";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000070";
 const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000080";
 const MANAGED_POP_ID = "00000000-0000-0000-0000-000000000081";
+const MANAGED_POP_HUSBANDRY_JOB_ID = "00000000-0000-0000-0000-000000000082";
+const MANAGED_POP_CULLING_JOB_ID = "00000000-0000-0000-0000-000000000083";
 const TRADE_ROUTE_ID = "00000000-0000-0000-0000-000000000090";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000100";
 const PARTNER_ID = "00000000-0000-0000-0000-000000000101";
@@ -273,16 +275,29 @@ function makeAllSuccessResponses(): Record<
     "/rest/v1/managed_population_types": {
       body: [
         {
-          culling_job_id: JOB_ID,
           culling_outputs_json: [
             { amount_per_n_animals: 1, resource_id: RESOURCE_ID },
           ],
           growth_rate: 0.05,
-          husbandry_job_id: JOB_ID,
-          husbandry_workers_per_n_animals: 2,
           id: MANAGED_POP_TYPE_ID,
           maintenance_rules_json: [
             { amount_per_n_animals: 0.5, resource_id: FOOD_ID },
+          ],
+          managed_population_culling_jobs: [
+            {
+              id: MANAGED_POP_CULLING_JOB_ID,
+              job_id: JOB_ID,
+              managed_population_type_id: MANAGED_POP_TYPE_ID,
+              max_cull_per_worker: 5,
+            },
+          ],
+          managed_population_husbandry_jobs: [
+            {
+              id: MANAGED_POP_HUSBANDRY_JOB_ID,
+              job_id: JOB_ID,
+              managed_population_type_id: MANAGED_POP_TYPE_ID,
+              workers_per_n_animals: 2,
+            },
           ],
           name: "Sheep",
           regular_outputs_json: [],
@@ -632,6 +647,22 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(mpt.cullingOutputsJson).toEqual([
       { amountPerNAnimals: 1, resourceId: RESOURCE_ID },
     ]);
+
+    // Managed population husbandry / culling job links
+    expect(input.managedPopulationHusbandryJobs).toHaveLength(1);
+    expect(input.managedPopulationHusbandryJobs[0]).toEqual({
+      id: MANAGED_POP_HUSBANDRY_JOB_ID,
+      jobId: JOB_ID,
+      managedPopulationTypeId: MANAGED_POP_TYPE_ID,
+      workersPerNAnimals: 2,
+    });
+    expect(input.managedPopulationCullingJobs).toHaveLength(1);
+    expect(input.managedPopulationCullingJobs[0]).toEqual({
+      id: MANAGED_POP_CULLING_JOB_ID,
+      jobId: JOB_ID,
+      managedPopulationTypeId: MANAGED_POP_TYPE_ID,
+      maxCullPerWorker: 5,
+    });
 
     // Managed populations
     expect(input.managedPopulations).toHaveLength(1);

@@ -240,16 +240,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate
+      world_id, name, slug, growth_rate
     )
     values (
       '92000000-0000-0000-0000-000000000002',
       'Alpha Into Beta Herd',
       'alpha-into-beta-herd',
-      '94000000-0000-0000-0000-000000000002',
-      '94000000-0000-0000-0000-000000000003',
-      1,
       0
     )
     $test$,

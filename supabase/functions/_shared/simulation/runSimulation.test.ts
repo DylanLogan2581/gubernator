@@ -63,6 +63,8 @@ function makeInput(
     educationLevels: [],
     events: [],
     jobs: [],
+    managedPopulationCullingJobs: [],
+    managedPopulationHusbandryJobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
     nationCurrencies: [],
@@ -279,11 +281,8 @@ describe("runSimulation — managed_population_change event delta", () => {
     const input = makeInput({
       managedPopulationTypes: [
         {
-          cullingJobId: "cull-job",
           cullingOutputsJson: [],
           growthRate: 0,
-          husbandryJobId: "husb-job",
-          husbandryWorkersPerNAnimals: 0,
           id: "mpt1",
           maintenanceRulesJson: [],
           name: "Chickens",
@@ -329,11 +328,8 @@ describe("runSimulation — managed_population_change event delta", () => {
     const input = makeInput({
       managedPopulationTypes: [
         {
-          cullingJobId: "cull-job",
           cullingOutputsJson: [],
           growthRate: 0,
-          husbandryJobId: "husb-job",
-          husbandryWorkersPerNAnimals: 0,
           id: "mpt1",
           maintenanceRulesJson: [],
           name: "Chickens",

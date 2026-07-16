@@ -145,26 +145,40 @@ values
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'fb500000-0000-0000-0000-000000000001',
     'fb200000-0000-0000-0000-000000000001',
     'RMPI Sheep',
     'rmpi-sheep',
-    'fb600000-0000-0000-0000-000000000001',
-    'fb600000-0000-0000-0000-000000000002',
-    10,
     0.05
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'fb500000-0000-0000-0000-000000000001',
+    'fb600000-0000-0000-0000-000000000001',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'fb500000-0000-0000-0000-000000000001',
+    'fb600000-0000-0000-0000-000000000002',
+    10
   );
 
 -- Managed population instances:

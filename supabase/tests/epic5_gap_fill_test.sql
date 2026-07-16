@@ -274,26 +274,40 @@ values
 
 -- Managed population type
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'a5620000-0000-0000-0000-000000000001',
     'a5100000-0000-0000-0000-000000000001',
     'A5 Cattle',
     'a5-cattle',
-    'a5600000-0000-0000-0000-000000000003',
-    'a5600000-0000-0000-0000-000000000004',
-    5,
     0.1
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'a5620000-0000-0000-0000-000000000001',
+    'a5600000-0000-0000-0000-000000000003',
+    5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'a5620000-0000-0000-0000-000000000001',
+    'a5600000-0000-0000-0000-000000000004',
+    10
   );
 
 -- Building blueprint + tier

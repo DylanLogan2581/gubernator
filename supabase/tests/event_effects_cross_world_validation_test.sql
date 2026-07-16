@@ -231,33 +231,55 @@ values
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'ee900000-0000-0000-0000-000000000001',
     'ee200000-0000-0000-0000-000000000001',
     'EECW Flock Type A',
-    'eecw-flock-type-a',
-    'ee600000-0000-0000-0000-000000000005',
-    'ee600000-0000-0000-0000-000000000006',
-    5
+    'eecw-flock-type-a'
   ),
   (
     'ee900000-0000-0000-0000-000000000002',
     'ee200000-0000-0000-0000-000000000002',
     'EECW Flock Type B',
-    'eecw-flock-type-b',
-    'ee600000-0000-0000-0000-000000000007',
-    'ee600000-0000-0000-0000-000000000008',
+    'eecw-flock-type-b'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'ee900000-0000-0000-0000-000000000001',
+    'ee600000-0000-0000-0000-000000000005',
     5
+  ),
+  (
+    'ee900000-0000-0000-0000-000000000002',
+    'ee600000-0000-0000-0000-000000000007',
+    5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'ee900000-0000-0000-0000-000000000001',
+    'ee600000-0000-0000-0000-000000000006',
+    10
+  ),
+  (
+    'ee900000-0000-0000-0000-000000000002',
+    'ee600000-0000-0000-0000-000000000008',
+    10
   );
 
 insert into

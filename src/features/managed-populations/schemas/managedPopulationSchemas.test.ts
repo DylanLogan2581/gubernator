@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   createManagedPopulationTypeInputSchema,
   hardDeleteManagedPopulationTypeInputSchema,
+  managedPopulationCullingJobSchema,
+  managedPopulationHusbandryJobSchema,
   populationResourceEntrySchema,
   restoreManagedPopulationTypeInputSchema,
   softDeleteManagedPopulationTypeInputSchema,
@@ -13,13 +15,14 @@ const MANAGED_POPULATION_TYPE_ID = "11111111-1111-1111-1111-111111111111";
 const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 const HUSBANDRY_JOB_ID = "33333333-3333-3333-3333-333333333333";
 const CULLING_JOB_ID = "44444444-4444-4444-4444-444444444444";
+const HUSBANDRY_JOB_ID_2 = "66666666-6666-6666-6666-666666666666";
+const CULLING_JOB_ID_2 = "77777777-7777-7777-7777-777777777777";
 const RESOURCE_ID = "55555555-5555-5555-5555-555555555555";
 
 const VALID_CREATE_INPUT = {
-  cullingJobId: CULLING_JOB_ID,
+  cullingJobs: [{ jobId: CULLING_JOB_ID, maxCullPerWorker: 10 }],
   growthRate: 0.05,
-  husbandryJobId: HUSBANDRY_JOB_ID,
-  husbandryWorkersPerNAnimals: 2,
+  husbandryJobs: [{ jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 2 }],
   name: "Cattle",
   slug: "cattle",
   worldId: WORLD_ID,
@@ -78,10 +81,111 @@ describe("populationResourceEntrySchema", () => {
   });
 });
 
+describe("managedPopulationHusbandryJobSchema", () => {
+  it("accepts a valid job entry", () => {
+    const result = managedPopulationHusbandryJobSchema.safeParse({
+      jobId: HUSBANDRY_JOB_ID,
+      workersPerNAnimals: 2,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects workersPerNAnimals of zero", () => {
+    const result = managedPopulationHusbandryJobSchema.safeParse({
+      jobId: HUSBANDRY_JOB_ID,
+      workersPerNAnimals: 0,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-integer workersPerNAnimals", () => {
+    const result = managedPopulationHusbandryJobSchema.safeParse({
+      jobId: HUSBANDRY_JOB_ID,
+      workersPerNAnimals: 1.5,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid jobId", () => {
+    const result = managedPopulationHusbandryJobSchema.safeParse({
+      jobId: "not-a-uuid",
+      workersPerNAnimals: 2,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("managedPopulationCullingJobSchema", () => {
+  it("accepts a valid job entry", () => {
+    const result = managedPopulationCullingJobSchema.safeParse({
+      jobId: CULLING_JOB_ID,
+      maxCullPerWorker: 10,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts zero maxCullPerWorker", () => {
+    const result = managedPopulationCullingJobSchema.safeParse({
+      jobId: CULLING_JOB_ID,
+      maxCullPerWorker: 0,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects negative maxCullPerWorker", () => {
+    const result = managedPopulationCullingJobSchema.safeParse({
+      jobId: CULLING_JOB_ID,
+      maxCullPerWorker: -1,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-integer maxCullPerWorker", () => {
+    const result = managedPopulationCullingJobSchema.safeParse({
+      jobId: CULLING_JOB_ID,
+      maxCullPerWorker: 1.5,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid jobId", () => {
+    const result = managedPopulationCullingJobSchema.safeParse({
+      jobId: "not-a-uuid",
+      maxCullPerWorker: 10,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("createManagedPopulationTypeInputSchema", () => {
   it("accepts a valid minimal input", () => {
     const result =
       createManagedPopulationTypeInputSchema.safeParse(VALID_CREATE_INPUT);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts input with multiple husbandry and culling jobs", () => {
+    const result = createManagedPopulationTypeInputSchema.safeParse({
+      ...VALID_CREATE_INPUT,
+      cullingJobs: [
+        { jobId: CULLING_JOB_ID, maxCullPerWorker: 10 },
+        { jobId: CULLING_JOB_ID_2, maxCullPerWorker: 20 },
+      ],
+      husbandryJobs: [
+        { jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 2 },
+        { jobId: HUSBANDRY_JOB_ID_2, workersPerNAnimals: 4 },
+      ],
+    });
 
     expect(result.success).toBe(true);
   });
@@ -131,22 +235,56 @@ describe("createManagedPopulationTypeInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects husbandryWorkersPerNAnimals of zero", () => {
+  it("rejects an empty husbandryJobs array", () => {
     const result = createManagedPopulationTypeInputSchema.safeParse({
       ...VALID_CREATE_INPUT,
-      husbandryWorkersPerNAnimals: 0,
+      husbandryJobs: [],
     });
 
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-integer husbandryWorkersPerNAnimals", () => {
+  it("rejects an empty cullingJobs array", () => {
     const result = createManagedPopulationTypeInputSchema.safeParse({
       ...VALID_CREATE_INPUT,
-      husbandryWorkersPerNAnimals: 1.5,
+      cullingJobs: [],
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate jobIds within husbandryJobs", () => {
+    const result = createManagedPopulationTypeInputSchema.safeParse({
+      ...VALID_CREATE_INPUT,
+      husbandryJobs: [
+        { jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 2 },
+        { jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 3 },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate jobIds within cullingJobs", () => {
+    const result = createManagedPopulationTypeInputSchema.safeParse({
+      ...VALID_CREATE_INPUT,
+      cullingJobs: [
+        { jobId: CULLING_JOB_ID, maxCullPerWorker: 10 },
+        { jobId: CULLING_JOB_ID, maxCullPerWorker: 20 },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts the same jobId used as both a husbandry and a culling job", () => {
+    const result = createManagedPopulationTypeInputSchema.safeParse({
+      ...VALID_CREATE_INPUT,
+      cullingJobs: [{ jobId: HUSBANDRY_JOB_ID, maxCullPerWorker: 10 }],
+      husbandryJobs: [{ jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 2 }],
+    });
+
+    expect(result.success).toBe(true);
   });
 
   it("rejects a blank name", () => {
@@ -176,24 +314,6 @@ describe("createManagedPopulationTypeInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an invalid husbandryJobId", () => {
-    const result = createManagedPopulationTypeInputSchema.safeParse({
-      ...VALID_CREATE_INPUT,
-      husbandryJobId: "not-a-uuid",
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects an invalid cullingJobId", () => {
-    const result = createManagedPopulationTypeInputSchema.safeParse({
-      ...VALID_CREATE_INPUT,
-      cullingJobId: "not-a-uuid",
-    });
-
-    expect(result.success).toBe(false);
-  });
-
   it("rejects an invalid worldId", () => {
     const result = createManagedPopulationTypeInputSchema.safeParse({
       ...VALID_CREATE_INPUT,
@@ -210,21 +330,6 @@ describe("createManagedPopulationTypeInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
-  });
-
-  it("rejects when husbandryJobId equals cullingJobId", () => {
-    const result = createManagedPopulationTypeInputSchema.safeParse({
-      ...VALID_CREATE_INPUT,
-      cullingJobId: HUSBANDRY_JOB_ID,
-      husbandryJobId: HUSBANDRY_JOB_ID,
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.flatten().fieldErrors.cullingJobId).toContain(
-        "Husbandry job and culling job must be different.",
-      );
-    }
   });
 });
 
@@ -257,6 +362,46 @@ describe("updateManagedPopulationTypeInputSchema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("accepts a partial update with only husbandryJobs", () => {
+    const result = updateManagedPopulationTypeInputSchema.safeParse({
+      husbandryJobs: [{ jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 3 }],
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a partial update with only cullingJobs", () => {
+    const result = updateManagedPopulationTypeInputSchema.safeParse({
+      cullingJobs: [{ jobId: CULLING_JOB_ID, maxCullPerWorker: 15 }],
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty husbandryJobs array on update", () => {
+    const result = updateManagedPopulationTypeInputSchema.safeParse({
+      husbandryJobs: [],
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an empty cullingJobs array on update", () => {
+    const result = updateManagedPopulationTypeInputSchema.safeParse({
+      cullingJobs: [],
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it("rejects an update with no updatable fields", () => {
@@ -292,32 +437,6 @@ describe("updateManagedPopulationTypeInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
-  });
-
-  it("rejects when both job ids are provided and equal", () => {
-    const result = updateManagedPopulationTypeInputSchema.safeParse({
-      cullingJobId: HUSBANDRY_JOB_ID,
-      husbandryJobId: HUSBANDRY_JOB_ID,
-      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.flatten().fieldErrors.cullingJobId).toContain(
-        "Husbandry job and culling job must be different.",
-      );
-    }
-  });
-
-  it("accepts when only one job id is provided", () => {
-    const result = updateManagedPopulationTypeInputSchema.safeParse({
-      husbandryJobId: HUSBANDRY_JOB_ID,
-      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
   });
 });
 

@@ -77,6 +77,8 @@ export function makeInputState(
     educationLevels: [],
     events: [],
     jobs: [],
+    managedPopulationCullingJobs: [],
+    managedPopulationHusbandryJobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
     nationCurrencies: [],

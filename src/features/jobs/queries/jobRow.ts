@@ -36,11 +36,13 @@ export const JOB_SELECT = [
   "linked_deposit_type_id,linked_managed_population_type_id,required_education_level_id",
   "inputs_json,outputs_json,is_trashed,created_at,updated_at",
   // A job is "active" if it's still linked from any deposit type's job list
-  // (deposit_type_jobs, #1246) — replaces the old one-job-per-deposit-type
-  // deposit_types!deposit_types_job_id_fk embed.
+  // (deposit_type_jobs, #1246) or any managed population type's husbandry/
+  // culling job list (managed_population_husbandry_jobs /
+  // managed_population_culling_jobs, #1247) — replaces the old
+  // one-job-per-deposit-type / one-job-per-population-type embeds.
   "deposit_type_jobs!deposit_type_jobs_job_world_fk(id)",
-  "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
-  "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
+  "husbandry_mpt:managed_population_husbandry_jobs!managed_population_husbandry_jobs_job_world_fk(id)",
+  "culling_mpt:managed_population_culling_jobs!managed_population_culling_jobs_job_world_fk(id)",
   // Embedded solely so the page query can order by education level rank
   // (see getJobsPage); not surfaced on JobDefinition.
   "education_levels!job_definitions_required_education_level_fk(rank)",

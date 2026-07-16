@@ -139,9 +139,8 @@ const VALID_TEMPLATE = {
     {
       name: "Sheep",
       slug: "sheep",
-      husbandry_job_slug: "husbandry",
-      culling_job_slug: "culling",
-      husbandry_workers_per_n_animals: 5,
+      husbandry_jobs: [{ job_slug: "husbandry", workers_per_n_animals: 5 }],
+      culling_jobs: [{ job_slug: "culling", max_cull_per_worker: 10 }],
       growth_rate: 0.05,
       maintenance_rules: [
         { resource_slug: "grain", amount_per_n_animals: 0.1 },
@@ -438,6 +437,90 @@ describe("worldTemplateSchema", () => {
         worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
       },
     ]);
+  });
+
+  it("accepts a managed population type with multiple husbandry and culling jobs", () => {
+    const withMultipleJobs = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          ...VALID_TEMPLATE.managed_population_types[0],
+          husbandry_jobs: [
+            { job_slug: "husbandry", workers_per_n_animals: 5 },
+            { job_slug: "senior-husbandry", workers_per_n_animals: 10 },
+          ],
+          culling_jobs: [
+            { job_slug: "culling", max_cull_per_worker: 10 },
+            { job_slug: "skilled-culling", max_cull_per_worker: 20 },
+          ],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withMultipleJobs);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(
+      result.data?.managed_population_types[0]?.husbandry_jobs,
+    ).toHaveLength(2);
+    expect(result.data?.managed_population_types[0]?.culling_jobs).toHaveLength(
+      2,
+    );
+  });
+
+  it("is lenient toward legacy single-job managed population type templates (husbandry_job_slug/culling_job_slug flattened)", () => {
+    const legacyShape = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          name: "Sheep",
+          slug: "sheep",
+          husbandry_job_slug: "husbandry",
+          culling_job_slug: "culling",
+          husbandry_workers_per_n_animals: 5,
+          growth_rate: 0.05,
+          maintenance_rules: [
+            { resource_slug: "grain", amount_per_n_animals: 0.1 },
+          ],
+          culling_outputs: [],
+          regular_outputs: [],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(legacyShape);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(result.data?.managed_population_types[0]?.husbandry_jobs).toEqual([
+      { job_slug: "husbandry", workers_per_n_animals: 5 },
+    ]);
+    expect(result.data?.managed_population_types[0]?.culling_jobs).toEqual([
+      { job_slug: "culling", max_cull_per_worker: 10 },
+    ]);
+  });
+
+  it("rejects a managed population type with an empty husbandry_jobs array", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          ...VALID_TEMPLATE.managed_population_types[0],
+          husbandry_jobs: [],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a managed population type with an empty culling_jobs array", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          ...VALID_TEMPLATE.managed_population_types[0],
+          culling_jobs: [],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
   });
 
   it("rejects a unit type with an out-of-range desertion rate", () => {

@@ -24,7 +24,7 @@ import {
   toSimJob,
   toSimCurrencyLedgerEntry,
   toSimManagedPop,
-  toSimManagedPopType,
+  toManagedPopulationTypesAndJobs,
   toSimNation,
   toSimNationCurrency,
   toSimNationOffice,
@@ -86,7 +86,6 @@ import {
   isEventRow,
   isJobRow,
   isManagedPopRow,
-  isManagedPopTypeRow,
   isNamesetRow,
   isNationCurrencyLedgerRow,
   isNationCurrencyRow,
@@ -348,6 +347,16 @@ async function resolveEndTurnInputFromCtx(
       .rows,
   );
 
+  const { managedPopulationCullingJobs, managedPopulationHusbandryJobs, managedPopulationTypes } =
+    toManagedPopulationTypesAndJobs(
+      (
+        managedPopTypesResult as Extract<
+          typeof managedPopTypesResult,
+          { ok: true }
+        >
+      ).rows,
+    );
+
   // Group event effects by event_id
   const effectsByEventId = new Map<string, ReturnType<typeof toSimEffect>[]>();
   (eventEffectsResult as Extract<typeof eventEffectsResult, { ok: true }>).rows
@@ -408,14 +417,9 @@ async function resolveEndTurnInputFromCtx(
     jobs: (jobsResult as Extract<typeof jobsResult, { ok: true }>).rows
       .filter(isJobRow)
       .map(toSimJob),
-    managedPopulationTypes: (
-      managedPopTypesResult as Extract<
-        typeof managedPopTypesResult,
-        { ok: true }
-      >
-    ).rows
-      .filter(isManagedPopTypeRow)
-      .map(toSimManagedPopType),
+    managedPopulationCullingJobs,
+    managedPopulationHusbandryJobs,
+    managedPopulationTypes,
     managedPopulations: (
       managedPopsResult as Extract<typeof managedPopsResult, { ok: true }>
     ).rows

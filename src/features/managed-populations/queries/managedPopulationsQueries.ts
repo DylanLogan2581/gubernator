@@ -78,16 +78,13 @@ export function managedPopulationTypeByIdQueryOptions(
   });
 }
 
-export type ManagedPopulationTypesSortBy =
-  | "cullingJob"
-  | "growthRate"
-  | "husbandryJob"
-  | "husbandryWorkersPerNAnimals"
-  | "name";
+// Sorting is limited to name/growthRate: a population type can now link 1..n
+// husbandry jobs and 1..n culling jobs, so neither "husbandry job", "culling
+// job", nor "husbandry workers per N animals" is a single-valued, sortable
+// column anymore (mirroring the deposit_type_jobs precedent, #1246/#1247).
+export type ManagedPopulationTypesSortBy = "growthRate" | "name";
 
 export type ManagedPopulationTypesPageParams = {
-  readonly cullingJobId?: string | null;
-  readonly husbandryJobId?: string | null;
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
@@ -141,43 +138,15 @@ async function getManagedPopulationTypesPage(
     .eq("world_id", worldId)
     .eq("is_trashed", params.trash);
 
-  if (params.husbandryJobId !== undefined && params.husbandryJobId !== null) {
-    query = query.eq("husbandry_job_id", params.husbandryJobId);
-  }
-
-  if (params.cullingJobId !== undefined && params.cullingJobId !== null) {
-    query = query.eq("culling_job_id", params.cullingJobId);
-  }
-
   if (search !== "") {
     query = query.ilike("name", `%${search}%`);
   }
 
   const sortAscending = params.sortDirection !== "desc";
 
-  if (params.sortBy === "husbandryJob") {
-    query = query
-      .order("name", {
-        ascending: sortAscending,
-        referencedTable: "husbandry_job",
-      })
-      .order("name", { ascending: true });
-  } else if (params.sortBy === "cullingJob") {
-    query = query
-      .order("name", {
-        ascending: sortAscending,
-        referencedTable: "culling_job",
-      })
-      .order("name", { ascending: true });
-  } else if (params.sortBy === "growthRate") {
+  if (params.sortBy === "growthRate") {
     query = query
       .order("growth_rate", { ascending: sortAscending })
-      .order("name", { ascending: true });
-  } else if (params.sortBy === "husbandryWorkersPerNAnimals") {
-    query = query
-      .order("husbandry_workers_per_n_animals", {
-        ascending: sortAscending,
-      })
       .order("name", { ascending: true });
   } else {
     query = query.order("name", { ascending: sortAscending });

@@ -304,28 +304,35 @@ begin
 
   -- Managed population types -------------------------------------------
   insert into public.managed_population_types (
-    id, world_id, name, slug, husbandry_job_id, culling_job_id,
-    husbandry_workers_per_n_animals, growth_rate,
+    id, world_id, name, slug, growth_rate,
     maintenance_rules_json, culling_outputs_json, regular_outputs_json, icon
   ) values
-    (v_pop_sheep_herd, v_world, 'Sheep Herd', 'sheep-herd', v_job_shepherd, v_job_mutton_butcher,
-       10, 0.10,
+    (v_pop_sheep_herd, v_world, 'Sheep Herd', 'sheep-herd', 0.10,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 0.5)),
        jsonb_build_array(jsonb_build_object('resource_id', v_res_smoked_mutton::text, 'amount_per_n_animals', 0.5)),
        jsonb_build_array(jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_n_animals', 0.25)),
        'game:sheep'),
-    (v_pop_bee_colony, v_world, 'Bee Colony', 'bee-colony', v_job_beekeeper, v_job_honey_gatherer,
-       20, 0.05,
+    (v_pop_bee_colony, v_world, 'Bee Colony', 'bee-colony', 0.05,
        '[]'::jsonb,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_n_animals', 2)),
        '[]'::jsonb,
        'game:hive'),
-    (v_pop_pig_herd, v_world, 'Pig Herd', 'pig-herd', v_job_swineherd, v_job_pork_butcher,
-       8, 0.15,
+    (v_pop_pig_herd, v_world, 'Pig Herd', 'pig-herd', 0.15,
        jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 1)),
        jsonb_build_array(jsonb_build_object('resource_id', v_res_salted_pork::text, 'amount_per_n_animals', 2)),
        '[]'::jsonb,
        'game:pig-face');
+
+  -- Managed population husbandry + culling jobs -------------------------
+  insert into public.managed_population_husbandry_jobs (managed_population_type_id, job_id, workers_per_n_animals) values
+    (v_pop_sheep_herd, v_job_shepherd,  10),
+    (v_pop_bee_colony, v_job_beekeeper, 20),
+    (v_pop_pig_herd,   v_job_swineherd, 8);
+
+  insert into public.managed_population_culling_jobs (managed_population_type_id, job_id, max_cull_per_worker) values
+    (v_pop_sheep_herd, v_job_mutton_butcher, 10),
+    (v_pop_bee_colony, v_job_honey_gatherer, 10),
+    (v_pop_pig_herd,   v_job_pork_butcher,   10);
 
   -- Building blueprints ------------------------------------------------
   insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon) values

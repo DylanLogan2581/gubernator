@@ -20,6 +20,8 @@ import {
   updateManagedPopulationTypeInputSchema,
   type CreateManagedPopulationTypeInput,
   type HardDeleteManagedPopulationTypeInput,
+  type ManagedPopulationCullingJobValues,
+  type ManagedPopulationHusbandryJobValues,
   type RestoreManagedPopulationTypeInput,
   type SoftDeleteManagedPopulationTypeInput,
   type UpdateManagedPopulationTypeInput,
@@ -43,11 +45,8 @@ type ManagedPopulationTypeMutationErrorCode =
 
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
 type ManagedPopulationTypeInsertPayload = {
-  culling_job_id: string;
   culling_outputs_json?: Json;
   growth_rate: number;
-  husbandry_job_id: string;
-  husbandry_workers_per_n_animals: number;
   icon?: string | null;
   icon_color?: number | null;
   maintenance_rules_json?: Json;
@@ -57,16 +56,31 @@ type ManagedPopulationTypeInsertPayload = {
 };
 
 type ManagedPopulationTypeUpdatePayload = {
-  culling_job_id?: string;
   culling_outputs_json?: Json;
   growth_rate?: number;
-  husbandry_job_id?: string;
-  husbandry_workers_per_n_animals?: number;
   icon?: string | null;
   icon_color?: number | null;
   maintenance_rules_json?: Json;
   name?: string;
   slug?: string;
+};
+
+// world_id is redundant with managed_population_type_id (a BEFORE INSERT
+// trigger would derive it if omitted) but the generated Supabase types
+// require it on insert, so it's passed through explicitly from the parent
+// mutation's worldId.
+type ManagedPopulationHusbandryJobInsertPayload = {
+  job_id: string;
+  managed_population_type_id: string;
+  workers_per_n_animals: number;
+  world_id: string;
+};
+
+type ManagedPopulationCullingJobInsertPayload = {
+  job_id: string;
+  managed_population_type_id: string;
+  max_cull_per_worker: number;
+  world_id: string;
 };
 
 export type ManagedPopulationTypeMutationIssue = MutationIssue;
@@ -136,10 +150,7 @@ async function createManagedPopulationType(
   const values = parseInput(createManagedPopulationTypeInputSchema, input);
 
   const insertPayload: ManagedPopulationTypeInsertPayload = {
-    culling_job_id: values.cullingJobId,
     growth_rate: values.growthRate,
-    husbandry_job_id: values.husbandryJobId,
-    husbandry_workers_per_n_animals: values.husbandryWorkersPerNAnimals,
     icon: values.icon ?? null,
     icon_color: values.iconColor ?? null,
     name: values.name.trim(),
@@ -159,38 +170,36 @@ async function createManagedPopulationType(
     );
   }
 
-  const { data, error } = await client
+  const { data: insertedRow, error: insertError } = await client
     .from("managed_population_types")
     .insert(insertPayload)
-    .select(MANAGED_POPULATION_TYPE_SELECT)
-    .maybeSingle<ManagedPopulationTypeRow>();
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
-  if (error !== null) {
-    if (isActiveHusbandryJobIdConflict(error)) {
-      throw new ManagedPopulationTypeMutationError({
-        code: "managed_population_type_husbandry_job_already_linked",
-        message:
-          "This husbandry job is already linked to another active managed population type.",
-      });
-    }
-    if (isActiveCullingJobIdConflict(error)) {
-      throw new ManagedPopulationTypeMutationError({
-        code: "managed_population_type_culling_job_already_linked",
-        message:
-          "This culling job is already linked to another active managed population type.",
-      });
-    }
-    throw normalizeSupabaseError(error);
+  if (insertError !== null) {
+    throw normalizeSupabaseError(insertError);
   }
-
-  if (data === null) {
+  if (insertedRow === null) {
     throw new ManagedPopulationTypeMutationError({
       code: "managed_population_type_not_found",
       message: "Managed population type could not be created.",
     });
   }
 
-  return toManagedPopulationType(data);
+  await insertManagedPopulationHusbandryJobs(
+    client,
+    insertedRow.id,
+    values.worldId,
+    values.husbandryJobs,
+  );
+  await insertManagedPopulationCullingJobs(
+    client,
+    insertedRow.id,
+    values.worldId,
+    values.cullingJobs,
+  );
+
+  return fetchManagedPopulationTypeById(client, insertedRow.id);
 }
 
 async function updateManagedPopulationType(
@@ -206,16 +215,6 @@ async function updateManagedPopulationType(
   }
   if (values.slug !== undefined) {
     updatePayload.slug = values.slug.trim();
-  }
-  if (values.husbandryJobId !== undefined) {
-    updatePayload.husbandry_job_id = values.husbandryJobId;
-  }
-  if (values.cullingJobId !== undefined) {
-    updatePayload.culling_job_id = values.cullingJobId;
-  }
-  if (values.husbandryWorkersPerNAnimals !== undefined) {
-    updatePayload.husbandry_workers_per_n_animals =
-      values.husbandryWorkersPerNAnimals;
   }
   if (values.growthRate !== undefined) {
     updatePayload.growth_rate = values.growthRate;
@@ -237,36 +236,193 @@ async function updateManagedPopulationType(
     updatePayload.icon_color = values.iconColor;
   }
 
-  const { data, error } = await client
-    .from("managed_population_types")
-    .update(updatePayload)
-    .eq("id", values.managedPopulationTypeId)
-    .eq("world_id", values.worldId)
-    .select(MANAGED_POPULATION_TYPE_SELECT)
-    .maybeSingle<ManagedPopulationTypeRow>();
+  if (Object.keys(updatePayload).length > 0) {
+    const { data, error } = await client
+      .from("managed_population_types")
+      .update(updatePayload)
+      .eq("id", values.managedPopulationTypeId)
+      .eq("world_id", values.worldId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error !== null) {
+      throw normalizeSupabaseError(error);
+    }
+    if (data === null) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_not_found",
+        message: "Managed population type could not be updated.",
+      });
+    }
+  } else {
+    const { data, error } = await client
+      .from("managed_population_types")
+      .select("id")
+      .eq("id", values.managedPopulationTypeId)
+      .eq("world_id", values.worldId)
+      .maybeSingle<{ id: string }>();
+
+    if (error !== null) {
+      throw normalizeSupabaseError(error);
+    }
+    if (data === null) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_not_found",
+        message: "Managed population type could not be updated.",
+      });
+    }
+  }
+
+  if (values.husbandryJobs !== undefined) {
+    await replaceManagedPopulationHusbandryJobs(
+      client,
+      values.managedPopulationTypeId,
+      values.worldId,
+      values.husbandryJobs,
+    );
+  }
+
+  if (values.cullingJobs !== undefined) {
+    await replaceManagedPopulationCullingJobs(
+      client,
+      values.managedPopulationTypeId,
+      values.worldId,
+      values.cullingJobs,
+    );
+  }
+
+  return fetchManagedPopulationTypeById(client, values.managedPopulationTypeId);
+}
+
+// No DB transaction wraps the delete+insert below: the join-table mutations
+// are admin-only, low-frequency, and RLS-gated, so a client-side sequential
+// replace is an acceptable trade-off for the join-table shape (see issue
+// #1247, mirroring #1246 for deposit_type_jobs).
+async function replaceManagedPopulationHusbandryJobs(
+  client: GubernatorSupabaseClient,
+  managedPopulationTypeId: string,
+  worldId: string,
+  jobs: readonly ManagedPopulationHusbandryJobValues[],
+): Promise<void> {
+  const { error: deleteError } = await client
+    .from("managed_population_husbandry_jobs")
+    .delete()
+    .eq("managed_population_type_id", managedPopulationTypeId);
+
+  if (deleteError !== null) {
+    throw normalizeSupabaseError(deleteError);
+  }
+
+  await insertManagedPopulationHusbandryJobs(
+    client,
+    managedPopulationTypeId,
+    worldId,
+    jobs,
+  );
+}
+
+async function insertManagedPopulationHusbandryJobs(
+  client: GubernatorSupabaseClient,
+  managedPopulationTypeId: string,
+  worldId: string,
+  jobs: readonly ManagedPopulationHusbandryJobValues[],
+): Promise<void> {
+  const insertPayload: ManagedPopulationHusbandryJobInsertPayload[] = jobs.map(
+    (job) => ({
+      job_id: job.jobId,
+      managed_population_type_id: managedPopulationTypeId,
+      workers_per_n_animals: job.workersPerNAnimals,
+      world_id: worldId,
+    }),
+  );
+
+  const { error } = await client
+    .from("managed_population_husbandry_jobs")
+    .insert(insertPayload);
 
   if (error !== null) {
-    if (isActiveHusbandryJobIdConflict(error)) {
+    if (isDuplicateHusbandryJobConflict(error)) {
       throw new ManagedPopulationTypeMutationError({
         code: "managed_population_type_husbandry_job_already_linked",
         message:
-          "This husbandry job is already linked to another active managed population type.",
-      });
-    }
-    if (isActiveCullingJobIdConflict(error)) {
-      throw new ManagedPopulationTypeMutationError({
-        code: "managed_population_type_culling_job_already_linked",
-        message:
-          "This culling job is already linked to another active managed population type.",
+          "Each job may only be linked once as a husbandry job per population type.",
       });
     }
     throw normalizeSupabaseError(error);
   }
+}
 
+async function replaceManagedPopulationCullingJobs(
+  client: GubernatorSupabaseClient,
+  managedPopulationTypeId: string,
+  worldId: string,
+  jobs: readonly ManagedPopulationCullingJobValues[],
+): Promise<void> {
+  const { error: deleteError } = await client
+    .from("managed_population_culling_jobs")
+    .delete()
+    .eq("managed_population_type_id", managedPopulationTypeId);
+
+  if (deleteError !== null) {
+    throw normalizeSupabaseError(deleteError);
+  }
+
+  await insertManagedPopulationCullingJobs(
+    client,
+    managedPopulationTypeId,
+    worldId,
+    jobs,
+  );
+}
+
+async function insertManagedPopulationCullingJobs(
+  client: GubernatorSupabaseClient,
+  managedPopulationTypeId: string,
+  worldId: string,
+  jobs: readonly ManagedPopulationCullingJobValues[],
+): Promise<void> {
+  const insertPayload: ManagedPopulationCullingJobInsertPayload[] = jobs.map(
+    (job) => ({
+      job_id: job.jobId,
+      managed_population_type_id: managedPopulationTypeId,
+      max_cull_per_worker: job.maxCullPerWorker,
+      world_id: worldId,
+    }),
+  );
+
+  const { error } = await client
+    .from("managed_population_culling_jobs")
+    .insert(insertPayload);
+
+  if (error !== null) {
+    if (isDuplicateCullingJobConflict(error)) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_culling_job_already_linked",
+        message:
+          "Each job may only be linked once as a culling job per population type.",
+      });
+    }
+    throw normalizeSupabaseError(error);
+  }
+}
+
+async function fetchManagedPopulationTypeById(
+  client: GubernatorSupabaseClient,
+  managedPopulationTypeId: string,
+): Promise<ManagedPopulationType> {
+  const { data, error } = await client
+    .from("managed_population_types")
+    .select(MANAGED_POPULATION_TYPE_SELECT)
+    .eq("id", managedPopulationTypeId)
+    .maybeSingle<ManagedPopulationTypeRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
   if (data === null) {
     throw new ManagedPopulationTypeMutationError({
       code: "managed_population_type_not_found",
-      message: "Managed population type could not be updated.",
+      message: "Managed population type could not be found.",
     });
   }
 
@@ -397,26 +553,29 @@ function parseInput<TSchema extends z.ZodTypeAny>(
   );
 }
 
-function isActiveHusbandryJobIdConflict(error: {
+// managed_population_husbandry_jobs_unique / _culling_jobs_unique are scoped
+// per population type only (managed_population_type_id, job_id), unlike the
+// old world-wide-unique managed_population_types_unique_active_husbandry_job_id
+// / _culling_job_id constraints — a job can now be linked to multiple
+// population types, and the same job can appear as both a husbandry and a
+// culling job for one type. This only fires as a defensive backstop; the
+// form/schema already reject duplicate jobIds within a single submission.
+function isDuplicateHusbandryJobConflict(error: {
   code: string;
   message: string;
 }): boolean {
   return (
     error.code === "23505" &&
-    error.message.includes(
-      "managed_population_types_unique_active_husbandry_job_id",
-    )
+    error.message.includes("managed_population_husbandry_jobs_unique")
   );
 }
 
-function isActiveCullingJobIdConflict(error: {
+function isDuplicateCullingJobConflict(error: {
   code: string;
   message: string;
 }): boolean {
   return (
     error.code === "23505" &&
-    error.message.includes(
-      "managed_population_types_unique_active_culling_job_id",
-    )
+    error.message.includes("managed_population_culling_jobs_unique")
   );
 }

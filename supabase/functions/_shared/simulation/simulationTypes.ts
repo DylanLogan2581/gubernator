@@ -337,15 +337,26 @@ export type SimPopulationResourceEntry = {
 };
 
 export type SimManagedPopulationType = {
-  readonly cullingJobId: string;
   readonly cullingOutputsJson: readonly SimPopulationResourceEntry[];
   readonly growthRate: number;
-  readonly husbandryJobId: string;
-  readonly husbandryWorkersPerNAnimals: number;
   readonly id: string;
   readonly maintenanceRulesJson: readonly SimPopulationResourceEntry[];
   readonly name: string;
   readonly regularOutputsJson: readonly SimPopulationResourceEntry[];
+};
+
+export type SimManagedPopulationHusbandryJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly managedPopulationTypeId: string;
+  readonly workersPerNAnimals: number;
+};
+
+export type SimManagedPopulationCullingJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly managedPopulationTypeId: string;
+  readonly maxCullPerWorker: number;
 };
 
 export type SimManagedPopulationStatus = "active" | "extinct";
@@ -531,6 +542,8 @@ export type SimulationInputState = {
   readonly events: readonly SimEvent[];
   readonly isWorldArchived?: boolean;
   readonly jobs: readonly SimJob[];
+  readonly managedPopulationCullingJobs: readonly SimManagedPopulationCullingJob[];
+  readonly managedPopulationHusbandryJobs: readonly SimManagedPopulationHusbandryJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
   readonly fallbackNamesetIdBySettlementId?: Readonly<Record<string, string>>;

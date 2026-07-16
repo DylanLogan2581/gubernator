@@ -142,26 +142,40 @@ values
 
 -- Managed population type: soft-deleted so hard_delete is allowed.
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    is_trashed
-  )
+  public.managed_population_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ed600000-0000-0000-0000-000000000001',
     'ed100000-0000-0000-0000-000000000001',
     'HD Cattle',
     'hd-cattle',
-    'ed300000-0000-0000-0000-000000000002',
-    'ed300000-0000-0000-0000-000000000003',
-    10,
     true
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'ed600000-0000-0000-0000-000000000001',
+    'ed300000-0000-0000-0000-000000000002',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'ed600000-0000-0000-0000-000000000001',
+    'ed300000-0000-0000-0000-000000000003',
+    10
   );
 
 -- ===========================================================================

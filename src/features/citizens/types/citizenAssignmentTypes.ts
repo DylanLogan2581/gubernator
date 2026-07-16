@@ -20,9 +20,8 @@ export type CitizenAssignment = {
     readonly name: string;
   } | null;
   readonly managedPopulationInstance: {
-    readonly cullingJobName: string;
-    readonly husbandryJobName: string;
     readonly id: string;
+    readonly managedPopulationTypeName: string;
     readonly name: string;
   } | null;
   readonly tradeRoute: {

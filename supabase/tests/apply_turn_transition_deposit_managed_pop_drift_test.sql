@@ -263,25 +263,13 @@ values
 
 -- Managed population types
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'f3800000-0000-0000-0000-000000000001',
     'f3200000-0000-0000-0000-000000000003',
     'ATDMPD Soldiers',
     'atdmpd-soldiers',
-    'f3700000-0000-0000-0000-000000000010',
-    'f3700000-0000-0000-0000-000000000011',
-    1,
     0.05
   ),
   (
@@ -289,10 +277,43 @@ values
     'f3200000-0000-0000-0000-000000000004',
     'ATDMPD Clerics',
     'atdmpd-clerics',
-    'f3700000-0000-0000-0000-000000000012',
-    'f3700000-0000-0000-0000-000000000013',
-    1,
     0.05
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'f3800000-0000-0000-0000-000000000001',
+    'f3700000-0000-0000-0000-000000000010',
+    1
+  ),
+  (
+    'f3800000-0000-0000-0000-000000000002',
+    'f3700000-0000-0000-0000-000000000012',
+    1
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'f3800000-0000-0000-0000-000000000001',
+    'f3700000-0000-0000-0000-000000000011',
+    10
+  ),
+  (
+    'f3800000-0000-0000-0000-000000000002',
+    'f3700000-0000-0000-0000-000000000013',
+    10
   );
 
 -- Deposit instances for worlds 1 & 2

@@ -105,11 +105,7 @@ function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
     case "husbandry":
     case "culling": {
       if (assignment.managedPopulationInstance === null) return null;
-      const jobName =
-        assignment.assignmentType === "husbandry"
-          ? assignment.managedPopulationInstance.husbandryJobName
-          : assignment.managedPopulationInstance.cullingJobName;
-      return `${assignment.managedPopulationInstance.name} — ${jobName}`;
+      return `${assignment.managedPopulationInstance.name} — ${assignment.managedPopulationInstance.managedPopulationTypeName}`;
     }
     case "trade_route": {
       if (assignment.tradeRoute === null) return null;

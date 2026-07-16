@@ -139,13 +139,26 @@ export type SupabaseDepositRow = {
 export type SupabaseManagedPopTypeRow = {
   readonly id: string;
   readonly name: string;
-  readonly husbandry_job_id: string;
-  readonly culling_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
   readonly growth_rate: number;
   readonly maintenance_rules_json: unknown;
   readonly culling_outputs_json: unknown;
   readonly regular_outputs_json: unknown;
+  readonly managed_population_husbandry_jobs: readonly unknown[];
+  readonly managed_population_culling_jobs: readonly unknown[];
+};
+
+export type SupabaseManagedPopHusbandryJobRow = {
+  readonly id: string;
+  readonly managed_population_type_id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+export type SupabaseManagedPopCullingJobRow = {
+  readonly id: string;
+  readonly managed_population_type_id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
 };
 
 export type SupabaseManagedPopRow = {
@@ -528,10 +541,33 @@ export function isManagedPopTypeRow(
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.name === "string" &&
-    typeof v.husbandry_job_id === "string" &&
-    typeof v.culling_job_id === "string" &&
-    typeof v.husbandry_workers_per_n_animals === "number" &&
-    typeof v.growth_rate === "number"
+    typeof v.growth_rate === "number" &&
+    Array.isArray(v.managed_population_husbandry_jobs) &&
+    Array.isArray(v.managed_population_culling_jobs)
+  );
+}
+
+export function isManagedPopHusbandryJobRow(
+  v: unknown,
+): v is SupabaseManagedPopHusbandryJobRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.managed_population_type_id === "string" &&
+    typeof v.job_id === "string" &&
+    typeof v.workers_per_n_animals === "number"
+  );
+}
+
+export function isManagedPopCullingJobRow(
+  v: unknown,
+): v is SupabaseManagedPopCullingJobRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.managed_population_type_id === "string" &&
+    typeof v.job_id === "string" &&
+    typeof v.max_cull_per_worker === "number"
   );
 }
 

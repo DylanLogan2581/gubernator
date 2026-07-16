@@ -208,9 +208,6 @@ insert into
     world_id,
     name,
     slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
     maintenance_rules_json,
     culling_outputs_json
   )
@@ -220,12 +217,35 @@ values
     'd2000000-0000-0000-0000-000000000001',
     'Ore Beast',
     'ore-beast',
-    'd4000000-0000-0000-0000-000000000003',
-    'd4000000-0000-0000-0000-000000000004',
-    10,
     '[{"resource_id":"d3000000-0000-0000-0000-000000000001","amount_per_n_animals":5},
       {"resource_id":"d3000000-0000-0000-0000-000000000002","amount_per_n_animals":3}]',
     '[{"resource_id":"d3000000-0000-0000-0000-000000000001","amount_per_n_animals":2}]'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'd8000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000003',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'd8000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000004',
+    10
   );
 
 -- ===========================================================================

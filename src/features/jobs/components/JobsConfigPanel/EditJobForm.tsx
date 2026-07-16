@@ -119,13 +119,17 @@ export function EditJobForm({
   const allManagedPopTypes = managedPopTypesQuery.data ?? [];
   const educationLevels = educationLevelsQuery.data ?? [];
 
-  // Scope managed pop type options to types that designate this job in the
-  // corresponding slot (husbandry_job_id or culling_job_id).
+  // Scope managed pop type options to types that link this job in the
+  // corresponding purpose (husbandryJobs or cullingJobs).
   const availableManagedPopTypes: readonly ManagedPopulationType[] =
     job.jobType === "husbandry"
-      ? allManagedPopTypes.filter((mpt) => mpt.husbandryJobId === job.id)
+      ? allManagedPopTypes.filter((mpt) =>
+          mpt.husbandryJobs.some((hj) => hj.jobId === job.id),
+        )
       : job.jobType === "culling"
-        ? allManagedPopTypes.filter((mpt) => mpt.cullingJobId === job.id)
+        ? allManagedPopTypes.filter((mpt) =>
+            mpt.cullingJobs.some((cj) => cj.jobId === job.id),
+          )
         : [];
 
   async function handleSubmit(

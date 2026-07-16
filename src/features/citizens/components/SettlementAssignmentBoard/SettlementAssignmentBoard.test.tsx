@@ -112,8 +112,7 @@ type CitizenAssignmentRowFixture = {
     readonly id: string;
     readonly name: string;
     readonly managed_population_types: {
-      readonly husbandry_job: { readonly name: string };
-      readonly culling_job: { readonly name: string };
+      readonly name: string;
     };
   } | null;
   readonly trade_route: {
@@ -149,8 +148,6 @@ type PopulationInstanceRowFixture = {
   readonly id: string;
   readonly managed_population_type_id: string;
   readonly managed_population_types: {
-    readonly culling_job: { readonly name: string };
-    readonly husbandry_job: { readonly name: string };
     readonly name: string;
   };
   readonly name: string;
@@ -287,8 +284,6 @@ function createPopulationInstanceRow(
     id: "pop-1",
     managed_population_type_id: "mpt-1",
     managed_population_types: {
-      culling_job: { name: "Slaughter" },
-      husbandry_job: { name: "Shepherd" },
       name: "Sheep",
     },
     name: "Flock A",
@@ -970,7 +965,7 @@ describe("SettlementAssignmentBoard", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows husbandry section with population name and job name", async () => {
+  it("shows husbandry and culling sections with population name and type name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenAssignmentRows: [],
@@ -979,11 +974,7 @@ describe("SettlementAssignmentBoard", () => {
           createPopulationInstanceRow({
             id: "pop-1",
             name: "Flock A",
-            managed_population_types: {
-              culling_job: { name: "Slaughter" },
-              husbandry_job: { name: "Shepherd" },
-              name: "Sheep",
-            },
+            managed_population_types: { name: "Sheep" },
           }),
         ],
         tradeRouteRows: [],
@@ -992,32 +983,10 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    expect(await screen.findByText("Flock A — Shepherd")).toBeDefined();
-  });
-
-  it("shows culling section with population name and culling job name", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        citizenAssignmentRows: [],
-        depositInstanceRows: [],
-        populationInstanceRows: [
-          createPopulationInstanceRow({
-            id: "pop-1",
-            name: "Flock A",
-            managed_population_types: {
-              culling_job: { name: "Slaughter" },
-              husbandry_job: { name: "Shepherd" },
-              name: "Sheep",
-            },
-          }),
-        ],
-        tradeRouteRows: [],
-      }),
-    );
-
-    renderBoard();
-
-    expect(await screen.findByText("Flock A — Slaughter")).toBeDefined();
+    // A population type can link 1..n husbandry jobs and 1..n culling jobs
+    // (#1247), so both the husbandry row and the culling row show the
+    // population type's own name — there's no single job name to show.
+    expect(await screen.findAllByText("Flock A — Sheep")).toHaveLength(2);
   });
 
   it("shows trade route section with origin and destination labels", async () => {

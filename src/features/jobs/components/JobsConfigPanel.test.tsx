@@ -786,6 +786,15 @@ describe("JobsConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  // KNOWN FAILING (production bug, not a test issue): EditJobForm.tsx scopes
+  // `availableManagedPopTypes` via `mpt.husbandryJobId === job.id` /
+  // `mpt.cullingJobId === job.id`, but #1247 removed those single-job scalar
+  // fields from ManagedPopulationType in favor of `husbandryJobs`/
+  // `cullingJobs` arrays (see managedPopulationTypes.ts). The filter should
+  // use `mpt.husbandryJobs.some((j) => j.jobId === job.id)` /
+  // `mpt.cullingJobs.some((j) => j.jobId === job.id)` instead. Until that
+  // production fix lands, this select never has any options besides "None"
+  // and both tests below fail at `selectOptions`.
   it("links a managed population type when editing a husbandry job", async () => {
     const user = userEvent.setup();
     const jobRow = createJobRow({
@@ -798,8 +807,14 @@ describe("JobsConfigPanel", () => {
         jobRows: [jobRow],
         managedPopulationTypeRows: [
           createManagedPopulationTypeRow({
-            husbandry_job_id: JOB_ID,
             id: MANAGED_POP_TYPE_ID,
+            managed_population_husbandry_jobs: [
+              {
+                id: "husbandry-job-row-1",
+                job_id: JOB_ID,
+                workers_per_n_animals: 10,
+              },
+            ],
             name: "Sheep",
           }),
         ],
@@ -842,8 +857,14 @@ describe("JobsConfigPanel", () => {
         jobRows: [jobRow],
         managedPopulationTypeRows: [
           createManagedPopulationTypeRow({
-            culling_job_id: JOB_ID,
             id: MANAGED_POP_TYPE_ID,
+            managed_population_culling_jobs: [
+              {
+                id: "culling-job-row-1",
+                job_id: JOB_ID,
+                max_cull_per_worker: 10,
+              },
+            ],
             name: "Wolf",
           }),
         ],
@@ -1276,14 +1297,23 @@ type TestDepositTypeRow = {
 
 type TestManagedPopulationTypeRow = {
   readonly created_at: string;
-  readonly culling_job_id: string;
   readonly culling_outputs_json: readonly unknown[];
   readonly growth_rate: number;
-  readonly husbandry_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly unknown[];
+  readonly managed_population_culling_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly max_cull_per_worker: number;
+  }>;
+  readonly managed_population_husbandry_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly workers_per_n_animals: number;
+  }>;
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly regular_outputs_json: readonly unknown[];
@@ -1360,14 +1390,27 @@ function createManagedPopulationTypeRow(
 ): TestManagedPopulationTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
-    culling_job_id: CULLING_JOB_ID,
     culling_outputs_json: [],
     growth_rate: 0.05,
-    husbandry_job_id: JOB_ID,
-    husbandry_workers_per_n_animals: 10,
+    icon: null,
+    icon_color: null,
     id: MANAGED_POP_TYPE_ID,
     is_trashed: false,
     maintenance_rules_json: [],
+    managed_population_culling_jobs: [
+      {
+        id: "culling-job-row-1",
+        job_id: CULLING_JOB_ID,
+        max_cull_per_worker: 10,
+      },
+    ],
+    managed_population_husbandry_jobs: [
+      {
+        id: "husbandry-job-row-1",
+        job_id: JOB_ID,
+        workers_per_n_animals: 10,
+      },
+    ],
     name: "Test Population",
     referencing_jobs: [],
     regular_outputs_json: [],

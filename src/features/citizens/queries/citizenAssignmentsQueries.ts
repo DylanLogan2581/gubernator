@@ -52,8 +52,7 @@ type CitizenAssignmentRow = {
   readonly managed_population_instance: {
     readonly id: string;
     readonly managed_population_types: {
-      readonly culling_job: { readonly name: string };
-      readonly husbandry_job: { readonly name: string };
+      readonly name: string;
     };
     readonly name: string;
   } | null;
@@ -81,7 +80,11 @@ const CITIZEN_ASSIGNMENT_SELECT = [
   "job:job_definitions(id,name)",
   "construction_project:construction_projects(id,building_blueprints(name),building_blueprint_tiers(tier_number))",
   "deposit_instance:deposit_instances(id,name,deposit_types(name))",
-  "managed_population_instance:managed_population_instances(id,name,managed_population_types(husbandry_job:husbandry_job_id(name),culling_job:culling_job_id(name)))",
+  // A population type can now link 1..n husbandry jobs and 1..n culling
+  // jobs (#1247), so there's no single job name to show anymore — the
+  // population type's own name is embedded instead, mirroring how the
+  // deposit case above shows deposit_types(name).
+  "managed_population_instance:managed_population_instances(id,name,managed_population_types(name))",
   "trade_route:trade_routes(id,trade_route_legs(direction,resource:resources(name)),origin:origin_settlement_id(name),destination:destination_settlement_id(name))",
 ].join(",");
 
@@ -174,13 +177,9 @@ export function toCitizenAssignment(
       row.managed_population_instance === null
         ? null
         : {
-            cullingJobName:
-              row.managed_population_instance.managed_population_types
-                .culling_job.name,
-            husbandryJobName:
-              row.managed_population_instance.managed_population_types
-                .husbandry_job.name,
             id: row.managed_population_instance.id,
+            managedPopulationTypeName:
+              row.managed_population_instance.managed_population_types.name,
             name: row.managed_population_instance.name,
           },
     tradeRoute:

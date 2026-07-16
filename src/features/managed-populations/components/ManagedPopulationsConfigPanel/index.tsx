@@ -16,10 +16,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { createManagedPopulationTypeMutationOptions } from "../../mutations/managedPopulationsMutations";
-import {
-  activeManagedPopulationTypesByWorldQueryOptions,
-  managedPopulationTypesPageQueryOptions,
-} from "../../queries/managedPopulationsQueries";
+import { managedPopulationTypesPageQueryOptions } from "../../queries/managedPopulationsQueries";
 
 import { CreateManagedPopulationTypeForm } from "./components/CreateManagedPopulationTypeForm";
 import { ManagedPopulationsFilters } from "./components/ManagedPopulationsFilters";
@@ -32,13 +29,13 @@ import type { SortingState } from "@tanstack/react-table";
 const PAGE_SIZE = 25;
 
 // Maps a DataTable column id to the managed population types page query's
-// sort column (see managedPopulationsQueries.ts), mirroring the jobs
-// config panel.
+// sort column (see managedPopulationsQueries.ts). Only "name" and
+// "growthRate" are sortable now: a population type can link 1..n husbandry
+// jobs and 1..n culling jobs, so neither "husbandry job", "culling job", nor
+// "husbandry workers per N animals" is a single-valued, sortable column
+// anymore (mirroring the deposit_type_jobs precedent, #1246/#1247).
 const SORT_BY_ID: Record<string, ManagedPopulationTypesSortBy> = {
-  cullingJob: "cullingJob",
   growthRate: "growthRate",
-  husbandryJob: "husbandryJob",
-  husbandryWorkersPerNAnimals: "husbandryWorkersPerNAnimals",
   name: "name",
 };
 
@@ -57,8 +54,6 @@ export function ManagedPopulationsConfigPanel({
   const canEdit = canAdmin && !isArchived;
 
   const [search, setSearch] = useState("");
-  const [husbandryJobId, setHusbandryJobId] = useState<string | null>(null);
-  const [cullingJobId, setCullingJobId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
@@ -72,8 +67,6 @@ export function ManagedPopulationsConfigPanel({
 
   const populationTypesPageQuery = useQuery(
     managedPopulationTypesPageQueryOptions(worldId, {
-      cullingJobId,
-      husbandryJobId,
       page: pageIndex,
       pageSize: PAGE_SIZE,
       search: debouncedSearch,
@@ -81,14 +74,6 @@ export function ManagedPopulationsConfigPanel({
       sortDirection: activeSort?.desc === true ? "desc" : "asc",
       trash: showTrash,
     }),
-  );
-
-  // Unpaginated active list, used only to feed the create/edit forms'
-  // client-side slug/name conflict validation — must stay the full active
-  // list, not the currently visible page slice, or conflicts outside the
-  // page would be silently missed.
-  const activePopulationTypesQuery = useQuery(
-    activeManagedPopulationTypesByWorldQueryOptions(worldId),
   );
 
   const husbandryJobsQuery = useQuery(
@@ -107,7 +92,6 @@ export function ManagedPopulationsConfigPanel({
   const items = populationTypesPageQuery.data?.items ?? [];
   const totalCount = populationTypesPageQuery.data?.totalCount ?? 0;
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const allPopulationTypes = activePopulationTypesQuery.data ?? [];
   const husbandryJobs = husbandryJobsQuery.data ?? [];
   const cullingJobs = cullingJobsQuery.data ?? [];
 
@@ -142,19 +126,7 @@ export function ManagedPopulationsConfigPanel({
       </div>
 
       <ManagedPopulationsFilters
-        cullingJobId={cullingJobId}
-        cullingJobs={cullingJobs}
-        husbandryJobId={husbandryJobId}
-        husbandryJobs={husbandryJobs}
         search={search}
-        onCullingJobIdChange={(next) => {
-          setCullingJobId(next);
-          resetToFirstPage();
-        }}
-        onHusbandryJobIdChange={(next) => {
-          setHusbandryJobId(next);
-          resetToFirstPage();
-        }}
         onSearchChange={(next) => {
           setSearch(next);
           resetToFirstPage();
@@ -171,12 +143,10 @@ export function ManagedPopulationsConfigPanel({
       ) : items.length === 0 ? (
         showTrash ? (
           <EmptyState title="No managed population types in trash" />
-        ) : debouncedSearch !== "" ||
-          husbandryJobId !== null ||
-          cullingJobId !== null ? (
+        ) : debouncedSearch !== "" ? (
           <EmptyState
             title="No matching managed population types"
-            description="Try a different search or filter."
+            description="Try a different search."
           />
         ) : (
           <EmptyState
@@ -193,7 +163,6 @@ export function ManagedPopulationsConfigPanel({
             ).toString()} of ${totalCount.toString()}`}
           </p>
           <ManagedPopulationTypesTable
-            allPopulationTypes={allPopulationTypes}
             canEdit={canEdit}
             cullingJobs={cullingJobs}
             husbandryJobs={husbandryJobs}
@@ -216,7 +185,6 @@ export function ManagedPopulationsConfigPanel({
 
       {canEdit && showForm && !showTrash ? (
         <CreateManagedPopulationTypeForm
-          allPopulationTypes={allPopulationTypes}
           cullingJobs={cullingJobs}
           husbandryJobs={husbandryJobs}
           isPending={createMutation.isPending}

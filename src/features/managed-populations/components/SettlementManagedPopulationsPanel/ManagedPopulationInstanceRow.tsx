@@ -177,10 +177,21 @@ export function ManagedPopulationInstanceRow({
   const [editingCull, setEditingCull] = useState(false);
   const [showExtinctConfirm, setShowExtinctConfirm] = useState(false);
 
-  // required workers = 1 worker per N animals (N = husbandryWorkersPerNAnimals)
+  // Required workers = 1 worker per N animals (N = workersPerNAnimals). A
+  // population type can now link 1..n husbandry jobs, each with its own
+  // rate (#1247), so this is an approximation: the average rate across all
+  // linked husbandry jobs, since this display doesn't know which specific
+  // job each assigned worker holds.
+  const averageWorkersPerNAnimals =
+    type !== undefined && type.husbandryJobs.length > 0
+      ? type.husbandryJobs.reduce(
+          (sum, job) => sum + job.workersPerNAnimals,
+          0,
+        ) / type.husbandryJobs.length
+      : null;
   const requiredWorkers =
-    type !== undefined
-      ? Math.ceil(instance.currentCount / type.husbandryWorkersPerNAnimals)
+    averageWorkersPerNAnimals !== null
+      ? Math.ceil(instance.currentCount / averageWorkersPerNAnimals)
       : null;
 
   const workerSufficient =
@@ -288,17 +299,18 @@ export function ManagedPopulationInstanceRow({
           )}
         </TableCell>
         <TableCell className="py-2 pr-4 text-muted-foreground">
-          {instance.husbandryJobName}
           {requiredWorkers !== null ? (
             <span
               aria-label={
                 workerSufficient ? "Workers sufficient" : "Workers insufficient"
               }
-              className={`ml-1 text-xs ${workerSufficient ? "text-success-foreground" : "text-destructive"}`}
+              className={`text-xs ${workerSufficient ? "text-success-foreground" : "text-destructive"}`}
             >
-              ({husbandryCount}/{requiredWorkers})
+              {husbandryCount}/{requiredWorkers}
             </span>
-          ) : null}
+          ) : (
+            <span className="text-xs">{husbandryCount}</span>
+          )}
         </TableCell>
         <TableCell className="py-2 pr-4 text-xs">
           {type === undefined || type.maintenanceRulesJson.length === 0 ? (

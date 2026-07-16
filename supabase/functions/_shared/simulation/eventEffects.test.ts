@@ -56,6 +56,8 @@ function makeInput(
     educationLevels: [],
     events: [],
     jobs: [],
+    managedPopulationCullingJobs: [],
+    managedPopulationHusbandryJobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
     nationCurrencies: [],

@@ -224,24 +224,39 @@ values
 
 -- managed_population_types: one row linked to the husbandry and culling jobs.
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'd5800000-0000-0000-0000-000000000001',
     'd5100000-0000-0000-0000-000000000001',
     'Sheep',
-    'sheep',
+    'sheep'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'd5800000-0000-0000-0000-000000000001',
     'd5600000-0000-0000-0000-000000000003',
-    'd5600000-0000-0000-0000-000000000004',
     5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'd5800000-0000-0000-0000-000000000001',
+    'd5600000-0000-0000-0000-000000000004',
+    10
   );
 
 -- building_blueprints + one tier.
@@ -677,17 +692,11 @@ select
 select
   throws_ok (
     $test$
-    insert into public.managed_population_types (
-      world_id, name, slug,
-      husbandry_job_id, culling_job_id, husbandry_workers_per_n_animals
-    )
+    insert into public.managed_population_types (world_id, name, slug)
     values (
       'd5100000-0000-0000-0000-000000000001',
       'PC Insert Pop',
-      'pc-insert-pop',
-      'd5600000-0000-0000-0000-000000000003',
-      'd5600000-0000-0000-0000-000000000004',
-      5
+      'pc-insert-pop'
     )
   $test$,
     '42501',

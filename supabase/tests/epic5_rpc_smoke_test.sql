@@ -213,22 +213,37 @@ values
 
 -- Managed population type
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     '5eb00000-0000-0000-0000-000000000001',
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 Cattle',
-    'smoke5-cattle',
+    'smoke5-cattle'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    '5eb00000-0000-0000-0000-000000000001',
     '5e800000-0000-0000-0000-000000000003',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    '5eb00000-0000-0000-0000-000000000001',
     '5e800000-0000-0000-0000-000000000004',
     10
   );

@@ -277,19 +277,64 @@ const populationResourceEntryTemplateSchema = z.object({
   amount_per_n_animals: z.number(),
 });
 
-const managedPopulationTypeTemplateSchema = z.object({
-  name: z.string(),
-  slug: z.string(),
-  husbandry_job_slug: z.string(),
-  culling_job_slug: z.string(),
-  husbandry_workers_per_n_animals: z.number(),
-  growth_rate: z.number(),
-  maintenance_rules: z.array(populationResourceEntryTemplateSchema),
-  culling_outputs: z.array(populationResourceEntryTemplateSchema),
-  regular_outputs: z.array(populationResourceEntryTemplateSchema),
-  icon: iconRef,
-  icon_color: iconColorRef,
+const managedPopulationHusbandryJobTemplateSchema = z.object({
+  job_slug: z.string(),
+  workers_per_n_animals: positiveInteger,
 });
+
+const managedPopulationCullingJobTemplateSchema = z.object({
+  job_slug: z.string(),
+  max_cull_per_worker: nonnegativeInteger,
+});
+
+// Legacy templates had a single husbandry job and a single culling job
+// flattened onto the managed population type (husbandry_job_slug +
+// husbandry_workers_per_n_animals, culling_job_slug). Wrap those into
+// single-element jobs arrays so old templates still import. Legacy templates
+// had no per-job culling rate, so the migrated culling job defaults to a
+// max_cull_per_worker of 10, matching the DB data migration's default for
+// existing worlds.
+const managedPopulationTypeTemplateSchema = z.preprocess(
+  (value) => {
+    const valueObj = value as Record<string, unknown>;
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "husbandry_job_slug" in valueObj &&
+      !("husbandry_jobs" in valueObj)
+    ) {
+      const {
+        husbandry_job_slug: husbandryJobSlug,
+        husbandry_workers_per_n_animals: husbandryWorkersPerNAnimals,
+        culling_job_slug: cullingJobSlug,
+        ...rest
+      } = valueObj;
+      return {
+        ...rest,
+        husbandry_jobs: [
+          {
+            job_slug: husbandryJobSlug,
+            workers_per_n_animals: husbandryWorkersPerNAnimals,
+          },
+        ],
+        culling_jobs: [{ job_slug: cullingJobSlug, max_cull_per_worker: 10 }],
+      };
+    }
+    return value;
+  },
+  z.object({
+    name: z.string(),
+    slug: z.string(),
+    husbandry_jobs: z.array(managedPopulationHusbandryJobTemplateSchema).min(1),
+    culling_jobs: z.array(managedPopulationCullingJobTemplateSchema).min(1),
+    growth_rate: z.number(),
+    maintenance_rules: z.array(populationResourceEntryTemplateSchema),
+    culling_outputs: z.array(populationResourceEntryTemplateSchema),
+    regular_outputs: z.array(populationResourceEntryTemplateSchema),
+    icon: iconRef,
+    icon_color: iconColorRef,
+  }),
+);
 
 // ── unit types ────────────────────────────────────────────────────────────
 
