@@ -30,7 +30,12 @@ import {
   Zap,
 } from "lucide-react";
 
-import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarRail,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
 import { lawAmendmentsAwaitingMyVoteCountQueryOptions } from "@/features/law-amendments";
 import { unreadNotificationsCountQueryOptions } from "@/features/notifications";
 import {
@@ -207,6 +212,7 @@ export function AppSidebar(): JSX.Element | null {
               },
             ]}
           />
+          {adminItems.length > 0 ? <SidebarSeparator /> : null}
           <NavGroup label="Superadmin" items={adminItems} />
         </SidebarContent>
         <SidebarRail />
@@ -568,6 +574,7 @@ export function AppSidebar(): JSX.Element | null {
       <CharacterCard canAdmin={canAdmin} worldId={worldId} />
       <SidebarContent>
         <NavGroup label="PLAY" items={playItems} />
+        <SidebarSeparator />
         <NavGroup
           label="SETTLEMENT"
           items={settlementItems}
@@ -579,6 +586,7 @@ export function AppSidebar(): JSX.Element | null {
             />
           }
         />
+        <SidebarSeparator />
         <NavGroup
           label="NATION"
           items={nationItems}
@@ -590,6 +598,7 @@ export function AppSidebar(): JSX.Element | null {
             />
           }
         />
+        <SidebarSeparator />
         <NavGroup
           label="WORLD"
           items={worldItems}
@@ -602,6 +611,7 @@ export function AppSidebar(): JSX.Element | null {
             ) : null
           }
         />
+        {adminItems.length > 0 ? <SidebarSeparator /> : null}
         <NavGroup label="Superadmin" items={adminItems} />
       </SidebarContent>
       <SidebarRail />

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
@@ -107,6 +107,7 @@ export function SettlementScopeSwitcher({
     <ScopeGroupSwitcher
       emptyLabel="No settlements yet"
       errorLabel="Settlements could not be loaded"
+      icon={<MapPin aria-hidden="true" />}
       isError={settlementsQuery.isError}
       isPending={settlementsQuery.isPending}
       items={settlements.map((settlement) => ({
@@ -139,6 +140,7 @@ export function SettlementScopeSwitcher({
       }))}
       menuLabel="Settlements"
       title={<>SETTLEMENT{current !== null ? ` · ${current.name}` : ""}</>}
+      tooltipLabel={`SETTLEMENT${current !== null ? ` · ${current.name}` : ""}`}
     />
   );
 }

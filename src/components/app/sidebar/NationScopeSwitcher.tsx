@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, Landmark } from "lucide-react";
 
 import { nationsListQueryOptions } from "@/features/nations";
 
@@ -85,6 +85,7 @@ export function NationScopeSwitcher({
     <ScopeGroupSwitcher
       emptyLabel="No nations yet"
       errorLabel="Nations could not be loaded"
+      icon={<Landmark aria-hidden="true" />}
       isError={nationsQuery.isError}
       isPending={nationsQuery.isPending}
       items={nations.map((nation) => ({
@@ -107,6 +108,7 @@ export function NationScopeSwitcher({
       }))}
       menuLabel="Nations"
       title={<>NATION{current !== null ? ` · ${current.name}` : ""}</>}
+      tooltipLabel={`NATION${current !== null ? ` · ${current.name}` : ""}`}
     />
   );
 }
