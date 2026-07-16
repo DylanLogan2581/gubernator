@@ -6,6 +6,8 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   assignCitizenRoleMutationOptions,
   citizenByIdQueryOptions,
@@ -16,6 +18,7 @@ import {
   type Citizen,
 } from "@/features/citizens";
 import type { Nation } from "@/features/nations";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -51,6 +54,9 @@ function NationRoleAssignmentList({
   readonly isArchived: boolean;
   readonly nation: Nation;
 }): JSX.Element {
+  const [selectedSettlementId, setSelectedSettlementId] = useState<
+    string | null
+  >(null);
   const [selectedCitizenId, setSelectedCitizenId] = useState<string | null>(
     null,
   );
@@ -58,12 +64,15 @@ function NationRoleAssignmentList({
   const managersQuery = useQuery(
     settlementManagersInNationQueryOptions(nation.id),
   );
+  const settlementsQuery = useQuery(
+    settlementsByWorldQueryOptions(nation.worldId),
+  );
   const selectedCitizenQuery = useQuery({
     ...citizenByIdQueryOptions(selectedCitizenId ?? ""),
     enabled: selectedCitizenId !== null,
   });
 
-  if (managersQuery.isPending) {
+  if (managersQuery.isPending || settlementsQuery.isPending) {
     return <LoadingState label="Loading settlement managers…" />;
   }
 
@@ -76,8 +85,28 @@ function NationRoleAssignmentList({
     );
   }
 
+  if (settlementsQuery.isError) {
+    return (
+      <ErrorState
+        title="Settlements could not be loaded"
+        description={getErrorDescription(settlementsQuery.error)}
+      />
+    );
+  }
+
   const managers = managersQuery.data;
+  const nationSettlements = settlementsQuery.data.filter(
+    (settlement) => settlement.nationId === nation.id,
+  );
+  const settlementNameById = new Map(
+    nationSettlements.map((settlement) => [settlement.id, settlement.name]),
+  );
   const selectedCitizen = selectedCitizenQuery.data ?? null;
+
+  function handleSettlementChange(value: string): void {
+    setSelectedSettlementId(value === "" ? null : value);
+    setSelectedCitizenId(null);
+  }
 
   return (
     <div className="grid gap-3">
@@ -92,6 +121,11 @@ function NationRoleAssignmentList({
               key={citizen.id}
               citizen={citizen}
               isArchived={isArchived}
+              settlementName={
+                citizen.settlementId === null
+                  ? null
+                  : (settlementNameById.get(citizen.settlementId) ?? null)
+              }
             />
           ))}
         </ul>
@@ -100,19 +134,57 @@ function NationRoleAssignmentList({
         <span className="text-xs font-medium text-muted-foreground">
           Assign a settlement manager
         </span>
-        <CitizenPicker
-          citizenId={selectedCitizenId}
-          nationId={nation.id}
-          onChange={setSelectedCitizenId}
-          statusFilter="alive"
-          worldId={nation.worldId}
-        />
+        <div className="grid gap-1 text-sm">
+          <Label htmlFor="assign-settlement">Settlement</Label>
+          <NativeSelect
+            id="assign-settlement"
+            value={selectedSettlementId ?? ""}
+            onChange={(event) => {
+              handleSettlementChange(event.currentTarget.value);
+            }}
+          >
+            <option value="">Select a settlement…</option>
+            {nationSettlements.map((settlement) => (
+              <option key={settlement.id} value={settlement.id}>
+                {settlement.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        {selectedSettlementId === null ? (
+          <p className="text-xs text-muted-foreground">
+            Select a settlement to choose a citizen who lives there.
+          </p>
+        ) : (
+          <>
+            <CitizenPicker
+              citizenId={selectedCitizenId}
+              nationId={nation.id}
+              onChange={setSelectedCitizenId}
+              settlementId={selectedSettlementId}
+              statusFilter="alive"
+              worldId={nation.worldId}
+            />
+            <p className="text-xs text-muted-foreground">
+              Only citizens who live in the selected settlement can be assigned
+              as its manager.
+            </p>
+          </>
+        )}
         {selectedCitizen === null ? null : (
           <ul className="grid gap-2" aria-label="Selected citizen">
             <NationRoleAssignmentRow
               citizen={selectedCitizen}
               isArchived={isArchived}
-              onAssigned={() => setSelectedCitizenId(null)}
+              settlementName={
+                selectedSettlementId === null
+                  ? null
+                  : (settlementNameById.get(selectedSettlementId) ?? null)
+              }
+              onAssigned={() => {
+                setSelectedCitizenId(null);
+                setSelectedSettlementId(null);
+              }}
             />
           </ul>
         )}
@@ -125,10 +197,12 @@ function NationRoleAssignmentRow({
   citizen,
   isArchived,
   onAssigned,
+  settlementName,
 }: {
   readonly citizen: Citizen;
   readonly isArchived: boolean;
   readonly onAssigned?: () => void;
+  readonly settlementName: string | null;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const assignMutation = useMutation(
@@ -205,8 +279,12 @@ function NationRoleAssignmentRow({
             {isNationManager
               ? "Nation manager"
               : isSettlementManager
-                ? "Settlement manager"
-                : "No role"}
+                ? settlementName === null
+                  ? "Settlement manager"
+                  : `Settlement manager — ${settlementName}`
+                : settlementName === null
+                  ? "No role"
+                  : `Lives in ${settlementName}`}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">

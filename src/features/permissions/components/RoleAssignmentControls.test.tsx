@@ -304,7 +304,14 @@ describe("RoleAssignmentControls — nation variant", () => {
   it("lists the current settlement manager and hides a nation manager from that list", async () => {
     requireSupabaseClient.mockReturnValue(
       createSupabaseClient({
-        nationSettlements: [{ id: SETTLEMENT_ID }],
+        nationSettlements: [
+          {
+            id: SETTLEMENT_ID,
+            name: "Riverside",
+            nation_id: NATION_ID,
+            nations: { name: "Aurelia" },
+          },
+        ],
         playerCharacters: [
           createCitizenRow({
             citizen_type: "player_character",
@@ -367,7 +374,14 @@ describe("RoleAssignmentControls — nation variant", () => {
             world_id: WORLD_ID,
           },
         ],
-        nationSettlements: [{ id: SETTLEMENT_ID }],
+        nationSettlements: [
+          {
+            id: SETTLEMENT_ID,
+            name: "Riverside",
+            nation_id: NATION_ID,
+            nations: { name: "Aurelia" },
+          },
+        ],
         playerCharacters: [
           createCitizenRow({
             citizen_type: "player_character",
@@ -401,7 +415,12 @@ describe("RoleAssignmentControls — nation variant", () => {
       await screen.findByText("No settlement managers assigned yet."),
     ).toBeDefined();
 
-    await user.click(screen.getByRole("combobox"));
+    await user.selectOptions(
+      await screen.findByLabelText("Settlement"),
+      SETTLEMENT_ID,
+    );
+
+    await user.click(screen.getByText("Select citizen…"));
     await user.type(screen.getByPlaceholderText("Search citizens…"), "elig");
     await user.click(await screen.findByText("Eligible"));
 
@@ -537,7 +556,12 @@ type CitizenDirectoryRowFixture = {
 
 type SupabaseFixtures = {
   readonly directoryRows?: readonly CitizenDirectoryRowFixture[];
-  readonly nationSettlements?: ReadonlyArray<{ readonly id: string }>;
+  readonly nationSettlements?: ReadonlyArray<{
+    readonly id: string;
+    readonly name?: string;
+    readonly nation_id?: string;
+    readonly nations?: { readonly name: string };
+  }>;
   readonly playerCharacters?: readonly CitizenRowFixture[];
   readonly rpc?: ReturnType<typeof vi.fn>;
   readonly settlementById?: SettlementRow | null;
@@ -704,6 +728,7 @@ function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
         filters[column] = value;
         return builder;
       }),
+      order: vi.fn(() => builder),
       returns: vi.fn(() => {
         const filtered =
           filters["nation_id"] === undefined ||
