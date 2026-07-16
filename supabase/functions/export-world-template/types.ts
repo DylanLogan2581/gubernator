@@ -133,7 +133,6 @@ export type RawManagedPopulationTypeRow = {
 export type RawResourceCategoryRow = {
   readonly id: string;
   readonly name: string;
-  readonly icon: string | null;
   readonly color: string;
   readonly sort_order: number;
 };
@@ -297,7 +296,6 @@ export type WorldTemplateOutput = {
   }[];
   readonly resource_categories: readonly {
     readonly name: string;
-    readonly icon: string | null;
     readonly color: string;
     readonly sort_order: number;
   }[];

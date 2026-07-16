@@ -3,8 +3,6 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
-import { IconChip } from "@/components/shared/IconChip";
-import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -14,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 
 import { reorderResourceCategoryMutationOptions } from "../../mutations/resourceCategoriesMutations";
 
@@ -84,10 +81,6 @@ export function ResourceCategoriesTable({
                 <TableRow key={category.id}>
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5">
-                      <IconChip
-                        icon={resolveEntityIcon(category.icon)}
-                        tone={hashToCategoricalSlot(category.id)}
-                      />
                       <span
                         aria-hidden="true"
                         className="size-2.5 shrink-0 rounded-full"

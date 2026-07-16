@@ -81,7 +81,7 @@ function makeMinimalData(): WorldConfigData {
       water_consumption_per_citizen: 1.0,
     },
     resourceCategories: [
-      { id: CATEGORY_ID, name: "Food", icon: "wheat", color: "#22c55e", sort_order: 0 },
+      { id: CATEGORY_ID, name: "Food", color: "#22c55e", sort_order: 0 },
     ],
     educationLevels: [
       {
@@ -383,7 +383,7 @@ describe("assembleWorldTemplate", () => {
   it("includes resource_categories, education_levels, cultures, religions", () => {
     const template = assembleWorldTemplate(makeMinimalData());
     expect(template.resource_categories).toEqual([
-      { name: "Food", icon: "wheat", color: "#22c55e", sort_order: 0 },
+      { name: "Food", color: "#22c55e", sort_order: 0 },
     ]);
     expect(template.education_levels).toEqual([
       { name: "Basic", description: "Can read and write", rank: 1, natural_born_percent: 10 },

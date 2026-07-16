@@ -564,7 +564,6 @@ function createResourceRow(
 type TestResourceCategoryRow = {
   readonly color: string;
   readonly created_at: string;
-  readonly icon: string | null;
   readonly id: string;
   readonly name: string;
   readonly sort_order: number;
@@ -578,7 +577,6 @@ function createResourceCategoryRow(
   return {
     color: "#6b7280",
     created_at: "2026-01-01T00:00:00.000Z",
-    icon: null,
     id: "00000000-0000-0000-0000-000000000020",
     name: "Metals",
     sort_order: 0,
@@ -647,7 +645,6 @@ function createClient({
 
 type TestResourceDirectoryRow = Omit<TestResourceRow, "resource_categories"> & {
   readonly category_color: string | null;
-  readonly category_icon: string | null;
   readonly category_name: string | null;
 };
 
@@ -660,7 +657,6 @@ function toDirectoryRow(
   return {
     ...rest,
     category_color: category?.color ?? null,
-    category_icon: category?.icon ?? null,
     category_name: category?.name ?? null,
   };
 }

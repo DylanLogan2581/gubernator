@@ -18,7 +18,6 @@ const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 type ResourceCategoryRow = {
   readonly color: string;
   readonly created_at: string;
-  readonly icon: string | null;
   readonly id: string;
   readonly name: string;
   readonly sort_order: number;
@@ -73,7 +72,6 @@ describe("createResourceCategoryMutationOptions", () => {
     expect(calls.from).toHaveBeenCalledWith("resource_categories");
     expect(calls.insert).toHaveBeenCalledWith({
       color: "#6b7280",
-      icon: null,
       name: "Raw Materials",
       sort_order: 3,
       world_id: WORLD_ID,
@@ -285,7 +283,6 @@ function createResourceCategoryRow(
   return {
     color: "#6b7280",
     created_at: "2026-05-01T00:00:00.000Z",
-    icon: null,
     id: CATEGORY_ID,
     name: "Raw Materials",
     sort_order: 0,

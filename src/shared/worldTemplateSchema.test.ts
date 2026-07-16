@@ -242,9 +242,7 @@ describe("worldTemplateSchema", () => {
   it("accepts icon/category/education refs on resources and jobs", () => {
     const withRefs = {
       ...VALID_TEMPLATE,
-      resource_categories: [
-        { name: "Food", icon: "wheat", color: "#4caf50", sort_order: 0 },
-      ],
+      resource_categories: [{ name: "Food", color: "#4caf50", sort_order: 0 }],
       education_levels: [
         {
           name: "Basic",
@@ -270,6 +268,20 @@ describe("worldTemplateSchema", () => {
     };
     const result = worldTemplateSchema.safeParse(withRefs);
     expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("tolerates an old resource category export that still has icon", () => {
+    const withOldCategoryIcon = {
+      ...VALID_TEMPLATE,
+      resource_categories: [
+        { name: "Food", icon: "wheat", color: "#4caf50", sort_order: 0 },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withOldCategoryIcon);
+    expect(result.success, result.error?.message).toBe(true);
+    if (result.success) {
+      expect(result.data.resource_categories[0]).not.toHaveProperty("icon");
+    }
   });
 
   it("rejects duplicate education level ranks", () => {

@@ -65,9 +65,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       },
     },
   ],
-  resource_categories: [
-    { name: "Food", icon: null, color: "#4caf50", sort_order: 0 },
-  ],
+  resource_categories: [{ name: "Food", color: "#4caf50", sort_order: 0 }],
   education_levels: [
     { name: "Basic", description: null, rank: 1, natural_born_percent: 10 },
   ],

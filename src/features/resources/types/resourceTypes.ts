@@ -2,7 +2,6 @@ import type { Json } from "@/types/database";
 
 export type ResourceCategoryRef = {
   readonly color: string;
-  readonly icon: string | null;
   readonly id: string;
   readonly name: string;
 };

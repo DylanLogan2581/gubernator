@@ -14,7 +14,6 @@ describe("createResourceCategoryInputSchema", () => {
   it("accepts a valid create payload with all fields", () => {
     const result = createResourceCategoryInputSchema.safeParse({
       color: "#123abc",
-      icon: "pickaxe",
       name: "Raw Materials",
       worldId: WORLD_ID,
     });
@@ -22,7 +21,6 @@ describe("createResourceCategoryInputSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.color).toBe("#123abc");
-      expect(result.data.icon).toBe("pickaxe");
       expect(result.data.name).toBe("Raw Materials");
     }
   });
@@ -97,7 +95,6 @@ describe("updateResourceCategoryInputSchema", () => {
     const result = updateResourceCategoryInputSchema.safeParse({
       categoryId: CATEGORY_ID,
       color: "#111111",
-      icon: "wheat",
       name: "Renamed Category",
       worldId: WORLD_ID,
     });
@@ -124,7 +121,7 @@ describe("updateResourceCategoryInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.name).toContain(
-        "At least one of name, color, or icon must be provided.",
+        "At least one of name or color must be provided.",
       );
     }
   });

@@ -1,7 +1,6 @@
 import { useState, type FormEvent, type JSX } from "react";
 
 import { ColorPicker } from "@/components/shared/ColorPicker";
-import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,7 +41,6 @@ export function CreateResourceCategoryForm({
   worldId,
 }: CreateResourceCategoryFormProps): JSX.Element {
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState<string | null>(null);
   const [color, setColor] = useState(DEFAULT_COLOR);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateResourceCategoryFieldErrors>();
@@ -53,7 +51,6 @@ export function CreateResourceCategoryForm({
 
     const input: CreateResourceCategoryInput = {
       color,
-      icon,
       name,
       worldId,
     };
@@ -105,14 +102,6 @@ export function CreateResourceCategoryForm({
               {fieldErrors.name !== undefined ? (
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon</span>
-              <IconPicker
-                disabled={isPending}
-                value={icon}
-                onChange={setIcon}
-              />
             </Label>
             <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Color</span>

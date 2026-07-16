@@ -83,7 +83,6 @@ function createQueryClient(): QueryClient {
 type TestResourceCategoryRow = {
   readonly color: string;
   readonly created_at: string;
-  readonly icon: string | null;
   readonly id: string;
   readonly name: string;
   readonly sort_order: number;

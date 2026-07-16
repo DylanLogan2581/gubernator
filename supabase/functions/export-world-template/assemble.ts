@@ -129,7 +129,6 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
   // Resource categories (sorted by sort_order asc, name asc from query)
   const resourceCategories = data.resourceCategories.map((c) => ({
     name: c.name,
-    icon: c.icon,
     color: c.color,
     sort_order: c.sort_order,
   }));

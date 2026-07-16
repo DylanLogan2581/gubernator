@@ -114,7 +114,7 @@ export async function fetchWorldConfigData(
     fetchRows<RawResourceCategoryRow>(ctx, "resource_categories", {
       world_id: `eq.${worldId}`,
       order: "sort_order.asc,name.asc",
-      select: "id,name,icon,color,sort_order",
+      select: "id,name,color,sort_order",
     }),
     fetchRows<RawEducationLevelRow>(ctx, "education_levels", {
       world_id: `eq.${worldId}`,

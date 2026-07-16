@@ -174,7 +174,6 @@ async function createResourceCategory(
     .from("resource_categories")
     .insert({
       color: values.color,
-      icon: values.icon ?? null,
       name: values.name.trim(),
       sort_order: nextSortOrder,
       world_id: values.worldId,
@@ -223,15 +222,11 @@ async function updateResourceCategory(
 
   const updatePayload: {
     color?: string;
-    icon?: string | null;
     name?: string;
   } = {};
 
   if (values.name !== undefined) {
     updatePayload.name = values.name.trim();
-  }
-  if (values.icon !== undefined) {
-    updatePayload.icon = values.icon;
   }
   if (values.color !== undefined) {
     updatePayload.color = values.color;

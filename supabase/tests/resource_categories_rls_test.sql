@@ -95,13 +95,12 @@ values
   );
 
 insert into
-  public.resource_categories (id, world_id, name, icon, color, sort_order)
+  public.resource_categories (id, world_id, name, color, sort_order)
 values
   (
     'c3000000-0000-0000-0000-000000000001',
     'c2000000-0000-0000-0000-000000000001',
     'Raw Materials',
-    'pickaxe',
     '#336699',
     0
   ),
@@ -109,7 +108,6 @@ values
     'c3000000-0000-0000-0000-000000000002',
     'c2000000-0000-0000-0000-000000000002',
     'Food',
-    null,
     '#6b7280',
     0
   );

@@ -4,7 +4,6 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { ColorPicker } from "@/components/shared/ColorPicker";
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
-import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,7 +55,6 @@ export function EditResourceCategoryForm({
   );
 
   const [name, setName] = useState(category.name);
-  const [icon, setIcon] = useState<string | null>(category.icon);
   const [color, setColor] = useState(category.color);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof ResourceCategoryFieldErrors>();
@@ -72,7 +70,6 @@ export function EditResourceCategoryForm({
     const input: UpdateResourceCategoryInput = {
       categoryId: category.id,
       color,
-      icon,
       name,
       worldId,
     };
@@ -141,14 +138,6 @@ export function EditResourceCategoryForm({
               {fieldErrors.name !== undefined ? (
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon</span>
-              <IconPicker
-                disabled={isPending}
-                value={icon}
-                onChange={setIcon}
-              />
             </Label>
             <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Color</span>

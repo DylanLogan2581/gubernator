@@ -76,7 +76,6 @@ const namesetTemplateSchema = z.object({
 
 const resourceCategoryTemplateSchema = z.object({
   name: z.string().min(1),
-  icon: iconRef,
   color: colorHex,
   sort_order: z.number().int(),
 });

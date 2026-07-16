@@ -20,12 +20,6 @@ const resourceCategoryNameSchema = z
     "Resource category name is required.",
   );
 
-const resourceCategoryIconSchema = z
-  .string()
-  .max(64, "Icon name is too long.")
-  .optional()
-  .nullable();
-
 const createResourceCategoryColorSchema = z
   .string()
   .regex(HEX_COLOR_REGEX, HEX_COLOR_MESSAGE)
@@ -38,7 +32,6 @@ const updateResourceCategoryColorSchema = z
 
 export const createResourceCategoryInputSchema = z.strictObject({
   color: createResourceCategoryColorSchema,
-  icon: resourceCategoryIconSchema,
   name: resourceCategoryNameSchema,
   worldId: worldIdSchema,
 });
@@ -47,19 +40,14 @@ export const updateResourceCategoryInputSchema = z
   .strictObject({
     categoryId: resourceCategoryIdSchema,
     color: updateResourceCategoryColorSchema,
-    icon: resourceCategoryIconSchema,
     name: resourceCategoryNameSchema.optional(),
     worldId: worldIdSchema,
   })
   .superRefine((value, ctx): void => {
-    if (
-      value.name === undefined &&
-      value.color === undefined &&
-      value.icon === undefined
-    ) {
+    if (value.name === undefined && value.color === undefined) {
       ctx.addIssue({
         code: "custom",
-        message: "At least one of name, color, or icon must be provided.",
+        message: "At least one of name or color must be provided.",
         path: ["name"],
       });
     }

@@ -8,7 +8,6 @@ import type {
 
 export type ResourceCategoryRefRow = {
   readonly color: string;
-  readonly icon: string | null;
   readonly id: string;
   readonly name: string;
 };
@@ -32,7 +31,7 @@ export type ResourceRow = {
 };
 
 export const RESOURCE_SELECT =
-  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,resource_categories(id,name,icon,color)";
+  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,resource_categories(id,name,color)";
 
 function toResourceCategoryRef(
   row: ResourceCategoryRefRow | null | undefined,
@@ -40,7 +39,6 @@ function toResourceCategoryRef(
   if (row === null || row === undefined) return null;
   return {
     color: row.color,
-    icon: row.icon,
     id: row.id,
     name: row.name,
   };
@@ -73,7 +71,6 @@ export function toResource(row: ResourceRow): Resource {
 export type ResourceDirectoryRow = {
   readonly base_stockpile_cap: number;
   readonly category_color: string | null;
-  readonly category_icon: string | null;
   readonly category_id: string | null;
   readonly category_name: string | null;
   readonly change_amount: number;
@@ -91,7 +88,7 @@ export type ResourceDirectoryRow = {
 };
 
 export const RESOURCE_DIRECTORY_SELECT =
-  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,category_name,category_icon,category_color";
+  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,category_name,category_color";
 
 export function toResourceFromDirectoryRow(
   row: ResourceDirectoryRow,
@@ -103,7 +100,6 @@ export function toResourceFromDirectoryRow(
         ? null
         : {
             color: row.category_color ?? "#6b7280",
-            icon: row.category_icon,
             id: row.category_id,
             name: row.category_name ?? "",
           },

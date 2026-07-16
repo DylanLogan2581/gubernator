@@ -3442,7 +3442,6 @@ export type Database = {
         Row: {
           color: string;
           created_at: string;
-          icon: string | null;
           id: string;
           name: string;
           sort_order: number;
@@ -3452,7 +3451,6 @@ export type Database = {
         Insert: {
           color?: string;
           created_at?: string;
-          icon?: string | null;
           id?: string;
           name: string;
           sort_order?: number;
@@ -3462,7 +3460,6 @@ export type Database = {
         Update: {
           color?: string;
           created_at?: string;
-          icon?: string | null;
           id?: string;
           name?: string;
           sort_order?: number;
@@ -4792,7 +4789,6 @@ export type Database = {
         Row: {
           base_stockpile_cap: number | null;
           category_color: string | null;
-          category_icon: string | null;
           category_id: string | null;
           category_name: string | null;
           change_amount: number | null;
