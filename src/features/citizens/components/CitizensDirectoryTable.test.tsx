@@ -9,6 +9,16 @@ import { CitizensDirectoryTable } from "./CitizensDirectoryTable";
 
 import type { ReactNode } from "react";
 
+// jsdom lacks pointer capture / scrollIntoView, which Radix Select needs to open.
+/* eslint-disable @typescript-eslint/unbound-method */
+Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
+  return false;
+};
+Element.prototype.setPointerCapture ??= function setPointerCapture() {};
+Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+/* eslint-enable @typescript-eslint/unbound-method */
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -280,5 +290,63 @@ describe("CitizensDirectoryTable", () => {
     await waitFor(() => {
       expect(orderSpy).toHaveBeenCalledWith("age_turns", { ascending: true });
     });
+  });
+
+  it("restricts the settlement options to the selected nation and resets the settlement filter on nation change", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [],
+        nations: [
+          { id: "nation-1", name: "Nation A" },
+          { id: "nation-2", name: "Nation B" },
+        ],
+        settlements: [
+          {
+            id: "settlement-1",
+            name: "Amberhold",
+            nation_id: "nation-1",
+            nations: { name: "Nation A" },
+          },
+          {
+            id: "settlement-2",
+            name: "Ravenshold",
+            nation_id: "nation-2",
+            nations: { name: "Nation B" },
+          },
+        ],
+        totalCount: 0,
+      }),
+    );
+
+    renderTable();
+    await screen.findByText("No citizens found");
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by settlement" }),
+    );
+    expect(
+      await screen.findByRole("option", { name: "Amberhold" }),
+    ).toBeDefined();
+    expect(screen.getByRole("option", { name: "Ravenshold" })).toBeDefined();
+    await user.click(screen.getByRole("option", { name: "Amberhold" }));
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by nation" }),
+    );
+    await user.click(await screen.findByRole("option", { name: "Nation B" }));
+
+    expect(
+      screen.getByRole("combobox", { name: "Filter by settlement" }),
+    ).toHaveTextContent("All settlements");
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by settlement" }),
+    );
+    expect(
+      await screen.findByRole("option", { name: "Ravenshold" }),
+    ).toBeDefined();
+    expect(screen.queryByRole("option", { name: "Amberhold" })).toBeNull();
   });
 });

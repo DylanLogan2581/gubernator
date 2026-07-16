@@ -234,6 +234,27 @@ export function CitizensDirectoryTable({
         />
 
         <Select
+          value={nationId ?? "all"}
+          onValueChange={(value) => {
+            setNationId(value === "all" ? undefined : value);
+            setSettlementId(undefined);
+            resetToFirstPage();
+          }}
+        >
+          <SelectTrigger className="sm:w-[180px]" aria-label="Filter by nation">
+            <SelectValue placeholder="All nations" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All nations</SelectItem>
+            {(nationsQuery.data ?? []).map((nation) => (
+              <SelectItem key={nation.id} value={nation.id}>
+                {nation.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
           value={settlementId ?? "all"}
           onValueChange={(value) => {
             setSettlementId(value === "all" ? undefined : value);
@@ -248,29 +269,14 @@ export function CitizensDirectoryTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All settlements</SelectItem>
-            {(settlementsQuery.data ?? []).map((settlement) => (
+            {(nationId === undefined
+              ? (settlementsQuery.data ?? [])
+              : (settlementsQuery.data ?? []).filter(
+                  (settlement) => settlement.nationId === nationId,
+                )
+            ).map((settlement) => (
               <SelectItem key={settlement.id} value={settlement.id}>
                 {settlement.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={nationId ?? "all"}
-          onValueChange={(value) => {
-            setNationId(value === "all" ? undefined : value);
-            resetToFirstPage();
-          }}
-        >
-          <SelectTrigger className="sm:w-[180px]" aria-label="Filter by nation">
-            <SelectValue placeholder="All nations" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All nations</SelectItem>
-            {(nationsQuery.data ?? []).map((nation) => (
-              <SelectItem key={nation.id} value={nation.id}>
-                {nation.name}
               </SelectItem>
             ))}
           </SelectContent>
