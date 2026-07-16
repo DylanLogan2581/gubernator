@@ -1,6 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Upload } from "lucide-react";
-import { useId, useRef, useState, type FormEvent, type JSX } from "react";
+import {
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type FormEvent,
+  type JSX,
+  type RefObject,
+} from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,17 +37,29 @@ import {
   type DryRunReport,
 } from "../utils/worldTemplateDryRun";
 
+export type WorldTemplateImportButtonHandle = {
+  readonly openFilePicker: () => void;
+};
+
 // ---------------------------------------------------------------------------
 // Main button
 // ---------------------------------------------------------------------------
 export function WorldTemplateImportButton({
   queryClient,
+  ref,
 }: {
   readonly queryClient: QueryClient;
+  readonly ref?: RefObject<WorldTemplateImportButtonHandle | null>;
 }): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [template, setTemplate] = useState<WorldTemplate | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    openFilePicker: () => {
+      fileInputRef.current?.click();
+    },
+  }));
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];

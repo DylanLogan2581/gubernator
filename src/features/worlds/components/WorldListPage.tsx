@@ -16,12 +16,14 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
   type JSX,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { toast } from "sonner";
 
@@ -76,11 +78,20 @@ import {
   DryRunSummary,
   ImportErrorDialog,
   WorldTemplateImportButton,
+  type WorldTemplateImportButtonHandle,
 } from "./WorldTemplateImportButton";
 
 import type { AccessibleWorld } from "../types/worldTypes";
 
-export function WorldListPage(): JSX.Element {
+export type WorldListPageAction = "create" | "import" | undefined;
+
+export function WorldListPage({
+  action,
+  onClearAction,
+}: {
+  readonly action?: WorldListPageAction;
+  readonly onClearAction?: () => void;
+}): JSX.Element {
   const queryClient = useQueryClient();
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
@@ -116,20 +127,56 @@ export function WorldListPage(): JSX.Element {
     );
   }
 
-  return <WorldListContent accessContext={accessContextQuery.data} />;
+  return (
+    <WorldListContent
+      accessContext={accessContextQuery.data}
+      action={action}
+      onClearAction={onClearAction}
+    />
+  );
 }
 
 function WorldListContent({
   accessContext,
+  action,
+  onClearAction,
 }: {
   readonly accessContext: AccessContext;
+  readonly action?: WorldListPageAction;
+  readonly onClearAction?: () => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const importButtonRef = useRef<WorldTemplateImportButtonHandle>(null);
+
+  const onClearActionRef = useRef(onClearAction);
+  useEffect(() => {
+    onClearActionRef.current = onClearAction;
+  }, [onClearAction]);
 
   const worldsQuery = useQuery(accessibleWorldsQueryOptions(accessContext));
   const trashedWorldsQuery = useQuery(trashedWorldsQueryOptions(accessContext));
+
+  useEffect(() => {
+    // Wait until the world list (and its actions, including the import
+    // button that owns the file input) has actually mounted — otherwise
+    // the ref is still null and the action would be cleared without effect.
+    if (
+      action === undefined ||
+      !accessContext.isSuperAdmin ||
+      worldsQuery.isPending
+    ) {
+      return;
+    }
+    if (action === "create") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect, @eslint-react/set-state-in-effect -- deep-link: opens the dialog once the world-list content (and the query it depends on) has mounted
+      setShowCreateDialog(true);
+    } else {
+      importButtonRef.current?.openFilePicker();
+    }
+    onClearActionRef.current?.();
+  }, [action, accessContext.isSuperAdmin, worldsQuery.isPending]);
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
@@ -175,6 +222,7 @@ function WorldListContent({
             <WorldListActions
               accessContext={accessContext}
               effectiveShowTrash={effectiveShowTrash}
+              importButtonRef={importButtonRef}
               queryClient={queryClient}
               onCreateWorld={() => {
                 setShowCreateDialog(true);
@@ -218,12 +266,14 @@ function WorldListContent({
 function WorldListActions({
   accessContext,
   effectiveShowTrash,
+  importButtonRef,
   queryClient,
   onCreateWorld,
   onToggleTrash,
 }: {
   readonly accessContext: AccessContext;
   readonly effectiveShowTrash: boolean;
+  readonly importButtonRef: RefObject<WorldTemplateImportButtonHandle | null>;
   readonly queryClient: QueryClient;
   readonly onCreateWorld: () => void;
   readonly onToggleTrash: () => void;
@@ -251,7 +301,10 @@ function WorldListActions({
         </Button>
       ) : null}
       {accessContext.isSuperAdmin ? (
-        <WorldTemplateImportButton queryClient={queryClient} />
+        <WorldTemplateImportButton
+          ref={importButtonRef}
+          queryClient={queryClient}
+        />
       ) : null}
       {accessContext.isSuperAdmin ? (
         <TrashToggleButton

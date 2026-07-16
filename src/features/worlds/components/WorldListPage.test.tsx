@@ -548,6 +548,64 @@ describe("WorldListPage", () => {
     await screen.findByText("Trashed World");
   });
 
+  it("auto-opens the create dialog when action is 'create' and clears it", async () => {
+    const onClearAction = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage({ action: "create", onClearAction });
+
+    await screen.findByText("Test World");
+    expect(
+      await screen.findByRole("dialog", { name: "Create world" }),
+    ).toBeDefined();
+    expect(onClearAction).toHaveBeenCalled();
+  });
+
+  it("opens the import file picker when action is 'import' and clears it", async () => {
+    const onClearAction = vi.fn();
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click");
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage({ action: "import", onClearAction });
+
+    await screen.findByText("Test World");
+    await waitFor(() => {
+      expect(clickSpy).toHaveBeenCalled();
+    });
+    expect(onClearAction).toHaveBeenCalled();
+
+    clickSpy.mockRestore();
+  });
+
+  it("ignores the action param for non-superadmins", async () => {
+    const onClearAction = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: false,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage({ action: "create", onClearAction });
+
+    await screen.findByText("Test World");
+    expect(screen.queryByText("Create world")).toBeNull();
+    expect(onClearAction).not.toHaveBeenCalled();
+  });
+
   it("restores a trashed world", async () => {
     const user = userEvent.setup();
     const worldId = "00000000-0000-0000-0000-000000000009";
@@ -601,11 +659,17 @@ describe("WorldListPage", () => {
   });
 });
 
-function renderWorldListPage(): void {
+function renderWorldListPage({
+  action,
+  onClearAction,
+}: {
+  readonly action?: "create" | "import";
+  readonly onClearAction?: () => void;
+} = {}): void {
   render(
     <TooltipProvider>
       <QueryClientProvider client={createQueryClient()}>
-        <WorldListPage />
+        <WorldListPage action={action} onClearAction={onClearAction} />
       </QueryClientProvider>
     </TooltipProvider>,
   );

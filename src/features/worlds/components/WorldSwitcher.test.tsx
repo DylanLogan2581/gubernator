@@ -22,19 +22,25 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({
     children,
     params,
+    search,
     to,
   }: {
     readonly children: ReactNode;
     readonly params?: Readonly<Record<string, string>>;
+    readonly search?: Readonly<Record<string, string>>;
     readonly to: string;
   }) => {
-    const href =
+    const path =
       params === undefined
         ? to
         : Object.entries(params).reduce(
-            (path, [name, value]) => path.replace(`$${name}`, value),
+            (acc, [name, value]) => acc.replace(`$${name}`, value),
             to,
           );
+    const href =
+      search === undefined
+        ? path
+        : `${path}?${new URLSearchParams(search).toString()}`;
     return <a href={href}>{children}</a>;
   },
 }));
@@ -124,10 +130,10 @@ describe("WorldSwitcher", () => {
 
     expect(
       await screen.findByRole("link", { name: /Create world/ }),
-    ).toHaveAttribute("href", "/worlds");
+    ).toHaveAttribute("href", "/worlds?action=create");
     expect(screen.getByRole("link", { name: /Import/ })).toHaveAttribute(
       "href",
-      "/worlds",
+      "/worlds?action=import",
     );
   });
 });
