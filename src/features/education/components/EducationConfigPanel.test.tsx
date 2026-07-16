@@ -143,6 +143,8 @@ function createQueryClient(): QueryClient {
 type TestEducationLevelRow = {
   readonly created_at: string;
   readonly description: string | null;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly name: string;
   readonly natural_born_percent: number;
@@ -157,6 +159,8 @@ function createEducationLevelRow(
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
+    icon: null,
+    icon_color: null,
     id: EDUCATION_LEVEL_ID,
     name: "Illiterate",
     natural_born_percent: 0,

@@ -3,6 +3,8 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { educationLevelInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { roundDecimal } from "@/lib/roundDecimal";
@@ -65,6 +68,10 @@ export function EditEducationLevelForm({
   const [naturalBornPercent, setNaturalBornPercent] = useState(
     String(educationLevel.naturalBornPercent),
   );
+  const [icon, setIcon] = useState<string | null>(educationLevel.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    educationLevel.iconColor as CategoricalSlot | null,
+  );
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof EducationLevelFieldErrors>();
 
@@ -86,6 +93,8 @@ export function EditEducationLevelForm({
     const input: UpdateEducationLevelInput = {
       description,
       educationLevelId: educationLevel.id,
+      icon,
+      iconColor,
       name,
       naturalBornPercent: naturalBornPercentValue,
       worldId,
@@ -179,6 +188,22 @@ export function EditEducationLevelForm({
                   {fieldErrors.description}
                 </p>
               ) : null}
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon</span>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
+              />
             </Label>
             <Label
               className="grid gap-1 text-sm"

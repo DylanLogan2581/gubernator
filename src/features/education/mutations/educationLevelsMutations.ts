@@ -169,9 +169,11 @@ async function createEducationLevel(
   // insert -- see create_education_level in the education_levels migration.
   const { data, error } = await client
     .rpc("create_education_level", {
-      // Generated types don't reflect the nullable parameter; the DB column
-      // permits null descriptions.
+      // Generated types don't reflect the nullable parameters; the DB
+      // columns permit null description/icon/icon_color.
       p_description: (values.description ?? null) as string,
+      p_icon: (values.icon ?? null) as string,
+      p_icon_color: (values.iconColor ?? null) as number,
       p_name: values.name.trim(),
       p_natural_born_percent: values.naturalBornPercent ?? 0,
       p_world_id: values.worldId,
@@ -200,6 +202,8 @@ async function updateEducationLevel(
 
   const updatePayload: {
     description?: string | null;
+    icon?: string | null;
+    icon_color?: number | null;
     name?: string;
     natural_born_percent?: number;
   } = {};
@@ -212,6 +216,12 @@ async function updateEducationLevel(
   }
   if (values.naturalBornPercent !== undefined) {
     updatePayload.natural_born_percent = values.naturalBornPercent;
+  }
+  if (values.icon !== undefined) {
+    updatePayload.icon = values.icon;
+  }
+  if (values.iconColor !== undefined) {
+    updatePayload.icon_color = values.iconColor;
   }
 
   const { data, error } = await client

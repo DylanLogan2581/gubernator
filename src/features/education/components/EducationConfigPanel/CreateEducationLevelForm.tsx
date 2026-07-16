@@ -1,5 +1,7 @@
 import { useState, type FormEvent, type JSX } from "react";
 
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { educationLevelInputLimits } from "@/lib/inputLimits";
 import { roundDecimal } from "@/lib/roundDecimal";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -45,6 +48,8 @@ export function CreateEducationLevelForm({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [naturalBornPercent, setNaturalBornPercent] = useState("0");
+  const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateEducationLevelFieldErrors>();
 
@@ -62,6 +67,8 @@ export function CreateEducationLevelForm({
 
     const input: CreateEducationLevelInput = {
       description,
+      icon,
+      iconColor,
       name,
       naturalBornPercent: naturalBornPercentValue,
       worldId,
@@ -133,6 +140,22 @@ export function CreateEducationLevelForm({
                   {fieldErrors.description}
                 </p>
               ) : null}
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon</span>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
+              />
             </Label>
             <Label
               className="grid gap-1 text-sm"

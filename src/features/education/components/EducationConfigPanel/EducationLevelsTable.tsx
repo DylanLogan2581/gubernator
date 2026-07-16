@@ -3,6 +3,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -12,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 
 import { reorderEducationLevelMutationOptions } from "../../mutations/educationLevelsMutations";
 
@@ -77,7 +80,16 @@ export function EducationLevelsTable({
                   {educationLevel.rank}
                 </TableCell>
                 <TableCell>
-                  <span className="font-medium">{educationLevel.name}</span>
+                  <div className="flex items-center gap-2">
+                    <IconChip
+                      icon={resolveEntityIcon(educationLevel.icon)}
+                      tone={resolveIconTone(
+                        educationLevel.iconColor,
+                        educationLevel.id,
+                      )}
+                    />
+                    <span className="font-medium">{educationLevel.name}</span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {educationLevel.description ?? ""}

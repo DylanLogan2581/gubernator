@@ -19,6 +19,8 @@ const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 type EducationLevelRow = {
   readonly created_at: string;
   readonly description: string | null;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly name: string;
   readonly natural_born_percent: number;
@@ -69,6 +71,8 @@ describe("createEducationLevelMutationOptions", () => {
     expect(result).toMatchObject({ id: EDUCATION_LEVEL_ID, name: row.name });
     expect(calls.rpc).toHaveBeenCalledWith("create_education_level", {
       p_description: null,
+      p_icon: null,
+      p_icon_color: null,
       p_name: "Illiterate",
       p_natural_born_percent: 0,
       p_world_id: WORLD_ID,
@@ -344,6 +348,8 @@ function createEducationLevelRow(
   return {
     created_at: "2026-05-01T00:00:00.000Z",
     description: null,
+    icon: null,
+    icon_color: null,
     id: EDUCATION_LEVEL_ID,
     name: "Illiterate",
     natural_born_percent: 0,

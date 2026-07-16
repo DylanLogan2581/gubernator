@@ -1382,6 +1382,8 @@ export type Database = {
         Row: {
           created_at: string;
           description: string | null;
+          icon: string | null;
+          icon_color: number | null;
           id: string;
           name: string;
           natural_born_percent: number;
@@ -1392,6 +1394,8 @@ export type Database = {
         Insert: {
           created_at?: string;
           description?: string | null;
+          icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           name: string;
           natural_born_percent?: number;
@@ -1402,6 +1406,8 @@ export type Database = {
         Update: {
           created_at?: string;
           description?: string | null;
+          icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           name?: string;
           natural_born_percent?: number;
@@ -5831,6 +5837,8 @@ export type Database = {
       create_education_level: {
         Args: {
           p_description: string;
+          p_icon?: string;
+          p_icon_color?: number;
           p_name: string;
           p_natural_born_percent?: number;
           p_world_id: string;
@@ -5838,6 +5846,8 @@ export type Database = {
         Returns: {
           created_at: string;
           description: string | null;
+          icon: string | null;
+          icon_color: number | null;
           id: string;
           name: string;
           natural_born_percent: number;
@@ -7364,6 +7374,8 @@ export type Database = {
         Returns: {
           created_at: string;
           description: string | null;
+          icon: string | null;
+          icon_color: number | null;
           id: string;
           name: string;
           natural_born_percent: number;

@@ -3,6 +3,8 @@ import type { EducationLevel } from "../types/educationLevelTypes";
 export type EducationLevelRow = {
   readonly created_at: string;
   readonly description: string | null;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly name: string;
   readonly natural_born_percent: number;
@@ -12,12 +14,14 @@ export type EducationLevelRow = {
 };
 
 export const EDUCATION_LEVEL_SELECT =
-  "id,world_id,name,description,rank,natural_born_percent,created_at,updated_at";
+  "id,world_id,name,description,rank,natural_born_percent,icon,icon_color,created_at,updated_at";
 
 export function toEducationLevel(row: EducationLevelRow): EducationLevel {
   return {
     createdAt: row.created_at,
     description: row.description,
+    icon: row.icon,
+    iconColor: row.icon_color,
     id: row.id,
     name: row.name,
     naturalBornPercent: row.natural_born_percent,
