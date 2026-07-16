@@ -19,7 +19,7 @@ type WorldCardImageProps = {
 // Falls back to a categorical color chip with a globe glyph when the world
 // has no thumbnail yet.
 export function WorldCardImage({ world }: WorldCardImageProps): JSX.Element {
-  const { url } = useWorldImageSignedUrl(world.thumbnailPath);
+  const { url } = useWorldImageSignedUrl(world.heroPath);
   const initial = world.name.trim().charAt(0).toUpperCase();
 
   return (

@@ -22,6 +22,7 @@ export type AccessibleWorld = {
   readonly canManage: boolean;
   readonly createdAt: string;
   readonly currentTurnNumber: number;
+  readonly heroPath: string | null;
   readonly id: string;
   readonly incestPreventionDepth: number;
   readonly inWorldDateLabel: string;

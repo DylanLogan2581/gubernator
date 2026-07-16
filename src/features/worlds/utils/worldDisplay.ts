@@ -27,6 +27,7 @@ type WorldRow = Pick<
   | "visibility"
 > & {
   readonly calendar_config_json?: Tables<"worlds">["calendar_config_json"];
+  readonly hero_path?: Tables<"worlds">["hero_path"];
   readonly thumbnail_path?: Tables<"worlds">["thumbnail_path"];
 };
 
@@ -55,6 +56,7 @@ export function toAccessibleWorld(
     canManage: accessContext.canAdminWorld(accessTarget),
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
+    heroPath: world.hero_path ?? null,
     id: world.id,
     incestPreventionDepth: world.incest_prevention_depth,
     inWorldDateLabel: resolveInWorldDateLabel(

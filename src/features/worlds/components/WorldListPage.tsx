@@ -9,7 +9,6 @@ import {
   Archive,
   ArrowRight,
   Globe2,
-  History,
   LockKeyhole,
   Plus,
   ShieldCheck,
@@ -70,9 +69,9 @@ import {
 } from "../queries/worldQueries";
 import { parseWorldTemplate } from "../queries/worldTemplateExportQueries";
 import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
-import { readWorldScopePin } from "../utils/worldScopePin";
 import { computeDryRunReport } from "../utils/worldTemplateDryRun";
 
+import { WorldAvatar } from "./WorldAvatar";
 import { WorldCardImage } from "./WorldCardImage";
 import {
   DryRunSummary,
@@ -438,22 +437,6 @@ function TrashToggleButton({
   );
 }
 
-type ResumeTarget = {
-  readonly nationId: string;
-  readonly settlementId: string | null;
-};
-
-// #1005's stored scope pin is a free "where was I" bookmark per world
-// (localStorage, no request needed) — surface it as a resume shortcut when
-// present, otherwise the card just links to the world dashboard as before.
-function resumeTargetForWorld(worldId: string): ResumeTarget | null {
-  const pin = readWorldScopePin(worldId);
-  if (pin.nationId === null) {
-    return null;
-  }
-  return { nationId: pin.nationId, settlementId: pin.settlementId };
-}
-
 function WorldListItem({
   isSuperAdmin,
   queryClient,
@@ -465,7 +448,6 @@ function WorldListItem({
 }): JSX.Element {
   const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
   const trashMutation = useMutation(trashWorldMutationOptions({ queryClient }));
-  const resumeTarget = resumeTargetForWorld(world.id);
 
   async function handleTrash(): Promise<void> {
     try {
@@ -491,6 +473,12 @@ function WorldListItem({
         <WorldCardImage world={world} />
         <div className="grid gap-3 px-3 pb-3">
           <div className="flex min-w-0 items-center gap-3">
+            <WorldAvatar
+              className="shrink-0"
+              thumbnailPath={world.thumbnailPath}
+              worldId={world.id}
+              worldName={world.name}
+            />
             <div className="min-w-0 flex-1 space-y-1">
               <h2 className="truncate text-base font-medium">{world.name}</h2>
               <WorldBadge world={world} />
@@ -500,65 +488,29 @@ function WorldListItem({
               aria-hidden="true"
             />
           </div>
-          <dl className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+          <dl className="text-xs text-muted-foreground">
             <div>
-              <dt className="font-medium text-foreground">Planning turn</dt>
-              <dd>{world.planningTurnNumber}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-foreground">In-world date</dt>
+              <dt className="font-medium text-foreground">Current Date</dt>
               <dd>{world.inWorldDateLabel}</dd>
             </div>
           </dl>
         </div>
       </Link>
-      {resumeTarget !== null || isSuperAdmin ? (
-        <div className="-mt-3 flex items-center justify-between gap-2 px-3 pb-3">
-          {resumeTarget !== null ? (
-            <Button asChild variant="outline" size="sm">
-              {resumeTarget.settlementId !== null ? (
-                <Link
-                  to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-                  params={{
-                    nationId: resumeTarget.nationId,
-                    settlementId: resumeTarget.settlementId,
-                    worldId: world.id,
-                  }}
-                >
-                  <History aria-hidden="true" />
-                  Resume
-                </Link>
-              ) : (
-                <Link
-                  to="/worlds/$worldId/nations/$nationId"
-                  params={{
-                    nationId: resumeTarget.nationId,
-                    worldId: world.id,
-                  }}
-                >
-                  <History aria-hidden="true" />
-                  Resume
-                </Link>
-              )}
-            </Button>
-          ) : (
-            <span />
-          )}
-          {isSuperAdmin ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Move ${world.name} to trash`}
-              title="Move to trash"
-              disabled={trashMutation.isPending}
-              onClick={() => {
-                setTrashConfirmOpen(true);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
-          ) : null}
+      {isSuperAdmin ? (
+        <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${world.name} to trash`}
+            title="Move to trash"
+            disabled={trashMutation.isPending}
+            onClick={() => {
+              setTrashConfirmOpen(true);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
         </div>
       ) : null}
       {trashConfirmOpen ? (

@@ -6,8 +6,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorldCalendarConfig } from "@/features/calendar";
 
-import { writeWorldScopePin } from "../utils/worldScopePin";
-
 import { WorldListPage } from "./WorldListPage";
 
 import type { ReactNode } from "react";
@@ -195,63 +193,6 @@ describe("WorldListPage", () => {
     );
   });
 
-  it("shows a resume link to the pinned nation when a scope pin is stored", async () => {
-    const worldId = "00000000-0000-0000-0000-000000000501";
-    writeWorldScopePin(worldId, { nationId: "nation-1", settlementId: null });
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, name: "Resume World" })],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("Resume World");
-    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
-      "href",
-      `/worlds/${worldId}/nations/nation-1`,
-    );
-  });
-
-  it("shows a resume link to the pinned settlement when both nation and settlement are stored", async () => {
-    const worldId = "00000000-0000-0000-0000-000000000502";
-    writeWorldScopePin(worldId, {
-      nationId: "nation-1",
-      settlementId: "settlement-1",
-    });
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({ id: worldId, name: "Resume Settlement World" }),
-        ],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("Resume Settlement World");
-    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
-      "href",
-      `/worlds/${worldId}/nations/nation-1/settlements/settlement-1`,
-    );
-  });
-
-  it("does not show a resume link when no scope pin is stored", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ name: "No Pin World" })],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("No Pin World");
-    expect(screen.queryByRole("link", { name: "Resume" })).toBeNull();
-  });
-
   it("shows a world icon with the first letter of the world name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -268,7 +209,7 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     expect(await screen.findByText("Calendar World")).toBeDefined();
-    expect(screen.getByText("C")).toBeDefined();
+    expect(screen.getAllByText("C")).toHaveLength(2);
   });
 
   it("shows a tooltip explaining the Hidden badge on hover", async () => {
@@ -297,7 +238,7 @@ describe("WorldListPage", () => {
     );
   });
 
-  it("renders planning turn and computed in-world date", async () => {
+  it("renders the computed in-world date", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
@@ -314,9 +255,7 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     expect(await screen.findByText("Calendar World")).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("3")).toBeDefined();
-    expect(screen.getByText("In-world date")).toBeDefined();
+    expect(screen.getByText("Current Date")).toBeDefined();
     expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
   });
 

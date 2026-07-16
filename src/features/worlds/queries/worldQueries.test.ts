@@ -99,7 +99,7 @@ describe("accessibleWorldsQueryOptions", () => {
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,hero_path,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith("is_trashed", false);
     expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
@@ -237,7 +237,7 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.world.slug).toBe("verdant-reach-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,hero_path,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith(
       "id",
