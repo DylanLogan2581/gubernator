@@ -12,7 +12,7 @@ import type { JobDefinition } from "@/features/jobs";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 
 import {
   hardDeleteManagedPopulationTypeMutationOptions,
@@ -88,7 +88,10 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(populationType.icon)}
-              tone={hashToCategoricalSlot(populationType.id)}
+              tone={resolveIconTone(
+                populationType.iconColor,
+                populationType.id,
+              )}
             />
             <span className="font-medium">{populationType.name}</span>
             {showTrash ? <Badge variant="outline">trashed</Badge> : null}

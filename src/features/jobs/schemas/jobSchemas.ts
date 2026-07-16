@@ -37,12 +37,21 @@ const jobIconSchema = z
   .optional()
   .nullable();
 
+const jobIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 const requiredEducationLevelIdSchema = z
   .guid("Select an education level.")
   .nullish();
 
 const commonCreateFields = {
   icon: jobIconSchema,
+  iconColor: jobIconColorSchema,
   name: jobNameSchema,
   requiredEducationLevelId: requiredEducationLevelIdSchema,
   slug: jobSlugSchema,
@@ -103,6 +112,7 @@ export const updateJobInputSchema = z
   .strictObject({
     baseCapacity: baseCapacitySchema.optional(),
     icon: jobIconSchema,
+    iconColor: jobIconColorSchema,
     inputsJson: jobIoArraySchema.optional(),
     jobId: jobIdSchema,
     linkedDepositTypeId: z.guid().optional().nullable(),
@@ -125,7 +135,8 @@ export const updateJobInputSchema = z
       value.requiredEducationLevelId === undefined &&
       value.inputsJson === undefined &&
       value.outputsJson === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",

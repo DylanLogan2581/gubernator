@@ -19,6 +19,7 @@ export type ResourceRow = {
   readonly change_mode: ResourceChangeMode;
   readonly created_at: string;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -31,7 +32,7 @@ export type ResourceRow = {
 };
 
 export const RESOURCE_SELECT =
-  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,resource_categories(id,name,color)";
+  "id,world_id,name,slug,icon,icon_color,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,resource_categories(id,name,color)";
 
 function toResourceCategoryRef(
   row: ResourceCategoryRefRow | null | undefined,
@@ -53,6 +54,7 @@ export function toResource(row: ResourceRow): Resource {
     changeMode: row.change_mode,
     createdAt: row.created_at,
     icon: row.icon,
+    iconColor: row.icon_color,
     id: row.id,
     isTrashed: row.is_trashed,
     isSystemResource: row.is_system_resource,
@@ -77,6 +79,7 @@ export type ResourceDirectoryRow = {
   readonly change_mode: ResourceChangeMode;
   readonly created_at: string;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -88,7 +91,7 @@ export type ResourceDirectoryRow = {
 };
 
 export const RESOURCE_DIRECTORY_SELECT =
-  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,category_name,category_color";
+  "id,world_id,name,slug,icon,icon_color,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,category_name,category_color";
 
 export function toResourceFromDirectoryRow(
   row: ResourceDirectoryRow,
@@ -108,6 +111,7 @@ export function toResourceFromDirectoryRow(
     changeMode: row.change_mode,
     createdAt: row.created_at,
     icon: row.icon,
+    iconColor: row.icon_color,
     id: row.id,
     isTrashed: row.is_trashed,
     isSystemResource: row.is_system_resource,

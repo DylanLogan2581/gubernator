@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { resourceCategoriesByWorldQueryOptions } from "@/features/resourceCategories";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -77,6 +79,9 @@ export function EditResourceForm({
     String(resource.changeAmount),
   );
   const [icon, setIcon] = useState<string | null>(resource.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    resource.iconColor as CategoricalSlot | null,
+  );
   const [categoryId, setCategoryId] = useState<string | null>(
     resource.categoryId,
   );
@@ -113,6 +118,7 @@ export function EditResourceForm({
       changeAmount: changeAmount !== "" ? changeAmount : undefined,
       changeMode,
       icon,
+      iconColor,
       name,
       resourceId: resource.id,
       slug,
@@ -253,6 +259,14 @@ export function EditResourceForm({
                 disabled={isPending}
                 value={icon}
                 onChange={setIcon}
+              />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </Label>
             <Label className="grid gap-1 text-sm">

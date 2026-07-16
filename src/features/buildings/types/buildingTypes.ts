@@ -36,6 +36,7 @@ export type BuildingBlueprint = {
   readonly description: string | null;
   readonly gracePeriodTurns: number;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly maxInstancesPerSettlement: number | null;

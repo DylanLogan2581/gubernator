@@ -40,6 +40,7 @@ type JobMutationErrorCode =
 type JobInsertPayload = {
   base_capacity?: number | null;
   icon?: string | null;
+  icon_color?: number | null;
   inputs_json?: Json;
   job_type: string;
   linked_deposit_type_id?: string | null;
@@ -55,6 +56,7 @@ type JobInsertPayload = {
 type JobUpdatePayload = {
   base_capacity?: number | null;
   icon?: string | null;
+  icon_color?: number | null;
   inputs_json?: Json;
   linked_deposit_type_id?: string | null;
   linked_managed_population_type_id?: string | null;
@@ -134,6 +136,7 @@ async function createJob(
 
   const insertPayload: JobInsertPayload = {
     icon: values.icon ?? null,
+    icon_color: values.iconColor ?? null,
     inputs_json: toIoJson(
       values.jobType === "standard" ? (values.inputsJson ?? []) : [],
     ),
@@ -150,6 +153,7 @@ async function createJob(
   switch (values.jobType) {
     case "standard":
     case "construction":
+    case "teacher":
       insertPayload.base_capacity = values.baseCapacity;
       break;
     case "trader":
@@ -223,6 +227,9 @@ async function updateJob(
   }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;
+  }
+  if (values.iconColor !== undefined) {
+    updatePayload.icon_color = values.iconColor;
   }
 
   const { data, error } = await client

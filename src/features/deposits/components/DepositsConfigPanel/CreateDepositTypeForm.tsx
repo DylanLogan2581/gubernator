@@ -4,6 +4,7 @@ import { type FormEvent, type JSX, useState } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -23,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
@@ -64,6 +66,7 @@ export function CreateDepositTypeForm({
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState("1");
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>([]);
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof DepositTypeFieldErrors>();
   const [jobLinkError, setJobLinkError] = useState<string | undefined>(
@@ -94,6 +97,7 @@ export function CreateDepositTypeForm({
 
     const input: CreateDepositTypeInput = {
       icon,
+      iconColor,
       jobId,
       name,
       outputUnitsPerWorker:
@@ -160,6 +164,14 @@ export function CreateDepositTypeForm({
                 disabled={isPending}
                 value={icon}
                 onChange={setIcon}
+              />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </Label>
             {depositJobs.length === 0 ? (

@@ -165,6 +165,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
       change_mode: r.change_mode,
       is_system_resource: r.is_system_resource,
       icon: r.icon,
+      icon_color: r.icon_color,
       category: r.category_id === null ? null : categoryNameById.get(r.category_id) ?? null,
     }));
 
@@ -198,6 +199,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
         return [entry];
       }),
       icon: j.icon,
+      icon_color: j.icon_color,
       required_education_level: j.required_education_level_id === null
         ? null
         : eduNameById.get(j.required_education_level_id) ?? null,
@@ -234,6 +236,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
           }),
         })),
       icon: b.icon,
+      icon_color: b.icon_color,
     }));
 
   // Deposit types (non-trashed, sorted by slug asc from query)
@@ -254,6 +257,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
             return [{ resource_slug: resourceSlug, amount_per_worker: wi.amount_per_worker }];
           }),
           icon: d.icon,
+          icon_color: d.icon_color,
         },
       ];
     });
@@ -289,6 +293,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
             return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
           }),
           icon: m.icon,
+          icon_color: m.icon_color,
         },
       ];
     });

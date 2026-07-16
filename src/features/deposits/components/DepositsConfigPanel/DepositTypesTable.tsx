@@ -10,7 +10,7 @@ import { type JobDefinition } from "@/features/jobs";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 
 import {
   hardDeleteDepositTypeMutationOptions,
@@ -75,7 +75,7 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(depositType.icon)}
-              tone={hashToCategoricalSlot(depositType.id)}
+              tone={resolveIconTone(depositType.iconColor, depositType.id)}
             />
             <span className="font-medium">{depositType.name}</span>
           </div>

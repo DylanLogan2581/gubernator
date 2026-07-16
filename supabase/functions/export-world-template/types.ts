@@ -57,6 +57,7 @@ export type RawBlueprintRow = {
   readonly max_instances_per_settlement: number | null;
   readonly grace_period_turns: number;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly is_trashed: boolean;
   readonly building_blueprint_tiers: readonly RawTierRow[];
 };
@@ -77,6 +78,7 @@ export type RawJobRow = {
   readonly inputs_json: readonly RawJobIoRow[];
   readonly outputs_json: readonly RawJobIoRow[];
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly required_education_level_id: string | null;
   readonly is_trashed: boolean;
 };
@@ -90,6 +92,7 @@ export type RawResourceRow = {
   readonly change_mode: "percent" | "flat";
   readonly is_system_resource: boolean;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly category_id: string | null;
   readonly is_trashed: boolean;
 };
@@ -107,6 +110,7 @@ export type RawDepositTypeRow = {
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: readonly RawWorkerInputRow[];
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly is_trashed: boolean;
 };
 
@@ -127,6 +131,7 @@ export type RawManagedPopulationTypeRow = {
   readonly culling_outputs_json: readonly RawPopulationResourceRow[];
   readonly regular_outputs_json: readonly RawPopulationResourceRow[];
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly is_trashed: boolean;
 };
 
@@ -323,6 +328,7 @@ export type WorldTemplateOutput = {
     readonly change_mode: "percent" | "flat";
     readonly is_system_resource: boolean;
     readonly icon: string | null;
+    readonly icon_color: number | null;
     readonly category: string | null;
   }[];
   readonly jobs: readonly {
@@ -334,6 +340,7 @@ export type WorldTemplateOutput = {
     readonly inputs: readonly JobIoOutput[];
     readonly outputs: readonly JobIoOutput[];
     readonly icon: string | null;
+    readonly icon_color: number | null;
     readonly required_education_level: string | null;
   }[];
   readonly blueprints: readonly {
@@ -344,6 +351,7 @@ export type WorldTemplateOutput = {
     readonly grace_period_turns: number;
     readonly tiers: readonly TierOutput[];
     readonly icon: string | null;
+    readonly icon_color: number | null;
   }[];
   readonly deposit_types: readonly {
     readonly name: string;
@@ -355,6 +363,7 @@ export type WorldTemplateOutput = {
       readonly amount_per_worker: number;
     }[];
     readonly icon: string | null;
+    readonly icon_color: number | null;
   }[];
   readonly managed_population_types: readonly {
     readonly name: string;
@@ -376,6 +385,7 @@ export type WorldTemplateOutput = {
       readonly amount_per_n_animals: number;
     }[];
     readonly icon: string | null;
+    readonly icon_color: number | null;
   }[];
   readonly unit_types: readonly {
     readonly name: string;

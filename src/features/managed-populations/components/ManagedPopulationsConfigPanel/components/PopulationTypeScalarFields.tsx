@@ -3,6 +3,7 @@ import { type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { PercentInput } from "@/components/shared/PercentInput";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { JobDefinition } from "@/features/jobs";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { sortByName } from "@/lib/sortUtils";
 
@@ -26,6 +28,7 @@ type PopulationTypeScalarFieldsProps = {
   readonly husbandryJobs: readonly JobDefinition[];
   readonly husbandryWorkersPerNAnimals: string;
   readonly icon: string | null;
+  readonly iconColor: CategoricalSlot | null;
   readonly isPending: boolean;
   readonly jobCollisionError: string | undefined;
   readonly name: string;
@@ -36,6 +39,7 @@ type PopulationTypeScalarFieldsProps = {
   readonly onHusbandryJobChange: (value: string) => void;
   readonly onHusbandryWorkersPerNAnimalsChange: (value: string) => void;
   readonly onIconChange: (value: string | null) => void;
+  readonly onIconColorChange: (value: CategoricalSlot | null) => void;
   readonly onNameChange: (value: string) => void;
 };
 
@@ -50,6 +54,7 @@ export function PopulationTypeScalarFields({
   husbandryJobs,
   husbandryWorkersPerNAnimals,
   icon,
+  iconColor,
   isPending,
   jobCollisionError,
   name,
@@ -60,6 +65,7 @@ export function PopulationTypeScalarFields({
   onHusbandryJobChange,
   onHusbandryWorkersPerNAnimalsChange,
   onIconChange,
+  onIconColorChange,
   onNameChange,
 }: PopulationTypeScalarFieldsProps): JSX.Element {
   return (
@@ -85,6 +91,14 @@ export function PopulationTypeScalarFields({
       <div className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Icon</span>
         <IconPicker disabled={isPending} value={icon} onChange={onIconChange} />
+      </div>
+      <div className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Icon color</span>
+        <PaletteSlotPicker
+          disabled={isPending}
+          value={iconColor}
+          onChange={onIconColorChange}
+        />
       </div>
       {husbandryJobs.length === 0 ? (
         <div className="grid gap-1 text-sm">

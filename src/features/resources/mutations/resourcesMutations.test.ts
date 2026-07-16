@@ -21,6 +21,7 @@ type ResourceRow = {
   readonly category_id: string | null;
   readonly created_at: string;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -100,6 +101,7 @@ describe("createResourceMutationOptions", () => {
       change_amount: 0,
       change_mode: "percent",
       icon: null,
+      icon_color: null,
       name: "Iron Ore",
       slug: "iron-ore",
       world_id: WORLD_ID,
@@ -482,6 +484,7 @@ function createResourceRow(overrides: Partial<ResourceRow> = {}): ResourceRow {
     category_id: null,
     created_at: "2026-05-01T00:00:00.000Z",
     icon: null,
+    icon_color: null,
     id: RESOURCE_ID,
     is_trashed: false,
     is_system_resource: false,

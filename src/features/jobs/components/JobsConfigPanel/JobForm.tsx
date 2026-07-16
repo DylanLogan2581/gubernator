@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -21,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -68,6 +70,7 @@ export function CreateJobForm({
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
   const [requiredEducationLevelId, setRequiredEducationLevelId] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
   const { fieldErrors, setFromZod, clear } =
@@ -122,6 +125,7 @@ export function CreateJobForm({
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           icon,
+          iconColor,
           inputsJson,
           jobType: "standard",
           name,
@@ -136,6 +140,7 @@ export function CreateJobForm({
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           icon,
+          iconColor,
           jobType: "construction",
           name,
           requiredEducationLevelId: requiredEducationLevelIdValue,
@@ -148,6 +153,7 @@ export function CreateJobForm({
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           icon,
+          iconColor,
           jobType: "teacher",
           name,
           requiredEducationLevelId: requiredEducationLevelIdValue,
@@ -158,6 +164,7 @@ export function CreateJobForm({
       case "trader":
         input = {
           icon,
+          iconColor,
           jobType: "trader",
           name,
           requiredEducationLevelId: requiredEducationLevelIdValue,
@@ -172,6 +179,7 @@ export function CreateJobForm({
       case "deposit":
         input = {
           icon,
+          iconColor,
           jobType: "deposit",
           linkedDepositTypeId: undefined,
           name,
@@ -184,6 +192,7 @@ export function CreateJobForm({
       case "culling":
         input = {
           icon,
+          iconColor,
           jobType: selectedType,
           linkedManagedPopulationTypeId: undefined,
           name,
@@ -270,6 +279,15 @@ export function CreateJobForm({
                     disabled={isPending}
                     value={icon}
                     onChange={setIcon}
+                  />
+                </Label>
+
+                <Label className="grid gap-1 text-sm">
+                  <span className="text-muted-foreground">Icon color</span>
+                  <PaletteSlotPicker
+                    disabled={isPending}
+                    value={iconColor}
+                    onChange={setIconColor}
                   />
                 </Label>
 

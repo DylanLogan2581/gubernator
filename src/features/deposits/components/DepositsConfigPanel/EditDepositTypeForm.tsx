@@ -6,6 +6,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -24,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -83,6 +85,9 @@ export function EditDepositTypeForm({
     toWorkerInputsEntries(depositType.workerInputsJson),
   );
   const [icon, setIcon] = useState<string | null>(depositType.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    depositType.iconColor as CategoricalSlot | null,
+  );
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof DepositTypeFieldErrors>();
   const { jobId, jobLinkError, handleJobChange } = useDepositTypeJobLink(
@@ -111,6 +116,7 @@ export function EditDepositTypeForm({
     const updateInput: UpdateDepositTypeInput = {
       depositTypeId: depositType.id,
       icon,
+      iconColor,
       jobId,
       name,
       outputUnitsPerWorker:
@@ -199,6 +205,14 @@ export function EditDepositTypeForm({
                 disabled={isPending}
                 value={icon}
                 onChange={setIcon}
+              />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </Label>
             {depositJobs.length === 0 ? (

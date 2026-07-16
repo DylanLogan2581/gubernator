@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { resourceCategoriesByWorldQueryOptions } from "@/features/resourceCategories";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -56,6 +58,7 @@ export function CreateResourceForm({
   const [changeMode, setChangeMode] = useState<ResourceChangeMode>("percent");
   const [changeAmount, setChangeAmount] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateResourceFieldErrors>();
@@ -85,6 +88,7 @@ export function CreateResourceForm({
       changeAmount: changeAmount !== "" ? changeAmount : undefined,
       changeMode,
       icon,
+      iconColor,
       name,
       slug: derivedSlug,
       worldId,
@@ -200,6 +204,14 @@ export function CreateResourceForm({
                 disabled={isPending}
                 value={icon}
                 onChange={setIcon}
+              />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </Label>
             <Label className="grid gap-1 text-sm">

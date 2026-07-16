@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { SchoolEducationSection } from "@/features/education";
 import { type TurnTransitionOutcome } from "@/features/turns";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -150,7 +150,10 @@ export function BuildingRow({
             ) : null}
             <IconChip
               icon={resolveEntityIcon(building.blueprintIcon)}
-              tone={hashToCategoricalSlot(building.buildingBlueprintId)}
+              tone={resolveIconTone(
+                building.blueprintIconColor,
+                building.buildingBlueprintId,
+              )}
             />
             {building.name ?? building.blueprintName}
           </span>

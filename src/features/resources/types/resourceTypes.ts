@@ -16,6 +16,7 @@ export type Resource = {
   readonly changeMode: ResourceChangeMode;
   readonly createdAt: string;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly isSystemResource: boolean;

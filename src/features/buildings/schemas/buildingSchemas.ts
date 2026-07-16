@@ -102,10 +102,19 @@ const blueprintIconSchema = z
   .optional()
   .nullable();
 
+const blueprintIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 export const createBlueprintInputSchema = z.strictObject({
   description: blueprintDescriptionSchema,
   gracePeriodTurns: gracePeriodTurnsSchema,
   icon: blueprintIconSchema,
+  iconColor: blueprintIconColorSchema,
   maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
   name: blueprintNameSchema,
   slug: blueprintSlugSchema,
@@ -118,6 +127,7 @@ export const updateBlueprintInputSchema = z
     description: blueprintDescriptionSchema,
     gracePeriodTurns: gracePeriodTurnsSchema,
     icon: blueprintIconSchema,
+    iconColor: blueprintIconColorSchema,
     maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
     name: blueprintNameSchema.optional(),
     slug: blueprintSlugSchema.optional(),
@@ -130,7 +140,8 @@ export const updateBlueprintInputSchema = z
       value.description === undefined &&
       value.gracePeriodTurns === undefined &&
       value.maxInstancesPerSettlement === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",

@@ -3,6 +3,7 @@ import { Plus, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -59,6 +61,7 @@ export function CreateBlueprintForm({
   const [gracePeriodTurns, setGracePeriodTurns] = useState("0");
   const [maxInstances, setMaxInstances] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof BlueprintFieldErrors>();
   const [pendingTiers, setPendingTiers] = useState<PendingTierDraft[]>([]);
@@ -87,6 +90,7 @@ export function CreateBlueprintForm({
       gracePeriodTurns:
         gracePeriodTurns !== "" ? parseInt(gracePeriodTurns, 10) : undefined,
       icon,
+      iconColor,
       maxInstancesPerSettlement:
         maxInstances !== "" ? parseInt(maxInstances, 10) : undefined,
       name,
@@ -213,6 +217,14 @@ export function CreateBlueprintForm({
                 disabled={isCreating}
                 value={icon}
                 onChange={setIcon}
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label>Icon color</Label>
+              <PaletteSlotPicker
+                disabled={isCreating}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </div>
           </div>

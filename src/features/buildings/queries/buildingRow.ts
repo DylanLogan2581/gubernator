@@ -10,6 +10,7 @@ export type BlueprintRow = {
   readonly description: string | null;
   readonly grace_period_turns: number;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly max_instances_per_settlement: number | null;
@@ -69,7 +70,7 @@ export type TierRow = {
 };
 
 export const BLUEPRINT_SELECT =
-  "id,world_id,name,slug,icon,description,grace_period_turns,max_instances_per_settlement,is_trashed,created_at,updated_at";
+  "id,world_id,name,slug,icon,icon_color,description,grace_period_turns,max_instances_per_settlement,is_trashed,created_at,updated_at";
 
 export const TIER_SELECT =
   "id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,created_at,updated_at";
@@ -80,6 +81,7 @@ export function toBlueprint(row: BlueprintRow): BuildingBlueprint {
     description: row.description,
     gracePeriodTurns: row.grace_period_turns,
     icon: row.icon,
+    iconColor: row.icon_color,
     id: row.id,
     isTrashed: row.is_trashed,
     maxInstancesPerSettlement: row.max_instances_per_settlement,

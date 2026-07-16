@@ -39,8 +39,17 @@ const depositTypeIconSchema = z
   .optional()
   .nullable();
 
+const depositTypeIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 export const createDepositTypeInputSchema = z.strictObject({
   icon: depositTypeIconSchema,
+  iconColor: depositTypeIconColorSchema,
   jobId: jobIdSchema,
   name: depositTypeNameSchema,
   outputUnitsPerWorker: outputUnitsPerWorkerSchema,
@@ -53,6 +62,7 @@ export const updateDepositTypeInputSchema = z
   .strictObject({
     depositTypeId: depositTypeIdSchema,
     icon: depositTypeIconSchema,
+    iconColor: depositTypeIconColorSchema,
     jobId: jobIdSchema.optional(),
     name: depositTypeNameSchema.optional(),
     outputUnitsPerWorker: outputUnitsPerWorkerSchema.optional(),
@@ -67,7 +77,8 @@ export const updateDepositTypeInputSchema = z
       value.jobId === undefined &&
       value.outputUnitsPerWorker === undefined &&
       value.workerInputsJson === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",

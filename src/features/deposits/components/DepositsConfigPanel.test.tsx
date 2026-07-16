@@ -639,6 +639,7 @@ function createQueryClient(): QueryClient {
 type TestDepositTypeRow = {
   readonly created_at: string;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly job_id: string;
@@ -690,6 +691,7 @@ function createDepositTypeRow(
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     icon: null,
+    icon_color: null,
     id: DEPOSIT_TYPE_ID,
     is_trashed: false,
     job_id: JOB_ID,

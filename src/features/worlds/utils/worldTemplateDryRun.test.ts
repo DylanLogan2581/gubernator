@@ -80,6 +80,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       change_mode: "percent",
       is_system_resource: false,
       icon: null,
+      icon_color: null,
       category: "Food",
     },
     {
@@ -90,6 +91,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       change_mode: "percent",
       is_system_resource: false,
       icon: null,
+      icon_color: null,
       category: null,
     },
   ],
@@ -103,6 +105,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       inputs: [],
       outputs: [{ resource_slug: "grain", amount_per_worker: 2 }],
       icon: null,
+      icon_color: null,
       required_education_level: "Basic",
     },
     {
@@ -114,6 +117,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       inputs: [],
       outputs: [],
       icon: null,
+      icon_color: null,
       required_education_level: null,
     },
   ],
@@ -125,6 +129,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       max_instances_per_settlement: 2,
       grace_period_turns: 10,
       icon: null,
+      icon_color: null,
       tiers: [
         {
           tier_number: 1,
@@ -158,6 +163,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       output_units_per_worker: 3,
       worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
       icon: null,
+      icon_color: null,
     },
   ],
   managed_population_types: [
@@ -174,6 +180,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       culling_outputs: [],
       regular_outputs: [],
       icon: null,
+      icon_color: null,
     },
   ],
   unit_types: [

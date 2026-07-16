@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { type Resource, type SettlementStockpile } from "@/features/resources";
 import { type TurnTransitionOutcome } from "@/features/turns";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseManagedPopulationExtinctPayload } from "@/shared/simulation";
 
@@ -211,7 +211,10 @@ export function ManagedPopulationInstanceRow({
           <span className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(type?.icon ?? null)}
-              tone={hashToCategoricalSlot(type?.id ?? instance.id)}
+              tone={resolveIconTone(
+                type?.iconColor ?? null,
+                type?.id ?? instance.id,
+              )}
             />
             {instance.name}
             {instance.status === "extinct" ? (

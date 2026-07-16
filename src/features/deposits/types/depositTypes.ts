@@ -7,6 +7,7 @@ export type DepositType = {
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly jobId: string;

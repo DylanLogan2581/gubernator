@@ -34,6 +34,7 @@ type SettlementBuildingRow = {
   };
   readonly building_blueprints: {
     readonly icon: string | null;
+    readonly icon_color: number | null;
     readonly name: string;
   };
   readonly created_at: string;
@@ -57,6 +58,7 @@ type SettlementBuildingWithLocationRow = {
   };
   readonly building_blueprints: {
     readonly icon: string | null;
+    readonly icon_color: number | null;
     readonly name: string;
   };
   readonly created_at: string;
@@ -82,10 +84,10 @@ export type SettlementBuildingWithLocation = SettlementBuilding & {
 };
 
 const SETTLEMENT_BUILDING_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json)";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon,icon_color),building_blueprint_tiers(tier_number,effects_json)";
 
 const SETTLEMENT_BUILDING_WITH_LOCATION_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json),settlements(id,name,nations!settlements_nation_id_fkey!inner(name))";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon,icon_color),building_blueprint_tiers(tier_number,effects_json),settlements(id,name,nations!settlements_nation_id_fkey!inner(name))";
 
 type SettlementBuildingDetailQueryKey = ReturnType<
   typeof buildingsQueryKeys.settlementBuildingById
@@ -254,6 +256,7 @@ function toSettlementBuilding(row: SettlementBuildingRow): SettlementBuilding {
   return {
     activatedOnTurnNumber: row.activated_on_turn_number,
     blueprintIcon: row.building_blueprints.icon,
+    blueprintIconColor: row.building_blueprints.icon_color,
     blueprintName: row.building_blueprints.name,
     buildingBlueprintId: row.building_blueprint_id,
     createdAt: row.created_at,
@@ -281,6 +284,7 @@ function toSettlementBuildingWithLocation(
   return {
     activatedOnTurnNumber: row.activated_on_turn_number,
     blueprintIcon: row.building_blueprints.icon,
+    blueprintIconColor: row.building_blueprints.icon_color,
     blueprintName: row.building_blueprints.name,
     buildingBlueprintId: row.building_blueprint_id,
     createdAt: row.created_at,

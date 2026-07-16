@@ -8,7 +8,7 @@ import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -76,7 +76,7 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(resource.icon)}
-              tone={hashToCategoricalSlot(resource.id)}
+              tone={resolveIconTone(resource.iconColor, resource.id)}
             />
             <span className="font-medium">{resource.name}</span>
             {resource.isSystemResource ? (

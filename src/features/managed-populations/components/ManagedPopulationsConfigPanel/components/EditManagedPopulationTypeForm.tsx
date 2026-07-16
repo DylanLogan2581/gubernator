@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import type { JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -68,6 +69,7 @@ export function EditManagedPopulationTypeForm({
     ),
     initialGrowthRate: populationType.growthRate,
     initialIcon: populationType.icon,
+    initialIconColor: populationType.iconColor as CategoricalSlot | null,
     initialMaintenanceRules: databaseResourcesToEntries(
       populationType.maintenanceRulesJson,
     ),
@@ -100,6 +102,7 @@ export function EditManagedPopulationTypeForm({
           ? parseInt(form.husbandryWorkersPerNAnimals, 10)
           : undefined,
       icon: form.icon,
+      iconColor: form.iconColor,
       maintenanceRulesJson: [
         ...resourceEntriesToDtoArray(form.maintenanceRules),
       ],
@@ -175,6 +178,7 @@ export function EditManagedPopulationTypeForm({
               husbandryJobs={husbandryJobs}
               husbandryWorkersPerNAnimals={form.husbandryWorkersPerNAnimals}
               icon={form.icon}
+              iconColor={form.iconColor}
               isPending={isPending}
               jobCollisionError={form.jobCollisionError}
               name={form.name}
@@ -187,6 +191,7 @@ export function EditManagedPopulationTypeForm({
                 form.setHusbandryWorkersPerNAnimals
               }
               onIconChange={form.setIcon}
+              onIconColorChange={form.setIconColor}
               onNameChange={form.handleNameChange}
             />
             <ResourceAmountListEditor

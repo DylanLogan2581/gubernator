@@ -9,7 +9,7 @@ import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { EducationLevel } from "@/features/education";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -79,7 +79,7 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(job.icon)}
-              tone={hashToCategoricalSlot(job.id)}
+              tone={resolveIconTone(job.iconColor, job.id)}
             />
             <span className="font-medium">{job.name}</span>
           </div>

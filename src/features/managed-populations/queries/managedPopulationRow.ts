@@ -16,6 +16,7 @@ export type ManagedPopulationTypeRow = {
   readonly husbandry_job_id: string;
   readonly husbandry_workers_per_n_animals: number;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly PopulationResourceEntryRow[];
@@ -29,7 +30,7 @@ export type ManagedPopulationTypeRow = {
 };
 
 export const MANAGED_POPULATION_TYPE_SELECT = [
-  "id,world_id,name,slug,icon,husbandry_job_id,culling_job_id",
+  "id,world_id,name,slug,icon,icon_color,husbandry_job_id,culling_job_id",
   "husbandry_workers_per_n_animals,growth_rate",
   "maintenance_rules_json,culling_outputs_json,regular_outputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_managed_pop_type_fk(id)",
@@ -61,6 +62,7 @@ export function toManagedPopulationType(
     husbandryJobId: row.husbandry_job_id,
     husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
     icon: row.icon,
+    iconColor: row.icon_color,
     id: row.id,
     isTrashed: row.is_trashed,
     maintenanceRulesJson: row.maintenance_rules_json.map(

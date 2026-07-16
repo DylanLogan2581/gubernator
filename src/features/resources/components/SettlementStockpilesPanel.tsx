@@ -36,7 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { settlementForecastQueryOptions } from "@/features/settlements";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -293,7 +293,10 @@ function StockpileRow({
         <div className="flex items-center gap-2">
           <IconChip
             icon={resolveEntityIcon(stockpile.resourceIcon)}
-            tone={hashToCategoricalSlot(stockpile.resourceId)}
+            tone={resolveIconTone(
+              stockpile.resourceIconColor,
+              stockpile.resourceId,
+            )}
           />
           <span>{stockpile.resourceName}</span>
           {stockpile.isSystemResource ? (

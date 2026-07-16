@@ -45,6 +45,14 @@ const resourceIconSchema = z
   .optional()
   .nullable();
 
+const resourceIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 const resourceCategoryIdInputSchema = z
   .guid("Select a resource category.")
   .optional()
@@ -78,6 +86,7 @@ export const createResourceInputSchema = z
     changeAmount: changeAmountSchema.optional(),
     changeMode: resourceChangeModeSchema.optional(),
     icon: resourceIconSchema,
+    iconColor: resourceIconColorSchema,
     name: resourceNameSchema,
     slug: resourceSlugSchema,
     worldId: worldIdSchema,
@@ -91,6 +100,7 @@ export const updateResourceInputSchema = z
     changeAmount: changeAmountSchema.optional(),
     changeMode: resourceChangeModeSchema.optional(),
     icon: resourceIconSchema,
+    iconColor: resourceIconColorSchema,
     name: resourceNameSchema.optional(),
     resourceId: resourceIdSchema,
     slug: resourceSlugSchema.optional(),
@@ -104,12 +114,13 @@ export const updateResourceInputSchema = z
       value.changeMode === undefined &&
       value.changeAmount === undefined &&
       value.icon === undefined &&
+      value.iconColor === undefined &&
       value.categoryId === undefined
     ) {
       ctx.addIssue({
         code: "custom",
         message:
-          "At least one of name, slug, baseStockpileCap, changeMode, changeAmount, icon, or categoryId must be provided.",
+          "At least one of name, slug, baseStockpileCap, changeMode, changeAmount, icon, iconColor, or categoryId must be provided.",
         path: ["name"],
       });
     }

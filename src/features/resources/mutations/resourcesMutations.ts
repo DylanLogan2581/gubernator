@@ -113,6 +113,7 @@ async function createResource(
       change_amount: values.changeAmount ?? 0,
       change_mode: values.changeMode ?? "percent",
       icon: values.icon ?? null,
+      icon_color: values.iconColor ?? null,
       name: values.name.trim(),
       slug: values.slug.trim(),
       world_id: values.worldId,
@@ -154,6 +155,7 @@ async function updateResource(
     change_amount?: number;
     change_mode?: "percent" | "flat";
     icon?: string | null;
+    icon_color?: number | null;
     name?: string;
     slug?: string;
   } = {};
@@ -175,6 +177,9 @@ async function updateResource(
   }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;
+  }
+  if (values.iconColor !== undefined) {
+    updatePayload.icon_color = values.iconColor;
   }
   if (values.categoryId !== undefined) {
     updatePayload.category_id = values.categoryId;

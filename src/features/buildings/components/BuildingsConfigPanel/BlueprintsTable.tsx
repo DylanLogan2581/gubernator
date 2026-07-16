@@ -23,7 +23,7 @@ import type { Resource } from "@/features/resources";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 
 import {
   hardDeleteBlueprintMutationOptions,
@@ -100,7 +100,7 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(blueprint.icon)}
-              tone={hashToCategoricalSlot(blueprint.id)}
+              tone={resolveIconTone(blueprint.iconColor, blueprint.id)}
             />
             <span className="font-medium">{blueprint.name}</span>
           </div>

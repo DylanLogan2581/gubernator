@@ -515,6 +515,7 @@ type TestBlueprintRow = {
   readonly description: string | null;
   readonly grace_period_turns: number;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly max_instances_per_settlement: number | null;
@@ -578,6 +579,7 @@ function createBlueprintRow(
     description: null,
     grace_period_turns: 0,
     icon: null,
+    icon_color: null,
     id: BLUEPRINT_ID,
     is_trashed: false,
     max_instances_per_settlement: null,

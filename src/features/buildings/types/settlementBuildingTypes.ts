@@ -27,6 +27,7 @@ export type EffectsDigest = {
 export type SettlementBuilding = {
   readonly activatedOnTurnNumber: number;
   readonly blueprintIcon: string | null;
+  readonly blueprintIconColor: number | null;
   readonly blueprintName: string;
   readonly buildingBlueprintId: string;
   readonly createdAt: string;

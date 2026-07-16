@@ -136,7 +136,7 @@ export async function fetchWorldConfigData(
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
       select:
-        "id,name,slug,base_stockpile_cap,change_mode,change_amount,is_system_resource,icon,category_id,is_trashed",
+        "id,name,slug,base_stockpile_cap,change_mode,change_amount,is_system_resource,icon,icon_color,category_id,is_trashed",
     }),
     fetchRows<RawJobRow>(ctx, "job_definitions", {
       world_id: `eq.${worldId}`,
@@ -144,7 +144,7 @@ export async function fetchWorldConfigData(
       order: "slug.asc,id.asc",
       select: [
         "id,name,slug,job_type,base_capacity,trader_capacity_per_worker,inputs_json,outputs_json",
-        "icon,required_education_level_id,is_trashed",
+        "icon,icon_color,required_education_level_id,is_trashed",
       ].join(","),
     }),
     fetchRows<RawBlueprintRow>(ctx, "building_blueprints", {
@@ -152,7 +152,7 @@ export async function fetchWorldConfigData(
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
       select: [
-        "id,name,slug,description,max_instances_per_settlement,grace_period_turns,icon,is_trashed",
+        "id,name,slug,description,max_instances_per_settlement,grace_period_turns,icon,icon_color,is_trashed",
         "building_blueprint_tiers(building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json)",
       ].join(","),
     }),
@@ -160,7 +160,8 @@ export async function fetchWorldConfigData(
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
-      select: "id,name,slug,job_id,output_units_per_worker,worker_inputs_json,icon,is_trashed",
+      select:
+        "id,name,slug,job_id,output_units_per_worker,worker_inputs_json,icon,icon_color,is_trashed",
     }),
     fetchRows<RawManagedPopulationTypeRow>(ctx, "managed_population_types", {
       world_id: `eq.${worldId}`,
@@ -169,7 +170,7 @@ export async function fetchWorldConfigData(
       select: [
         "id,name,slug,husbandry_job_id,culling_job_id",
         "husbandry_workers_per_n_animals,growth_rate",
-        "maintenance_rules_json,culling_outputs_json,regular_outputs_json,icon,is_trashed",
+        "maintenance_rules_json,culling_outputs_json,regular_outputs_json,icon,icon_color,is_trashed",
       ].join(","),
     }),
     fetchRows<RawUnitTypeRow>(ctx, "unit_types", {

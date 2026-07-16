@@ -527,6 +527,7 @@ type TestResourceRow = {
   readonly change_amount: number;
   readonly change_mode: "percent" | "flat";
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -548,6 +549,7 @@ function createResourceRow(
     change_amount: 0,
     change_mode: "percent",
     icon: null,
+    icon_color: null,
     id: RESOURCE_ID,
     is_trashed: false,
     is_system_resource: false,

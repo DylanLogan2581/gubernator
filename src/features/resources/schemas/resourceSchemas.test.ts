@@ -223,7 +223,7 @@ describe("updateResourceInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.name).toContain(
-        "At least one of name, slug, baseStockpileCap, changeMode, changeAmount, icon, or categoryId must be provided.",
+        "At least one of name, slug, baseStockpileCap, changeMode, changeAmount, icon, iconColor, or categoryId must be provided.",
       );
     }
   });

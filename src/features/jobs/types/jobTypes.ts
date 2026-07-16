@@ -18,6 +18,7 @@ export type JobDefinition = {
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly inputsJson: readonly JobIoEntry[];
   readonly isTrashed: boolean;

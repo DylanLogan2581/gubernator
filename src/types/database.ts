@@ -305,6 +305,7 @@ export type Database = {
           description: string | null;
           grace_period_turns: number;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -318,6 +319,7 @@ export type Database = {
           description?: string | null;
           grace_period_turns?: number;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
           max_instances_per_settlement?: number | null;
@@ -331,6 +333,7 @@ export type Database = {
           description?: string | null;
           grace_period_turns?: number;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
           max_instances_per_settlement?: number | null;
@@ -1134,6 +1137,7 @@ export type Database = {
         Row: {
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -1147,6 +1151,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
           job_id: string;
@@ -1160,6 +1165,7 @@ export type Database = {
         Update: {
           created_at?: string;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
           job_id?: string;
@@ -1737,6 +1743,7 @@ export type Database = {
           base_capacity: number | null;
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -1755,6 +1762,7 @@ export type Database = {
           base_capacity?: number | null;
           created_at?: string;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           inputs_json?: Json;
           is_trashed?: boolean;
@@ -1773,6 +1781,7 @@ export type Database = {
           base_capacity?: number | null;
           created_at?: string;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           inputs_json?: Json;
           is_trashed?: boolean;
@@ -2167,6 +2176,7 @@ export type Database = {
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -2184,6 +2194,7 @@ export type Database = {
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
@@ -2201,6 +2212,7 @@ export type Database = {
           husbandry_job_id?: string;
           husbandry_workers_per_n_animals?: number;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
@@ -3484,6 +3496,7 @@ export type Database = {
           change_mode: string;
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -3500,6 +3513,7 @@ export type Database = {
           change_mode?: string;
           created_at?: string;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -3516,6 +3530,7 @@ export type Database = {
           change_mode?: string;
           created_at?: string;
           icon?: string | null;
+          icon_color?: number | null;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -4795,6 +4810,7 @@ export type Database = {
           change_mode: string | null;
           created_at: string | null;
           icon: string | null;
+          icon_color: number | null;
           id: string | null;
           is_system_resource: boolean | null;
           is_trashed: boolean | null;
@@ -4827,6 +4843,7 @@ export type Database = {
           is_system_resource: boolean | null;
           quantity: number | null;
           resource_icon: string | null;
+          resource_icon_color: number | null;
           resource_id: string | null;
           resource_name: string | null;
           settlement_id: string | null;
@@ -7240,6 +7257,7 @@ export type Database = {
           description: string | null;
           grace_period_turns: number;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -7267,6 +7285,7 @@ export type Database = {
         Returns: {
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -7290,6 +7309,7 @@ export type Database = {
           base_capacity: number | null;
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -7321,6 +7341,7 @@ export type Database = {
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -7353,6 +7374,7 @@ export type Database = {
           change_mode: string;
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -8001,6 +8023,7 @@ export type Database = {
           description: string | null;
           grace_period_turns: number;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -8021,6 +8044,7 @@ export type Database = {
         Returns: {
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -8044,6 +8068,7 @@ export type Database = {
           base_capacity: number | null;
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -8075,6 +8100,7 @@ export type Database = {
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -8107,6 +8133,7 @@ export type Database = {
           change_mode: string;
           created_at: string;
           icon: string | null;
+          icon_color: number | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;

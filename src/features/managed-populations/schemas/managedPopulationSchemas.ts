@@ -51,6 +51,14 @@ const populationTypeIconSchema = z
   .optional()
   .nullable();
 
+const populationTypeIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 export const createManagedPopulationTypeInputSchema = z
   .strictObject({
     cullingJobId: jobIdSchema,
@@ -59,6 +67,7 @@ export const createManagedPopulationTypeInputSchema = z
     husbandryJobId: jobIdSchema,
     husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
     icon: populationTypeIconSchema,
+    iconColor: populationTypeIconColorSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     name: populationTypeNameSchema,
     regularOutputsJson: populationResourceArraySchema.optional(),
@@ -83,6 +92,7 @@ export const updateManagedPopulationTypeInputSchema = z
     husbandryJobId: jobIdSchema.optional(),
     husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema.optional(),
     icon: populationTypeIconSchema,
+    iconColor: populationTypeIconColorSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     managedPopulationTypeId: managedPopulationTypeIdSchema,
     name: populationTypeNameSchema.optional(),
@@ -101,7 +111,8 @@ export const updateManagedPopulationTypeInputSchema = z
       value.maintenanceRulesJson === undefined &&
       value.cullingOutputsJson === undefined &&
       value.regularOutputsJson === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",

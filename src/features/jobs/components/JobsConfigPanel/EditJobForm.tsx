@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -28,6 +29,7 @@ import {
   type ManagedPopulationType,
 } from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -99,6 +101,9 @@ export function EditJobForm({
     job.requiredEducationLevelId ?? "",
   );
   const [icon, setIcon] = useState<string | null>(job.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    job.iconColor as CategoricalSlot | null,
+  );
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>(() =>
     job.inputsJson.map(entryToRow),
   );
@@ -175,6 +180,7 @@ export function EditJobForm({
             : undefined
           : undefined,
       icon,
+      iconColor,
       inputsJson,
       jobId: job.id,
       linkedDepositTypeId:
@@ -276,6 +282,15 @@ export function EditJobForm({
                 disabled={isPending}
                 value={icon}
                 onChange={setIcon}
+              />
+            </Label>
+
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </Label>
 

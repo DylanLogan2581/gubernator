@@ -33,7 +33,7 @@ import {
   useSettlementTransitionOutcome,
   type TurnTransitionOutcome,
 } from "@/features/turns";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementBuildingsBySettlementQueryOptions } from "../../queries/settlementBuildingsQueries";
@@ -421,7 +421,10 @@ function DuplicateBuildingGroupRows({
               <ChevronDown aria-hidden="true" className="h-4 w-4" />
               <IconChip
                 icon={resolveEntityIcon(first.blueprintIcon)}
-                tone={hashToCategoricalSlot(first.buildingBlueprintId)}
+                tone={resolveIconTone(
+                  first.blueprintIconColor,
+                  first.buildingBlueprintId,
+                )}
               />
               {name} ×{buildings.length}
             </Button>
@@ -467,7 +470,10 @@ function DuplicateBuildingGroupRows({
           <ChevronDown aria-hidden="true" className="h-4 w-4 -rotate-90" />
           <IconChip
             icon={resolveEntityIcon(first.blueprintIcon)}
-            tone={hashToCategoricalSlot(first.buildingBlueprintId)}
+            tone={resolveIconTone(
+              first.blueprintIconColor,
+              first.buildingBlueprintId,
+            )}
           />
           {name} ×{buildings.length}
         </Button>

@@ -10,6 +10,7 @@ const nonnegativeDecimal = z.number().min(0);
 const positiveInteger = z.number().int().positive();
 const nameRef = z.string().nullable().default(null);
 const iconRef = z.string().nullable().default(null);
+const iconColorRef = z.number().int().min(1).max(8).nullable().default(null);
 const colorHex = z
   .string()
   .regex(/^#[0-9a-f]{6}$/i, "must be a #rrggbb hex color");
@@ -139,6 +140,7 @@ const resourceTemplateSchema = z.object({
   change_mode: z.enum(["percent", "flat"]),
   is_system_resource: z.boolean(),
   icon: iconRef,
+  icon_color: iconColorRef,
   category: nameRef,
 });
 
@@ -159,6 +161,7 @@ const jobTemplateSchema = z.object({
   inputs: z.array(jobIoEntryTemplateSchema),
   outputs: z.array(jobIoEntryTemplateSchema),
   icon: iconRef,
+  icon_color: iconColorRef,
   required_education_level: nameRef,
 });
 
@@ -220,6 +223,7 @@ const blueprintTemplateSchema = z.object({
   grace_period_turns: z.number(),
   tiers: z.array(blueprintTierTemplateSchema),
   icon: iconRef,
+  icon_color: iconColorRef,
 });
 
 // ── deposit types ─────────────────────────────────────────────────────────
@@ -236,6 +240,7 @@ const depositTypeTemplateSchema = z.object({
   output_units_per_worker: z.number(),
   worker_inputs: z.array(workerInputEntryTemplateSchema),
   icon: iconRef,
+  icon_color: iconColorRef,
 });
 
 // ── managed population types ──────────────────────────────────────────────
@@ -256,6 +261,7 @@ const managedPopulationTypeTemplateSchema = z.object({
   culling_outputs: z.array(populationResourceEntryTemplateSchema),
   regular_outputs: z.array(populationResourceEntryTemplateSchema),
   icon: iconRef,
+  icon_color: iconColorRef,
 });
 
 // ── unit types ────────────────────────────────────────────────────────────

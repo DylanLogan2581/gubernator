@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { ResourceAmountEntry } from "@/components/shared/ResourceAmountListEditor";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -25,6 +26,7 @@ type UsePopulationTypeFormReturn = {
   readonly husbandryWorkersPerNAnimals: string;
   readonly growthRate: number;
   readonly icon: string | null;
+  readonly iconColor: CategoricalSlot | null;
   readonly maintenanceRules: ResourceAmountEntry[];
   readonly cullingOutputs: ResourceAmountEntry[];
   readonly regularOutputs: ResourceAmountEntry[];
@@ -40,6 +42,7 @@ type UsePopulationTypeFormReturn = {
   readonly setHusbandryWorkersPerNAnimals: (value: string) => void;
   readonly setGrowthRate: (value: number) => void;
   readonly setIcon: (value: string | null) => void;
+  readonly setIconColor: (value: CategoricalSlot | null) => void;
   readonly setMaintenanceRules: (value: ResourceAmountEntry[]) => void;
   readonly setCullingOutputs: (value: ResourceAmountEntry[]) => void;
   readonly setRegularOutputs: (value: ResourceAmountEntry[]) => void;
@@ -60,6 +63,7 @@ type UsePopulationTypeFormOptions = {
   readonly initialHusbandryWorkersPerNAnimals?: string;
   readonly initialGrowthRate?: number;
   readonly initialIcon?: string | null;
+  readonly initialIconColor?: CategoricalSlot | null;
   readonly initialMaintenanceRules?: ResourceAmountEntry[];
   readonly initialCullingOutputs?: ResourceAmountEntry[];
   readonly initialRegularOutputs?: ResourceAmountEntry[];
@@ -75,6 +79,7 @@ export function usePopulationTypeForm({
   initialHusbandryWorkersPerNAnimals = "1",
   initialGrowthRate = 0,
   initialIcon = null,
+  initialIconColor = null,
   initialMaintenanceRules = [],
   initialCullingOutputs = [],
   initialRegularOutputs = [],
@@ -88,6 +93,9 @@ export function usePopulationTypeForm({
     useState(initialHusbandryWorkersPerNAnimals);
   const [growthRate, setGrowthRate] = useState(initialGrowthRate);
   const [icon, setIcon] = useState<string | null>(initialIcon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    initialIconColor,
+  );
   const [maintenanceRules, setMaintenanceRules] = useState<
     ResourceAmountEntry[]
   >(initialMaintenanceRules);
@@ -171,6 +179,7 @@ export function usePopulationTypeForm({
     husbandryWorkersPerNAnimals,
     growthRate,
     icon,
+    iconColor,
     maintenanceRules,
     cullingOutputs,
     regularOutputs,
@@ -187,6 +196,7 @@ export function usePopulationTypeForm({
     setHusbandryWorkersPerNAnimals,
     setGrowthRate,
     setIcon,
+    setIconColor,
     setMaintenanceRules,
     setCullingOutputs,
     setRegularOutputs,
