@@ -80,6 +80,90 @@ describe("NamesetsConfigPanel", () => {
     expect(row).toHaveTextContent("1");
   });
 
+  it("shows a type badge for list and generated namesets", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        namesetRows: [
+          createNamesetRow({ name: "Norse" }),
+          createNamesetRow({
+            id: NAMESET_ID_2,
+            name: "20th Cent. English",
+            config_json: {
+              type: "generated",
+              convention: "pool",
+              parts: { nm2: ["Ada"] },
+              patterns: {
+                female_given: [["nm2"]],
+                male_given: [["nm2"]],
+                surname: [["nm2"]],
+              },
+            },
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Norse");
+    expect(screen.getByText("Norse").closest("tr")).toHaveTextContent("List");
+    expect(
+      screen.getByText("20th Cent. English").closest("tr"),
+    ).toHaveTextContent("Generated");
+  });
+
+  it("creates a generated nameset from the library with a live preview", async () => {
+    const user = userEvent.setup();
+    let insertedPayload: unknown;
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        namesetRows: [],
+        onInsert: (payload) => {
+          insertedPayload = payload;
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("No namesets yet");
+    await user.click(screen.getByRole("button", { name: "Add nameset" }));
+
+    await screen.findByRole("heading", { name: "Create nameset" });
+    await user.click(screen.getByRole("radio", { name: /Generated/ }));
+    await user.click(screen.getByRole("radio", { name: /From library/ }));
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Search name generators" }),
+      "20th Cent",
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "20th Cent. English" }),
+    );
+
+    await screen.findByText("Preview");
+    expect(screen.getByText("Female")).toBeDefined();
+    expect(screen.getByText("Male")).toBeDefined();
+
+    const createButton = screen.getByRole("button", { name: "Create" });
+    await waitFor(() => {
+      expect(createButton).toBeEnabled();
+    });
+    await user.click(createButton);
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Nameset created.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+    expect(insertedPayload).toMatchObject({
+      name: "20th Cent. English",
+      config_json: { type: "generated" },
+    });
+  });
+
   it("narrows results via the search input", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
@@ -341,12 +425,23 @@ function createQueryClient(): QueryClient {
   });
 }
 
-type TestNamesetConfigJson = {
-  readonly convention: string;
-  readonly female_given_names: readonly string[];
-  readonly male_given_names: readonly string[];
-  readonly surnames: readonly string[];
-};
+type TestNamesetConfigJson =
+  | {
+      readonly convention: string;
+      readonly female_given_names: readonly string[];
+      readonly male_given_names: readonly string[];
+      readonly surnames: readonly string[];
+    }
+  | {
+      readonly type: "generated";
+      readonly convention: string;
+      readonly parts: Readonly<Record<string, readonly string[]>>;
+      readonly patterns: {
+        readonly female_given: readonly (readonly string[])[];
+        readonly male_given: readonly (readonly string[])[];
+        readonly surname: readonly (readonly string[])[];
+      };
+    };
 
 type TestNamesetRow = {
   readonly config_json: TestNamesetConfigJson;
@@ -383,6 +478,7 @@ function createNamesetRow(
 function createClient({
   namesetRows,
   insertResult = { data: createNamesetRow(), error: null },
+  onInsert,
   rpcResult = { data: null, error: null },
   updateResult = { data: createNamesetRow(), error: null },
 }: {
@@ -391,6 +487,7 @@ function createClient({
     readonly data: TestNamesetRow | null;
     readonly error: { readonly message: string } | null;
   };
+  readonly onInsert?: (payload: unknown) => void;
   readonly rpcResult?: {
     readonly data: { readonly id: string; readonly world_id: string } | null;
     readonly error: { readonly message: string } | null;
@@ -410,6 +507,7 @@ function createClient({
           namesetRows,
           insertResult,
           updateResult,
+          onInsert,
         );
       }
       throw new Error(`Unexpected table: ${table}`);
@@ -430,6 +528,7 @@ function createNamesetsQueryBuilder(
     readonly data: TestNamesetRow | null;
     readonly error: { readonly message: string } | null;
   },
+  onInsert?: (payload: unknown) => void,
 ): unknown {
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
@@ -445,11 +544,14 @@ function createNamesetsQueryBuilder(
   };
 
   return {
-    insert: vi.fn(() => ({
-      select: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue(insertResult),
-      })),
-    })),
+    insert: vi.fn((payload: unknown) => {
+      onInsert?.(payload);
+      return {
+        select: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue(insertResult),
+        })),
+      };
+    }),
     select: vi.fn(() => selectBuilder),
     update: vi.fn(() => updateBuilder),
   };

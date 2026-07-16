@@ -49,6 +49,10 @@ const CONVENTION_LABELS: Record<NameConvention, string> = {
 type SortColumn = "convention" | "givenNames" | "name" | "surnames";
 type Sort = { readonly column: SortColumn; readonly desc: boolean };
 
+function namesetKindLabel(nameset: Nameset): "Generated" | "List" {
+  return nameset.configJson.type === "generated" ? "Generated" : "List";
+}
+
 function givenNamesCount(nameset: Nameset): number {
   const config = nameset.configJson;
   if (config.type === "list") {
@@ -329,6 +333,13 @@ function NamesetRow({
       <TableCell>
         <span className="inline-flex items-center gap-1.5">
           <span className="font-medium">{nameset.name}</span>
+          <Badge
+            variant={
+              nameset.configJson.type === "generated" ? "secondary" : "outline"
+            }
+          >
+            {namesetKindLabel(nameset)}
+          </Badge>
           {nameset.isDefault ? (
             <Badge variant="secondary">default</Badge>
           ) : null}
@@ -453,7 +464,16 @@ function TrashedNamesetRow({
   return (
     <TableRow>
       <TableCell>
-        <span className="font-medium">{nameset.name}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="font-medium">{nameset.name}</span>
+          <Badge
+            variant={
+              nameset.configJson.type === "generated" ? "secondary" : "outline"
+            }
+          >
+            {namesetKindLabel(nameset)}
+          </Badge>
+        </span>
       </TableCell>
       <TableCell>
         <Badge variant="outline">
