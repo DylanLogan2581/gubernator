@@ -161,7 +161,7 @@ describe("worldTemplateSchema", () => {
   });
 
   it("rejects wrong template_version", () => {
-    const bad = { ...VALID_TEMPLATE, template_version: 2 };
+    const bad = { ...VALID_TEMPLATE, template_version: 1 };
     const result = worldTemplateSchema.safeParse(bad);
     expect(result.success).toBe(false);
   });
@@ -225,5 +225,171 @@ describe("worldTemplateSchema", () => {
     };
     const result = worldTemplateSchema.safeParse(minimal);
     expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("defaults v2 registries to empty arrays when omitted", () => {
+    const result = worldTemplateSchema.safeParse(VALID_TEMPLATE);
+    expect(result.success, result.error?.message).toBe(true);
+    if (result.success) {
+      expect(result.data.resource_categories).toEqual([]);
+      expect(result.data.education_levels).toEqual([]);
+      expect(result.data.cultures).toEqual([]);
+      expect(result.data.religions).toEqual([]);
+      expect(result.data.unit_types).toEqual([]);
+    }
+  });
+
+  it("accepts icon/category/education refs on resources and jobs", () => {
+    const withRefs = {
+      ...VALID_TEMPLATE,
+      resource_categories: [
+        { name: "Food", icon: "wheat", color: "#4caf50", sort_order: 0 },
+      ],
+      education_levels: [
+        {
+          name: "Basic",
+          description: null,
+          rank: 1,
+          natural_born_percent: 10,
+        },
+      ],
+      resources: [
+        {
+          ...VALID_TEMPLATE.resources[0],
+          icon: "wheat",
+          category: "Food",
+        },
+      ],
+      jobs: [
+        {
+          ...VALID_TEMPLATE.jobs[0],
+          icon: null,
+          required_education_level: "Basic",
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withRefs);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("rejects duplicate education level ranks", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      education_levels: [
+        { name: "Basic", description: null, rank: 1, natural_born_percent: 0 },
+        {
+          name: "Scholar",
+          description: null,
+          rank: 1,
+          natural_born_percent: 0,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects natural_born_percent values summing above 100", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      education_levels: [
+        {
+          name: "Basic",
+          description: null,
+          rank: 1,
+          natural_born_percent: 60,
+        },
+        {
+          name: "Scholar",
+          description: null,
+          rank: 2,
+          natural_born_percent: 50,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a tier education effect", () => {
+    const withEducationEffect = {
+      ...VALID_TEMPLATE,
+      education_levels: [
+        { name: "Basic", description: null, rank: 1, natural_born_percent: 0 },
+      ],
+      jobs: [
+        ...VALID_TEMPLATE.jobs,
+        {
+          name: "Tutor",
+          slug: "tutor",
+          job_type: "teacher",
+          base_capacity: 5,
+          trader_capacity_per_worker: null,
+          inputs: [],
+          outputs: [],
+        },
+      ],
+      blueprints: [
+        {
+          ...VALID_TEMPLATE.blueprints[0],
+          tiers: [
+            {
+              ...VALID_TEMPLATE.blueprints[0].tiers[0],
+              effects: [
+                {
+                  type: "education",
+                  teacher_job_slug: "tutor",
+                  teacher_capacity: 2,
+                  students_per_teacher: 5,
+                  levels: [{ from_level: null, to_level: "Basic", turns: 3 }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withEducationEffect);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("accepts a unit type with a building requirement", () => {
+    const withUnitType = {
+      ...VALID_TEMPLATE,
+      unit_types: [
+        {
+          name: "Militia",
+          description: null,
+          soldiers_per_unit: 10,
+          required_education_level: null,
+          required_building: { blueprint_slug: "granary", tier_number: 1 },
+          recruitment_costs: [{ resource_slug: "wood", amount: 5 }],
+          upkeep_costs: [{ resource_slug: "grain", amount: 1 }],
+          desertion_rate: 0.05,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withUnitType);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("rejects a unit type with an out-of-range desertion rate", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      unit_types: [
+        {
+          name: "Militia",
+          description: null,
+          soldiers_per_unit: 10,
+          required_education_level: null,
+          required_building: null,
+          recruitment_costs: [],
+          upkeep_costs: [],
+          desertion_rate: 1.5,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
   });
 });
