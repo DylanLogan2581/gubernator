@@ -1,4 +1,4 @@
-import { Check, Circle, MoreHorizontal, Minus } from "lucide-react";
+import { Check, MoreHorizontal, Minus, X } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -129,8 +129,13 @@ export function NationDiscoveryGrid({
                     }}
                   >
                     <div className="flex min-w-0 items-center gap-1">
-                      <span className="min-w-0 flex-1 break-words">
-                        {row.name}
+                      <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <NationFlagAvatar
+                          className="w-8 shrink-0"
+                          flagPath={row.flagPath}
+                          nationId={row.id}
+                        />
+                        <span className="min-w-0 break-words">{row.name}</span>
                       </span>
                       {canEdit ? (
                         <DropdownMenu>
@@ -231,9 +236,9 @@ export function NationDiscoveryGrid({
                           {met ? (
                             <Check aria-hidden="true" className="size-4" />
                           ) : (
-                            <Circle
+                            <X
                               aria-hidden="true"
-                              className="size-2.5 text-muted-foreground/40"
+                              className="size-3.5 text-muted-foreground"
                             />
                           )}
                         </button>
@@ -261,10 +266,7 @@ function DiscoveryLegend(): JSX.Element {
       </span>
       <span className="flex items-center gap-1.5">
         <span className="flex size-6 items-center justify-center rounded-sm border border-border">
-          <Circle
-            aria-hidden="true"
-            className="size-3.5 text-muted-foreground"
-          />
+          <X aria-hidden="true" className="size-3.5 text-muted-foreground" />
         </span>
         Not met
       </span>
