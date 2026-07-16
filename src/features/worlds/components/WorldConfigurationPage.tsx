@@ -232,24 +232,27 @@ function WorldConfigurationContent({
       );
     }
 
-    if (activeTab === "cultures-religions") {
+    if (activeTab === "cultures") {
       return (
-        <div className="grid gap-6">
-          <ConfigPanelShell>
-            <CulturesConfigPanel
-              canAdmin={canAdmin}
-              isArchived={header.isArchived}
-              worldId={worldId}
-            />
-          </ConfigPanelShell>
-          <ConfigPanelShell>
-            <ReligionsConfigPanel
-              canAdmin={canAdmin}
-              isArchived={header.isArchived}
-              worldId={worldId}
-            />
-          </ConfigPanelShell>
-        </div>
+        <ConfigPanelShell>
+          <CulturesConfigPanel
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+          />
+        </ConfigPanelShell>
+      );
+    }
+
+    if (activeTab === "religions") {
+      return (
+        <ConfigPanelShell>
+          <ReligionsConfigPanel
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+          />
+        </ConfigPanelShell>
       );
     }
 

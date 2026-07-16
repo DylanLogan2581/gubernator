@@ -107,6 +107,34 @@ describe("world configuration route", () => {
     });
   });
 
+  it("redirects the legacy ?tab=cultures-religions alias to ?tab=cultures", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000606";
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: worldId }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: worldId,
+            name: "Admin World",
+          }),
+        ],
+      }),
+    );
+
+    const router = renderAt(
+      `/worlds/${worldId}/configuration?tab=cultures-religions`,
+    );
+
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Cultures");
+
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ tab: "cultures" });
+    });
+  });
+
   it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

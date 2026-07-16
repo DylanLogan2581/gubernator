@@ -24,8 +24,19 @@ const configurationSearchSchema = z.object({
   tab: z.string().optional(),
 });
 
+// Legacy `?tab=` values that have since been split or renamed, mapped to
+// their replacement tab id. Keeps old links/bookmarks working.
+const LEGACY_TAB_ALIASES: Readonly<Record<string, ConfigTabId>> = {
+  "cultures-religions": "cultures",
+};
+
 function isKnownConfigTab(tab: string): tab is ConfigTabId {
   return (CONFIG_TAB_IDS as readonly string[]).includes(tab);
+}
+
+function resolveConfigTab(tab: string): ConfigTabId | undefined {
+  if (isKnownConfigTab(tab)) return tab;
+  return LEGACY_TAB_ALIASES[tab];
 }
 
 function parseConfigurationSearch(search: unknown): {
@@ -34,8 +45,8 @@ function parseConfigurationSearch(search: unknown): {
   const result = configurationSearchSchema.safeParse(search);
   const rawTab = result.success ? result.data.tab : undefined;
   const tab =
-    rawTab !== undefined && isKnownConfigTab(rawTab)
-      ? rawTab
+    rawTab !== undefined
+      ? (resolveConfigTab(rawTab) ?? DEFAULT_CONFIG_TAB)
       : DEFAULT_CONFIG_TAB;
   return { tab };
 }
@@ -58,7 +69,7 @@ function WorldConfigurationRoute(): JSX.Element {
     void navigate({
       to: "/worlds/$worldId/configuration",
       params: { worldId },
-      search: { tab: DEFAULT_CONFIG_TAB },
+      search: { tab: resolveConfigTab(rawTab) ?? DEFAULT_CONFIG_TAB },
       replace: true,
     });
   }, [navigate, rawTab, worldId]);
