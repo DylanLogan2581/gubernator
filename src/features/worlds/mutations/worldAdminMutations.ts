@@ -43,7 +43,6 @@ type WorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 type MutationFactoryOpts = {
@@ -126,7 +125,6 @@ async function createWorld(
   const { data, error } = await client
     .rpc("create_world", {
       p_name: values.name.trim(),
-      p_visibility: values.visibility,
     })
     .maybeSingle<WorldRow>();
 

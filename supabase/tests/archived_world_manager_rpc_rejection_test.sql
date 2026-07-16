@@ -60,12 +60,11 @@ where
 
 -- Archived world
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     'be200000-0000-0000-0000-000000000001',
     'AGMR Archived World',
-    'private',
     'archived',
     now()
   );

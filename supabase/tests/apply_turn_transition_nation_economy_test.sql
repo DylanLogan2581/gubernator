@@ -48,27 +48,24 @@ where
 --   running transition (simulates a partial-run retry).
 -- World 3 (turn 5): cross-world guard.
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a6200000-0000-0000-0000-000000000001',
     'ATTNE Happy Path World',
     5,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000002',
     'ATTNE Idempotency World',
     8,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000003',
     'ATTNE Cross World Guard World',
     5,
-    'private',
     'active'
   );
 

@@ -52,34 +52,30 @@ where
 -- World 3: managed-pop drift scenario
 -- World 4: managed-pop clean scenario
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f3200000-0000-0000-0000-000000000001',
     'ATDMPD Deposit Drift World',
     3,
-    'private',
     'active'
   ),
   (
     'f3200000-0000-0000-0000-000000000002',
     'ATDMPD Deposit Clean World',
     3,
-    'private',
     'active'
   ),
   (
     'f3200000-0000-0000-0000-000000000003',
     'ATDMPD ManagedPop Drift World',
     3,
-    'private',
     'active'
   ),
   (
     'f3200000-0000-0000-0000-000000000004',
     'ATDMPD ManagedPop Clean World',
     3,
-    'private',
     'active'
   );
 

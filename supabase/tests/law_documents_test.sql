@@ -70,12 +70,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     '1b000000-0000-0000-0000-000000000001',
     'Law World',
-    'private',
     'active',
     7
   );

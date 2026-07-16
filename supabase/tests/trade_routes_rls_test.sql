@@ -100,18 +100,16 @@ where
   id = 'c1000000-0000-0000-0000-000000000006';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'TR Main World',
-    'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'TR Other World',
-    'private',
     'active'
   );
 

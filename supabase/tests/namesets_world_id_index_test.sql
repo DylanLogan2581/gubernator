@@ -10,12 +10,11 @@ select
 -- Fixtures
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f1000000-0000-0000-0000-000000000010',
     'Index Test World',
-    'private',
     'active'
   );
 

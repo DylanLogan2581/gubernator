@@ -72,18 +72,16 @@ where
 -- World A: subject world where events_owner and events_admin are admins
 -- World B: separate world to test cross-world denial
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Events World A',
-    'private',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'Events World B',
-    'private',
     'active'
   );
 

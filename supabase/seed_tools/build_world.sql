@@ -44,7 +44,7 @@ insert into tmp_pools values
 --    >=8 contradictions, >=10 goals, >=10 flaws). naming_config default 'pool'.
 -- ---------------------------------------------------------------------------
 insert into public.worlds (
-  id, name, current_turn_number, visibility, status, calendar_config_json,
+  id, name, current_turn_number, status, calendar_config_json,
   partnership_seek_chance, fertility_chance, minimum_partnership_age_turns,
   maximum_fertility_age_turns, mourning_period_turns,
   npc_flavor_config_json
@@ -53,7 +53,6 @@ values (
   '00000000-0000-0000-0000-000000000101',
   'Aldermoor',
   0,
-  'private',
   'active',
   public.default_calendar_config(),
   0.25,

@@ -58,19 +58,17 @@ where
   id = 'cc100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     'cc200000-0000-0000-0000-000000000001',
     'BSCR World',
-    'private',
     'active',
     null
   ),
   (
     'cc200000-0000-0000-0000-000000000002',
     'BSCR Archived World',
-    'private',
     'archived',
     now()
   );

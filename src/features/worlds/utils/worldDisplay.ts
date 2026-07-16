@@ -24,7 +24,6 @@ type WorldRow = Pick<
   | "name"
   | "status"
   | "updated_at"
-  | "visibility"
 > & {
   readonly calendar_config_json?: Tables<"worlds">["calendar_config_json"];
   readonly hero_path?: Tables<"worlds">["hero_path"];
@@ -37,7 +36,6 @@ export function toAccessibleWorld(
 ): AccessibleWorld {
   const accessTarget = {
     id: world.id,
-    visibility: world.visibility,
   };
   const planningTurnNumber = resolvePlanningTurnNumber(
     world.current_turn_number,
@@ -68,7 +66,6 @@ export function toAccessibleWorld(
       planningTurnNumber,
     ),
     isArchived: world.status === "archived",
-    isHidden: world.visibility !== "public",
     isTrashed: world.is_trashed,
     name: world.name,
     nextInWorldDateLabel: resolveInWorldDateLabel(
@@ -81,7 +78,6 @@ export function toAccessibleWorld(
     status: world.status,
     thumbnailPath: world.thumbnail_path ?? null,
     updatedAt: world.updated_at,
-    visibility: world.visibility,
   };
 }
 

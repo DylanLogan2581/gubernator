@@ -57,13 +57,12 @@ where
   id = 'e8100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'e8200000-0000-0000-0000-000000000001',
     'NCOP World 1',
     3,
-    'private',
     'active'
   );
 

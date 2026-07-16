@@ -34,12 +34,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'fb200000-0000-0000-0000-000000000001',
     'Event Freeze World',
-    'private',
     'active',
     5
   );

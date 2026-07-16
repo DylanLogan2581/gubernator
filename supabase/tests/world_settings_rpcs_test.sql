@@ -50,26 +50,23 @@ where
   id = 'de100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'de200000-0000-0000-0000-000000000001',
     'DE Rename World',
-    'private',
     'active',
     5
   ),
   (
     'de200000-0000-0000-0000-000000000002',
     'DE Turn World',
-    'private',
     'active',
     10
   ),
   (
     'de200000-0000-0000-0000-000000000003',
     'DE Snapshot World',
-    'private',
     'active',
     8
   );

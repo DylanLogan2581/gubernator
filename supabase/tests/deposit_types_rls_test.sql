@@ -64,24 +64,21 @@ where
   id = 'a1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'a2000000-0000-0000-0000-000000000001',
     'DT Private World',
-    'private',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000002',
     'DT Public World',
-    'public',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000003',
     'DT Outsider World',
-    'private',
     'active'
   );
 
@@ -227,7 +224,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -235,7 +232,7 @@ select
       where
         world_id = 'a2000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read deposit_types in a public world'
+    'outsider cannot read deposit_types without admin/pc access'
   );
 
 select

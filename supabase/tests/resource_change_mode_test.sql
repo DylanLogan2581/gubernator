@@ -12,12 +12,11 @@ select
 -- Fixtures
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, visibility)
+  public.worlds (id, name)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
-    'Change Mode Test World',
-    'private'
+    'Change Mode Test World'
   );
 
 -- ---------------------------------------------------------------------------

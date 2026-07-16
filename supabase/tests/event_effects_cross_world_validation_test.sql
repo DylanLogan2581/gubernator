@@ -48,20 +48,18 @@ values
 
 -- World A (attacker is admin here) and World B (foreign world under attack)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'ee200000-0000-0000-0000-000000000001',
     'EECW World A',
     0,
-    'private',
     'active'
   ),
   (
     'ee200000-0000-0000-0000-000000000002',
     'EECW World B',
     0,
-    'private',
     'active'
   );
 

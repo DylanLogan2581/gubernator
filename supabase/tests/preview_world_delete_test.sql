@@ -51,20 +51,12 @@ where
 
 -- Target world (trashed so hard_delete_world is callable, but preview works on any world)
 insert into
-  public.worlds (
-    id,
-    name,
-    current_turn_number,
-    visibility,
-    status,
-    is_trashed
-  )
+  public.worlds (id, name, current_turn_number, status, is_trashed)
 values
   (
     'bf200000-0000-0000-0000-000000000001',
     'PWD Preview World',
     3,
-    'private',
     'active',
     true
   );

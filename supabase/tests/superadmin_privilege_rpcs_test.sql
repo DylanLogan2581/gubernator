@@ -75,12 +75,11 @@ where
 -- Create a test world (owner_id column was removed; world admin authority
 -- now lives entirely in public.world_admins).
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'bb100000-0000-0000-0000-000000000001',
     'Test World SA',
-    'private',
     'active'
   );
 

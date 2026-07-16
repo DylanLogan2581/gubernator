@@ -18,12 +18,11 @@ select
 --   bec3xxxx = job_definitions   bec4xxxx = building_blueprints
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'bec10000-0000-0000-0000-000000000001',
     'BTEC World',
-    'private',
     'active'
   );
 

@@ -64,12 +64,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 World',
-    'private',
     'active'
   );
 

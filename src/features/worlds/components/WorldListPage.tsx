@@ -9,10 +9,10 @@ import {
   Archive,
   ArrowRight,
   Globe2,
-  LockKeyhole,
   Plus,
   ShieldCheck,
   Trash2,
+  User,
 } from "lucide-react";
 import {
   useEffect,
@@ -571,7 +571,7 @@ function TrashedWorldRow({
           <Badge variant="outline">trashed</Badge>
         </div>
         <span className="text-xs text-muted-foreground capitalize">
-          {world.status} · {world.visibility}
+          {world.status}
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -603,23 +603,6 @@ function WorldBadge({
     );
   }
 
-  if (world.isHidden) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline">
-            <LockKeyhole className="size-3" aria-hidden="true" />
-            Hidden
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          Hidden from players; only visible to admins and users with explicit
-          access.
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
   if (world.canManage) {
     return (
       <Badge variant="outline">
@@ -631,8 +614,8 @@ function WorldBadge({
 
   return (
     <Badge variant="outline">
-      <Globe2 className="size-3" aria-hidden="true" />
-      Public
+      <User className="size-3" aria-hidden="true" />
+      Member
     </Badge>
   );
 }
@@ -657,7 +640,6 @@ function CreateWorldDialog({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [fieldErrors, setFieldErrors] = useState<CreateWorldFieldErrors>({});
   const [templateChoice, setTemplateChoice] = useState<string>("none");
   const [uploadedTemplate, setUploadedTemplate] =
@@ -731,7 +713,7 @@ function CreateWorldDialog({
 
     if (effectiveTemplate === null) {
       createMutation.mutate(
-        { name, visibility },
+        { name },
         {
           onError: (error) => {
             toast.error(
@@ -754,7 +736,7 @@ function CreateWorldDialog({
         return;
       }
       importMutation.mutate(
-        { name, visibility, template: effectiveTemplate },
+        { name, template: effectiveTemplate },
         {
           onError: (error) => {
             toast.error("Import failed", {
@@ -879,24 +861,6 @@ function CreateWorldDialog({
                 {fieldErrors.name !== undefined ? (
                   <p className="text-xs text-destructive">{fieldErrors.name}</p>
                 ) : null}
-              </Label>
-
-              {/* Visibility */}
-              <Label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Visibility</span>
-                <NativeSelect
-                  className="w-full"
-                  disabled={isPending}
-                  value={visibility}
-                  onChange={(e) => {
-                    setVisibility(
-                      e.currentTarget.value as "public" | "private",
-                    );
-                  }}
-                >
-                  <option value="private">Private</option>
-                  <option value="public">Public</option>
-                </NativeSelect>
               </Label>
             </div>
             <DialogFooter>

@@ -57,24 +57,21 @@ where
   id = 'de100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'de200000-0000-0000-0000-000000000001',
     'DR World',
-    'private',
     'active'
   ),
   (
     'de200000-0000-0000-0000-000000000002',
     'DR Other World',
-    'private',
     'active'
   ),
   (
     'de200000-0000-0000-0000-000000000003',
     'DR Archived World',
-    'private',
     'active'
   );
 

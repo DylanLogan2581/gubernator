@@ -9,7 +9,6 @@ export const createWorldInputSchema = z.strictObject({
     .string()
     .max(textInputLimits.worldNameMax, "World name is too long.")
     .refine((v): boolean => v.trim().length > 0, "World name is required."),
-  visibility: z.enum(["public", "private"]).default("private"),
 });
 
 export const trashWorldInputSchema = z.strictObject({

@@ -40,7 +40,6 @@ describe("toAccessibleWorld", () => {
       inWorldDateLabel: "Firstday, Ember 1, 100 AG",
       inWorldDateLabelShort: "2/1/100",
       isArchived: false,
-      isHidden: true,
       nextInWorldDateLabel: "Secondday, Ember 2, 100 AG",
       nextTurnNumber: 4,
       planningTurnNumber: 3,
@@ -91,11 +90,11 @@ describe("toAccessibleWorld", () => {
     ).toBe("Calendar unavailable");
   });
 
-  it("marks archived public worlds for display", () => {
+  it("marks archived worlds for display", () => {
     const accessContext = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
-      worldAdminWorldIds: [],
+      worldAdminWorldIds: ["world-2"],
     });
 
     const world = toAccessibleWorld(
@@ -104,15 +103,13 @@ describe("toAccessibleWorld", () => {
         id: "world-2",
         name: "Archived World",
         status: "archived",
-        visibility: "public",
       }),
       accessContext,
     );
 
     expect(world.isArchived).toBe(true);
-    expect(world.isHidden).toBe(false);
     expect(world.canAccess).toBe(true);
-    expect(world.canManage).toBe(false);
+    expect(world.canManage).toBe(true);
   });
 });
 
@@ -128,7 +125,6 @@ function createWorldRow(
     readonly name: string;
     readonly status: string;
     readonly updated_at: string;
-    readonly visibility: string;
   }> = {},
 ): {
   readonly archived_at: string | null;
@@ -141,7 +137,6 @@ function createWorldRow(
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 } {
   return {
     archived_at: null,
@@ -154,7 +149,6 @@ function createWorldRow(
     name: "Verdant Reach",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "private",
     ...overrides,
   };
 }

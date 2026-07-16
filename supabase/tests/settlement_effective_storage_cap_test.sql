@@ -35,12 +35,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '6e200000-0000-0000-0000-000000000001',
     'SESC World',
-    'private',
     'active'
   );
 

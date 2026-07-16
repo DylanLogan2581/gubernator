@@ -33,7 +33,6 @@ type WorldCalendarSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 export type SaveWorldCalendarConfigInput = {
@@ -41,7 +40,7 @@ export type SaveWorldCalendarConfigInput = {
   readonly worldId: string;
 };
 
-const WORLD_CALENDAR_SAVE_ACCESS_SELECT = "archived_at,id,status,visibility";
+const WORLD_CALENDAR_SAVE_ACCESS_SELECT = "archived_at,id,status";
 const WORLD_CALENDAR_SAVE_UPDATE_SELECT = "id";
 
 export class SaveWorldCalendarConfigError extends Error {

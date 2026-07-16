@@ -1,6 +1,5 @@
 export type WorldAccessTarget = {
   readonly id: string;
-  readonly visibility?: string;
 };
 
 export type AccessContextPredicates = {

@@ -112,23 +112,23 @@ describe("worlds route list", () => {
   it("renders accessible worlds returned by the worlds query module", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
+        adminRows: [
+          { world_id: "00000000-0000-0000-0000-000000000101" },
+          { world_id: "00000000-0000-0000-0000-000000000202" },
+        ],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
-            name: "Public World",
-            visibility: "public",
+            name: "Admin World",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
-            name: "Hidden World",
-            visibility: "private",
+            name: "Other Admin World",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
-            name: "Other Hidden World",
-            visibility: "private",
+            name: "Inaccessible World",
           }),
         ],
       }),
@@ -136,10 +136,9 @@ describe("worlds route list", () => {
 
     renderAt("/worlds");
 
-    expect(await screen.findByText("Public World")).toBeDefined();
-    expect(await screen.findByText("Hidden World")).toBeDefined();
-    expect(screen.getByText("Hidden")).toBeDefined();
-    expect(screen.queryByText("Other Hidden World")).toBeNull();
+    expect(await screen.findByText("Admin World")).toBeDefined();
+    expect(await screen.findByText("Other Admin World")).toBeDefined();
+    expect(screen.queryByText("Inaccessible World")).toBeNull();
   });
 
   it("shows an empty state when the user has no accessible worlds", async () => {
@@ -168,12 +167,10 @@ describe("worlds route list", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Suspended Owner World",
-            visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Public World",
-            visibility: "public",
           }),
         ],
       }),
@@ -228,7 +225,6 @@ describe("worlds route list", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            visibility: "private",
           }),
         ],
       }),
@@ -248,7 +244,6 @@ describe("worlds route list", () => {
     expect(
       await screen.findByRole("heading", { name: "Public World" }),
     ).toBeDefined();
-    expect(await screen.findByText("private")).toBeDefined();
   });
 });
 
@@ -267,7 +262,6 @@ describe("world shell route", () => {
             current_turn_number: 12,
             id: "00000000-0000-0000-0000-000000000404",
             name: "Eastern Marches",
-            visibility: "private",
           }),
         ],
         settlementRows: [
@@ -349,7 +343,6 @@ describe("world shell route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000505",
             name: "Deleted Owner World",
-            visibility: "private",
           }),
         ],
       }),
@@ -532,7 +525,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 type TestSettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
@@ -568,7 +560,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

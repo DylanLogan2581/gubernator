@@ -93,7 +93,7 @@ begin
   -- 1. World
   -- -------------------------------------------------------------------------
   insert into public.worlds (
-    id, name, current_turn_number, visibility, status,
+    id, name, current_turn_number, status,
     calendar_config_json,
     partnership_seek_chance, fertility_chance,
     minimum_partnership_age_turns, maximum_fertility_age_turns,
@@ -103,7 +103,6 @@ begin
     v_world,
     'Benchmark World (large)',
     0,
-    'private',
     'active',
     public.default_calendar_config(),
     0.20,

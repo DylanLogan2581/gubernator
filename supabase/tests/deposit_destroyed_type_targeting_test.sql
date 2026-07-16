@@ -48,20 +48,18 @@ values
 
 -- World A (caller's world) and World B (foreign world, for the reject case)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'fed20000-0000-0000-0000-000000000001',
     'FED World A',
     0,
-    'private',
     'active'
   ),
   (
     'fed20000-0000-0000-0000-000000000002',
     'FED World B',
     0,
-    'private',
     'active'
   );
 

@@ -57,7 +57,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 7,
             id: "00000000-0000-0000-0000-000000000101",
             name: "Eastern Marches",
-            visibility: "private",
           }),
         ],
         settlementRows: [
@@ -83,7 +82,6 @@ describe("WorldShellPage", () => {
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
-    expect(screen.getByText("private")).toBeDefined();
     expect(await screen.findByText("Readiness Summary")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
     expect(
@@ -94,6 +92,7 @@ describe("WorldShellPage", () => {
   it("renders archived worlds as read-only", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000000202"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -123,6 +122,7 @@ describe("WorldShellPage", () => {
   it("renders a safe fallback when calendar data cannot be loaded", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000000303"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -162,6 +162,7 @@ describe("WorldShellPage", () => {
   it("does not render the calendar or NPC flavor config panels", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000000707"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -210,6 +211,7 @@ describe("WorldShellPage", () => {
   it("does not render World Reports for non-admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000000902"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -217,7 +219,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000902",
             name: "Non-Admin World",
-            visibility: "public",
           }),
         ],
       }),
@@ -256,6 +257,7 @@ describe("WorldShellPage", () => {
   it("does not render the End Turn card for non-admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000001102"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -282,6 +284,7 @@ describe("WorldShellPage", () => {
         eventRows: [
           createEventRow({ id: "event-1", name: "Harvest Festival" }),
         ],
+        pcWorldIds: ["00000000-0000-0000-0000-000000001001"],
         nationRows: [
           createNationRow({ id: "nation-1", name: "Nation A" }),
           createNationRow({ id: "nation-2", name: "Nation B" }),
@@ -366,6 +369,7 @@ function createClient({
   adminRows = [],
   eventRows = [],
   nationRows = [],
+  pcWorldIds = [],
   session,
   settlementRows = [],
   totalCitizenCount = 0,
@@ -375,6 +379,7 @@ function createClient({
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly eventRows?: readonly TestEventRow[];
   readonly nationRows?: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: {
     readonly user: {
       readonly id: string;
@@ -433,7 +438,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
@@ -460,7 +465,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 type TestCalendarConfigJson =
   | WorldCalendarConfig
@@ -538,7 +542,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

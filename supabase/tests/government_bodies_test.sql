@@ -59,19 +59,17 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'fb000000-0000-0000-0000-000000000001',
     'Government Bodies World',
-    'private',
     'active',
     5
   ),
   (
     'fb000000-0000-0000-0000-000000000002',
     'Other Government Bodies World',
-    'private',
     'active',
     5
   );

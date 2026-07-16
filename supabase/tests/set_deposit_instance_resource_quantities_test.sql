@@ -54,12 +54,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'SDIRQ World',
-    'private',
     'active'
   );
 

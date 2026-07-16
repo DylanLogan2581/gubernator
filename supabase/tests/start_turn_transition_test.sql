@@ -76,27 +76,24 @@ where
   id = 'f1100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f1200000-0000-0000-0000-000000000001',
     'STT Active World',
     4,
-    'private',
     'active'
   ),
   (
     'f1200000-0000-0000-0000-000000000002',
     'STT Archived World',
     2,
-    'private',
     'active'
   ),
   (
     'f1200000-0000-0000-0000-000000000003',
     'STT Retry World',
     8,
-    'private',
     'active'
   );
 

@@ -291,7 +291,7 @@ describe("CitizenDetailPage", () => {
         name: "Brann",
         user_id: USER_ID,
       }),
-      worldVisibility: "public",
+      pcWorldIds: [WORLD_ID],
     });
     requireSupabaseClient.mockReturnValue(client);
 
@@ -333,7 +333,7 @@ describe("CitizenDetailPage", () => {
           name: "Cael",
           user_id: null,
         }),
-        worldVisibility: "public",
+        pcWorldIds: [WORLD_ID],
       }),
     );
 
@@ -359,7 +359,7 @@ describe("CitizenDetailPage", () => {
           name: "Renn",
           user_id: OTHER_USER_ID,
         }),
-        worldVisibility: "public",
+        pcWorldIds: [WORLD_ID],
       }),
     );
 
@@ -387,7 +387,7 @@ describe("CitizenDetailPage", () => {
           settlement_id: null,
           user_id: null,
         }),
-        worldVisibility: "public",
+        pcWorldIds: [WORLD_ID],
       }),
     );
 
@@ -998,9 +998,9 @@ function createClient({
   citizenRowsById = {},
   familyTreeRows,
   jobRows = [],
+  pcWorldIds = [],
   usersRows = [USER_ROW],
   usersQueryFails = false,
-  worldVisibility = "private",
 }: {
   readonly adminRows: ReadonlyArray<{ readonly world_id: string }>;
   readonly assignmentRow?: unknown;
@@ -1008,9 +1008,9 @@ function createClient({
   readonly citizenRowsById?: Readonly<Record<string, CitizenRowFixture>>;
   readonly familyTreeRows?: readonly unknown[];
   readonly jobRows?: readonly unknown[];
+  readonly pcWorldIds?: readonly string[];
   readonly usersRows?: readonly (typeof USER_ROW)[];
   readonly usersQueryFails?: boolean;
-  readonly worldVisibility?: string;
 }): unknown {
   const worldRow = {
     archived_at: null,
@@ -1022,7 +1022,6 @@ function createClient({
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   return {
@@ -1064,7 +1063,7 @@ function createClient({
     }),
     rpc: vi.fn().mockImplementation((name: string) => {
       if (name === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       if (name === "search_users_for_admin_picker") {
         if (usersQueryFails) {

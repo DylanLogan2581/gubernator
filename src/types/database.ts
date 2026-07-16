@@ -4492,7 +4492,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         };
         Insert: {
@@ -4518,7 +4517,6 @@ export type Database = {
           status?: string;
           thumbnail_path?: string | null;
           updated_at?: string;
-          visibility?: string;
           water_consumption_per_citizen?: number;
         };
         Update: {
@@ -4544,7 +4542,6 @@ export type Database = {
           status?: string;
           thumbnail_path?: string | null;
           updated_at?: string;
-          visibility?: string;
           water_consumption_per_citizen?: number;
         };
         Relationships: [];
@@ -5688,7 +5685,7 @@ export type Database = {
         };
       };
       create_world: {
-        Args: { p_name: string; p_visibility?: string };
+        Args: { p_name: string };
         Returns: {
           archived_at: string | null;
           calendar_config_json: Json;
@@ -5712,7 +5709,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         }[];
         SetofOptions: {
@@ -6153,7 +6149,7 @@ export type Database = {
       has_unique: { Args: { "": string }; Returns: string };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       import_world_from_template: {
-        Args: { p_name: string; p_template?: Json; p_visibility?: string };
+        Args: { p_name: string; p_template?: Json };
         Returns: {
           archived_at: string | null;
           calendar_config_json: Json;
@@ -6177,7 +6173,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         }[];
         SetofOptions: {
@@ -6915,7 +6910,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         }[];
         SetofOptions: {
@@ -7269,7 +7263,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         }[];
         SetofOptions: {
@@ -7804,7 +7797,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         }[];
         SetofOptions: {
@@ -8028,7 +8020,6 @@ export type Database = {
           status: string;
           thumbnail_path: string | null;
           updated_at: string;
-          visibility: string;
           water_consumption_per_citizen: number;
         }[];
         SetofOptions: {

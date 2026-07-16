@@ -45,9 +45,7 @@ describe("currentAccessContextQueryOptions", () => {
     expect(context.isAuthenticated).toBe(false);
     expect(context.isSuperAdmin).toBe(false);
     expect(context.worldAdminWorldIds).toEqual([]);
-    expect(
-      context.canAccessWorld({ id: "public-world", visibility: "public" }),
-    ).toBe(false);
+    expect(context.canAccessWorld({ id: "public-world" })).toBe(false);
     expect(from).not.toHaveBeenCalled();
   });
 
@@ -110,9 +108,7 @@ describe("currentAccessContextQueryOptions", () => {
     ]);
     expect(context.canAccessWorld({ id: "world-pc-1" })).toBe(true);
     expect(context.canAccessWorld({ id: "world-pc-2" })).toBe(true);
-    expect(
-      context.canAccessWorld({ id: "world-not-pc", visibility: "private" }),
-    ).toBe(false);
+    expect(context.canAccessWorld({ id: "world-not-pc" })).toBe(false);
     expect(context.canAdminWorld({ id: "world-pc-1" })).toBe(false);
   });
 
@@ -154,9 +150,7 @@ describe("currentAccessContextQueryOptions", () => {
     expect(context.isSuperAdmin).toBe(false);
     expect(context.worldAdminWorldIds).toEqual([]);
     expect(context.canAccessWorld({ id: "world-1" })).toBe(false);
-    expect(
-      context.canAccessWorld({ id: "public-world", visibility: "public" }),
-    ).toBe(false);
+    expect(context.canAccessWorld({ id: "public-world" })).toBe(false);
     expect(from).toHaveBeenCalledTimes(1);
     expect(from).toHaveBeenCalledWith("users");
   });

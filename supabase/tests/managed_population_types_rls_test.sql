@@ -64,24 +64,21 @@ where
   id = 'e1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'MPT Private World',
-    'private',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'MPT Public World',
-    'public',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000003',
     'MPT Outsider World',
-    'private',
     'active'
   );
 
@@ -329,7 +326,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -337,7 +334,7 @@ select
       where
         world_id = 'e2000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read managed_population_types in a public world'
+    'outsider cannot read managed_population_types without admin/pc access'
   );
 
 select

@@ -76,12 +76,11 @@ where
   id = 'bda10000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'bda20000-0000-0000-0000-000000000001',
     'BDA World',
-    'private',
     'active'
   );
 

@@ -81,18 +81,16 @@ where
 -- World insert triggers seed Food and Fresh Water resources automatically for
 -- each world. Additional explicit resources are inserted below for trigger tests.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '45000000-0000-0000-0000-000000000001',
     'DIR Main World',
-    'private',
     'active'
   ),
   (
     '45000000-0000-0000-0000-000000000002',
     'DIR Other World',
-    'private',
     'active'
   );
 

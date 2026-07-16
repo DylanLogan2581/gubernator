@@ -41,12 +41,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ef100000-0000-0000-0000-000000000001',
     'EC Test World',
-    'private',
     'active'
   );
 

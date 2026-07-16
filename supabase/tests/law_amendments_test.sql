@@ -115,12 +115,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     '4b000000-0000-0000-0000-000000000001',
     'Amendment World',
-    'private',
     'active',
     10
   );
@@ -2465,12 +2464,11 @@ reset role;
 -- _vote must reject a foreign citizen even when a body owner listed them.
 -- ===========================================================================
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     '4b000000-0000-0000-0000-000000000002',
     'Foreign Amendment World',
-    'private',
     'active',
     10
   );

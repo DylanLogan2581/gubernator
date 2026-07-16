@@ -65,24 +65,21 @@ where
   id = 'e4100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e4200000-0000-0000-0000-000000000001',
     'E4 Owner Delete World',
-    'private',
     'active'
   ),
   (
     'e4200000-0000-0000-0000-000000000002',
     'E4 Admin Delete World',
-    'private',
     'active'
   ),
   (
     'e4200000-0000-0000-0000-000000000003',
     'E4 Super Admin Delete World',
-    'private',
     'active'
   );
 

@@ -56,12 +56,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ec573100-0000-0000-0000-000000000001',
     'EC573 Active World',
-    'private',
     'active'
   );
 
@@ -74,12 +73,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     'ec573100-0000-0000-0000-000000000002',
     'EC573 Archived World',
-    'private',
     'archived',
     now()
   );

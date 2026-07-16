@@ -34,18 +34,16 @@ values
 -- Two worlds: world 1 is where deposit_types live; world 2 provides
 -- cross-world resources for the rejection tests.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'b2000000-0000-0000-0000-000000000001',
     'DTV Private World',
-    'private',
     'active'
   ),
   (
     'b2000000-0000-0000-0000-000000000002',
     'DTV Other World',
-    'private',
     'active'
   );
 

@@ -59,6 +59,7 @@ describe("WorldConfigurationPage", () => {
   it("mounts the resources panel when the resources tab is active", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -78,6 +79,7 @@ describe("WorldConfigurationPage", () => {
   it("mounts the calendar panel when the calendar tab is active", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -97,6 +99,7 @@ describe("WorldConfigurationPage", () => {
   it("mounts the NPC flavor panel when the npc-flavor tab is active", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -116,6 +119,7 @@ describe("WorldConfigurationPage", () => {
   it("renders the mobile select with the active tab label as its value", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -131,6 +135,7 @@ describe("WorldConfigurationPage", () => {
   it("does not render a desktop tab strip (sidebar is the sole desktop nav)", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -146,6 +151,7 @@ describe("WorldConfigurationPage", () => {
   it("renders a back navigation link to the world page", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -161,6 +167,7 @@ describe("WorldConfigurationPage", () => {
   it("renders the Configuration page heading", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: WORLD_ID }],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow()],
       }),
@@ -345,7 +352,6 @@ type TestWorldRow = {
   readonly npc_flavor_config_json: WorldNpcFlavorConfig;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createUser(id: string): TestUser {
@@ -372,7 +378,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     npc_flavor_config_json: createNpcFlavorConfig(),
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

@@ -257,7 +257,6 @@ select
     $$
       select public.import_world_from_template (
         'IT Version Mismatch',
-        'private',
         '{"template_version":2,"meta":{},"calendar":{},"population_rules":{},"npc_flavor":{},"naming_config":{},"namesets":[],"resources":[],"jobs":[],"blueprints":[],"deposit_types":[],"managed_population_types":[]}'::jsonb
       )
     $$,
@@ -277,7 +276,6 @@ select
     $$
       select public.import_world_from_template (
         'IT Unauthorized',
-        'private',
         '{"template_version":1}'::jsonb
       )
     $$,
@@ -300,7 +298,6 @@ select
       from
         public.import_world_from_template (
           'IT Imported World',
-          'private',
           (
             select
               tmpl
@@ -478,7 +475,6 @@ select
     $$
       select public.import_world_from_template (
         'IT Poisoned World',
-        'private',
         (select tmpl from it_template_store where label = 'poisoned')
       )
     $$,

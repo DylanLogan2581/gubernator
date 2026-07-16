@@ -204,6 +204,7 @@ function chainBuilder(result: unknown): Record<string, unknown> {
 
 function createClient({
   adminRows = [],
+  pcWorldIds = [],
   readinessRows = [createReadinessRow()],
   settlementRow = createSettlementWithNationRow(),
   settlementUpdateResult = { data: createSettlementBaseRow(), error: null },
@@ -211,9 +212,9 @@ function createClient({
     data: { id: SETTLEMENT_ID, nation_id: NATION_ID },
     error: null,
   },
-  worldVisibility = "private",
 }: {
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
+  readonly pcWorldIds?: readonly string[];
   readonly readinessRows?: readonly unknown[];
   readonly settlementRow?: unknown;
   readonly settlementUpdateResult?: {
@@ -224,7 +225,6 @@ function createClient({
     readonly data: unknown;
     readonly error: unknown;
   };
-  readonly worldVisibility?: string;
 } = {}): unknown {
   const worldRow = {
     archived_at: null,
@@ -236,7 +236,6 @@ function createClient({
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   const userRow = {
@@ -257,7 +256,6 @@ function createClient({
         archived_at: null,
         id: WORLD_ID,
         status: "active",
-        visibility: worldVisibility,
       },
     },
   };
@@ -354,7 +352,7 @@ function createClient({
     removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string, params: Record<string, unknown> = {}) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       if (fn === "set_settlement_readiness") {
         return {
@@ -713,7 +711,7 @@ describe("settlement detail route", () => {
 
     it("hides the coordinate edit button from nation manager viewers", async () => {
       requireSupabaseClient.mockReturnValue(
-        createClient({ worldVisibility: "public" }),
+        createClient({ pcWorldIds: [WORLD_ID] }),
       );
       const nationManagerCharacter = {
         id: "char-1",

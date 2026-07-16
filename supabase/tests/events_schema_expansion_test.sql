@@ -71,18 +71,16 @@ where
 
 -- World A: subject for event_groups and extended events
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e5000000-0000-0000-0000-000000000001',
     'Events Exp World A',
-    'private',
     'active'
   ),
   (
     'e5000000-0000-0000-0000-000000000002',
     'Events Exp World B',
-    'private',
     'active'
   );
 

@@ -20,7 +20,6 @@ type AccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 type SupabaseError = { readonly code?: string; readonly message: string };
@@ -33,7 +32,6 @@ function createAccessRow(overrides: Partial<AccessRow> = {}): AccessRow {
     archived_at: null,
     id: WORLD_ID,
     status: "active",
-    visibility: "private",
     ...overrides,
   };
 }

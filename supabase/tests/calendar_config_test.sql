@@ -74,11 +74,10 @@ select
 select
   lives_ok (
     $test$
-    insert into public.worlds (id, name, visibility, status)
+    insert into public.worlds (id, name, status)
     values (
       '52000000-0000-0000-0000-000000000001',
       'Default Calendar World',
-      'private',
       'active'
     )
   $test$,

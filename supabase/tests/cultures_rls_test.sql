@@ -63,24 +63,21 @@ where
   id = 'b1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'b2000000-0000-0000-0000-000000000001',
     'Cul Private World',
-    'private',
     'active'
   ),
   (
     'b2000000-0000-0000-0000-000000000002',
     'Cul Public World',
-    'public',
     'active'
   ),
   (
     'b2000000-0000-0000-0000-000000000003',
     'Cul Outsider World',
-    'private',
     'active'
   );
 
@@ -148,7 +145,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -156,7 +153,7 @@ select
       where
         world_id = 'b2000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read cultures in a public world'
+    'outsider cannot read cultures without admin/pc access'
   );
 
 select

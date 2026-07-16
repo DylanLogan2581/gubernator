@@ -65,24 +65,21 @@ where
 -- Inserting worlds fires the seed trigger, so Food and Fresh Water are
 -- created automatically for each world below.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'a2000000-0000-0000-0000-000000000001',
     'Res Private World',
-    'private',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000002',
     'Res Public World',
-    'public',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000003',
     'Res Outsider World',
-    'private',
     'active'
   );
 
@@ -143,7 +140,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -151,7 +148,7 @@ select
       where
         world_id = 'a2000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read resources in a public world'
+    'outsider cannot read resources without admin/pc access'
   );
 
 select
@@ -434,12 +431,11 @@ select
 -- SEED TRIGGER: new world insert seeds Food and Fresh Water
 -- ===========================================================================
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'a2000000-0000-0000-0000-000000000099',
     'Res Trigger Test World',
-    'private',
     'active'
   );
 
@@ -513,11 +509,10 @@ set
 select
   lives_ok (
     $test$
-    insert into public.worlds (id, name, visibility, status)
+    insert into public.worlds (id, name, status)
     values (
       'a2000000-0000-0000-0000-0000000000aa',
       'Res Non-Owner Insert World',
-      'private',
       'active'
     )
   $test$,

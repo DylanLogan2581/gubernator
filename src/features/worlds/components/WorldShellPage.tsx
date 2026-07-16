@@ -126,7 +126,6 @@ function WorldShellContent({
         isArchived={worldQuery.data.header.isArchived}
         name={worldQuery.data.header.name}
         status={worldQuery.data.header.status}
-        visibility={worldQuery.data.header.visibility}
         worldId={worldId}
       />
 

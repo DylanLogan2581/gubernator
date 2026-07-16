@@ -86,18 +86,16 @@ where
   id = 'b1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'b2000000-0000-0000-0000-000000000001',
     'SB Private World',
-    'private',
     'active'
   ),
   (
     'b2000000-0000-0000-0000-000000000002',
     'SB Outsider World',
-    'private',
     'active'
   );
 

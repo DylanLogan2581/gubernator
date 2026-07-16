@@ -14,21 +14,19 @@ type WorldDashboardHeroBannerProps = {
   readonly isArchived: boolean;
   readonly name: string;
   readonly status: string;
-  readonly visibility: string;
   readonly worldId: string;
 };
 
 /**
  * Full-width world dashboard header: a big hero photo (or gradient fallback
- * when unset) with the world name, status/visibility badges, and in-world
- * date overlaid at the bottom.
+ * when unset) with the world name, status badge, and in-world date overlaid
+ * at the bottom.
  */
 export function WorldDashboardHeroBanner({
   inWorldDateLabel,
   isArchived,
   name,
   status,
-  visibility,
   worldId,
 }: WorldDashboardHeroBannerProps): JSX.Element {
   const imagesQuery = useQuery(worldImagesQueryOptions(worldId));
@@ -55,9 +53,6 @@ export function WorldDashboardHeroBanner({
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="capitalize">
               {status}
-            </Badge>
-            <Badge variant="secondary" className="capitalize">
-              {visibility}
             </Badge>
             {isArchived ? (
               <Badge variant="secondary">

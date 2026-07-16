@@ -79,13 +79,12 @@ values
 -- World 1 — settlement-scoped events + citizen birth/death
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'b9200000-0000-0000-0000-000000000001',
     'ECN World 1',
     5,
-    'private',
     'active'
   );
 
@@ -336,13 +335,12 @@ values
 -- World 2 — nation-scoped event.activated
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'b9200000-0000-0000-0000-000000000002',
     'ECN World 2',
     5,
-    'private',
     'active'
   );
 
@@ -452,13 +450,12 @@ values
 -- World 3 — world-scoped event.activated
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'b9200000-0000-0000-0000-000000000003',
     'ECN World 3',
     5,
-    'private',
     'active'
   );
 
@@ -521,13 +518,12 @@ values
 -- World 4 — instant event (pending → expired: both activated + expired fire)
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'b9200000-0000-0000-0000-000000000004',
     'ECN World 4',
     5,
-    'private',
     'active'
   );
 

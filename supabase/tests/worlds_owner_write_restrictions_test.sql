@@ -4,7 +4,7 @@
 -- Covers:
 --   • World admin cannot mutate state-machine columns (current_turn_number,
 --     status, archived_at, created_at) through direct table updates.
---   • World admin can still mutate allowed metadata columns (name, visibility,
+--   • World admin can still mutate allowed metadata columns (name,
 --     calendar_config_json).
 --   • World admin cannot insert worlds (INSERT requires super-admin).
 --   • World admin cannot insert worlds with state-machine columns pre-set.
@@ -13,7 +13,7 @@
 begin;
 
 select
-  plan (14);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -49,12 +49,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '71000000-0000-0000-0000-000000000001',
     'Restricted World',
-    'private',
     'active'
   );
 
@@ -161,16 +160,6 @@ select
   lives_ok (
     $test$
     update public.worlds
-    set visibility = 'public'
-    where id = '71000000-0000-0000-0000-000000000001'
-  $test$,
-    'world admin can change world visibility'
-  );
-
-select
-  lives_ok (
-    $test$
-    update public.worlds
     set calendar_config_json = public.default_calendar_config()
     where id = '71000000-0000-0000-0000-000000000001'
   $test$,
@@ -183,11 +172,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (id, name, visibility, current_turn_number)
+    insert into public.worlds (id, name, current_turn_number)
     values (
       '71000000-0000-0000-0000-000000000002',
       'Pre-Advanced World',
-      'private',
       5
     )
   $test$,
@@ -199,11 +187,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (id, name, visibility, status, archived_at)
+    insert into public.worlds (id, name, status, archived_at)
     values (
       '71000000-0000-0000-0000-000000000003',
       'Pre-Archived World',
-      'private',
       'archived',
       now()
     )
@@ -216,12 +203,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (id, name, visibility)
+    insert into public.worlds (id, name)
     values (
       '71000000-0000-0000-0000-000000000004',
-      'Fresh World',
-      'private'
-    )
+      'Fresh World')
   $test$,
     '42501',
     null,
@@ -270,12 +255,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (id, name, visibility)
+    insert into public.worlds (id, name)
     values (
       '71000000-0000-0000-0000-000000000005',
-      'Plain User World',
-      'private'
-    )
+      'Plain User World')
   $test$,
     '42501',
     null,

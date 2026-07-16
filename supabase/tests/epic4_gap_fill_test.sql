@@ -43,18 +43,16 @@ values
 -- World-alpha is administered by alpha; world-beta is administered by beta.
 -- Alpha has no admin rights in world-beta, making it the cross-world target.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '92000000-0000-0000-0000-000000000001',
     'GF Alpha World',
-    'private',
     'active'
   ),
   (
     '92000000-0000-0000-0000-000000000002',
     'GF Beta World',
-    'private',
     'active'
   );
 

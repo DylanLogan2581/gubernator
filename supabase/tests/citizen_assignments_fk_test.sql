@@ -38,12 +38,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e1000000-0000-0000-0000-000000000002',
     'FK Test World',
-    'private',
     'active'
   );
 

@@ -143,23 +143,23 @@ describe("WorldListPage", () => {
   it("renders accessible worlds", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
+        adminRows: [
+          { world_id: "00000000-0000-0000-0000-000000000101" },
+          { world_id: "00000000-0000-0000-0000-000000000202" },
+        ],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
-            name: "Public World",
-            visibility: "public",
+            name: "Admin World",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Private World",
-            visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
             name: "Inaccessible World",
-            visibility: "private",
           }),
         ],
       }),
@@ -167,10 +167,10 @@ describe("WorldListPage", () => {
 
     renderWorldListPage();
 
-    expect(await screen.findByText("Public World")).toBeDefined();
+    expect(await screen.findByText("Admin World")).toBeDefined();
     expect(screen.getByText("Private World")).toBeDefined();
     expect(screen.queryByText("Inaccessible World")).toBeNull();
-    expect(screen.getByRole("link", { name: /Public World/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Admin World/i })).toHaveAttribute(
       "href",
       "/worlds/00000000-0000-0000-0000-000000000101",
     );
@@ -179,6 +179,7 @@ describe("WorldListPage", () => {
   it("uses a responsive card grid for the world list", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow({ name: "Grid World" })],
       }),
@@ -196,6 +197,7 @@ describe("WorldListPage", () => {
   it("shows a world icon with the first letter of the world name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -212,35 +214,10 @@ describe("WorldListPage", () => {
     expect(screen.getAllByText("C")).toHaveLength(2);
   });
 
-  it("shows a tooltip explaining the Hidden badge on hover", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({
-            id: "00000000-0000-0000-0000-000000000202",
-            name: "Private World",
-            visibility: "private",
-          }),
-        ],
-      }),
-    );
-
-    renderWorldListPage();
-
-    const badge = await screen.findByText("Hidden");
-    await user.hover(badge);
-
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      /Hidden from players/i,
-    );
-  });
-
   it("renders the computed in-world date", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -262,6 +239,7 @@ describe("WorldListPage", () => {
   it("renders a safe fallback for missing or invalid calendar config", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -532,6 +510,7 @@ describe("WorldListPage", () => {
     const onClearAction = vi.fn();
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000001" }],
         isSuperAdmin: false,
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow({ name: "Test World" })],
@@ -702,7 +681,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 type TestCalendarConfigJson =
   | WorldCalendarConfig
@@ -733,7 +711,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

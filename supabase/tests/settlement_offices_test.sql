@@ -63,12 +63,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'c7000000-0000-0000-0000-000000000001',
     'Settlement Offices World',
-    'private',
     'active',
     4
   );

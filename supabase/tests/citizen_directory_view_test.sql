@@ -71,19 +71,17 @@ where
   id = 'e1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Directory World',
-    'private',
     'active',
     10
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'Directory World Other',
-    'private',
     'active',
     10
   );

@@ -77,27 +77,24 @@ where
   id = 'c1100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'c1200000-0000-0000-0000-000000000001',
     'ATT Active World',
     4,
-    'private',
     'active'
   ),
   (
     'c1200000-0000-0000-0000-000000000002',
     'ATT Archived World',
     2,
-    'private',
     'active'
   ),
   (
     'c1200000-0000-0000-0000-000000000003',
     'ATT Retry World',
     8,
-    'private',
     'active'
   );
 

@@ -92,18 +92,16 @@ where
 -- Inserting worlds fires the seed trigger so Food and Fresh Water resources are
 -- created automatically for each world.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'Stock Private World',
-    'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'Stock Outsider World',
-    'private',
     'active'
   );
 
@@ -472,12 +470,11 @@ select
 -- zero-quantity stockpile row per active resource.
 -- ===========================================================================
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'c2000000-0000-0000-0000-000000000099',
     'Stock Trigger Test World',
-    'private',
     'active'
   );
 

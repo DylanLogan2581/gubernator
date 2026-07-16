@@ -59,12 +59,11 @@ where
   id = 'f1000000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'CXP World',
-    'private',
     'active'
   );
 

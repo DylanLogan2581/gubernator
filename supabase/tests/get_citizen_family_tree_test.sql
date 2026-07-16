@@ -51,12 +51,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '1a000000-0000-0000-0000-000000000002',
     'Family Tree Test World',
-    'private',
     'active'
   );
 

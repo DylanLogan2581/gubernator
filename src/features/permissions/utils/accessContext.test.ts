@@ -13,12 +13,10 @@ describe("createAccessContext", () => {
     expect(context.isAuthenticated).toBe(false);
     expect(context.isSuperAdmin).toBe(false);
     expect(context.canAccessWorld({ id: "private-world" })).toBe(false);
-    expect(
-      context.canAccessWorld({ id: "public-world", visibility: "public" }),
-    ).toBe(false);
+    expect(context.canAccessWorld({ id: "another-world" })).toBe(false);
   });
 
-  it("does not grant anonymous access to private or public worlds", () => {
+  it("does not grant anonymous access to any world", () => {
     const context = createAccessContext({
       isSuperAdmin: false,
       userId: null,
@@ -28,13 +26,11 @@ describe("createAccessContext", () => {
     expect(
       context.canAccessWorld({
         id: "private-world",
-        visibility: "private",
       }),
     ).toBe(false);
     expect(
       context.canAccessWorld({
-        id: "public-world",
-        visibility: "public",
+        id: "another-world",
       }),
     ).toBe(false);
   });
@@ -71,7 +67,6 @@ describe("createAccessContext", () => {
 
     const outsiderWorld = {
       id: "world-1",
-      visibility: "private",
     };
 
     expect(context.canAccessWorld(outsiderWorld)).toBe(false);
@@ -108,9 +103,6 @@ describe("createAccessContext", () => {
     expect(context.playerCharacterWorldIds).toEqual([]);
     expect(context.canAccessWorld({ id: "world-1" })).toBe(false);
     expect(context.canAccessWorld({ id: "world-pc" })).toBe(false);
-    expect(
-      context.canAccessWorld({ id: "public-world", visibility: "public" }),
-    ).toBe(false);
     expect(context.canAdminWorld({ id: "world-1" })).toBe(false);
   });
 });

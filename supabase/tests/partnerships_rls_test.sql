@@ -110,18 +110,16 @@ where
   id = 'e1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Partnerships World A',
-    'private',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'Partnerships World B',
-    'private',
     'active'
   );
 

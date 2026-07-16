@@ -40,7 +40,6 @@ type WorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 type MutationFactoryOpts = {

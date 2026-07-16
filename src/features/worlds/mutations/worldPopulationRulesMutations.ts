@@ -32,7 +32,6 @@ type WorldPopulationRulesSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 export type SaveWorldPopulationRulesInput = {
@@ -40,8 +39,7 @@ export type SaveWorldPopulationRulesInput = {
   readonly worldId: string;
 };
 
-const WORLD_POPULATION_RULES_SAVE_ACCESS_SELECT =
-  "archived_at,id,status,visibility";
+const WORLD_POPULATION_RULES_SAVE_ACCESS_SELECT = "archived_at,id,status";
 const WORLD_POPULATION_RULES_SAVE_UPDATE_SELECT = "id";
 
 export class SaveWorldPopulationRulesError extends Error {

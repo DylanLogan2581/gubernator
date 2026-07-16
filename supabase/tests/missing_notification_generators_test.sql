@@ -69,41 +69,36 @@ values
 --   World 4: trade_route.paused
 --   World 5: trade_route.resumed
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'e7200000-0000-0000-0000-000000000001',
     'MNG World 1 (construction.paused)',
     5,
-    'private',
     'active'
   ),
   (
     'e7200000-0000-0000-0000-000000000002',
     'MNG World 2 (partnership.formed)',
     5,
-    'private',
     'active'
   ),
   (
     'e7200000-0000-0000-0000-000000000003',
     'MNG World 3 (partnership.widowed)',
     5,
-    'private',
     'active'
   ),
   (
     'e7200000-0000-0000-0000-000000000004',
     'MNG World 4 (trade_route.paused)',
     5,
-    'private',
     'active'
   ),
   (
     'e7200000-0000-0000-0000-000000000005',
     'MNG World 5 (trade_route.resumed)',
     5,
-    'private',
     'active'
   );
 

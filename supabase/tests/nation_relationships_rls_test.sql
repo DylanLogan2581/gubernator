@@ -113,12 +113,11 @@ where
   id = 'f1000000-0000-0000-0000-000000000007';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'Nation Relationships World',
-    'private',
     'active'
   );
 
@@ -672,12 +671,11 @@ set
 -- Insert a second world and one nation in it so we have a foreign nation to
 -- target.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000002',
     'Other World',
-    'private',
     'active'
   );
 

@@ -63,24 +63,21 @@ where
   id = '61000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '62000000-0000-0000-0000-000000000001',
     'Nations Private World',
-    'private',
     'active'
   ),
   (
     '62000000-0000-0000-0000-000000000002',
     'Nations Public World',
-    'public',
     'active'
   ),
   (
     '62000000-0000-0000-0000-000000000003',
     'Nations Outsider World',
-    'private',
     'active'
   );
 

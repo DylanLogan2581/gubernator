@@ -63,12 +63,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '3a200000-0000-0000-0000-000000000001',
     'SACC Auth World',
-    'private',
     'active'
   );
 

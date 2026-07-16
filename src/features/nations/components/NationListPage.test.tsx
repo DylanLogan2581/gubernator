@@ -180,11 +180,11 @@ describe("NationListPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [],
+        pcWorldIds: [worldId],
         session: { user: { id: "user-2" } },
         worldRows: [
           createWorldRow({
             id: worldId,
-            visibility: "public",
           }),
         ],
       }),
@@ -386,7 +386,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 type TestUser = {
@@ -408,12 +407,14 @@ function createClient({
   adminRows = [],
   nationInsertResult,
   nationRows,
+  pcWorldIds = [],
   session,
   worldRows,
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly nationInsertResult?: NationInsertResult;
   readonly nationRows: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: { readonly user: { readonly id: string } };
   readonly worldRows: readonly TestWorldRow[];
 }): unknown {
@@ -441,7 +442,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
@@ -470,7 +471,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "private",
     ...overrides,
   };
 }

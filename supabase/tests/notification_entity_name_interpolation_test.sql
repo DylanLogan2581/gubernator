@@ -44,13 +44,12 @@ values
   );
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'ca200000-0000-0000-0000-000000000001',
     'NEI World 1',
     5,
-    'private',
     'active'
   );
 

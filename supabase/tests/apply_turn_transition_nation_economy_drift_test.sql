@@ -48,20 +48,18 @@ where
 --   resource) pair with no seeded stockpile row upserts instead of
 --   silently dropping.
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     '11262000-0000-0000-0000-000000000001',
     'NSD Drift World',
     5,
-    'private',
     'active'
   ),
   (
     '11262000-0000-0000-0000-000000000002',
     'NSD Missing Row World',
     5,
-    'private',
     'active'
   );
 

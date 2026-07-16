@@ -61,18 +61,16 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'fc200000-0000-0000-0000-000000000001',
     'PTR World',
-    'private',
     'active'
   ),
   (
     'fc200000-0000-0000-0000-000000000002',
     'PTR World 2',
-    'private',
     'active'
   );
 

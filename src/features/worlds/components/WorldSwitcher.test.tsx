@@ -78,7 +78,7 @@ describe("WorldSwitcher", () => {
   it("lists accessible worlds and navigates on selection", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        isSuperAdmin: false,
+        isSuperAdmin: true,
         worldRows: [
           createWorldRow({ id: "world-1", name: "Aeloria" }),
           createWorldRow({ id: "world-2", name: "Bastion" }),
@@ -181,7 +181,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
@@ -199,7 +198,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

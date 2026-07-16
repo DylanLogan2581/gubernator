@@ -219,6 +219,7 @@ describe("AppHeader", () => {
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: [WORLD_ID],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({ current_turn_number: 7, name: "Eastern Marches" }),
@@ -268,6 +269,7 @@ describe("AppHeader", () => {
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: [WORLD_ID],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow({})],
       }).client,
@@ -447,7 +449,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createWorldRow(overrides: Partial<TestWorldRow>): TestWorldRow {
@@ -476,7 +477,6 @@ function createWorldRow(overrides: Partial<TestWorldRow>): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }
@@ -502,7 +502,6 @@ type TestSettlementRow = {
       readonly archived_at: string | null;
       readonly id: string;
       readonly status: string;
-      readonly visibility: string;
     };
   };
   readonly ready_set_at: string | null;
@@ -533,7 +532,6 @@ function createSettlementRow(
         archived_at: null,
         id: WORLD_ID,
         status: "active",
-        visibility: "public",
       },
     },
     ready_set_at: null,
@@ -545,12 +543,14 @@ function createSettlementRow(
 function createClient({
   adminRows = [],
   initialUnreadCount = 0,
+  pcWorldIds = [],
   session,
   settlementRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly initialUnreadCount?: number;
+  readonly pcWorldIds?: readonly string[];
   readonly session: { readonly user: { readonly id: string } } | null;
   readonly settlementRows?: readonly TestSettlementRow[];
   readonly worldRows?: readonly TestWorldRow[];
@@ -622,7 +622,7 @@ function createClient({
       removeChannel: vi.fn().mockResolvedValue("ok"),
       rpc: vi.fn((fn: string, args?: Record<string, unknown>) => {
         if (fn === "current_user_player_character_world_ids") {
-          return Promise.resolve({ data: [], error: null });
+          return Promise.resolve({ data: pcWorldIds, error: null });
         }
         if (fn === "set_settlement_readiness") {
           const settlementId = args?.p_settlement_id;

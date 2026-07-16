@@ -38,12 +38,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'ed200000-0000-0000-0000-000000000001',
     'Event Offset World',
-    'private',
     'active',
     10
   );

@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
@@ -175,7 +174,7 @@ export function ImportErrorDialog({
 }
 
 // ---------------------------------------------------------------------------
-// Confirm dialog: dry-run report + name/visibility form
+// Confirm dialog: dry-run report + name form
 // ---------------------------------------------------------------------------
 export function ImportConfirmDialog({
   template,
@@ -187,12 +186,10 @@ export function ImportConfirmDialog({
   readonly onClose: () => void;
 }): JSX.Element {
   const nameId = useId();
-  const visibilityId = useId();
 
   const report: DryRunReport = computeDryRunReport(template);
 
   const [name, setName] = useState(template.meta.name);
-  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [nameError, setNameError] = useState<string | undefined>(undefined);
 
   const importMutation = useMutation(
@@ -215,7 +212,7 @@ export function ImportConfirmDialog({
       return;
     }
 
-    const input: ImportWorldFromTemplateInput = { name, visibility, template };
+    const input: ImportWorldFromTemplateInput = { name, template };
     importMutation.mutate(input, {
       onError: (error) => {
         toast.error("Import failed", {
@@ -272,28 +269,6 @@ export function ImportConfirmDialog({
               {nameError !== undefined ? (
                 <p className="text-xs text-destructive">{nameError}</p>
               ) : null}
-            </div>
-
-            {/* Visibility */}
-            <div className="grid gap-1">
-              <Label
-                htmlFor={visibilityId}
-                className="text-sm text-muted-foreground"
-              >
-                Visibility
-              </Label>
-              <NativeSelect
-                id={visibilityId}
-                className="w-full"
-                disabled={importMutation.isPending}
-                value={visibility}
-                onChange={(e) => {
-                  setVisibility(e.currentTarget.value as "public" | "private");
-                }}
-              >
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </NativeSelect>
             </div>
           </div>
 

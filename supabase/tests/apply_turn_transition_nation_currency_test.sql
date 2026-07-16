@@ -59,20 +59,18 @@ where
 -- notification types.
 -- World 2 (turn 5): cross-world guard.
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a7200000-0000-0000-0000-000000000001',
     'ATTNC Happy Path World',
     5,
-    'private',
     'active'
   ),
   (
     'a7200000-0000-0000-0000-000000000002',
     'ATTNC Cross World Guard World',
     5,
-    'private',
     'active'
   );
 

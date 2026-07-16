@@ -63,24 +63,21 @@ where
   id = 'c1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'Rel Private World',
-    'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'Rel Public World',
-    'public',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000003',
     'Rel Outsider World',
-    'private',
     'active'
   );
 
@@ -148,7 +145,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -156,7 +153,7 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read religions in a public world'
+    'outsider cannot read religions without admin/pc access'
   );
 
 select

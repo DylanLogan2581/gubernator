@@ -90,7 +90,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createCalendarConfig(): unknown {
@@ -121,7 +120,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "private",
     ...overrides,
   };
 }
@@ -157,12 +155,14 @@ function createClient({
   adminRows = [],
   isSuperAdmin = false,
   nationRows,
+  pcWorldIds = [],
   session,
   worldRows,
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly isSuperAdmin?: boolean;
   readonly nationRows: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: { readonly user: { readonly id: string } };
   readonly worldRows: readonly TestWorldRow[];
 }): unknown {
@@ -242,7 +242,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
@@ -393,8 +393,9 @@ describe("NationDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [createNationRow()],
+        pcWorldIds: [WORLD_ID],
         session: { user: { id: "user-2" } },
-        worldRows: [createWorldRow({ visibility: "public" })],
+        worldRows: [createWorldRow()],
       }),
     );
     renderPage();

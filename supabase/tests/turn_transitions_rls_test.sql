@@ -81,27 +81,24 @@ where
   id = '81000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     '82000000-0000-0000-0000-000000000001',
     'Turn Transitions Private World',
     4,
-    'private',
     'active'
   ),
   (
     '82000000-0000-0000-0000-000000000002',
     'Turn Transitions Public World',
     2,
-    'public',
     'active'
   ),
   (
     '82000000-0000-0000-0000-000000000003',
     'Turn Transitions Outsider World',
     6,
-    'private',
     'active'
   );
 
@@ -242,8 +239,8 @@ select
 reset role;
 
 -- ===========================================================================
--- OUTSIDER: can read public-world transitions, not inaccessible private-world
--- transitions, and cannot manage transitions without world admin access.
+-- OUTSIDER: cannot read any transitions without admin/pc access, and cannot
+-- manage transitions without world admin access.
 -- ===========================================================================
 set
   local role authenticated;
@@ -253,7 +250,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -261,7 +258,7 @@ select
       where
         id = '83000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read public-world turn transitions'
+    'outsider cannot read turn transitions without admin/pc access'
   );
 
 select
@@ -316,7 +313,7 @@ select
   $test$,
     '42501',
     null,
-    'outsider cannot insert turn transitions into readable public worlds without admin access'
+    'outsider cannot insert turn transitions into an inaccessible world'
   );
 
 select
@@ -330,7 +327,7 @@ select
   $test$,
     '42501',
     null,
-    'outsider cannot update public-world turn transitions'
+    'outsider cannot update inaccessible turn transitions'
   );
 
 select
@@ -342,7 +339,7 @@ select
   $test$,
     '42501',
     null,
-    'outsider cannot delete public-world turn transitions'
+    'outsider cannot delete inaccessible turn transitions'
   );
 
 reset role;

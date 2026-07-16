@@ -9,12 +9,11 @@ select
 -- Fixtures
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '64000000-0000-0000-0000-000000000001',
     'Government Type World',
-    'private',
     'active'
   );
 

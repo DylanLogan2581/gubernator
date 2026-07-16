@@ -39,18 +39,16 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'dd100000-0000-0000-0000-000000000001',
     'PC World Ids World A',
-    'private',
     'active'
   ),
   (
     'dd100000-0000-0000-0000-000000000002',
     'PC World Ids World B',
-    'private',
     'active'
   );
 

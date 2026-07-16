@@ -55,18 +55,16 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'a1000000-0000-0000-0000-000000000001',
     'WUWA Active World',
-    'private',
     'active'
   ),
   (
     'a1000000-0000-0000-0000-000000000002',
     'WUWA Archived World',
-    'private',
     'active'
   );
 

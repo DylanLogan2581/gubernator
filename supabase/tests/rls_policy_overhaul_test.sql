@@ -75,24 +75,21 @@ where
 
 -- Private world owned by owner.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e0000000-0000-0000-0000-000000000001',
     'Private World',
-    'private',
     'active'
   ),
   (
     'e0000000-0000-0000-0000-000000000002',
     'Public World',
-    'public',
     'active'
   ),
   (
     'e0000000-0000-0000-0000-000000000003',
     'Hidden World',
-    'private',
     'active'
   );
 
@@ -221,10 +218,10 @@ select
     'outsider cannot see hidden world'
   );
 
--- Can see public world
+-- Cannot see a world with no admin/pc access, regardless of its "public" name
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -232,7 +229,7 @@ select
       where
         id = 'e0000000-0000-0000-0000-000000000002'
     ),
-    'outsider can see public world'
+    'outsider cannot see world without admin/pc access'
   );
 
 -- Cannot see world_admins rows for a world they have no access to

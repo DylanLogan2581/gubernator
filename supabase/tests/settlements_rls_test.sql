@@ -90,24 +90,21 @@ where
   id = '71000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '72000000-0000-0000-0000-000000000001',
     'Settlements Private World',
-    'private',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000002',
     'Settlements Public World',
-    'public',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000003',
     'Settlements Outsider World',
-    'private',
     'active'
   );
 
@@ -256,8 +253,8 @@ select
 reset role;
 
 -- ===========================================================================
--- OUTSIDER: can read public-world settlements, not inaccessible private-world
--- settlements, and cannot manage settlements outside an administered world.
+-- OUTSIDER: cannot read any settlement without admin/pc access, and cannot
+-- manage settlements outside an administered world.
 -- ===========================================================================
 set
   local role authenticated;
@@ -267,7 +264,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -275,7 +272,7 @@ select
       where
         id = '74000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read public-world settlements'
+    'outsider cannot read settlements without admin/pc access'
   );
 
 select
@@ -310,7 +307,7 @@ select
   $test$,
     '42501',
     null,
-    'outsider cannot insert settlements into readable public worlds without admin access'
+    'outsider cannot insert settlements into an inaccessible world'
   );
 
 update public.settlements

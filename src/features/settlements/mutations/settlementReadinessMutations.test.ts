@@ -49,7 +49,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     expect(options.mutationKey).toEqual(["settlements", "set-readiness"]);
     expect(clientFixture.from).toHaveBeenCalledWith("settlements");
     expect(clientFixture.readSelect).toHaveBeenCalledWith(
-      "id,nations!settlements_nation_id_fkey!inner(world_id,worlds!inner(archived_at,id,status,visibility))",
+      "id,nations!settlements_nation_id_fkey!inner(world_id,worlds!inner(archived_at,id,status))",
     );
     expect(clientFixture.readEqId).toHaveBeenCalledWith("id", "settlement-1");
     expect(clientFixture.readEqWorldId).toHaveBeenCalledWith(
@@ -291,9 +291,7 @@ describe("setSettlementAutoReadyMutationOptions", () => {
   it("returns an unauthorized error when a non-admin user toggles auto-ready", async () => {
     const clientFixture = createClient({
       readResult: {
-        data: createAccessRow({
-          visibility: "public",
-        }),
+        data: createAccessRow(),
         error: null,
       },
     });
@@ -390,7 +388,6 @@ type SettlementReadinessWorldAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 type SettlementReadinessUpdateRow = {
   readonly id: string;
@@ -462,7 +459,6 @@ function createAccessRow(
         archived_at: null,
         id: "world-1",
         status: "active",
-        visibility: "private",
         ...worldOverrides,
       },
     },

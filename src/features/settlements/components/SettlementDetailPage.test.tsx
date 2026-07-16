@@ -153,16 +153,16 @@ function createCalendarConfig(): unknown {
 
 function createClient({
   adminRows = [],
+  pcWorldIds = [],
   readinessRows = [createReadinessRow()],
   settlementRow = createSettlementWithNationRow(),
   worldArchivedAt = null,
-  worldVisibility = "private",
 }: {
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
+  readonly pcWorldIds?: readonly string[];
   readonly readinessRows?: ReadonlyArray<ReadinessRow>;
   readonly settlementRow?: SettlementWithNationRow | null;
   readonly worldArchivedAt?: string | null;
-  readonly worldVisibility?: string;
 } = {}): unknown {
   const worldRow = {
     archived_at: worldArchivedAt,
@@ -174,7 +174,6 @@ function createClient({
     name: "Test World",
     status: worldArchivedAt !== null ? "archived" : "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   const userRow = {
@@ -195,7 +194,6 @@ function createClient({
         archived_at: worldArchivedAt,
         id: WORLD_ID,
         status: worldArchivedAt !== null ? "archived" : "active",
-        visibility: "private",
       },
     },
   };
@@ -278,7 +276,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC call: ${fn}`);
     }),
@@ -350,9 +348,7 @@ describe("SettlementDetailPage", () => {
   });
 
   it("renders the world-unavailable state when the world cannot be accessed", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({ worldVisibility: "private" }),
-    );
+    requireSupabaseClient.mockReturnValue(createClient());
     renderPage();
     expect(await screen.findByText("World unavailable")).toBeDefined();
   });
@@ -413,7 +409,7 @@ describe("SettlementDetailPage", () => {
 
   it("hides edit/delete authority from plain viewers", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldVisibility: "public" }),
+      createClient({ pcWorldIds: [WORLD_ID] }),
     );
     renderPage();
     await screen.findByText("settlementId");
@@ -458,7 +454,7 @@ describe("SettlementDetailPage", () => {
 
   it("allows a nation manager to edit details but not coordinates", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldVisibility: "public" }),
+      createClient({ pcWorldIds: [WORLD_ID] }),
     );
     useActivePlayerCharacterMock.mockReturnValue({
       activeCharacter: {
@@ -506,7 +502,7 @@ describe("SettlementDetailPage", () => {
 
   it("passes canManageSettlement through from useSettlementManageAuthority", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldVisibility: "public" }),
+      createClient({ pcWorldIds: [WORLD_ID] }),
     );
     useSettlementManageAuthorityMock.mockReturnValue({
       canManageSettlement: false,

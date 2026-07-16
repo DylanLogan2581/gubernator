@@ -38,9 +38,7 @@ describe("saveWorldCalendarConfigMutationOptions", () => {
       "save-world-calendar-config",
     ]);
     expect(clientFixture.from).toHaveBeenCalledWith("worlds");
-    expect(clientFixture.select).toHaveBeenCalledWith(
-      "archived_at,id,status,visibility",
-    );
+    expect(clientFixture.select).toHaveBeenCalledWith("archived_at,id,status");
     expect(clientFixture.readEq).toHaveBeenCalledWith("id", "world-1");
     expect(clientFixture.update).toHaveBeenCalledWith({
       calendar_config_json: config,
@@ -92,9 +90,7 @@ describe("saveWorldCalendarConfigMutationOptions", () => {
   it("returns an unauthorized error when access context cannot admin the world", async () => {
     const clientFixture = createClient({
       readResult: {
-        data: createWorldRow({
-          visibility: "public",
-        }),
+        data: createWorldRow({}),
         error: null,
       },
     });
@@ -225,7 +221,6 @@ type WorldCalendarSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 function createClient({
@@ -279,7 +274,6 @@ function createWorldRow(
     archived_at: null,
     id: "world-1",
     status: "active",
-    visibility: "private",
     ...overrides,
   };
 }

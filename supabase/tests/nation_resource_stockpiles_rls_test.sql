@@ -48,12 +48,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     'd2000000-0000-0000-0000-000000000001',
     'Nation Stockpile World',
-    'private',
     'active',
     null
   );

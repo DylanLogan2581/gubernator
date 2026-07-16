@@ -87,18 +87,16 @@ where
   id = 'f1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'MPI Private World',
-    'private',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'MPI Outsider World',
-    'private',
     'active'
   );
 

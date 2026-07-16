@@ -212,18 +212,18 @@ function createClient({
   nationDeleteResult,
   nationRows,
   outgoingRelationships = [],
+  pcWorldIds = [],
   relationshipsUpsertResult,
   settlementRows = [],
-  worldVisibility = "private",
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly isSuperAdmin?: boolean;
   readonly nationDeleteResult?: NationDeleteResult;
   readonly nationRows: readonly TestNationRow[];
   readonly outgoingRelationships?: readonly TestRelationshipRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly relationshipsUpsertResult?: UpsertMock;
   readonly settlementRows?: readonly TestSettlementRow[];
-  readonly worldVisibility?: string;
 }): unknown {
   const worldRow = {
     archived_at: null,
@@ -235,7 +235,6 @@ function createClient({
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   const userRow = {
@@ -471,7 +470,7 @@ function createClient({
     removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       if (fn === "settlement_alive_citizen_count") {
         return Promise.resolve({ data: 10, error: null });
@@ -600,7 +599,7 @@ describe("nation detail route", () => {
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),
           ],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       // WorldEntryGate only lets a non-admin past the world gate with a
@@ -661,7 +660,7 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       useActivePlayerCharacterMock.mockReturnValue({
@@ -684,7 +683,7 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       const nationManagerCharacter = {
@@ -728,7 +727,7 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       useActivePlayerCharacterMock.mockReturnValue({

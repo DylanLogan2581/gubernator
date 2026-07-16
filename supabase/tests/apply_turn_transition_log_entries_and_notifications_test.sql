@@ -121,48 +121,42 @@ where
 --   World 5: retry dedup test
 --   World 6: §C32e overshoot-stamp test
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'b1200000-0000-0000-0000-000000000001',
     'ATLN World 1',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000002',
     'ATLN World 2',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000003',
     'ATLN World 3',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000004',
     'ATLN World 4',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000005',
     'ATLN World 5',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000006',
     'ATLN World 6',
     5,
-    'private',
     'active'
   );
 

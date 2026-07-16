@@ -108,18 +108,16 @@ values
 
 -- Worlds
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'a5100000-0000-0000-0000-000000000001',
     'A5 World Alpha',
-    'private',
     'active'
   ),
   (
     'a5100000-0000-0000-0000-000000000002',
     'A5 World Beta',
-    'private',
     'active'
   );
 

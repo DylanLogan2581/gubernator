@@ -35,12 +35,12 @@ describe("world configuration route", () => {
   it("redirects authenticated non-admin users to the world shell", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000000101"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            visibility: "public",
           }),
         ],
         adminRows: [],
@@ -67,7 +67,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
             name: "Admin World",
-            visibility: "private",
           }),
         ],
       }),
@@ -92,7 +91,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: worldId,
             name: "Admin World",
-            visibility: "private",
           }),
         ],
       }),
@@ -118,7 +116,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Admin World",
-            visibility: "private",
           }),
         ],
       }),
@@ -157,7 +154,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: worldId,
             name: "Admin World",
-            visibility: "private",
           }),
         ],
         nationRows: [
@@ -239,7 +235,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 type TestNationRow = {
@@ -258,12 +253,14 @@ type TestSettlementSummaryRow = {
 function createClient({
   adminRows = [],
   nationRows = [],
+  pcWorldIds = [],
   session,
   settlementRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly nationRows?: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: {
     readonly user: {
       readonly id: string;
@@ -323,7 +320,7 @@ function createClient({
     removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
@@ -416,7 +413,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

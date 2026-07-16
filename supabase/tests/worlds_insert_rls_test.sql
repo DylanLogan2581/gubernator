@@ -77,7 +77,7 @@ set
 select
   throws_ok (
     $$
-      insert into public.worlds (name, visibility) values ('Unauthorized World', 'private');
+      insert into public.worlds (name) values ('Unauthorized World');
     $$,
     '42501',
     null,
@@ -90,7 +90,7 @@ select
 select
   throws_ok (
     $$
-      select public.create_world ('Unauthorized RPC World', 'private')
+      select public.create_world ('Unauthorized RPC World')
     $$,
     '42501',
     null,
@@ -106,7 +106,7 @@ set
 select
   lives_ok (
     $$
-      select public.create_world ('SA RPC Created World', 'public')
+      select public.create_world ('SA RPC Created World')
     $$,
     'super-admin create_world() RPC succeeds'
   );
@@ -133,7 +133,7 @@ select
 select
   lives_ok (
     $$
-      insert into public.worlds (name, visibility) values ('SA Direct Insert World', 'private');
+      insert into public.worlds (name) values ('SA Direct Insert World');
     $$,
     'super-admin direct INSERT into worlds succeeds'
   );

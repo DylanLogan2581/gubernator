@@ -48,19 +48,17 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Tax World',
-    'private',
     'active',
     null
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'Tax Archived World',
-    'private',
     'archived',
     now()
   );

@@ -41,7 +41,7 @@ export type RemoveWorldImageInput = {
   readonly worldId: string;
 };
 
-const WORLD_IMAGE_ACCESS_SELECT = "archived_at,id,status,visibility";
+const WORLD_IMAGE_ACCESS_SELECT = "archived_at,id,status";
 const WORLD_IMAGE_PATH_COLUMN: Record<
   WorldImageKind,
   "hero_path" | "thumbnail_path"

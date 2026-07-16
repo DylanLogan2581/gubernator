@@ -72,13 +72,12 @@ values
   );
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'Nation Currency Snapshot World',
     3,
-    'private',
     'active'
   );
 

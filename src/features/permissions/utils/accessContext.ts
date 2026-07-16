@@ -42,11 +42,7 @@ export function createAccessContext({
       return false;
     }
 
-    return (
-      canAdminWorld(world) ||
-      world.visibility === "public" ||
-      playerCharacterWorldIdSet.has(world.id)
-    );
+    return canAdminWorld(world) || playerCharacterWorldIdSet.has(world.id);
   }
 
   return {
