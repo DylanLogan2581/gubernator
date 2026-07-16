@@ -165,6 +165,38 @@ describe("updateCultureMutationOptions", () => {
     expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
   });
 
+  it("maps a lore field update to its snake_case column", async () => {
+    const row = createCultureRow();
+    const { client, calls } = createUpdateClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = updateCultureMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      cultureId: CULTURE_ID,
+      origins: "From the northern steppes.",
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.update).toHaveBeenCalledWith({
+      origins: "From the northern steppes.",
+    });
+  });
+
+  it("clears a lore field to null", async () => {
+    const row = createCultureRow();
+    const { client, calls } = createUpdateClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = updateCultureMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      cultureId: CULTURE_ID,
+      origins: null,
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.update).toHaveBeenCalledWith({ origins: null });
+  });
+
   it("maps a 23505 unique violation to culture_name_taken", async () => {
     const { client } = createUpdateClient({
       data: null,

@@ -165,6 +165,38 @@ describe("updateReligionMutationOptions", () => {
     expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
   });
 
+  it("maps a lore field update to its snake_case column", async () => {
+    const row = createReligionRow();
+    const { client, calls } = createUpdateClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = updateReligionMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      deities: "The Sunmother and her three sons.",
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.update).toHaveBeenCalledWith({
+      deities: "The Sunmother and her three sons.",
+    });
+  });
+
+  it("clears a lore field to null", async () => {
+    const row = createReligionRow();
+    const { client, calls } = createUpdateClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = updateReligionMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      deities: null,
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.update).toHaveBeenCalledWith({ deities: null });
+  });
+
   it("maps a 23505 unique violation to religion_name_taken", async () => {
     const { client } = createUpdateClient({
       data: null,

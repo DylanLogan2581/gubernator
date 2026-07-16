@@ -5,12 +5,30 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CulturesConfigPanel } from "./CulturesConfigPanel";
 
+import type { ReactNode } from "react";
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    params,
+  }: {
+    readonly children?: ReactNode;
+    readonly params: { readonly cultureId: string; readonly worldId: string };
+  }) => (
+    <a
+      href={`/worlds/${params.worldId}/configuration/cultures/${params.cultureId}`}
+    >
+      {children}
+    </a>
+  ),
 }));
 
 const { toastError, toastSuccess } = vi.hoisted(() => ({

@@ -1,3 +1,4 @@
+export { CultureDetailPage } from "./components/CultureDetailPage";
 export { CulturesConfigPanel } from "./components/CulturesConfigPanel";
 export {
   CultureMutationError,

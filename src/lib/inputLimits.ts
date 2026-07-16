@@ -77,6 +77,7 @@ export const namingInputLimits = {
 export const cultureReligionInputLimits = {
   nameMax: 64,
   descriptionMax: 1000,
+  loreFieldMax: 2000,
 } as const;
 
 export const educationLevelInputLimits = {

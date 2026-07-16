@@ -1,4 +1,5 @@
 import { type QueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -49,14 +50,18 @@ export function CulturesTable({
             {cultures.map((culture) => (
               <TableRow key={culture.id}>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5">
+                  <Link
+                    className="inline-flex items-center gap-1.5 font-medium hover:underline"
+                    params={{ cultureId: culture.id, worldId }}
+                    to="/worlds/$worldId/configuration/cultures/$cultureId"
+                  >
                     <span
                       aria-hidden="true"
                       className="size-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: culture.color }}
                     />
-                    <span className="font-medium">{culture.name}</span>
-                  </span>
+                    {culture.name}
+                  </Link>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {culture.description ?? ""}

@@ -166,7 +166,7 @@ describe("updateCultureInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.name).toContain(
-        "At least one of name, description, or color must be provided.",
+        "At least one of name, description, color, or a lore field must be provided.",
       );
     }
   });
@@ -230,5 +230,66 @@ describe("deleteCultureInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("updateCultureInputSchema lore fields", () => {
+  it("accepts an update with only a lore field", () => {
+    const result = updateCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      origins: "From the northern steppes.",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origins).toBe("From the northern steppes.");
+    }
+  });
+
+  it("trims a blank lore field to null", () => {
+    const result = updateCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      origins: "   ",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origins).toBeNull();
+    }
+  });
+
+  it("accepts a lore field at the max length", () => {
+    const result = updateCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      origins: "a".repeat(2000),
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a lore field over the max length", () => {
+    const result = updateCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      origins: "a".repeat(2001),
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts an explicit null lore field", () => {
+    const result = updateCultureInputSchema.safeParse({
+      cultureId: CULTURE_ID,
+      origins: null,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origins).toBeNull();
+    }
   });
 });

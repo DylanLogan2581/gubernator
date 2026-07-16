@@ -3,9 +3,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CULTURE_LORE_FIELD_KEYS } from "../../types/cultureTypes";
+
 import { DeleteCultureDialog } from "./DeleteCultureDialog";
 
 import type { Culture } from "../../types/cultureTypes";
+
+const NULL_LORE_FIELDS = Object.fromEntries(
+  CULTURE_LORE_FIELD_KEYS.map((key) => [key, null]),
+) as Record<(typeof CULTURE_LORE_FIELD_KEYS)[number], null>;
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -33,6 +39,7 @@ const CULTURE_ID = "00000000-0000-0000-0000-000000000002";
 const OTHER_CULTURE_ID = "00000000-0000-0000-0000-000000000003";
 
 const CULTURE: Culture = {
+  ...NULL_LORE_FIELDS,
   color: "#6b7280",
   createdAt: "2026-01-01T00:00:00.000Z",
   description: null,
@@ -43,6 +50,7 @@ const CULTURE: Culture = {
 };
 
 const OTHER_CULTURE: Culture = {
+  ...NULL_LORE_FIELDS,
   color: "#123abc",
   createdAt: "2026-01-01T00:00:00.000Z",
   description: null,

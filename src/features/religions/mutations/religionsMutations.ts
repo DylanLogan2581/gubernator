@@ -26,9 +26,39 @@ import {
   type DeleteReligionInput,
   type UpdateReligionInput,
 } from "../schemas/religionSchemas";
+import {
+  RELIGION_LORE_FIELD_KEYS,
+  type ReligionLoreFieldKey,
+  type Religion,
+} from "../types/religionTypes";
 
-import type { Religion } from "../types/religionTypes";
 import type { z } from "zod";
+
+const RELIGION_LORE_FIELD_COLUMNS: Readonly<
+  Record<ReligionLoreFieldKey, string>
+> = {
+  afterlifeBeliefs: "afterlife_beliefs",
+  creationMyth: "creation_myth",
+  deities: "deities",
+  ethicsSins: "ethics_sins",
+  funeraryRites: "funerary_rites",
+  hierarchyGovernance: "hierarchy_governance",
+  historySpread: "history_spread",
+  holyDaysFestivals: "holy_days_festivals",
+  holySites: "holy_sites",
+  mythology: "mythology",
+  pilgrimageDevotions: "pilgrimage_devotions",
+  priesthood: "priesthood",
+  relationshipToState: "relationship_to_state",
+  ritualsCeremonies: "rituals_ceremonies",
+  sacredTexts: "sacred_texts",
+  sectsSchisms: "sects_schisms",
+  symbolsVestments: "symbols_vestments",
+  taboos: "taboos",
+  tenets: "tenets",
+  virtues: "virtues",
+  worshipPractices: "worship_practices",
+};
 
 type ReligionMutationErrorCode =
   | "religion_forbidden"
@@ -164,11 +194,7 @@ async function updateReligion(
 ): Promise<Religion> {
   const values = parseInput(updateReligionInputSchema, input);
 
-  const updatePayload: {
-    color?: string;
-    description?: string | null;
-    name?: string;
-  } = {};
+  const updatePayload: Record<string, string | null> = {};
 
   if (values.name !== undefined) {
     updatePayload.name = values.name.trim();
@@ -178,6 +204,12 @@ async function updateReligion(
   }
   if (values.color !== undefined) {
     updatePayload.color = values.color;
+  }
+  for (const key of RELIGION_LORE_FIELD_KEYS) {
+    const value = values[key];
+    if (value !== undefined) {
+      updatePayload[RELIGION_LORE_FIELD_COLUMNS[key]] = value;
+    }
   }
 
   const { data, error } = await client

@@ -1,3 +1,4 @@
+export { ReligionDetailPage } from "./components/ReligionDetailPage";
 export { ReligionsConfigPanel } from "./components/ReligionsConfigPanel";
 export {
   ReligionMutationError,

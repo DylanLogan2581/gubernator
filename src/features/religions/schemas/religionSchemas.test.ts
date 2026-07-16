@@ -166,7 +166,7 @@ describe("updateReligionInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.name).toContain(
-        "At least one of name, description, or color must be provided.",
+        "At least one of name, description, color, or a lore field must be provided.",
       );
     }
   });
@@ -230,5 +230,66 @@ describe("deleteReligionInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("updateReligionInputSchema lore fields", () => {
+  it("accepts an update with only a lore field", () => {
+    const result = updateReligionInputSchema.safeParse({
+      deities: "The Sunmother and her three sons.",
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.deities).toBe("The Sunmother and her three sons.");
+    }
+  });
+
+  it("trims a blank lore field to null", () => {
+    const result = updateReligionInputSchema.safeParse({
+      deities: "   ",
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.deities).toBeNull();
+    }
+  });
+
+  it("accepts a lore field at the max length", () => {
+    const result = updateReligionInputSchema.safeParse({
+      deities: "a".repeat(2000),
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a lore field over the max length", () => {
+    const result = updateReligionInputSchema.safeParse({
+      deities: "a".repeat(2001),
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts an explicit null lore field", () => {
+    const result = updateReligionInputSchema.safeParse({
+      deities: null,
+      religionId: RELIGION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.deities).toBeNull();
+    }
   });
 });

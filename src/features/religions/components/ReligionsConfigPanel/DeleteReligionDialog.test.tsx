@@ -3,9 +3,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { RELIGION_LORE_FIELD_KEYS } from "../../types/religionTypes";
+
 import { DeleteReligionDialog } from "./DeleteReligionDialog";
 
 import type { Religion } from "../../types/religionTypes";
+
+const NULL_LORE_FIELDS = Object.fromEntries(
+  RELIGION_LORE_FIELD_KEYS.map((key) => [key, null]),
+) as Record<(typeof RELIGION_LORE_FIELD_KEYS)[number], null>;
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -33,6 +39,7 @@ const RELIGION_ID = "00000000-0000-0000-0000-000000000002";
 const OTHER_RELIGION_ID = "00000000-0000-0000-0000-000000000003";
 
 const RELIGION: Religion = {
+  ...NULL_LORE_FIELDS,
   color: "#6b7280",
   createdAt: "2026-01-01T00:00:00.000Z",
   description: null,
@@ -43,6 +50,7 @@ const RELIGION: Religion = {
 };
 
 const OTHER_RELIGION: Religion = {
+  ...NULL_LORE_FIELDS,
   color: "#123abc",
   createdAt: "2026-01-01T00:00:00.000Z",
   description: null,

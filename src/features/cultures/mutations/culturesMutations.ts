@@ -26,9 +26,38 @@ import {
   type DeleteCultureInput,
   type UpdateCultureInput,
 } from "../schemas/cultureSchemas";
+import {
+  CULTURE_LORE_FIELD_KEYS,
+  type CultureLoreFieldKey,
+  type Culture,
+} from "../types/cultureTypes";
 
-import type { Culture } from "../types/cultureTypes";
 import type { z } from "zod";
+
+const CULTURE_LORE_FIELD_COLUMNS: Readonly<
+  Record<CultureLoreFieldKey, string>
+> = {
+  architectureCraftsmanship: "architecture_craftsmanship",
+  artsAesthetics: "arts_aesthetics",
+  attitudesToOutsiders: "attitudes_to_outsiders",
+  coreValues: "core_values",
+  cuisineMeals: "cuisine_meals",
+  demonym: "demonym",
+  dressFashion: "dress_fashion",
+  etiquette: "etiquette",
+  festivalsHolidays: "festivals_holidays",
+  funeraryCustoms: "funerary_customs",
+  genderFamilyNorms: "gender_family_norms",
+  languageDialects: "language_dialects",
+  leadershipOccupations: "leadership_occupations",
+  namingConventions: "naming_conventions",
+  origins: "origins",
+  ritesOfPassage: "rites_of_passage",
+  sayingsIdioms: "sayings_idioms",
+  socialHierarchy: "social_hierarchy",
+  superstitionsFolklore: "superstitions_folklore",
+  taboos: "taboos",
+};
 
 type CultureMutationErrorCode =
   | "culture_forbidden"
@@ -164,11 +193,7 @@ async function updateCulture(
 ): Promise<Culture> {
   const values = parseInput(updateCultureInputSchema, input);
 
-  const updatePayload: {
-    color?: string;
-    description?: string | null;
-    name?: string;
-  } = {};
+  const updatePayload: Record<string, string | null> = {};
 
   if (values.name !== undefined) {
     updatePayload.name = values.name.trim();
@@ -178,6 +203,12 @@ async function updateCulture(
   }
   if (values.color !== undefined) {
     updatePayload.color = values.color;
+  }
+  for (const key of CULTURE_LORE_FIELD_KEYS) {
+    const value = values[key];
+    if (value !== undefined) {
+      updatePayload[CULTURE_LORE_FIELD_COLUMNS[key]] = value;
+    }
   }
 
   const { data, error } = await client
