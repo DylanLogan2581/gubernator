@@ -18,12 +18,17 @@ import type { Resource } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { type resolveTurnCalendarDate } from "@/shared/turnCalendarPrimitives";
 
+import { nationDiscoveriesQueryOptions } from "../../queries/nationDiscoveryQueries";
 import {
   nationRelationshipsFromNationQueryOptions,
   nationRelationshipsToNationQueryOptions,
 } from "../../queries/nationRelationshipQueries";
 import { nationsListQueryOptions } from "../../queries/nationsQueries";
 import { nationTreatiesQueryOptions } from "../../queries/treatiesQueries";
+import {
+  buildDiscoveryPairMap,
+  discoveryPairKey,
+} from "../NationDiscoveryConfigPanel/NationDiscoveryUtils";
 
 import { NationRelationshipRow } from "./RelationshipRow";
 import {
@@ -57,6 +62,9 @@ export function NationRelationshipsSection({
   const canControl = (canAdminWorld || isNationManager) && !isArchived;
 
   const nationsQuery = useQuery(nationsListQueryOptions(nation.worldId));
+  const discoveriesQuery = useQuery(
+    nationDiscoveriesQueryOptions(nation.worldId),
+  );
   const outgoingQuery = useQuery(
     nationRelationshipsFromNationQueryOptions(nation.id),
   );
@@ -69,6 +77,10 @@ export function NationRelationshipsSection({
   );
   const calendarQuery = useQuery(
     worldCalendarConfigQueryOptions(nation.worldId),
+  );
+
+  const discoveredPairsByKey = buildDiscoveryPairMap(
+    discoveriesQuery.data ?? [],
   );
 
   return (
@@ -87,6 +99,7 @@ export function NationRelationshipsSection({
       </div>
       <div className="border-t border-border">
         {nationsQuery.isPending ||
+        discoveriesQuery.isPending ||
         outgoingQuery.isPending ||
         incomingQuery.isPending ||
         treatiesQuery.isPending ||
@@ -99,6 +112,13 @@ export function NationRelationshipsSection({
             <ErrorState
               title="Relationships could not be loaded"
               description={getErrorDescription(nationsQuery.error)}
+            />
+          </div>
+        ) : discoveriesQuery.isError ? (
+          <div className="px-4 pb-4 pt-2">
+            <ErrorState
+              title="Relationships could not be loaded"
+              description={getErrorDescription(discoveriesQuery.error)}
             />
           </div>
         ) : outgoingQuery.isError ? (
@@ -137,7 +157,11 @@ export function NationRelationshipsSection({
             incoming={incomingQuery.data}
             nation={nation}
             otherNations={nationsQuery.data.filter(
-              (candidate) => candidate.id !== nation.id,
+              (candidate) =>
+                candidate.id !== nation.id &&
+                discoveredPairsByKey.has(
+                  discoveryPairKey(nation.id, candidate.id),
+                ),
             )}
             outgoing={outgoingQuery.data}
             queryClient={queryClient}
@@ -177,8 +201,8 @@ function NationRelationshipsList({
     return (
       <div className="px-4 pb-4 pt-2">
         <EmptyState
-          title="No other nations"
-          description="This world has no other nations to relate to yet."
+          title="No nations discovered"
+          description={`${nation.name} has not discovered any other nations yet.`}
         />
       </div>
     );

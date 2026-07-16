@@ -10,6 +10,7 @@ import type { Nation } from "../../types/nationTypes";
 
 const {
   mockNationsListQuery,
+  mockDiscoveriesQuery,
   mockOutgoingQuery,
   mockIncomingQuery,
   mockTreatiesQuery,
@@ -18,6 +19,7 @@ const {
   mockCitizensByIdsQuery,
 } = vi.hoisted(() => ({
   mockNationsListQuery: vi.fn(),
+  mockDiscoveriesQuery: vi.fn(),
   mockOutgoingQuery: vi.fn(),
   mockIncomingQuery: vi.fn(),
   mockTreatiesQuery: vi.fn(),
@@ -30,6 +32,13 @@ vi.mock("../../queries/nationsQueries", () => ({
   nationsListQueryOptions: () => ({
     queryFn: () => mockNationsListQuery() as Promise<unknown>,
     queryKey: ["nations-list"],
+  }),
+}));
+
+vi.mock("../../queries/nationDiscoveryQueries", () => ({
+  nationDiscoveriesQueryOptions: () => ({
+    queryFn: () => mockDiscoveriesQuery() as Promise<unknown>,
+    queryKey: ["nation-discoveries"],
   }),
 }));
 
@@ -129,6 +138,14 @@ function renderSection(): ReturnType<typeof render> {
 
 describe("NationRelationshipAccordionRow", () => {
   beforeEach(() => {
+    mockDiscoveriesQuery.mockResolvedValue([
+      {
+        createdByUserId: null,
+        metAtTurnNumber: 1,
+        nationAId: nation.id,
+        nationBId: other.id,
+      },
+    ]);
     mockTreatiesQuery.mockResolvedValue([]);
     mockResourcesQuery.mockResolvedValue([]);
     mockCalendarQuery.mockResolvedValue(null);
@@ -273,5 +290,37 @@ describe("NationRelationshipAccordionRow", () => {
         `Trade agreement between ${nation.name} and ${other.name}`,
       ),
     ).toBeInTheDocument();
+  });
+
+  it("does not render a row for an undiscovered nation", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockDiscoveriesQuery.mockResolvedValue([]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+
+    renderSection();
+
+    expect(
+      await screen.findByText("No nations discovered"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(other.name)).not.toBeInTheDocument();
+  });
+
+  it("renders a row for a discovered nation regardless of pair order", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockDiscoveriesQuery.mockResolvedValue([
+      {
+        createdByUserId: null,
+        metAtTurnNumber: 1,
+        nationAId: other.id,
+        nationBId: nation.id,
+      },
+    ]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+
+    renderSection();
+
+    expect(await screen.findByText(other.name)).toBeInTheDocument();
   });
 });
