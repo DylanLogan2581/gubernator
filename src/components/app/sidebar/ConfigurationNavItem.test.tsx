@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -88,18 +89,44 @@ describe("ConfigurationNavItem", () => {
     expect(calendarLink).toHaveAttribute("data-active", "true");
     expect(resourcesLink).toHaveAttribute("data-active", "false");
   });
+
+  it("renders a right-side dropdown menu instead of a collapsible when the sidebar is collapsed", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: `/worlds/${WORLD_ID}/configuration`,
+    });
+    useSearchMock.mockReturnValue({ tab: "resources" });
+
+    const { user } = renderItem({ isSuperAdmin: false, defaultOpen: false });
+
+    expect(screen.queryByRole("menuitem", { name: /Resources/ })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Configuration" }));
+
+    expect(screen.getByRole("menuitem", { name: /Resources/ })).toBeDefined();
+  });
 });
 
 function renderItem({
+  defaultOpen = true,
   isSuperAdmin,
 }: {
+  readonly defaultOpen?: boolean;
   readonly isSuperAdmin: boolean;
-}): ReturnType<typeof render> {
-  return render(
-    <TooltipProvider>
-      <SidebarProvider>
-        <ConfigurationNavItem isSuperAdmin={isSuperAdmin} worldId={WORLD_ID} />
-      </SidebarProvider>
-    </TooltipProvider>,
-  );
+}): ReturnType<typeof render> & {
+  readonly user: ReturnType<typeof userEvent.setup>;
+} {
+  const user = userEvent.setup();
+  return {
+    ...render(
+      <TooltipProvider>
+        <SidebarProvider defaultOpen={defaultOpen}>
+          <ConfigurationNavItem
+            isSuperAdmin={isSuperAdmin}
+            worldId={WORLD_ID}
+          />
+        </SidebarProvider>
+      </TooltipProvider>,
+    ),
+    user,
+  };
 }

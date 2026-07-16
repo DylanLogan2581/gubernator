@@ -7,11 +7,19 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { DEFAULT_CONFIG_TAB, getVisibleConfigTabs } from "@/features/worlds";
 
@@ -28,6 +36,7 @@ export function ConfigurationNavItem({
 }: ConfigurationNavItemProps): JSX.Element {
   const location = useLocation();
   const search = useSearch({ strict: false });
+  const { isMobile, state } = useSidebar();
   const isOnConfigRoute =
     location.pathname === `/worlds/${worldId}/configuration`;
   const activeTab =
@@ -35,6 +44,46 @@ export function ConfigurationNavItem({
       ? search.tab
       : DEFAULT_CONFIG_TAB;
   const visibleTabs = getVisibleConfigTabs(isSuperAdmin);
+
+  if (!isMobile && state === "collapsed") {
+    return (
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton tooltip="Configuration">
+              <Settings2 aria-hidden="true" />
+              <span>Configuration</span>
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            side="right"
+            sideOffset={4}
+            className="min-w-56 rounded-lg"
+          >
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Configuration
+            </DropdownMenuLabel>
+            {visibleTabs.map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <DropdownMenuItem key={tab.id} asChild className="gap-2">
+                  <Link
+                    to="/worlds/$worldId/configuration"
+                    params={{ worldId }}
+                    search={{ tab: tab.id }}
+                  >
+                    <TabIcon aria-hidden="true" className="size-4" />
+                    <span>{tab.label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <Collapsible
