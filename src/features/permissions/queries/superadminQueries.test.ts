@@ -82,6 +82,40 @@ describe("smtpStatusQueryOptions", () => {
       queryClient.fetchQuery(smtpStatusQueryOptions(client)),
     ).rejects.toThrow("Edge Function returned a non-2xx status code");
   });
+
+  it("decodes a 403 origin_not_allowed body into an actionable message", async () => {
+    const body = JSON.stringify({
+      error: { code: "origin_not_allowed", message: "Origin not allowed." },
+      ok: false,
+    });
+    const client = createClient({
+      data: null,
+      error: new FunctionsHttpError(new Response(body, { status: 403 })),
+    });
+    const queryClient = createQueryClient();
+
+    await expect(
+      queryClient.fetchQuery(smtpStatusQueryOptions(client)),
+    ).rejects.toThrow(
+      "This app's origin is not in SEND_EMAIL_ALLOWED_ORIGINS — run the dev server on port 5173 or add this origin to the allowlist.",
+    );
+  });
+
+  it("decodes a 403 error body for other codes into the server-provided message", async () => {
+    const body = JSON.stringify({
+      error: { code: "superadmin_required", message: "Superadmin required." },
+      ok: false,
+    });
+    const client = createClient({
+      data: null,
+      error: new FunctionsHttpError(new Response(body, { status: 403 })),
+    });
+    const queryClient = createQueryClient();
+
+    await expect(
+      queryClient.fetchQuery(smtpStatusQueryOptions(client)),
+    ).rejects.toThrow("Superadmin required.");
+  });
 });
 
 function createClient(response: {

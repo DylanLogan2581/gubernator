@@ -12,6 +12,11 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import {
+  isSendEmailErrorPayload,
+  readSendEmailErrorPayload,
+} from "../utils/sendEmailErrorPayload";
+
 import { superadminQueryKeys } from "./superadminQueryKeys";
 
 import type { ActivePlayerCharacterRow } from "./activePlayerCharacterQueries";
@@ -22,6 +27,7 @@ import type {
   SuperadminWorld,
   SuperadminWorldAdmin,
 } from "../types/superadminTypes";
+import type { SendEmailErrorPayload } from "../utils/sendEmailErrorPayload";
 
 type AllUsersQueryKey = ReturnType<typeof superadminQueryKeys.users>;
 type AllWorldsQueryKey = ReturnType<typeof superadminQueryKeys.worlds>;
@@ -218,10 +224,7 @@ async function getWorldAdminsForUser(
 
 type SendEmailStatusFunctionResponse =
   | { readonly ok: true; readonly data: SmtpStatus }
-  | {
-      readonly ok: false;
-      readonly error: { readonly code: string; readonly message: string };
-    };
+  | SendEmailErrorPayload;
 
 function isSendEmailStatusSuccessResponse(
   value: unknown,
@@ -234,15 +237,11 @@ function isSendEmailStatusSuccessResponse(
   );
 }
 
-function isSendEmailStatusErrorResponse(
-  value: unknown,
-): value is Extract<SendEmailStatusFunctionResponse, { ok: false }> {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { ok: unknown }).ok === false &&
-    typeof (value as { error: unknown }).error === "object"
-  );
+function smtpStatusErrorMessage(code: string, message: string): string {
+  if (code === "origin_not_allowed") {
+    return "This app's origin is not in SEND_EMAIL_ALLOWED_ORIGINS — run the dev server on port 5173 or add this origin to the allowlist.";
+  }
+  return message;
 }
 
 const EDGE_FUNCTION_UNREACHABLE_MESSAGE =
@@ -282,6 +281,17 @@ async function getSmtpStatus(
         new Error(EDGE_FUNCTION_UNREACHABLE_MESSAGE),
       );
     }
+    const errorPayload = await readSendEmailErrorPayload(response.error);
+    if (errorPayload !== null) {
+      throw normalizeSupabaseError(
+        new Error(
+          smtpStatusErrorMessage(
+            errorPayload.error.code,
+            errorPayload.error.message,
+          ),
+        ),
+      );
+    }
     throw normalizeSupabaseError(response.error);
   }
 
@@ -289,8 +299,15 @@ async function getSmtpStatus(
     return response.data.data;
   }
 
-  if (isSendEmailStatusErrorResponse(response.data)) {
-    throw normalizeSupabaseError(new Error(response.data.error.message));
+  if (isSendEmailErrorPayload(response.data)) {
+    throw normalizeSupabaseError(
+      new Error(
+        smtpStatusErrorMessage(
+          response.data.error.code,
+          response.data.error.message,
+        ),
+      ),
+    );
   }
 
   throw normalizeSupabaseError(

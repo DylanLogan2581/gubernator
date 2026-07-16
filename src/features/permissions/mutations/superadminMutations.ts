@@ -14,6 +14,7 @@ import {
 import { worldAccessQueryKeys } from "../../worlds/queries/worldAccessQueryKeys";
 import { permissionQueryKeys } from "../queries/permissionQueryKeys";
 import { superadminQueryKeys } from "../queries/superadminQueryKeys";
+import { readSendEmailErrorPayload } from "../utils/sendEmailErrorPayload";
 
 import type {
   CreateUserInput,
@@ -381,37 +382,6 @@ function isSendEmailErrorResponse(
     (value as { ok: unknown }).ok === false &&
     typeof (value as { error: unknown }).error === "object"
   );
-}
-
-async function readSendEmailErrorPayload(
-  error: unknown,
-): Promise<Extract<SendEmailFunctionResponse, { ok: false }> | null> {
-  if (typeof error !== "object" || error === null || !("context" in error)) {
-    return null;
-  }
-
-  const maybeContext = (error as Record<string, unknown>)["context"];
-  if (typeof maybeContext !== "object" || maybeContext === null) {
-    return null;
-  }
-
-  const context = maybeContext as Record<string, unknown>;
-  if (typeof context["json"] !== "function") {
-    return null;
-  }
-
-  try {
-    const payload: unknown = await (
-      context as { json: () => Promise<unknown> }
-    ).json();
-    if (isSendEmailErrorResponse(payload)) {
-      return payload;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
 }
 
 function mapSendEmailErrorCode(
