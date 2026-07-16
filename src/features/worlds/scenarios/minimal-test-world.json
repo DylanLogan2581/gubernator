@@ -63,6 +63,10 @@
       }
     }
   ],
+  "resource_categories": [],
+  "education_levels": [],
+  "cultures": [],
+  "religions": [],
   "resources": [
     {
       "name": "Grain",
@@ -127,5 +131,6 @@
     }
   ],
   "deposit_types": [],
-  "managed_population_types": []
+  "managed_population_types": [],
+  "unit_types": []
 }
