@@ -1,12 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ScrollText } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { Button } from "@/components/ui/button";
 import {
   AdminPausedHint,
   currentAccessContextQueryOptions,
@@ -220,36 +217,25 @@ function NationDetailLoaded({
 
   return (
     <NationDetailFrame worldId={worldId}>
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <NationFlagAvatar
-            className="w-16 shrink-0"
-            flagPath={nation.flagPath}
-            interactive
-            nationId={nation.id}
-            nationName={nation.name}
-          />
-          <div className="min-w-0 space-y-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-normal">
-                {nation.name}
-              </h1>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Nation in{" "}
-              <span className="font-medium">{worldAccess.header.name}</span>.
-            </p>
+      <header className="flex min-w-0 items-start gap-3">
+        <NationFlagAvatar
+          className="w-16 shrink-0"
+          flagPath={nation.flagPath}
+          interactive
+          nationId={nation.id}
+          nationName={nation.name}
+        />
+        <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {nation.name}
+            </h1>
           </div>
+          <p className="text-sm text-muted-foreground">
+            Nation in{" "}
+            <span className="font-medium">{worldAccess.header.name}</span>.
+          </p>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link
-            to="/worlds/$worldId/nations/$nationId/charter"
-            params={{ nationId: nation.id, worldId }}
-          >
-            <ScrollText aria-hidden="true" />
-            View charter
-          </Link>
-        </Button>
       </header>
 
       <AdminPausedHint canAdmin={worldAccess.canAdmin} />

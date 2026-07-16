@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ScrollText } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { DecreesSection } from "@/features/decrees";
 import { GovernmentBodiesSection } from "@/features/government-bodies";
 import { LawDocumentsSection } from "@/features/law-documents";
@@ -28,6 +30,17 @@ function NationGovernmentRoute(): JSX.Element {
   // internally by each section based on world-admin/nation-manager authority.
   return (
     <div className="grid gap-4">
+      <div className="flex justify-end">
+        <Button asChild size="sm" variant="outline">
+          <Link
+            to="/worlds/$worldId/nations/$nationId/charter"
+            params={{ nationId: nation.id, worldId: nation.worldId }}
+          >
+            <ScrollText aria-hidden="true" />
+            View charter
+          </Link>
+        </Button>
+      </div>
       <NationOfficesSection
         canAdminWorld={effectiveCanAdmin}
         isArchived={isArchived}
