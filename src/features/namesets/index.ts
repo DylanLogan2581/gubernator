@@ -26,3 +26,8 @@ export {
   resolveNamingConfig,
 } from "./utils/resolveNamingConfig";
 export type { Nameset } from "./types/namesetTypes";
+export {
+  namesetLibraryIndex,
+  loadNamesetLibraryDefinition,
+} from "./library/namesetLibrary";
+export type { NamesetLibraryIndexEntry } from "./library/namesetLibrary";

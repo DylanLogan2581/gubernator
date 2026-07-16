@@ -1,0 +1,1078 @@
+{
+  "convertedCount": 206,
+  "flaggedCount": 173,
+  "skippedCount": 0,
+  "flagged": [
+    {
+      "id": "angel-names",
+      "displayName": "Angel Names",
+      "sourceUrl": "https://fantasynamegenerators.com/angel-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "animatronic-names",
+      "displayName": "Animatronic Names",
+      "sourceUrl": "https://fantasynamegenerators.com/animatronic-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "anansi-names",
+      "displayName": "Anansi Names",
+      "sourceUrl": "https://fantasynamegenerators.com/anansi-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "alien-names",
+      "displayName": "Alien Names",
+      "sourceUrl": "https://fantasynamegenerators.com/alien-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "anime-character-names",
+      "displayName": "Anime Character Names",
+      "sourceUrl": "https://fantasynamegenerators.com/anime-character-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "anzu-names",
+      "displayName": "Anzû Names",
+      "sourceUrl": "https://fantasynamegenerators.com/anzu-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "amazon-names",
+      "displayName": "Amazon Names",
+      "sourceUrl": "https://fantasynamegenerators.com/amazon-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "bandit-names",
+      "displayName": "Bandit Names",
+      "sourceUrl": "https://fantasynamegenerators.com/bandit-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "apocalypse-mutant-names",
+      "displayName": "Apocalypse/Mutant Names",
+      "sourceUrl": "https://fantasynamegenerators.com/apocalypse-mutant-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "basilisk-names",
+      "displayName": "Basilisk Names",
+      "sourceUrl": "https://fantasynamegenerators.com/basilisk-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "birdfolk-names",
+      "displayName": "Birdfolk Names",
+      "sourceUrl": "https://fantasynamegenerators.com/birdfolk-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "artificial-intelligence-names",
+      "displayName": "Artificial Intelligence Names",
+      "sourceUrl": "https://fantasynamegenerators.com/artificial-intelligence-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "barbarian-names",
+      "displayName": "Barbarian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/barbarian-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "banshee-names",
+      "displayName": "Banshee Names",
+      "sourceUrl": "https://fantasynamegenerators.com/banshee-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "bluecap-names",
+      "displayName": "Bluecap Names",
+      "sourceUrl": "https://fantasynamegenerators.com/bluecap-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "bounty-hunter-names",
+      "displayName": "Bounty Hunter Names",
+      "sourceUrl": "https://fantasynamegenerators.com/bounty-hunter-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "caladrius-names",
+      "displayName": "Caladrius Names",
+      "sourceUrl": "https://fantasynamegenerators.com/caladrius-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "cerberus-names",
+      "displayName": "Cerberus Names",
+      "sourceUrl": "https://fantasynamegenerators.com/cerberus-names.php",
+      "reason": "female branch: unresolvable identifier: nTm"
+    },
+    {
+      "id": "brownie-names",
+      "displayName": "Brownie Names",
+      "sourceUrl": "https://fantasynamegenerators.com/brownie-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "cat-people-nekojin-names",
+      "displayName": "Cat-people/Nekojin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/cat-people-nekojin-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "christmas-elf-names",
+      "displayName": "Christmas Elf Names",
+      "sourceUrl": "https://fantasynamegenerators.com/christmas-elf-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "cavemen-names",
+      "displayName": "Cavemen Names",
+      "sourceUrl": "https://fantasynamegenerators.com/cavemen-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "cockatrice-names",
+      "displayName": "Cockatrice Names",
+      "sourceUrl": "https://fantasynamegenerators.com/cockatrice-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "code-names",
+      "displayName": "Code Names",
+      "sourceUrl": "https://fantasynamegenerators.com/code-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "cowboy-names",
+      "displayName": "Cowboy/girl Names",
+      "sourceUrl": "https://fantasynamegenerators.com/cowboy-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "cyberpunk-names",
+      "displayName": "Cyberpunk (Nick)Names",
+      "sourceUrl": "https://fantasynamegenerators.com/cyberpunk-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "death-worm-names",
+      "displayName": "Death Worm Names",
+      "sourceUrl": "https://fantasynamegenerators.com/death-worm-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "dark-elf-names",
+      "displayName": "Dark Elf Names",
+      "sourceUrl": "https://fantasynamegenerators.com/dark-elf-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "death-names",
+      "displayName": "Death Names",
+      "sourceUrl": "https://fantasynamegenerators.com/death-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "demon-names",
+      "displayName": "Demon Names",
+      "sourceUrl": "https://fantasynamegenerators.com/demon-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "detective-names",
+      "displayName": "Detective Names",
+      "sourceUrl": "https://fantasynamegenerators.com/detective-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "dracaenae-names",
+      "displayName": "Dracaenae Names",
+      "sourceUrl": "https://fantasynamegenerators.com/dracaenae-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "japanese-dragon-names",
+      "displayName": "Dragon Names (Japanese)",
+      "sourceUrl": "https://fantasynamegenerators.com/japanese-dragon-names.php",
+      "reason": "female branch: unsupported expression fragment: nm3[rnd][0]"
+    },
+    {
+      "id": "chinese-dragon-names",
+      "displayName": "Dragon Names (Chinese)",
+      "sourceUrl": "https://fantasynamegenerators.com/chinese-dragon-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "dryad-names",
+      "displayName": "Dryad Names",
+      "sourceUrl": "https://fantasynamegenerators.com/dryad-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "dragonkin-names",
+      "displayName": "Dragonkin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/dragonkin-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "dragon-names",
+      "displayName": "Dragon Names",
+      "sourceUrl": "https://fantasynamegenerators.com/dragon-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "elemental-names",
+      "displayName": "Elemental Names",
+      "sourceUrl": "https://fantasynamegenerators.com/elemental-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "ent-names",
+      "displayName": "Ent/Tree creature Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ent-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "evil-names",
+      "displayName": "Evil Names",
+      "sourceUrl": "https://fantasynamegenerators.com/evil-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "creature-names",
+      "displayName": "Fantasy Creature Names",
+      "sourceUrl": "https://fantasynamegenerators.com/creature-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "fantasy-surnames",
+      "displayName": "Fantasy Surnames",
+      "sourceUrl": "https://fantasynamegenerators.com/fantasy-surnames.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "elf-names",
+      "displayName": "Elf Names",
+      "sourceUrl": "https://fantasynamegenerators.com/elf-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "fursona-names",
+      "displayName": "Fursona Names",
+      "sourceUrl": "https://fantasynamegenerators.com/fursona-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "giant-names",
+      "displayName": "Giant Names",
+      "sourceUrl": "https://fantasynamegenerators.com/giant-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "genie-names",
+      "displayName": "Genie Names",
+      "sourceUrl": "https://fantasynamegenerators.com/genie-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "gargoyle-names",
+      "displayName": "Gargoyle Names",
+      "sourceUrl": "https://fantasynamegenerators.com/gargoyle-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "ghost-names",
+      "displayName": "Ghost/Spirit Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ghost-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "ghoul-names",
+      "displayName": "Ghoul Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ghoul-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "gnoll-names",
+      "displayName": "Gnoll Names",
+      "sourceUrl": "https://fantasynamegenerators.com/gnoll-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "gnome-names",
+      "displayName": "Gnome Names",
+      "sourceUrl": "https://fantasynamegenerators.com/gnome-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "golem-names",
+      "displayName": "Golem Names",
+      "sourceUrl": "https://fantasynamegenerators.com/golem-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "gorgon-names",
+      "displayName": "Gorgon Names",
+      "sourceUrl": "https://fantasynamegenerators.com/gorgon-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "graeae-names",
+      "displayName": "Graeae Names",
+      "sourceUrl": "https://fantasynamegenerators.com/graeae-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "grootslang-names",
+      "displayName": "Grootslang Names",
+      "sourceUrl": "https://fantasynamegenerators.com/grootslang-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "god-names",
+      "displayName": "God & Goddess Names",
+      "sourceUrl": "https://fantasynamegenerators.com/god-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "griffin-names",
+      "displayName": "Griffin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/griffin-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "half-orc-names",
+      "displayName": "Half-Orc Names",
+      "sourceUrl": "https://fantasynamegenerators.com/half-orc-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "harpy-names",
+      "displayName": "Harpy Names",
+      "sourceUrl": "https://fantasynamegenerators.com/harpy-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "half-elf-names",
+      "displayName": "Half-Elf Names",
+      "sourceUrl": "https://fantasynamegenerators.com/half-elf-names.php",
+      "reason": "female branch: unresolvable identifier: nameLast"
+    },
+    {
+      "id": "horse-names",
+      "displayName": "(Heroic) Horse Names",
+      "sourceUrl": "https://fantasynamegenerators.com/horse-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "hellhound-names",
+      "displayName": "Hellhound Names",
+      "sourceUrl": "https://fantasynamegenerators.com/hellhound-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "hydra-names",
+      "displayName": "Hydra Names",
+      "sourceUrl": "https://fantasynamegenerators.com/hydra-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "ifrit-names",
+      "displayName": "Ifrit Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ifrit-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "imp-names",
+      "displayName": "Imp Names",
+      "sourceUrl": "https://fantasynamegenerators.com/imp-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "jotunn-names",
+      "displayName": "Jotunn Names",
+      "sourceUrl": "https://fantasynamegenerators.com/jotunn-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "killer-names",
+      "displayName": "Killer Names",
+      "sourceUrl": "https://fantasynamegenerators.com/killer-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "kaiju-names",
+      "displayName": "Kaiju Names",
+      "sourceUrl": "https://fantasynamegenerators.com/kaiju-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "jackalope-wolpertinger-names",
+      "displayName": "Jackalopes & Wolpertingers",
+      "sourceUrl": "https://fantasynamegenerators.com/jackalope-wolpertinger-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "knight-names",
+      "displayName": "Knight Names",
+      "sourceUrl": "https://fantasynamegenerators.com/knight-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "kobold-names",
+      "displayName": "Kobold Names",
+      "sourceUrl": "https://fantasynamegenerators.com/kobold-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "legendary-creature-names",
+      "displayName": "Legendary Creature Names",
+      "sourceUrl": "https://fantasynamegenerators.com/legendary-creature-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "lizardfolk-names",
+      "displayName": "Lizardfolk Names",
+      "sourceUrl": "https://fantasynamegenerators.com/lizardfolk-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "lich-names",
+      "displayName": "Lich Names",
+      "sourceUrl": "https://fantasynamegenerators.com/lich-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "manananggal-names",
+      "displayName": "Manananggal Names",
+      "sourceUrl": "https://fantasynamegenerators.com/manananggal-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "mad-scientist-names",
+      "displayName": "Mad Scientist Names",
+      "sourceUrl": "https://fantasynamegenerators.com/mad-scientist-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "magic-user-names",
+      "displayName": "Magic User Names",
+      "sourceUrl": "https://fantasynamegenerators.com/magic-user-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "manticore-names",
+      "displayName": "Manticore Names",
+      "sourceUrl": "https://fantasynamegenerators.com/manticore-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "mecha-names",
+      "displayName": "Mecha Names",
+      "sourceUrl": "https://fantasynamegenerators.com/mecha-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "minotaur-names",
+      "displayName": "Minotaur Names",
+      "sourceUrl": "https://fantasynamegenerators.com/minotaur-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "monster-names",
+      "displayName": "Monster Names",
+      "sourceUrl": "https://fantasynamegenerators.com/monster-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "mirrored-twin-names",
+      "displayName": "Mirrored Twin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/mirrored-twin-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "morgen-names",
+      "displayName": "Morgen Names",
+      "sourceUrl": "https://fantasynamegenerators.com/morgen-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "moon-rabbit-names",
+      "displayName": "Moon Rabbit Names",
+      "sourceUrl": "https://fantasynamegenerators.com/moon-rabbit-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "necromancer-names",
+      "displayName": "Necromancer Names",
+      "sourceUrl": "https://fantasynamegenerators.com/necromancer-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "naga-names",
+      "displayName": "Naga Names",
+      "sourceUrl": "https://fantasynamegenerators.com/naga-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "non-magic-user-names",
+      "displayName": "Non-Magic User Names",
+      "sourceUrl": "https://fantasynamegenerators.com/non-magic-user-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "nephilim-names",
+      "displayName": "Nephilim Names",
+      "sourceUrl": "https://fantasynamegenerators.com/nephilim-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "norse-raven-names",
+      "displayName": "Norse Raven Names",
+      "sourceUrl": "https://fantasynamegenerators.com/norse-raven-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "ogre-names",
+      "displayName": "Ogre Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ogre-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "nymph-names",
+      "displayName": "Nymph Names",
+      "sourceUrl": "https://fantasynamegenerators.com/nymph-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "ninja-names",
+      "displayName": "Ninja & Assassin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ninja-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "plague-doctor-names",
+      "displayName": "Plague Doctors",
+      "sourceUrl": "https://fantasynamegenerators.com/plague-doctor-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "pixie-names",
+      "displayName": "Pixie Names",
+      "sourceUrl": "https://fantasynamegenerators.com/pixie-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "puppet-names",
+      "displayName": "Puppet Names",
+      "sourceUrl": "https://fantasynamegenerators.com/puppet-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "phoenix-names",
+      "displayName": "Phoenix Names",
+      "sourceUrl": "https://fantasynamegenerators.com/phoenix-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "robot-names",
+      "displayName": "Robot Names",
+      "sourceUrl": "https://fantasynamegenerators.com/robot-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "rakshasa-names",
+      "displayName": "Rakshasa Names",
+      "sourceUrl": "https://fantasynamegenerators.com/rakshasa-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "qilin-names",
+      "displayName": "Qilin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/qilin-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "quetzalcoatl-names",
+      "displayName": "Quetzalcoatl Names",
+      "sourceUrl": "https://fantasynamegenerators.com/quetzalcoatl-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "sea-creature-names",
+      "displayName": "Sea Creature Names",
+      "sourceUrl": "https://fantasynamegenerators.com/sea-creature-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "roc-names",
+      "displayName": "Roc Names",
+      "sourceUrl": "https://fantasynamegenerators.com/roc-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "selkie-names",
+      "displayName": "Selkie Names",
+      "sourceUrl": "https://fantasynamegenerators.com/selkie-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "satyr-faun-names",
+      "displayName": "Satyr & Faun Names",
+      "sourceUrl": "https://fantasynamegenerators.com/satyr-faun-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "siren-names",
+      "displayName": "Siren Names",
+      "sourceUrl": "https://fantasynamegenerators.com/siren-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "slave-names",
+      "displayName": "Slave Names",
+      "sourceUrl": "https://fantasynamegenerators.com/slave-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "shapeshifter-names",
+      "displayName": "Shapeshifter Names",
+      "sourceUrl": "https://fantasynamegenerators.com/shapeshifter-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "spiderfolk-names",
+      "displayName": "Spiderfolk Names",
+      "sourceUrl": "https://fantasynamegenerators.com/spiderfolk-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "steampunk-names",
+      "displayName": "Steampunk Names",
+      "sourceUrl": "https://fantasynamegenerators.com/steampunk-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "hero-names",
+      "displayName": "Superhero Names",
+      "sourceUrl": "https://fantasynamegenerators.com/hero-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "villain-names",
+      "displayName": "Super Villain Names",
+      "sourceUrl": "https://fantasynamegenerators.com/villain-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "titan-names",
+      "displayName": "Titan Names",
+      "sourceUrl": "https://fantasynamegenerators.com/titan-names.php",
+      "reason": "female branch: no names = <expr> assignment found"
+    },
+    {
+      "id": "sylph-names",
+      "displayName": "Sylph Names",
+      "sourceUrl": "https://fantasynamegenerators.com/sylph-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "unicorn-names",
+      "displayName": "Unicorn Names",
+      "sourceUrl": "https://fantasynamegenerators.com/unicorn-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "warrior-nicknames",
+      "displayName": "Warrior Nicknames",
+      "sourceUrl": "https://fantasynamegenerators.com/warrior-nicknames.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "valkyrie-names",
+      "displayName": "Valkyrie Names",
+      "sourceUrl": "https://fantasynamegenerators.com/valkyrie-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "wizard-names",
+      "displayName": "Wizard Names",
+      "sourceUrl": "https://fantasynamegenerators.com/wizard-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "world-defender-names",
+      "displayName": "World Defender Names",
+      "sourceUrl": "https://fantasynamegenerators.com/world-defender-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "world-destroyer-names",
+      "displayName": "World Destroyer Names",
+      "sourceUrl": "https://fantasynamegenerators.com/world-destroyer-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "wuxia-names",
+      "displayName": "Character names",
+      "sourceUrl": "https://fantasynamegenerators.com/wuxia-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "wyvern-names",
+      "displayName": "Wyvern Names",
+      "sourceUrl": "https://fantasynamegenerators.com/wyvern-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "yeti-names",
+      "displayName": "Yeti Names",
+      "sourceUrl": "https://fantasynamegenerators.com/yeti-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "xana-names",
+      "displayName": "Xana Names",
+      "sourceUrl": "https://fantasynamegenerators.com/xana-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "zaratan-names",
+      "displayName": "Zaratan Names",
+      "sourceUrl": "https://fantasynamegenerators.com/zaratan-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "amazigh-names",
+      "displayName": "Amazigh Names",
+      "sourceUrl": "https://fantasynamegenerators.com/amazigh-names.php",
+      "reason": "female branch: unresolvable identifier: val"
+    },
+    {
+      "id": "eritrean-names",
+      "displayName": "Eritrean Names",
+      "sourceUrl": "https://fantasynamegenerators.com/eritrean-names.php",
+      "reason": "female branch: unsupported expression fragment: nm2[rnd][0]"
+    },
+    {
+      "id": "ethiopian-names",
+      "displayName": "Ethiopian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ethiopian-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "igbo-names",
+      "displayName": "Igbo Names",
+      "sourceUrl": "https://fantasynamegenerators.com/igbo-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "tswana-names",
+      "displayName": "Tswana Names",
+      "sourceUrl": "https://fantasynamegenerators.com/tswana-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "xitsonga-names",
+      "displayName": "Xitsonga Names",
+      "sourceUrl": "https://fantasynamegenerators.com/xitsonga-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "yoruba-names",
+      "displayName": "Yoruba Names",
+      "sourceUrl": "https://fantasynamegenerators.com/yoruba-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "brazilian-names",
+      "displayName": "Brazilian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/brazilian-names.php",
+      "reason": "female branch: unsupported expression fragment: nmf[rnd2]"
+    },
+    {
+      "id": "english-names",
+      "displayName": "English (American)",
+      "sourceUrl": "https://fantasynamegenerators.com/english-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "hippie-names",
+      "displayName": "Hippie Names",
+      "sourceUrl": "https://fantasynamegenerators.com/hippie-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "inuit-names",
+      "displayName": "Inuit Names",
+      "sourceUrl": "https://fantasynamegenerators.com/inuit-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "nature-names",
+      "displayName": "Nature Names",
+      "sourceUrl": "https://fantasynamegenerators.com/nature-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "old-west-names",
+      "displayName": "Old West",
+      "sourceUrl": "https://fantasynamegenerators.com/old-west-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "stage-names",
+      "displayName": "Stage Names",
+      "sourceUrl": "https://fantasynamegenerators.com/stage-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "twin-names",
+      "displayName": "Twin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/twin-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "chinese-names",
+      "displayName": "Chinese Names",
+      "sourceUrl": "https://fantasynamegenerators.com/chinese-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "filipino-names",
+      "displayName": "Filipino Names",
+      "sourceUrl": "https://fantasynamegenerators.com/filipino-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "hmong-names",
+      "displayName": "Hmong Names",
+      "sourceUrl": "https://fantasynamegenerators.com/hmong-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "edo-japanese-names",
+      "displayName": "Japanese (Edo) Names",
+      "sourceUrl": "https://fantasynamegenerators.com/edo-japanese-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "indonesian-names",
+      "displayName": "Indonesian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/indonesian-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "japanese-names",
+      "displayName": "Japanese Names",
+      "sourceUrl": "https://fantasynamegenerators.com/japanese-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "keralite-names",
+      "displayName": "Keralite Names",
+      "sourceUrl": "https://fantasynamegenerators.com/keralite-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "malaysian-names",
+      "displayName": "Malaysian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/malaysian-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "kyrgyz-names",
+      "displayName": "Kyrgyz Names",
+      "sourceUrl": "https://fantasynamegenerators.com/kyrgyz-names.php",
+      "reason": "female branch: no names = <expr> assignment found"
+    },
+    {
+      "id": "mongolian-names",
+      "displayName": "Mongolian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/mongolian-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "tamil-names",
+      "displayName": "Tamil Names",
+      "sourceUrl": "https://fantasynamegenerators.com/tamil-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "tibetan-names",
+      "displayName": "Tibetan Names",
+      "sourceUrl": "https://fantasynamegenerators.com/tibetan-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "azerbaijani-names",
+      "displayName": "Azerbaijani Names",
+      "sourceUrl": "https://fantasynamegenerators.com/azerbaijani-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "celtic-names",
+      "displayName": "Celtic (Scottish) Names",
+      "sourceUrl": "https://fantasynamegenerators.com/celtic-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "celtic-welsh-names",
+      "displayName": "Celtic (Welsh) Names",
+      "sourceUrl": "https://fantasynamegenerators.com/celtic-welsh-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "british-english-names",
+      "displayName": "English (British)",
+      "sourceUrl": "https://fantasynamegenerators.com/british-english-names.php",
+      "reason": "more than two gender branches (else if present)"
+    },
+    {
+      "id": "enochian-names",
+      "displayName": "Enochian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/enochian-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "french-names",
+      "displayName": "French Names",
+      "sourceUrl": "https://fantasynamegenerators.com/french-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "german-names",
+      "displayName": "German Names",
+      "sourceUrl": "https://fantasynamegenerators.com/german-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "greek-names",
+      "displayName": "Greek Names",
+      "sourceUrl": "https://fantasynamegenerators.com/greek-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "latin-names",
+      "displayName": "Latin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/latin-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "lithuanian-names",
+      "displayName": "Lithuanian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/lithuanian-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "montenegrin-names",
+      "displayName": "Montenegrin Names",
+      "sourceUrl": "https://fantasynamegenerators.com/montenegrin-names.php",
+      "reason": "female branch: no names = <expr> assignment found"
+    },
+    {
+      "id": "papal-names",
+      "displayName": "Papal Names",
+      "sourceUrl": "https://fantasynamegenerators.com/papal-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "pictish-names",
+      "displayName": "Pictish Names",
+      "sourceUrl": "https://fantasynamegenerators.com/pictish-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "portuguese-names",
+      "displayName": "Portuguese Names",
+      "sourceUrl": "https://fantasynamegenerators.com/portuguese-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "puritan-names",
+      "displayName": "Puritan Names",
+      "sourceUrl": "https://fantasynamegenerators.com/puritan-names.php",
+      "reason": "no gender branch found (tp === 1 condition not detected)"
+    },
+    {
+      "id": "roma-names",
+      "displayName": "Roma Names",
+      "sourceUrl": "https://fantasynamegenerators.com/roma-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "swedish-names",
+      "displayName": "Swedish Names",
+      "sourceUrl": "https://fantasynamegenerators.com/swedish-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "victorian-names",
+      "displayName": "Victorian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/victorian-names.php",
+      "reason": "no nm* arrays found"
+    },
+    {
+      "id": "ossetian-names",
+      "displayName": "Ossetian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/ossetian-names.php",
+      "reason": "female branch: unresolvable identifier: nr"
+    },
+    {
+      "id": "palestinian-names",
+      "displayName": "Palestinian Names",
+      "sourceUrl": "https://fantasynamegenerators.com/palestinian-names.php",
+      "reason": "re-roll loop (while) present in gender branch"
+    },
+    {
+      "id": "zazaki-names",
+      "displayName": "Zazaki Names",
+      "sourceUrl": "https://fantasynamegenerators.com/zazaki-names.php",
+      "reason": "female branch: no names = <expr> assignment found"
+    },
+    {
+      "id": "maori-names",
+      "displayName": "Maori Names",
+      "sourceUrl": "https://fantasynamegenerators.com/maori-names.php",
+      "reason": "no nm* arrays found"
+    }
+  ],
+  "skipped": [],
+  "spotCheck": [
+    {
+      "id": "dwarf-names",
+      "liveSample": "Glorilmead Battlearm / Neddour Gravelcloak / Urbouck Anvilgrog",
+      "localSample": "Barinwegar Metalrock / Noramnuilynn Caskbranch / Thedwerika Flintstone",
+      "verdict": "match: same onset+mid+end dwarven given-name syllables and compound rock/metal surnames as the live generator"
+    },
+    {
+      "id": "orc-names",
+      "liveSample": "Cagan / Zildud / Ignatz / Surgug / Gashna",
+      "localSample": "Borba / Faghig / Durgat / Jogug / Ghob",
+      "verdict": "match: same short guttural single-word style as the live generator"
+    },
+    {
+      "id": "goblin-names",
+      "liveSample": "Lugz / Driac / Gnek / Stosreld / Chysmogz",
+      "localSample": "gniassia / sruz / flulmee / cheact / cliokx",
+      "verdict": "match: same clipped consonant-heavy single-word style as the live generator"
+    },
+    {
+      "id": "sinhalese-names",
+      "liveSample": "Wasundara Obeyesekere / Pradeep Abeynaike / Nirmal Samaraweera",
+      "localSample": "Nuveena Niroshan / Shamindri Dhanapala / Ruwanari Dhanapala",
+      "verdict": "match: same real-world Sinhalese given name + surname pool format as the live generator"
+    },
+    {
+      "id": "etruscan-names",
+      "liveSample": "Mamarce Eple / Venthi Cesu / Larce Cancu",
+      "localSample": "Vitellia Valcialui / Pevtha Pacrenia / Teitu Pacrenia",
+      "verdict": "match: same Etruscan given name + surname pool format as the live generator"
+    }
+  ]
+}

@@ -1,0 +1,1032 @@
+[
+  {
+    "id": "20th-century-english-names",
+    "displayName": "20th Cent. English",
+    "category": "Real Names"
+  },
+  {
+    "id": "aboriginal-names",
+    "displayName": "Aboriginal Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "african-american-names",
+    "displayName": "African-American Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "afrikaans-names",
+    "displayName": "Afrikaans Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "akan-names",
+    "displayName": "Akan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "akkadian-names",
+    "displayName": "Akkadian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "albanian-names",
+    "displayName": "Albanian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "algerian-names",
+    "displayName": "Algerian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "amish-names",
+    "displayName": "Amish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "ancient-greek-names",
+    "displayName": "Ancient Greek Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "anglo-saxon-names",
+    "displayName": "Anglo-Saxon Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "anthousai-names",
+    "displayName": "Anthousai Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "muslim-names",
+    "displayName": "Arabic/Muslim Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "aragonese-names",
+    "displayName": "Aragonese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "argentinian-names",
+    "displayName": "Argentinian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "armenian-names",
+    "displayName": "Armenian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "assamese-names",
+    "displayName": "Assamese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "assyrian-names",
+    "displayName": "Assyrian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "asturian-names",
+    "displayName": "Asturian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "australian-names",
+    "displayName": "Australian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "austrian-names",
+    "displayName": "Austrian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "aztec-names",
+    "displayName": "Aztec (Nahuatl) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "babylonian-names",
+    "displayName": "Babylonian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "balochi-names",
+    "displayName": "Balochi Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "bashkir-names",
+    "displayName": "Bashkir Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "basotho-names",
+    "displayName": "Basotho Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "basque-names",
+    "displayName": "Basque Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "belarusian-names",
+    "displayName": "Belarusian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "belgian-names",
+    "displayName": "Belgian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "bengali-names",
+    "displayName": "Bengali Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "biblical-names",
+    "displayName": "Biblical Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "bosniak-names",
+    "displayName": "Bosniak Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "bulgarian-names",
+    "displayName": "Bulgarian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "burmese-myanmar-names",
+    "displayName": "Burmese/Myanmar Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "byzantine-names",
+    "displayName": "Byzantine Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "cajun-names",
+    "displayName": "Cajun Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "cameroonian-names",
+    "displayName": "Cameroonian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "canadian-names",
+    "displayName": "Canadian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "catalan-names",
+    "displayName": "Catalan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "celtic-breton-names",
+    "displayName": "Celtic (Breton) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "celtic-gaul-names",
+    "displayName": "Celtic (Gaul) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "irish-names",
+    "displayName": "Celtic (Irish) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "manx-names",
+    "displayName": "Celtic (Manx) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "centaur-names",
+    "displayName": "Centaur Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "chechen-names",
+    "displayName": "Chechen Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "circassian-names",
+    "displayName": "Circassian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "colonial-american-names",
+    "displayName": "Colonial American Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "cornish-names",
+    "displayName": "Cornish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "cosmic-names",
+    "displayName": "Cosmic Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "croatian-names",
+    "displayName": "Croatian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "cypriot-names",
+    "displayName": "Cypriot Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "czech-names",
+    "displayName": "Czech Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "danish-names",
+    "displayName": "Danish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "dari-names",
+    "displayName": "Dari Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "dutch-renaissance-names",
+    "displayName": "Dutch",
+    "category": "Real Names"
+  },
+  {
+    "id": "dutch-names",
+    "displayName": "Dutch Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "dwarf-names",
+    "displayName": "Dwarf Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "edwardian-names",
+    "displayName": "Edwardian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "egyptian-names",
+    "displayName": "Egyptian Names (Ancient)",
+    "category": "Real Names"
+  },
+  {
+    "id": "modern-egyptian-names",
+    "displayName": "Egyptian Names (Modern)",
+    "category": "Real Names"
+  },
+  {
+    "id": "elizabethan-names",
+    "displayName": "Elizabethan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "english-renaissance-names",
+    "displayName": "English",
+    "category": "Real Names"
+  },
+  {
+    "id": "estonian-names",
+    "displayName": "Estonian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "etruscan-names",
+    "displayName": "Etruscan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "fairy-names",
+    "displayName": "Fairy Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "faroese-names",
+    "displayName": "Faroese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "fijian-names",
+    "displayName": "Fijian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "finnish-names",
+    "displayName": "Finnish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "frankish-names",
+    "displayName": "Frankish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "french-renaissance-names",
+    "displayName": "French",
+    "category": "Real Names"
+  },
+  {
+    "id": "frisian-names",
+    "displayName": "Frisian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "futuristic-names",
+    "displayName": "Futuristic Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "galician-names",
+    "displayName": "Galician Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "georgian-names",
+    "displayName": "Georgian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "german-renaissance-names",
+    "displayName": "German",
+    "category": "Real Names"
+  },
+  {
+    "id": "goblin-names",
+    "displayName": "Goblin Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "gothic-names",
+    "displayName": "Gothic Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "guardian-names",
+    "displayName": "Guardian Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "gujarati-names",
+    "displayName": "Gujarati Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "haitian-names",
+    "displayName": "Haitian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hausa-names",
+    "displayName": "Hausa Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hawaiian-names",
+    "displayName": "Hawaiian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hebrew-names",
+    "displayName": "Hebrew (Older) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "jewish-names",
+    "displayName": "Hebrew/Jewish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hellenic-names",
+    "displayName": "Hellenic Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hillbilly-names",
+    "displayName": "Hillbilly Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hindi-names",
+    "displayName": "Hindi Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hispanic-names",
+    "displayName": "Hispanic Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hittite-names",
+    "displayName": "Hittite Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "hobbit-names",
+    "displayName": "Hobbit Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "hungarian-names",
+    "displayName": "Hungarian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "icelandic-names",
+    "displayName": "Icelandic Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "modern-irish-names",
+    "displayName": "Irish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "italian-renaissance-names",
+    "displayName": "Italian",
+    "category": "Real Names"
+  },
+  {
+    "id": "italian-names",
+    "displayName": "Italian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "jamaican-names",
+    "displayName": "Jamaican Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "kannada-names",
+    "displayName": "Kannada Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "kazakh-names",
+    "displayName": "Kazakh Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "khmer-names",
+    "displayName": "Khmer Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "kikuyu-names",
+    "displayName": "Kikuyu Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "kitsune-names",
+    "displayName": "Kitsune Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "korean-names",
+    "displayName": "Korean Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "kurdish-names",
+    "displayName": "Kurdish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "lamia-names",
+    "displayName": "Lamia Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "laotian-names",
+    "displayName": "Laotian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "latvian-names",
+    "displayName": "Latvian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "luo-names",
+    "displayName": "Luo Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "luxembourgish-names",
+    "displayName": "Luxembourgish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "macedonian-names",
+    "displayName": "Macedonian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "malagasy-names",
+    "displayName": "Malagasy Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "malian-names",
+    "displayName": "Malian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "maltese-names",
+    "displayName": "Maltese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "mandinka-names",
+    "displayName": "Mandinka Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "marathi-names",
+    "displayName": "Marathi Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "marwari-names",
+    "displayName": "Marwari Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "mayan-names",
+    "displayName": "Maya Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "medieval-names",
+    "displayName": "Medieval Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "mermaid-names",
+    "displayName": "Merfolk Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "moldovan-names",
+    "displayName": "Moldovan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "medieval-mongolian-names",
+    "displayName": "Mongolian (Medieval)",
+    "category": "Real Names"
+  },
+  {
+    "id": "moorish-names",
+    "displayName": "Moorish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "mormon-latter-day-saints-names",
+    "displayName": "Mormon/Latter-Day Saints",
+    "category": "Real Names"
+  },
+  {
+    "id": "moroccan-names",
+    "displayName": "Moroccan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "native-american-names",
+    "displayName": "Native American Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "ndebele-names",
+    "displayName": "Ndebele Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "nepalese-names",
+    "displayName": "Nepalese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "norman-names",
+    "displayName": "Norman Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "norwegian-names",
+    "displayName": "Norwegian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "old-high-german-names",
+    "displayName": "Old High German Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "orc-names",
+    "displayName": "Orc Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "oriya-names",
+    "displayName": "Oriya Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "oromo-names",
+    "displayName": "Oromo Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "ottoman-names",
+    "displayName": "Ottoman Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "pakistani-names",
+    "displayName": "Pakistani Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "papuan-names",
+    "displayName": "Papuan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "pashtun-names",
+    "displayName": "Pashtun Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "pegasus-names",
+    "displayName": "Pegasus Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "persian-names",
+    "displayName": "Persian/Iranian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "phoenician-names",
+    "displayName": "Phoenician Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "pirate-names",
+    "displayName": "Pirate Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "polish-names",
+    "displayName": "Polish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "portuguese-renaissance-names",
+    "displayName": "Portuguese",
+    "category": "Real Names"
+  },
+  {
+    "id": "prophet-names",
+    "displayName": "Prophet Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "puerto-rican-names",
+    "displayName": "Puerto Rican Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "punjabi-names",
+    "displayName": "Punjabi Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "quebecois-names",
+    "displayName": "Quebecois Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "quechua-names",
+    "displayName": "Quechua Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "roman-names",
+    "displayName": "Roman Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "romanian-names",
+    "displayName": "Romanian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "posh-names",
+    "displayName": "Royal/Posh (English) Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "royalty-names",
+    "displayName": "Royalty Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "russian-names",
+    "displayName": "Russian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sami-names",
+    "displayName": "Sami Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "samoan-names",
+    "displayName": "Samoan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sanskrit-names",
+    "displayName": "Sanskrit Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sarmatian-names",
+    "displayName": "Sarmatian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "modern-scottish-names",
+    "displayName": "Scottish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "serbian-names",
+    "displayName": "Serbian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "servant-names",
+    "displayName": "Servant Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "shakespearean-names",
+    "displayName": "Shakespearean Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "shona-names",
+    "displayName": "Shona Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sikh-names",
+    "displayName": "Sikh Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sindhi-names",
+    "displayName": "Sindhi Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sinhalese-names",
+    "displayName": "Sinhalese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "slavic-names",
+    "displayName": "Slavic Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "slovak-names",
+    "displayName": "Slovak Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "slovenian-names",
+    "displayName": "Slovenian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "somali-names",
+    "displayName": "Somali Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "spanish-renaissance-names",
+    "displayName": "Spanish",
+    "category": "Real Names"
+  },
+  {
+    "id": "spanish-names",
+    "displayName": "Spanish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sphinx-names",
+    "displayName": "Sphinx Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "succubus-names",
+    "displayName": "Succubus Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "suebi-names",
+    "displayName": "Suebi Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sumerian-names",
+    "displayName": "Sumerian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "sundanese-names",
+    "displayName": "Sundanese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "swabian-names",
+    "displayName": "Swabian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "swahili-names",
+    "displayName": "Swahili Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "swiss-names",
+    "displayName": "Swiss Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "tahitian-names",
+    "displayName": "Tahitian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "tajik-names",
+    "displayName": "Tajik Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "tanuki-names",
+    "displayName": "Tanuki/Bake-danuki",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "tatar-names",
+    "displayName": "Tatar Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "telugu-names",
+    "displayName": "Telugu Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "thai-names",
+    "displayName": "Thai Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "tokoloshe-names",
+    "displayName": "Tokoloshe Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "trinidad-tobago-names",
+    "displayName": "Trinidad & Tobago Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "troll-names",
+    "displayName": "Troll Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "tshiluba-names",
+    "displayName": "Tshiluba Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "tuareg-names",
+    "displayName": "Tuareg Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "turkish-names",
+    "displayName": "Turkish Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "tuvaluan-names",
+    "displayName": "Tuvaluan Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "ukrainian-names",
+    "displayName": "Ukrainian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "urdu-names",
+    "displayName": "Urdu Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "uyghur-names",
+    "displayName": "Uyghur Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "uzbek-names",
+    "displayName": "Uzbek Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "vampire-names",
+    "displayName": "Vampire Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "vietnamese-names",
+    "displayName": "Vietnamese Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "viking-names",
+    "displayName": "Viking Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "modern-welsh-names",
+    "displayName": "Welsh Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "werewolf-names",
+    "displayName": "Werewolf Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "witch-names",
+    "displayName": "Witch Names",
+    "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "xhosa-names",
+    "displayName": "Xhosa Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "yakut-names",
+    "displayName": "Yakut Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "zambian-names",
+    "displayName": "Zambian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "zoroastrian-names",
+    "displayName": "Zoroastrian Names",
+    "category": "Real Names"
+  },
+  {
+    "id": "zulu-names",
+    "displayName": "Zulu Names",
+    "category": "Real Names"
+  }
+]
