@@ -13,10 +13,11 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { generateGivenName, resolveSurname } from "../../naming/index.ts";
 import { createSeededRng } from "../seededRng.ts";
 
 import { pickChildNamesetId } from "./phasePartnerships/childNameset.ts";
-import { pickFromPool, pickNpcFlavor } from "./phasePartnerships/fertility.ts";
+import { pickNpcFlavor } from "./phasePartnerships/fertility.ts";
 
 import type { SeededRng } from "../seededRng.ts";
 import type {
@@ -115,11 +116,10 @@ function generateBoostCitizenName(
     return { givenName: "", surname: null };
   }
 
-  const pool = sex === "male" ? namingConfig.male_given_names : namingConfig.female_given_names;
-  if (pool.length === 0) return { givenName: "", surname: null };
+  const givenName = generateGivenName(rng, namingConfig, sex);
+  if (givenName === "") return { givenName: "", surname: null };
 
-  const givenName = pool[Math.floor(rng() * pool.length)] ?? "";
-  const surname = pickFromPool(rng, namingConfig.surnames);
+  const surname = resolveSurname(rng, namingConfig, "pool", null, null);
   return { givenName, surname };
 }
 

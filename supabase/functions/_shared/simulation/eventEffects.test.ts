@@ -642,6 +642,7 @@ describe("phaseEvents — population_boost", () => {
       fallbackNamesetIdBySettlementId: { settlement1: "ns1" },
       namesetConfigById: {
         ns1: {
+          type: "list",
           convention: "pool",
           female_given_names: ["Alice", "Beth"],
           male_given_names: ["Adam", "Bob"],
@@ -688,6 +689,7 @@ describe("phaseEvents — population_boost", () => {
       fallbackNamesetIdBySettlementId: { settlement1: "ns1" },
       namesetConfigById: {
         ns1: {
+          type: "list",
           convention: "pool",
           female_given_names: ["Alice", "Beth"],
           male_given_names: ["Adam", "Bob"],

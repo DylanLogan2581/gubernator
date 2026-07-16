@@ -15,7 +15,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notifyMutationSuccess } from "@/lib/notify";
-import { type WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
+import {
+  type WorldListNamingConfig,
+  type WorldNamingConfig,
+} from "@/lib/worldNamingConfigSchemas";
 
 import { updateNamesetMutationOptions } from "../../mutations/namesetsMutations";
 
@@ -23,6 +26,14 @@ import { NamingConfigFields } from "./NamingConfigFields";
 import { formatMutationError } from "./utils/FormatMutationError";
 
 import type { Nameset } from "../../types/namesetTypes";
+
+const EMPTY_LIST_CONFIG: WorldListNamingConfig = {
+  type: "list",
+  convention: "pool",
+  female_given_names: [],
+  male_given_names: [],
+  surnames: [],
+};
 
 export function EditNamesetForm({
   nameset,
@@ -39,7 +50,10 @@ export function EditNamesetForm({
     updateNamesetMutationOptions({ queryClient }),
   );
   const [name, setName] = useState(nameset.name);
-  const [config, setConfig] = useState<WorldNamingConfig>(nameset.configJson);
+  const isGenerated = nameset.configJson.type === "generated";
+  const [config, setConfig] = useState<WorldListNamingConfig>(
+    nameset.configJson.type === "list" ? nameset.configJson : EMPTY_LIST_CONFIG,
+  );
   const [nameError, setNameError] = useState<string | undefined>();
   const isPending = updateMutation.isPending;
 
@@ -54,20 +68,24 @@ export function EditNamesetForm({
       return;
     }
 
-    const sanitized: WorldNamingConfig = {
-      ...config,
-      female_given_names: sanitizePoolEntries(config.female_given_names),
-      male_given_names: sanitizePoolEntries(config.male_given_names),
-      surnames: sanitizePoolEntries(config.surnames),
-    };
-    setConfig(sanitized);
+    let configJson: WorldNamingConfig = nameset.configJson;
+    if (!isGenerated) {
+      const sanitized: WorldListNamingConfig = {
+        ...config,
+        female_given_names: sanitizePoolEntries(config.female_given_names),
+        male_given_names: sanitizePoolEntries(config.male_given_names),
+        surnames: sanitizePoolEntries(config.surnames),
+      };
+      setConfig(sanitized);
+      configJson = sanitized;
+    }
 
     try {
       await updateMutation.mutateAsync({
         namesetId: nameset.id,
         worldId,
         name: trimmed,
-        configJson: sanitized,
+        configJson,
       });
       notifyMutationSuccess("Nameset saved.");
       onClose();
@@ -113,7 +131,14 @@ export function EditNamesetForm({
               ) : null}
             </Label>
 
-            <NamingConfigFields config={config} onChange={setConfig} />
+            {isGenerated ? (
+              <p className="text-sm text-muted-foreground">
+                This nameset generates names from patterns and can&apos;t be
+                edited here yet. Only the name can be changed.
+              </p>
+            ) : (
+              <NamingConfigFields config={config} onChange={setConfig} />
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -144,12 +169,8 @@ export function CreateNamesetDialog({
   readonly onSubmit: (name: string, configJson: WorldNamingConfig) => void;
 }): JSX.Element {
   const [name, setName] = useState("");
-  const [config, setConfig] = useState<WorldNamingConfig>({
-    convention: "pool",
-    female_given_names: [],
-    male_given_names: [],
-    surnames: [],
-  });
+  const [config, setConfig] =
+    useState<WorldListNamingConfig>(EMPTY_LIST_CONFIG);
   const [nameError, setNameError] = useState<string | undefined>();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -160,7 +181,7 @@ export function CreateNamesetDialog({
       setNameError("Name is required.");
       return;
     }
-    const sanitized: WorldNamingConfig = {
+    const sanitized: WorldListNamingConfig = {
       ...config,
       female_given_names: sanitizePoolEntries(config.female_given_names),
       male_given_names: sanitizePoolEntries(config.male_given_names),

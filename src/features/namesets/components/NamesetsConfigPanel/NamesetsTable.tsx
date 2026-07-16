@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/table";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
-import type { NameConvention } from "@/lib/worldNamingConfigSchemas";
+import type {
+  NameConvention,
+  WorldGeneratedNamingConfig,
+} from "@/lib/worldNamingConfigSchemas";
 
 import {
   hardDeleteNamesetMutationOptions,
@@ -47,10 +50,38 @@ type SortColumn = "convention" | "givenNames" | "name" | "surnames";
 type Sort = { readonly column: SortColumn; readonly desc: boolean };
 
 function givenNamesCount(nameset: Nameset): number {
-  return (
-    nameset.configJson.male_given_names.length +
-    nameset.configJson.female_given_names.length
-  );
+  const config = nameset.configJson;
+  if (config.type === "list") {
+    return config.male_given_names.length + config.female_given_names.length;
+  }
+  return partListEntriesForPatterns(config, ["male_given", "female_given"]);
+}
+
+function surnamesCount(nameset: Nameset): number {
+  const config = nameset.configJson;
+  if (config.type === "list") return config.surnames.length;
+  return partListEntriesForPatterns(config, ["surname"]);
+}
+
+// Approximates pool size for a generated config by summing the entry counts
+// of every part list referenced by the given patterns.
+function partListEntriesForPatterns(
+  config: WorldGeneratedNamingConfig,
+  patternKeys: readonly (keyof WorldGeneratedNamingConfig["patterns"])[],
+): number {
+  const listKeys = new Set<string>();
+  for (const patternKey of patternKeys) {
+    for (const element of config.patterns[patternKey]) {
+      if (Array.isArray(element)) {
+        element.forEach((listKey) => listKeys.add(listKey));
+      }
+    }
+  }
+  let total = 0;
+  for (const listKey of listKeys) {
+    total += config.parts[listKey]?.length ?? 0;
+  }
+  return total;
 }
 
 function sortNamesets(
@@ -73,10 +104,7 @@ function sortNamesets(
       case "givenNames":
         return (givenNamesCount(a) - givenNamesCount(b)) * direction;
       case "surnames":
-        return (
-          (a.configJson.surnames.length - b.configJson.surnames.length) *
-          direction
-        );
+        return (surnamesCount(a) - surnamesCount(b)) * direction;
     }
   });
 }
@@ -313,12 +341,16 @@ function NamesetRow({
       </TableCell>
       <TableCell
         className="text-right tabular-nums text-sm text-muted-foreground"
-        title={`${nameset.configJson.male_given_names.length.toString()} male · ${nameset.configJson.female_given_names.length.toString()} female`}
+        title={
+          nameset.configJson.type === "list"
+            ? `${nameset.configJson.male_given_names.length.toString()} male · ${nameset.configJson.female_given_names.length.toString()} female`
+            : "Generated from patterns"
+        }
       >
         {givenNamesCount(nameset)}
       </TableCell>
       <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-        {nameset.configJson.surnames.length}
+        {surnamesCount(nameset)}
       </TableCell>
       {canEdit ? (
         <TableCell className="text-right">
@@ -432,7 +464,7 @@ function TrashedNamesetRow({
         {givenNamesCount(nameset)}
       </TableCell>
       <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-        {nameset.configJson.surnames.length}
+        {surnamesCount(nameset)}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">

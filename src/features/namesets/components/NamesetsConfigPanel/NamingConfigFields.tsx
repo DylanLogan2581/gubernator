@@ -6,15 +6,15 @@ import { Label } from "@/components/ui/label";
 import {
   NAME_CONVENTIONS,
   type NameConvention,
-  type WorldNamingConfig,
+  type WorldListNamingConfig,
 } from "@/lib/worldNamingConfigSchemas";
 
 export function NamingConfigFields({
   config,
   onChange,
 }: {
-  readonly config: WorldNamingConfig;
-  readonly onChange: (config: WorldNamingConfig) => void;
+  readonly config: WorldListNamingConfig;
+  readonly onChange: (config: WorldListNamingConfig) => void;
 }): JSX.Element {
   const hasEmptyPool =
     config.male_given_names.length === 0 ||

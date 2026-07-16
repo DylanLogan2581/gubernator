@@ -17,6 +17,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import {
   NAME_CONVENTIONS,
   type NameConvention,
+  type WorldListNamingConfig,
   type WorldNamingConfig,
 } from "@/lib/worldNamingConfigSchemas";
 
@@ -92,8 +93,9 @@ function WorldNamingConfigPanelContent({
       queryClient,
     }),
   );
-  const [draftConfig, setDraftConfig] =
-    useState<WorldNamingConfig>(initialConfig);
+  const [draftConfig, setDraftConfig] = useState<WorldListNamingConfig>(() =>
+    toListNamingConfig(initialConfig),
+  );
 
   const canEdit = canAdmin && !isArchived;
 
@@ -105,7 +107,7 @@ function WorldNamingConfigPanelContent({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    const sanitizedConfig: WorldNamingConfig = {
+    const sanitizedConfig: WorldListNamingConfig = {
       ...draftConfig,
       female_given_names: sanitizePoolEntries(draftConfig.female_given_names),
       male_given_names: sanitizePoolEntries(draftConfig.male_given_names),
@@ -129,7 +131,7 @@ function WorldNamingConfigPanelContent({
   }
 
   function resetDraftConfig(): void {
-    setDraftConfig(initialConfig);
+    setDraftConfig(toListNamingConfig(initialConfig));
   }
 
   return (
@@ -256,6 +258,20 @@ function WorldNamingConfigPanelContent({
   );
 }
 
+// World-level naming config editing predates generated namesets (#1252);
+// generated configs can only be authored via namesets today, so this panel
+// falls back to an empty list config if one is ever set on a world.
+function toListNamingConfig(config: WorldNamingConfig): WorldListNamingConfig {
+  if (config.type === "list") return config;
+  return {
+    type: "list",
+    convention: config.convention,
+    female_given_names: [],
+    male_given_names: [],
+    surnames: [],
+  };
+}
+
 function ConventionLabel({
   convention,
 }: {
@@ -297,7 +313,7 @@ function ConventionLabel({
 function NamingConfigReadOnlySummary({
   config,
 }: {
-  readonly config: WorldNamingConfig;
+  readonly config: WorldListNamingConfig;
 }): JSX.Element {
   return (
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">

@@ -48,6 +48,7 @@ const BASE_TEMPLATE: WorldTemplate = {
     traits: ["curious"],
   },
   naming_config: {
+    type: "list",
     convention: "family-name",
     female_given_names: ["Alice"],
     male_given_names: ["Bob"],
@@ -58,6 +59,7 @@ const BASE_TEMPLATE: WorldTemplate = {
       name: "Default",
       is_default: true,
       config: {
+        type: "list",
         convention: "family-name",
         female_given_names: ["Alice"],
         male_given_names: ["Bob"],

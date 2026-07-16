@@ -7,7 +7,7 @@ import {
   createAccessContext,
   type AccessContext,
 } from "@/features/permissions";
-import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
+import type { WorldListNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 
@@ -444,7 +444,7 @@ function createClient({
 type TestWorldRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly naming_config_json: WorldNamingConfig;
+  readonly naming_config_json: WorldListNamingConfig;
   readonly status: string;
   readonly visibility: string;
 };
@@ -461,9 +461,10 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
 }
 
 function createNamingConfig(
-  overrides: Partial<WorldNamingConfig> = {},
-): WorldNamingConfig {
+  overrides: Partial<WorldListNamingConfig> = {},
+): WorldListNamingConfig {
   return {
+    type: "list",
     convention: "pool",
     female_given_names: ["Alice"],
     male_given_names: ["Bob"],

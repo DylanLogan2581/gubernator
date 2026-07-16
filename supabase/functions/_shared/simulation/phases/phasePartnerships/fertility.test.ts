@@ -49,9 +49,10 @@ function makeNpcFlavorConfig(
 }
 
 function makeNamesetConfig(
-  overrides?: Partial<SimNamingConfig>,
+  overrides?: Partial<Extract<SimNamingConfig, { type: "list" }>>,
 ): SimNamingConfig {
   return {
+    type: "list",
     convention: "pool",
     female_given_names: ["Alice", "Beth"],
     male_given_names: ["Adam", "Bob"],

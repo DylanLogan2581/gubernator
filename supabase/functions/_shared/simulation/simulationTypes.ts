@@ -4,6 +4,7 @@
 
 import type { TierEducationConfig } from "../education/index.ts";
 import type { GovernmentType } from "../government/index.ts";
+import type { NamingConfig } from "../naming/index.ts";
 import type { TurnCalendarConfig } from "../turnCalendarPrimitives.ts";
 
 // ---------------------------------------------------------------------------
@@ -455,12 +456,7 @@ export type NpcFlavorConfig = {
   readonly traits: readonly string[];
 };
 
-export type SimNamingConfig = {
-  readonly convention: string;
-  readonly female_given_names: readonly string[];
-  readonly male_given_names: readonly string[];
-  readonly surnames: readonly string[];
-};
+export type SimNamingConfig = NamingConfig;
 
 export type SimCitizenType = "npc" | "player_character";
 
@@ -781,7 +777,6 @@ export type NationTurnSnapshot = {
   readonly tributePaidByResource: Readonly<Record<string, number>>;
   readonly tributeReceivedByResource: Readonly<Record<string, number>>;
 };
-
 
 export type ArmyTurnSnapshot = {
   readonly armyId: string;

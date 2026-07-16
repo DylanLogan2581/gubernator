@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { mulberry32 } from "@/lib/seededRng";
-import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
+import type { WorldListNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import {
   generateNpcName,
@@ -13,8 +13,11 @@ const MALE_NAMES = ["Erik", "Bjorn", "Sigurd"];
 const FEMALE_NAMES = ["Astrid", "Freya", "Runa"];
 const SURNAMES = ["Ironwood", "Silverleaf", "Stormborn"];
 
-function config(overrides: Partial<WorldNamingConfig> = {}): WorldNamingConfig {
+function config(
+  overrides: Partial<WorldListNamingConfig> = {},
+): WorldListNamingConfig {
   return {
+    type: "list",
     convention: "pool",
     female_given_names: FEMALE_NAMES,
     male_given_names: MALE_NAMES,
