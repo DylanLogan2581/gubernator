@@ -61,9 +61,41 @@ export function setNationsUnmetMutationOptions({
     mutationFn: (input: SetNationsUnmetInput) => setNationsUnmet(client, input),
     mutationKey: [...nationsQueryKeys.all, "set-nations-unmet"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: nationsQueryKeys.discoveries(input.worldId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.discoveries(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.relationshipsFromNation(input.nationAId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.relationshipsFromNation(input.nationBId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.relationshipsToNation(input.nationAId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.relationshipsToNation(input.nationBId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.relationshipPair(
+            input.nationAId,
+            input.nationBId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.relationshipPair(
+            input.nationBId,
+            input.nationAId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.treaties(input.nationAId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.treaties(input.nationBId),
+        }),
+      ]);
     },
   });
 }

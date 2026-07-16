@@ -83,6 +83,30 @@ describe("setNationsUnmetMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["nations", "discoveries", "world-1"],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "relationships-from-nation", "nation-1"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "relationships-from-nation", "nation-2"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "relationships-to-nation", "nation-1"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "relationships-to-nation", "nation-2"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "relationship-pair", "nation-1", "nation-2"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "relationship-pair", "nation-2", "nation-1"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "treaties", "nation-1"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "treaties", "nation-2"],
+    });
   });
 });
 
