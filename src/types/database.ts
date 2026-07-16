@@ -818,6 +818,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "construction_project_subsidies_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "construction_project_subsidies_settlement_id_fkey";
             columns: ["settlement_id"];
             isOneToOne: false;
@@ -1054,6 +1061,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deposit_instance_resources_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
         ];
@@ -1445,6 +1459,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -2315,6 +2336,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "nation_currencies_backing_resource_id_fkey";
+            columns: ["backing_resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "nation_currencies_nation_id_fkey";
             columns: ["nation_id"];
             isOneToOne: true;
@@ -2785,6 +2813,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
         ];
@@ -3625,6 +3660,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "settlement_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "settlement_resource_stockpiles_settlement_id_fkey";
             columns: ["settlement_id"];
             isOneToOne: false;
@@ -3688,6 +3730,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -3962,6 +4011,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_route_legs_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -4689,6 +4745,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "settlement_turn_resource_snapshots_world_id_fkey";
             columns: ["world_id"];
             isOneToOne: false;
@@ -4725,6 +4788,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      resources_directory_view: {
+        Row: {
+          base_stockpile_cap: number | null;
+          category_color: string | null;
+          category_icon: string | null;
+          category_id: string | null;
+          category_name: string | null;
+          change_amount: number | null;
+          change_mode: string | null;
+          created_at: string | null;
+          icon: string | null;
+          id: string | null;
+          is_system_resource: boolean | null;
+          is_trashed: boolean | null;
+          last_cleanup_summary_json: Json | null;
+          name: string | null;
+          slug: string | null;
+          updated_at: string | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "resources_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "resource_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "resources_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlement_stockpiles_view: {
         Row: {
           effective_cap: number | null;
@@ -4741,6 +4841,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -4812,6 +4919,13 @@ export type Database = {
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources_directory_view";
             referencedColumns: ["id"];
           },
           {

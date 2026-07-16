@@ -65,3 +65,60 @@ export function toResource(row: ResourceRow): Resource {
     worldId: row.world_id,
   };
 }
+
+// resources_directory_view (#1242) flattens resource_categories.name onto
+// the row so the config table's category sort can order by it directly --
+// ordering an embedded/nested select by referencedTable only reorders the
+// embedded payload itself, never the parent (resources) rows.
+export type ResourceDirectoryRow = {
+  readonly base_stockpile_cap: number;
+  readonly category_color: string | null;
+  readonly category_icon: string | null;
+  readonly category_id: string | null;
+  readonly category_name: string | null;
+  readonly change_amount: number;
+  readonly change_mode: ResourceChangeMode;
+  readonly created_at: string;
+  readonly icon: string | null;
+  readonly id: string;
+  readonly is_trashed: boolean;
+  readonly is_system_resource: boolean;
+  readonly last_cleanup_summary_json: Json;
+  readonly name: string;
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+export const RESOURCE_DIRECTORY_SELECT =
+  "id,world_id,name,slug,icon,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at,category_id,category_name,category_icon,category_color";
+
+export function toResourceFromDirectoryRow(
+  row: ResourceDirectoryRow,
+): Resource {
+  return {
+    baseStockpileCap: row.base_stockpile_cap,
+    category:
+      row.category_id === null
+        ? null
+        : {
+            color: row.category_color ?? "#6b7280",
+            icon: row.category_icon,
+            id: row.category_id,
+            name: row.category_name ?? "",
+          },
+    categoryId: row.category_id,
+    changeAmount: row.change_amount,
+    changeMode: row.change_mode,
+    createdAt: row.created_at,
+    icon: row.icon,
+    id: row.id,
+    isTrashed: row.is_trashed,
+    isSystemResource: row.is_system_resource,
+    lastCleanupSummaryJson: row.last_cleanup_summary_json,
+    name: row.name,
+    slug: row.slug,
+    updatedAt: row.updated_at,
+    worldId: row.world_id,
+  };
+}

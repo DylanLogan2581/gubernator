@@ -7,7 +7,14 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
-import { RESOURCE_SELECT, toResource, type ResourceRow } from "./resourceRow";
+import {
+  RESOURCE_DIRECTORY_SELECT,
+  RESOURCE_SELECT,
+  toResource,
+  toResourceFromDirectoryRow,
+  type ResourceDirectoryRow,
+  type ResourceRow,
+} from "./resourceRow";
 import { resourcesQueryKeys } from "./resourcesQueryKeys";
 
 import type { Resource } from "../types/resourceTypes";
@@ -124,9 +131,16 @@ async function getResourcesPage(
   const pageEnd = pageStart + params.pageSize - 1;
   const search = params.search?.trim() ?? "";
 
+  // Sorting by category needs the resources_directory_view (#1242) rather
+  // than an embedded resource_categories select: PostgREST only orders an
+  // embedded relation's own nested payload by referencedTable, never the
+  // parent (resources) rows, so category sort is a no-op against the base
+  // table. The view flattens resource_categories.name onto the row (via a
+  // left join, so uncategorized resources are still included) and lets it
+  // be ordered like any other top-level column.
   let query = client
-    .from("resources")
-    .select(RESOURCE_SELECT, { count: "exact" })
+    .from("resources_directory_view")
+    .select(RESOURCE_DIRECTORY_SELECT, { count: "exact" })
     .eq("world_id", worldId)
     .eq("is_trashed", params.trash);
 
@@ -144,10 +158,9 @@ async function getResourcesPage(
 
   if (params.sortBy === "category") {
     query = query
-      .order("name", {
+      .order("category_name", {
         ascending: sortAscending,
         nullsFirst: sortAscending,
-        referencedTable: "resource_categories",
       })
       .order("name", { ascending: true });
   } else if (params.sortBy === "cap") {
@@ -165,14 +178,14 @@ async function getResourcesPage(
   const { data, error, count } = await query
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
-    .returns<ResourceRow[]>();
+    .returns<ResourceDirectoryRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
 
   return {
-    items: data.map(toResource),
+    items: data.map(toResourceFromDirectoryRow),
     totalCount: count ?? 0,
   };
 }

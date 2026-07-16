@@ -617,12 +617,21 @@ function createClient({
 } {
   return {
     from: vi.fn((table: string) => {
+      if (table === "resources_directory_view") {
+        return {
+          select: vi.fn(() =>
+            buildSelectBuilder(
+              resourceRows.map((row) => toDirectoryRow(row, categoryRows)),
+              orderSpy,
+            ),
+          ),
+        };
+      }
       if (table === "resources") {
         return createResourcesQueryBuilder(
           resourceRows,
           insertResult,
           updateResult,
-          orderSpy,
         );
       }
       if (table === "resource_categories") {
@@ -634,6 +643,70 @@ function createClient({
       maybeSingle: vi.fn().mockResolvedValue(rpcResult),
     })),
   };
+}
+
+type TestResourceDirectoryRow = Omit<TestResourceRow, "resource_categories"> & {
+  readonly category_color: string | null;
+  readonly category_icon: string | null;
+  readonly category_name: string | null;
+};
+
+function toDirectoryRow(
+  row: TestResourceRow,
+  categoryRows: readonly TestResourceCategoryRow[],
+): TestResourceDirectoryRow {
+  const { resource_categories: _resourceCategories, ...rest } = row;
+  const category = categoryRows.find((c) => c.id === row.category_id) ?? null;
+  return {
+    ...rest,
+    category_color: category?.color ?? null,
+    category_icon: category?.icon ?? null,
+    category_name: category?.name ?? null,
+  };
+}
+
+function buildSelectBuilder<TRow extends Record<string, unknown>>(
+  rows: readonly TRow[],
+  orderSpy?: (...args: unknown[]) => void,
+): Record<string, unknown> {
+  // Emulates enough of the real filter/order/range/returns chain that the
+  // panel's server-side search + pagination + trash filtering (#1032)
+  // behaves like the real Supabase query would, instead of always
+  // returning every row regardless of the applied filters.
+  let filtered: TRow[] = [...rows];
+  let range: readonly [number, number] | null = null;
+
+  const selectBuilder: Record<string, unknown> = {
+    eq: vi.fn((column: string, value: unknown) => {
+      filtered = filtered.filter((row) => row[column] === value);
+      return selectBuilder;
+    }),
+    is: vi.fn((column: string, value: unknown) => {
+      filtered = filtered.filter((row) => row[column] === value);
+      return selectBuilder;
+    }),
+    ilike: vi.fn((column: string, pattern: string) => {
+      const needle = pattern.replaceAll("%", "").toLowerCase();
+      filtered = filtered.filter((row) =>
+        String(row[column]).toLowerCase().includes(needle),
+      );
+      return selectBuilder;
+    }),
+    order: vi.fn((...args: unknown[]) => {
+      orderSpy?.(...args);
+      return selectBuilder;
+    }),
+    range: vi.fn((start: number, end: number) => {
+      range = [start, end];
+      return selectBuilder;
+    }),
+    returns: vi.fn(() => {
+      const data =
+        range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+      return Promise.resolve({ count: filtered.length, data, error: null });
+    }),
+  };
+  return selectBuilder;
 }
 
 function createResourceCategoriesQueryBuilder(
@@ -657,55 +730,7 @@ function createResourcesQueryBuilder(
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
   },
-  orderSpy?: (...args: unknown[]) => void,
 ): unknown {
-  // Emulates enough of the real filter/order/range/returns chain that the
-  // panel's server-side search + pagination + trash filtering (#1032)
-  // behaves like the real Supabase query would, instead of always
-  // returning every row regardless of the applied filters.
-  function buildSelectBuilder(): Record<string, unknown> {
-    let filtered: TestResourceRow[] = [...rows];
-    let range: readonly [number, number] | null = null;
-
-    const selectBuilder: Record<string, unknown> = {
-      eq: vi.fn((column: string, value: unknown) => {
-        filtered = filtered.filter(
-          (row) => row[column as keyof TestResourceRow] === value,
-        );
-        return selectBuilder;
-      }),
-      is: vi.fn((column: string, value: unknown) => {
-        filtered = filtered.filter(
-          (row) => row[column as keyof TestResourceRow] === value,
-        );
-        return selectBuilder;
-      }),
-      ilike: vi.fn((column: string, pattern: string) => {
-        const needle = pattern.replaceAll("%", "").toLowerCase();
-        filtered = filtered.filter((row) =>
-          String(row[column as keyof TestResourceRow])
-            .toLowerCase()
-            .includes(needle),
-        );
-        return selectBuilder;
-      }),
-      order: vi.fn((...args: unknown[]) => {
-        orderSpy?.(...args);
-        return selectBuilder;
-      }),
-      range: vi.fn((start: number, end: number) => {
-        range = [start, end];
-        return selectBuilder;
-      }),
-      returns: vi.fn(() => {
-        const data =
-          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
-        return Promise.resolve({ count: filtered.length, data, error: null });
-      }),
-    };
-    return selectBuilder;
-  }
-
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
     select: vi.fn(() => ({
@@ -719,7 +744,7 @@ function createResourcesQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
-    select: vi.fn(() => buildSelectBuilder()),
+    select: vi.fn(() => buildSelectBuilder(rows)),
     update: vi.fn(() => updateBuilder),
   };
 }
