@@ -9,6 +9,7 @@ import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { roundDecimal } from "@/lib/roundDecimal";
 
 import { createEducationLevelMutationOptions } from "../../mutations/educationLevelsMutations";
 import { educationLevelsByWorldQueryOptions } from "../../queries/educationLevelsQueries";
@@ -42,9 +43,11 @@ export function EducationConfigPanel({
   );
 
   const naturalBornPercentTotal = educationLevelsQuery.isSuccess
-    ? educationLevelsQuery.data.reduce(
-        (total, level) => total + level.naturalBornPercent,
-        0,
+    ? roundDecimal(
+        educationLevelsQuery.data.reduce(
+          (total, level) => total + level.naturalBornPercent,
+          0,
+        ),
       )
     : 0;
 

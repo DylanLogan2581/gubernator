@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { educationLevelInputLimits } from "@/lib/inputLimits";
+import { roundDecimal } from "@/lib/roundDecimal";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
@@ -51,8 +52,9 @@ export function CreateEducationLevelForm({
   const naturalBornPercentValue = Number.isNaN(parsedNaturalBornPercent)
     ? 0
     : parsedNaturalBornPercent;
-  const projectedTotal =
-    otherLevelsNaturalBornPercentTotal + naturalBornPercentValue;
+  const projectedTotal = roundDecimal(
+    otherLevelsNaturalBornPercentTotal + naturalBornPercentValue,
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
