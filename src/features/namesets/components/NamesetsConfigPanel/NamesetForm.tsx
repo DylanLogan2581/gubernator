@@ -23,9 +23,15 @@ import {
 
 import { updateNamesetMutationOptions } from "../../mutations/namesetsMutations";
 
+import { GeneratedConfigFields } from "./GeneratedConfigFields";
 import { NamesetLibraryPicker } from "./NamesetLibraryPicker";
 import { NamingConfigFields } from "./NamingConfigFields";
 import { formatMutationError } from "./utils/FormatMutationError";
+import {
+  EMPTY_GENERATED_CONFIG,
+  sanitizeGeneratedConfig,
+  validateGeneratedConfig,
+} from "./utils/GeneratedConfigUtils";
 
 import type { Nameset } from "../../types/namesetTypes";
 
@@ -56,8 +62,17 @@ export function EditNamesetForm({
   const [config, setConfig] = useState<WorldListNamingConfig>(
     nameset.configJson.type === "list" ? nameset.configJson : EMPTY_LIST_CONFIG,
   );
+  const [generatedConfig, setGeneratedConfig] =
+    useState<WorldGeneratedNamingConfig>(
+      nameset.configJson.type === "generated"
+        ? nameset.configJson
+        : EMPTY_GENERATED_CONFIG,
+    );
   const [nameError, setNameError] = useState<string | undefined>();
   const isPending = updateMutation.isPending;
+  const generatedErrors = isGenerated
+    ? validateGeneratedConfig(generatedConfig)
+    : [];
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -70,8 +85,12 @@ export function EditNamesetForm({
       return;
     }
 
-    let configJson: WorldNamingConfig = nameset.configJson;
-    if (!isGenerated) {
+    let configJson: WorldNamingConfig;
+    if (isGenerated) {
+      const sanitized = sanitizeGeneratedConfig(generatedConfig);
+      setGeneratedConfig(sanitized);
+      configJson = sanitized;
+    } else {
       const sanitized: WorldListNamingConfig = {
         ...config,
         female_given_names: sanitizePoolEntries(config.female_given_names),
@@ -134,10 +153,10 @@ export function EditNamesetForm({
             </Label>
 
             {isGenerated ? (
-              <p className="text-sm text-muted-foreground">
-                This nameset generates names from patterns and can&apos;t be
-                edited here yet. Only the name can be changed.
-              </p>
+              <GeneratedConfigFields
+                config={generatedConfig}
+                onChange={setGeneratedConfig}
+              />
             ) : (
               <NamingConfigFields config={config} onChange={setConfig} />
             )}
@@ -151,7 +170,10 @@ export function EditNamesetForm({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending || generatedErrors.length > 0}
+            >
               Save
             </Button>
           </DialogFooter>
@@ -186,7 +208,8 @@ export function CreateNamesetDialog({
 
   const canSubmit =
     kind === "list" ||
-    (generatedSource === "library" && generatedConfig !== null);
+    (generatedConfig !== null &&
+      validateGeneratedConfig(generatedConfig).length === 0);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -207,7 +230,7 @@ export function CreateNamesetDialog({
       return;
     }
     if (generatedConfig === null) return;
-    onSubmit(trimmed, generatedConfig);
+    onSubmit(trimmed, sanitizeGeneratedConfig(generatedConfig));
   }
 
   return (
@@ -293,12 +316,15 @@ export function CreateNamesetDialog({
                     />
                     <NamesetKindOption
                       checked={generatedSource === "scratch"}
-                      description="Coming soon."
-                      disabled
+                      description="Build a custom generator from part lists and patterns."
+                      disabled={isPending}
                       label="From scratch"
                       value="scratch"
                       onSelect={() => {
                         setGeneratedSource("scratch");
+                        setGeneratedConfig(
+                          (current) => current ?? EMPTY_GENERATED_CONFIG,
+                        );
                       }}
                     />
                   </div>
@@ -315,7 +341,12 @@ export function CreateNamesetDialog({
                       }
                     }}
                   />
-                ) : null}
+                ) : (
+                  <GeneratedConfigFields
+                    config={generatedConfig ?? EMPTY_GENERATED_CONFIG}
+                    onChange={setGeneratedConfig}
+                  />
+                )}
               </div>
             )}
           </div>

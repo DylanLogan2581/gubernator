@@ -5,6 +5,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NamesetsConfigPanel } from "./NamesetsConfigPanel";
 
+// jsdom lacks pointer capture / scrollIntoView, which Radix Select needs.
+/* eslint-disable @typescript-eslint/unbound-method */
+Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
+  return false;
+};
+Element.prototype.setPointerCapture ??= function setPointerCapture() {};
+Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+/* eslint-enable @typescript-eslint/unbound-method */
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -162,6 +172,134 @@ describe("NamesetsConfigPanel", () => {
       name: "20th Cent. English",
       config_json: { type: "generated" },
     });
+  });
+
+  it("creates a generated nameset from scratch via the generator editor", async () => {
+    const user = userEvent.setup();
+    let insertedPayload: unknown;
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        namesetRows: [],
+        onInsert: (payload) => {
+          insertedPayload = payload;
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("No namesets yet");
+    await user.click(screen.getByRole("button", { name: "Add nameset" }));
+    await screen.findByRole("heading", { name: "Create nameset" });
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Nameset name" }),
+      "Dwarven",
+    );
+    await user.click(screen.getByRole("radio", { name: /Generated/ }));
+    await user.click(screen.getByRole("radio", { name: /From scratch/ }));
+
+    await user.type(
+      screen.getByRole("textbox", { name: "New list name" }),
+      "onset",
+    );
+    await user.click(screen.getByRole("button", { name: "Add list" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "Entries for onset" }),
+      "Thor\nGrim",
+    );
+
+    const addListRefSelects = screen.getAllByRole("combobox", {
+      name: "Add list reference",
+    });
+    await user.click(addListRefSelects[0]);
+    await user.click(await screen.findByRole("option", { name: "onset" }));
+    await user.click(addListRefSelects[1]);
+    await user.click(await screen.findByRole("option", { name: "onset" }));
+
+    await screen.findByText("Preview");
+    expect(screen.getByText("Female")).toBeDefined();
+    expect(screen.getByText("Male")).toBeDefined();
+
+    const createButton = screen.getByRole("button", { name: "Create" });
+    await waitFor(() => {
+      expect(createButton).toBeEnabled();
+    });
+    await user.click(createButton);
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Nameset created.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+    expect(insertedPayload).toMatchObject({
+      name: "Dwarven",
+      config_json: {
+        type: "generated",
+        parts: { onset: ["Thor", "Grim"] },
+        patterns: {
+          female_given: [["onset"]],
+          male_given: [["onset"]],
+        },
+      },
+    });
+  });
+
+  it("edits a generated nameset's generator and blocks deleting a referenced list", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        namesetRows: [
+          createNamesetRow({
+            name: "20th Cent. English",
+            config_json: {
+              type: "generated",
+              convention: "pool",
+              parts: { nm2: ["Ada"] },
+              patterns: {
+                female_given: [["nm2"]],
+                male_given: [["nm2"]],
+                surname: [["nm2"]],
+              },
+            },
+          }),
+        ],
+        updateResult: {
+          data: createNamesetRow({ name: "20th Cent. English" }),
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("20th Cent. English");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByRole("heading", { name: "Edit nameset" });
+
+    const entriesField = screen.getByRole("textbox", {
+      name: "Entries for nm2",
+    });
+    expect(entriesField).toHaveValue("Ada");
+
+    expect(
+      screen.getByRole("button", { name: "Delete list nm2" }),
+    ).toBeDisabled();
+
+    await user.clear(entriesField);
+    await user.type(entriesField, "Ada\nAstrid");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Nameset saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("narrows results via the search input", async () => {

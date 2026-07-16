@@ -1,12 +1,8 @@
-import { RotateCcw } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { createSeededRng } from "@/lib/seededRng";
 import type { WorldGeneratedNamingConfig } from "@/lib/worldNamingConfigSchemas";
-import { generateName } from "@/shared/naming";
 
 import {
   loadNamesetLibraryDefinition,
@@ -14,7 +10,7 @@ import {
   type NamesetLibraryIndexEntry,
 } from "../../library/namesetLibrary";
 
-const PREVIEW_COUNT = 10;
+import { NameGenerationPreview } from "./NameGenerationPreview";
 
 function groupByCategory(
   entries: readonly NamesetLibraryIndexEntry[],
@@ -29,20 +25,6 @@ function groupByCategory(
     }
   }
   return groups;
-}
-
-function generatePreviewNames(
-  config: WorldGeneratedNamingConfig,
-  seed: number,
-  sex: "female" | "male",
-): readonly string[] {
-  const rng = createSeededRng(`nameset-preview-${sex}-${String(seed)}`);
-  return Array.from({ length: PREVIEW_COUNT }, () => {
-    const result = generateName({ config, rng, sex });
-    return result.surname !== null
-      ? `${result.givenName} ${result.surname}`
-      : result.givenName;
-  });
 }
 
 export function NamesetLibraryPicker({
@@ -61,7 +43,6 @@ export function NamesetLibraryPicker({
   const [loadError, setLoadError] = useState<string | undefined>();
   const [previewConfig, setPreviewConfig] =
     useState<WorldGeneratedNamingConfig | null>(null);
-  const [rerollSeed, setRerollSeed] = useState(0);
 
   const filteredEntries = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -89,17 +70,8 @@ export function NamesetLibraryPicker({
       return;
     }
     setPreviewConfig(config);
-    setRerollSeed(0);
     onSelect(entry.id, entry.displayName, config);
   }
-
-  const previewNames =
-    previewConfig !== null
-      ? {
-          female: generatePreviewNames(previewConfig, rerollSeed, "female"),
-          male: generatePreviewNames(previewConfig, rerollSeed, "male"),
-        }
-      : null;
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -156,54 +128,15 @@ export function NamesetLibraryPicker({
         ) : null}
       </div>
 
-      <div className="grid gap-2 content-start rounded-md border p-3">
-        {previewNames === null ? (
+      {previewConfig === null ? (
+        <div className="grid gap-2 content-start rounded-md border p-3">
           <p className="text-sm text-muted-foreground">
             Select a generator to preview sample names.
           </p>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Preview</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setRerollSeed((seed) => seed + 1);
-                }}
-              >
-                <RotateCcw aria-hidden="true" />
-                Re-roll
-              </Button>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Female
-                </p>
-                <ul className="text-sm">
-                  {previewNames.female.map((sampleName, index) => (
-                    // eslint-disable-next-line @eslint-react/no-array-index-key -- fixed-length sample list, replaced wholesale on re-roll
-                    <li key={index}>{sampleName}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Male
-                </p>
-                <ul className="text-sm">
-                  {previewNames.male.map((sampleName, index) => (
-                    // eslint-disable-next-line @eslint-react/no-array-index-key -- fixed-length sample list, replaced wholesale on re-roll
-                    <li key={index}>{sampleName}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+        </div>
+      ) : (
+        <NameGenerationPreview config={previewConfig} />
+      )}
     </div>
   );
 }
