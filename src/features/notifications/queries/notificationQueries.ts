@@ -314,9 +314,9 @@ async function getTurnCompletedNotifications(
     query = query.eq("world_id", worldId);
   }
 
-  const { data, error } = await query.order("generated_at", {
-    ascending: false,
-  });
+  const { data, error } = await query
+    .order("generated_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -397,6 +397,7 @@ async function getAllNotifications(
     .select(ALL_NOTIFICATIONS_SELECT)
     .eq("recipient_user_id", userId)
     .order("generated_at", { ascending: false })
+    .order("id", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (disabledTypes.length > 0) {

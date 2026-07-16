@@ -166,6 +166,9 @@ describe("turnCompletedNotificationsQueryOptions", () => {
     expect(queryChain.order).toHaveBeenCalledWith("generated_at", {
       ascending: false,
     });
+    expect(queryChain.secondOrder).toHaveBeenCalledWith("id", {
+      ascending: false,
+    });
   });
 
   it("can filter turn-completed notifications by world id", async () => {
@@ -348,7 +351,8 @@ describe("allNotificationsQueryOptions", () => {
 
     const dataNot = vi.fn().mockResolvedValue({ data: [row], error: null });
     const range = vi.fn(() => ({ not: dataNot }));
-    const order = vi.fn(() => ({ range }));
+    const secondOrder = vi.fn(() => ({ range }));
+    const order = vi.fn(() => ({ order: secondOrder }));
     const dataRecipientEq = vi.fn(() => ({ order }));
     const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
 
@@ -514,9 +518,10 @@ function createAllNotificationsClient({
     .mockResolvedValue({ count: total, error: null });
   const countSelect = vi.fn(() => ({ eq: countRecipientEq }));
 
-  // Data query: from → select → eq(recipient) → order → range → awaitable { data, error }
+  // Data query: from → select → eq(recipient) → order → order → range → awaitable { data, error }
   const range = vi.fn().mockResolvedValue({ data: rows, error: null });
-  const order = vi.fn(() => ({ range }));
+  const secondOrder = vi.fn(() => ({ range }));
+  const order = vi.fn(() => ({ order: secondOrder }));
   const dataRecipientEq = vi.fn(() => ({ order }));
   const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
 
@@ -571,11 +576,13 @@ function createTurnCompletedQueryChain({
   readonly from: ReturnType<typeof vi.fn>;
   readonly order: ReturnType<typeof vi.fn>;
   readonly recipientEq: ReturnType<typeof vi.fn>;
+  readonly secondOrder: ReturnType<typeof vi.fn>;
   readonly select: ReturnType<typeof vi.fn>;
   readonly typeEq: ReturnType<typeof vi.fn>;
   readonly worldEq: ReturnType<typeof vi.fn>;
 } {
-  const order = vi.fn().mockResolvedValue({ data, error });
+  const secondOrder = vi.fn().mockResolvedValue({ data, error });
+  const order = vi.fn(() => ({ order: secondOrder }));
   const worldEq = vi.fn(() => ({ order }));
   const typeEq = vi.fn(() => ({ eq: worldEq, order }));
   const recipientEq = vi.fn(() => ({ eq: typeEq }));
@@ -587,6 +594,7 @@ function createTurnCompletedQueryChain({
     from,
     order,
     recipientEq,
+    secondOrder,
     select,
     typeEq,
     worldEq,
