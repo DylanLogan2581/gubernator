@@ -25,6 +25,7 @@ import type {
   PruneWorldDataResult,
   SendEmailInput,
   SendEmailResult,
+  UpdateSmtpSettingsInput,
 } from "../types/superadminTypes";
 
 type SuperadminErrorCode =
@@ -452,6 +453,74 @@ async function sendEmail(
     code: "superadmin_operation_failed",
     message: "Unexpected response from send-email service.",
   });
+}
+
+export function updateSmtpSettingsMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  void,
+  SuperadminMutationError,
+  UpdateSmtpSettingsInput
+> {
+  return mutationOptions({
+    mutationFn: (input: UpdateSmtpSettingsInput) =>
+      updateSmtpSettings(client, input),
+    mutationKey: [...superadminQueryKeys.all, "update-smtp-settings"],
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: superadminQueryKeys.smtpStatus(),
+      });
+    },
+  });
+}
+
+type UpdateSmtpSettingsFunctionResponse =
+  | { readonly ok: true; readonly data: { readonly updated: true } }
+  | {
+      readonly ok: false;
+      readonly error: { readonly code: string; readonly message: string };
+    };
+
+function isUpdateSmtpSettingsErrorResponse(
+  value: unknown,
+): value is Extract<UpdateSmtpSettingsFunctionResponse, { ok: false }> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { ok: unknown }).ok === false &&
+    typeof (value as { error: unknown }).error === "object"
+  );
+}
+
+async function updateSmtpSettings(
+  client: GubernatorSupabaseClient,
+  input: UpdateSmtpSettingsInput,
+): Promise<void> {
+  const response = await client.functions.invoke<unknown>("send-email", {
+    body: { action: "update_smtp_settings", ...input },
+  });
+
+  if (response.error !== null) {
+    const errorPayload = await readSendEmailErrorPayload(response.error);
+    if (errorPayload !== null) {
+      throw mapSendEmailErrorCode(
+        errorPayload.error.code,
+        errorPayload.error.message,
+      );
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: "Saving SMTP settings failed.",
+    });
+  }
+
+  if (isUpdateSmtpSettingsErrorResponse(response.data)) {
+    throw mapSendEmailErrorCode(
+      response.data.error.code,
+      response.data.error.message,
+    );
+  }
 }
 
 export function pruneWorldDataMutationOptions({

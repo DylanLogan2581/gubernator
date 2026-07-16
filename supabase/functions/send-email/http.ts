@@ -7,7 +7,7 @@ import {
   createJsonResponse as createJsonResponseShared,
 } from "../_shared/http/response.ts";
 
-import type { SendEmailErrorCode, SendEmailErrorResponse, SendEmailResponse } from "./types.ts";
+import type { SendEmailAnyResponse, SendEmailErrorCode, SendEmailErrorResponse } from "./types.ts";
 
 export function getAllowedOrigins(): readonly string[] {
   return parseAllowedOrigins("SEND_EMAIL_ALLOWED_ORIGINS");
@@ -18,7 +18,7 @@ export function buildCorsHeaders(allowedOrigin: string | null): Record<string, s
 }
 
 export function createJsonResponse(
-  body: SendEmailResponse,
+  body: SendEmailAnyResponse,
   status: number,
   allowedOrigin: string | null,
 ): Response {

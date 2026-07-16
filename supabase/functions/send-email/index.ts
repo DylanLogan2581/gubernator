@@ -23,15 +23,20 @@ import {
 } from "./http.ts";
 import { fetchCallerRecipient, MAX_RECIPIENTS, resolveRecipients } from "./recipients.ts";
 import { resolveSendEmailAuthContext } from "./session.ts";
+import { type ResolvedSmtpConfig, resolveSmtpConfig, upsertSmtpSettings } from "./settings.ts";
 import { renderEmailHtml, renderMessageBodyHtml } from "./template.ts";
-import { parseSendEmailRequestBody } from "./validate.ts";
+import {
+  parseSendEmailRequestBody,
+  parseUpdateSmtpSettingsRequestBody,
+  readSendEmailRequestJson,
+} from "./validate.ts";
 
 import type {
   EmailRecipient,
+  SendEmailAnyResponse,
   SendEmailAuthContext,
   SendEmailHandlerOptions,
   SendEmailRequestBody,
-  SendEmailResponse,
   SendEmailStatusResponse,
 } from "./types.ts";
 
@@ -77,7 +82,7 @@ export async function handleSendEmailRequest(
     }
 
     const allowedOrigin = origin;
-    const respond = (body: SendEmailResponse, status: number): Response =>
+    const respond = (body: SendEmailAnyResponse, status: number): Response =>
       createJsonResponse(body, status, allowedOrigin);
 
     if (request.method === "OPTIONS") {
@@ -95,7 +100,16 @@ export async function handleSendEmailRequest(
       );
     }
 
-    const validateResult = await parseSendEmailRequestBody(request);
+    const rawBodyResult = await readSendEmailRequestJson(request);
+    if (!rawBodyResult.ok) {
+      return respond(rawBodyResult.error, rawBodyResult.status);
+    }
+
+    if (rawBodyResult.value["action"] === "update_smtp_settings") {
+      return handleUpdateSmtpSettingsRequest(request, rawBodyResult.value, respond);
+    }
+
+    const validateResult = parseSendEmailRequestBody(rawBodyResult.value);
     if (!validateResult.ok) {
       return respond(validateResult.error, validateResult.status);
     }
@@ -185,7 +199,7 @@ export async function handleSendEmailRequest(
       );
     }
 
-    const smtpConfigResult = getSmtpConfig();
+    const smtpConfigResult = await resolveSmtpConfig(serviceRoleConfig, getEnvSmtpConfig);
     if (!smtpConfigResult.ok) {
       return respond(
         createErrorResponse({
@@ -282,7 +296,22 @@ async function handleSmtpStatusRequest(
     );
   }
 
-  const smtpConfigResult = getSmtpConfig();
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (supabaseUrl === undefined || serviceRoleKey === undefined) {
+    return respond(
+      createErrorResponse({
+        code: "auth_context_unavailable",
+        message: "Service role configuration is unavailable.",
+      }),
+      500,
+    );
+  }
+
+  const smtpConfigResult = await resolveSmtpConfig(
+    { serviceRoleKey, supabaseUrl },
+    getEnvSmtpConfig,
+  );
   if (!smtpConfigResult.ok) {
     // Missing SMTP env vars is a valid, expected state (not yet configured),
     // not a server error -- respond 200 so the client can render guidance
@@ -301,13 +330,79 @@ async function handleSmtpStatusRequest(
       data: {
         adminEmail: smtpConfigResult.value.adminEmail,
         configured: true,
+        hasPassword: smtpConfigResult.value.pass !== undefined &&
+          smtpConfigResult.value.pass !== "",
         host: smtpConfigResult.value.host,
+        port: smtpConfigResult.value.port,
         senderName: smtpConfigResult.value.senderName,
+        source: smtpConfigResult.value.source,
+        username: smtpConfigResult.value.user,
       },
       ok: true,
     },
     200,
   );
+}
+
+async function handleUpdateSmtpSettingsRequest(
+  request: Request,
+  rawBody: Record<string, unknown>,
+  respond: (body: SendEmailAnyResponse, status: number) => Response,
+): Promise<Response> {
+  const validateResult = parseUpdateSmtpSettingsRequestBody(rawBody);
+  if (!validateResult.ok) {
+    return respond(validateResult.error, validateResult.status);
+  }
+
+  const authContextResult = await resolveSendEmailAuthContext(request);
+  if (!authContextResult.ok) {
+    return respond(authContextResult.error, authContextResult.status);
+  }
+
+  const superAdminResult = await checkIsSuperAdmin(authContextResult.context);
+  if (!superAdminResult.ok || !superAdminResult.value) {
+    logAuthorizationDenial(
+      authContextResult.context.userId,
+      "update_smtp_settings",
+      "superadmin_required",
+    );
+    return respond(
+      createErrorResponse({
+        code: "superadmin_required",
+        message: "Superadmin privileges are required to update SMTP settings.",
+      }),
+      403,
+    );
+  }
+
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (supabaseUrl === undefined || serviceRoleKey === undefined) {
+    return respond(
+      createErrorResponse({
+        code: "auth_context_unavailable",
+        message: "Service role configuration is unavailable.",
+      }),
+      500,
+    );
+  }
+
+  const upsertResult = await upsertSmtpSettings(
+    { serviceRoleKey, supabaseUrl },
+    validateResult.body,
+    authContextResult.context.userId,
+  );
+  if (!upsertResult.ok) {
+    return respond(
+      createErrorResponse({
+        code: "smtp_config_unavailable",
+        message: "Saving SMTP settings failed.",
+      }),
+      500,
+    );
+  }
+
+  return respond({ data: { updated: true }, ok: true }, 200);
 }
 
 async function checkIsSuperAdmin(
@@ -397,21 +492,11 @@ function buildRecipientSpec(body: SendEmailRequestBody): Record<string, unknown>
   }
 }
 
-type SmtpConfigResult =
-  | {
-    readonly ok: true;
-    readonly value: {
-      readonly host: string;
-      readonly port: number;
-      readonly user?: string;
-      readonly pass?: string;
-      readonly adminEmail: string;
-      readonly senderName: string;
-    };
-  }
+type EnvSmtpConfigResult =
+  | { readonly ok: true; readonly value: Omit<ResolvedSmtpConfig, "source"> }
   | { readonly ok: false; readonly missing: readonly string[] };
 
-function getSmtpConfig(): SmtpConfigResult {
+function getEnvSmtpConfig(): EnvSmtpConfigResult {
   const host = getRequiredRuntimeEnv("SEND_EMAIL_SMTP_HOST");
   const portRaw = getRequiredRuntimeEnv("SEND_EMAIL_SMTP_PORT");
   const adminEmail = getRequiredRuntimeEnv("SEND_EMAIL_SMTP_ADMIN_EMAIL");

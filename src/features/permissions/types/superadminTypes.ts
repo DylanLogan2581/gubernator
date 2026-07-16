@@ -110,11 +110,26 @@ export type SendEmailResult = {
   readonly renderedHtml?: string;
 };
 
+export type SmtpConfigSource = "database" | "environment";
+
 export type SmtpStatus =
   | {
       readonly configured: true;
+      readonly source: SmtpConfigSource;
       readonly host: string;
+      readonly port: number;
+      readonly username?: string;
+      readonly hasPassword: boolean;
       readonly senderName: string;
       readonly adminEmail: string;
     }
   | { readonly configured: false; readonly missing: readonly string[] };
+
+export type UpdateSmtpSettingsInput = {
+  readonly host: string;
+  readonly port: number;
+  readonly username?: string;
+  readonly password?: string;
+  readonly adminEmail: string;
+  readonly senderName: string;
+};

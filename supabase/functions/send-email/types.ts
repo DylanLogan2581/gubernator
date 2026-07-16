@@ -24,6 +24,20 @@ export type SendEmailRequestBody = {
   readonly dryRun?: boolean;
 };
 
+export type UpdateSmtpSettingsRequestBody = {
+  readonly host: string;
+  readonly port: number;
+  readonly username?: string;
+  readonly password?: string;
+  readonly adminEmail: string;
+  readonly senderName: string;
+};
+
+export type UpdateSmtpSettingsSuccessResponse = {
+  readonly data: { readonly updated: true };
+  readonly ok: true;
+};
+
 export type SendEmailSuccessData = {
   readonly recipientCount: number;
   readonly sentCount: number;
@@ -46,6 +60,8 @@ export type SendEmailErrorResponse = {
 };
 
 export type SendEmailResponse = SendEmailErrorResponse | SendEmailSuccessResponse;
+
+export type SendEmailAnyResponse = SendEmailResponse | UpdateSmtpSettingsSuccessResponse;
 
 export type SendEmailAuthContext = {
   readonly authorizationHeader: string;
@@ -72,10 +88,16 @@ export type EmailRecipient = {
   readonly email: string;
 };
 
+export type SmtpConfigSource = "database" | "environment";
+
 export type SendEmailStatusData =
   | {
     readonly configured: true;
+    readonly source: SmtpConfigSource;
     readonly host: string;
+    readonly port: number;
+    readonly username?: string;
+    readonly hasPassword: boolean;
     readonly senderName: string;
     readonly adminEmail: string;
   }

@@ -29,6 +29,8 @@ import {
   smtpStatusQueryOptions,
 } from "../queries/superadminQueries";
 
+import { SmtpSettingsForm } from "./SmtpSettingsForm";
+
 import type {
   SendEmailInput,
   SendEmailKind,
@@ -141,6 +143,8 @@ export function SuperadminEmailPanel(): JSX.Element {
           Send test email to me
         </Button>
       </div>
+
+      <SmtpSettingsForm />
 
       <ManualNotificationForm />
     </>

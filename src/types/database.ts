@@ -3884,6 +3884,50 @@ export type Database = {
           },
         ];
       };
+      smtp_settings: {
+        Row: {
+          admin_email: string;
+          host: string;
+          id: boolean;
+          password: string | null;
+          port: number;
+          sender_name: string;
+          updated_at: string;
+          updated_by: string | null;
+          username: string | null;
+        };
+        Insert: {
+          admin_email: string;
+          host: string;
+          id?: boolean;
+          password?: string | null;
+          port: number;
+          sender_name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          username?: string | null;
+        };
+        Update: {
+          admin_email?: string;
+          host?: string;
+          id?: boolean;
+          password?: string | null;
+          port?: number;
+          sender_name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          username?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "smtp_settings_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       trade_route_legs: {
         Row: {
           created_at: string;
