@@ -136,7 +136,7 @@ type BlueprintsPageQueryOptions = UseQueryOptions<
 // filtering so the client only ever holds one page of blueprints, not the
 // whole world's list. Also embeds a per-blueprint tier count via a Supabase
 // embedded count select, without touching BLUEPRINT_SELECT/BlueprintRow
-// (used elsewhere, e.g. BlueprintTierEditor).
+// (used elsewhere for single-blueprint/tier fetches).
 export function blueprintsPageQueryOptions(
   worldId: string,
   params: BlueprintsPageParams,

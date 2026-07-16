@@ -21,7 +21,6 @@ import type { ConfigTabId } from "@/features/worlds";
 import type { JSX } from "react";
 
 const configurationSearchSchema = z.object({
-  blueprint: z.string().optional(),
   tab: z.string().optional(),
 });
 
@@ -30,7 +29,6 @@ function isKnownConfigTab(tab: string): tab is ConfigTabId {
 }
 
 function parseConfigurationSearch(search: unknown): {
-  readonly blueprint?: string;
   readonly tab: ConfigTabId;
 } {
   const result = configurationSearchSchema.safeParse(search);
@@ -39,13 +37,12 @@ function parseConfigurationSearch(search: unknown): {
     rawTab !== undefined && isKnownConfigTab(rawTab)
       ? rawTab
       : DEFAULT_CONFIG_TAB;
-  const blueprint = result.success ? result.data.blueprint : undefined;
-  return { blueprint, tab };
+  return { tab };
 }
 
 function WorldConfigurationRoute(): JSX.Element {
   const { worldId } = Route.useParams();
-  const { blueprint, tab } = Route.useSearch();
+  const { tab } = Route.useSearch();
   const navigate = useNavigate();
 
   // parseConfigurationSearch silently falls back an unknown `?tab=` to the
@@ -61,18 +58,12 @@ function WorldConfigurationRoute(): JSX.Element {
     void navigate({
       to: "/worlds/$worldId/configuration",
       params: { worldId },
-      search: { blueprint, tab: DEFAULT_CONFIG_TAB },
+      search: { tab: DEFAULT_CONFIG_TAB },
       replace: true,
     });
-  }, [blueprint, navigate, rawTab, worldId]);
+  }, [navigate, rawTab, worldId]);
 
-  return (
-    <WorldConfigurationPage
-      activeTab={tab}
-      selectedBlueprintId={blueprint}
-      worldId={worldId}
-    />
-  );
+  return <WorldConfigurationPage activeTab={tab} worldId={worldId} />;
 }
 
 export const Route = createFileRoute("/worlds/$worldId/configuration")({

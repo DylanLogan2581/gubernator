@@ -1,6 +1,5 @@
-import { useQuery, type QueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Layers, RotateCcw, Trash2 } from "lucide-react";
+import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -24,8 +23,10 @@ import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
 import { resolveIconTone } from "@/lib/categoricalPalette";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
+  deleteTierMutationOptions,
   hardDeleteBlueprintMutationOptions,
   restoreBlueprintMutationOptions,
   softDeleteBlueprintMutationOptions,
@@ -36,7 +37,9 @@ import {
   formatTierEffects,
 } from "../../utils/tierSummaryFormatting";
 
+import { AddTierDialog } from "./AddTierDialog";
 import { EditBlueprintForm } from "./EditBlueprintForm";
+import { EditTierDialog } from "./EditTierDialog";
 
 import type { BuildingBlueprintSummary } from "../../queries/buildingsQueries";
 import type { BuildingBlueprintTier } from "../../types/buildingTypes";
@@ -239,31 +242,63 @@ function TierSubRows({
   activeJobs,
   activeResources,
   blueprint,
+  canEdit,
+  queryClient,
   worldId,
 }: {
   readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly blueprint: BuildingBlueprintSummary;
+  readonly canEdit: boolean;
+  readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
   const tiersQuery = useQuery(tiersByBlueprintQueryOptions(blueprint.id));
+  const deleteMutation = useMutation(
+    deleteTierMutationOptions({ queryClient }),
+  );
+
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingTier, setEditingTier] = useState<BuildingBlueprintTier | null>(
+    null,
+  );
+  const [deletingTier, setDeletingTier] =
+    useState<BuildingBlueprintTier | null>(null);
+
+  function handleDeleteConfirm(): void {
+    if (deletingTier === null) return;
+    deleteMutation.mutate(
+      { tierId: deletingTier.id },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to delete tier.");
+        },
+        onSuccess: () => {
+          setDeletingTier(null);
+          notifyMutationSuccess("Tier deleted.");
+        },
+      },
+    );
+  }
 
   return (
     <div className="grid gap-2 py-2">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Tiers</h3>
-        <Button asChild variant="outline" size="sm">
-          <Link
-            to="/worlds/$worldId/configuration"
-            params={{ worldId }}
-            search={{ blueprint: blueprint.id, tab: "buildings" }}
+      {canEdit ? (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setShowAddDialog(true);
+            }}
           >
-            <Layers aria-hidden="true" />
-            Manage tiers
-          </Link>
-        </Button>
-      </div>
+            <Plus aria-hidden="true" />
+            Add tier
+          </Button>
+        </div>
+      ) : null}
 
       {tiersQuery.isPending ? (
         <p className="text-sm text-muted-foreground">Loading tiers…</p>
@@ -280,6 +315,11 @@ function TierSubRows({
               <TableHead scope="col">Construction cost</TableHead>
               <TableHead scope="col">Upkeep</TableHead>
               <TableHead scope="col">Effects</TableHead>
+              {canEdit ? (
+                <TableHead scope="col" className="text-right">
+                  Actions
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -314,11 +354,90 @@ function TierSubRows({
                         )
                       : "—"}
                   </TableCell>
+                  {canEdit ? (
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingTier(tier);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Delete tier ${tier.tierNumber}`}
+                          title="Delete tier"
+                          onClick={() => {
+                            setDeletingTier(tier);
+                          }}
+                        >
+                          <Trash2 aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
           </TableBody>
         </Table>
       )}
+
+      {showAddDialog ? (
+        <AddTierDialog
+          activeEducationLevels={activeEducationLevels}
+          activeJobs={activeJobs}
+          activeResources={activeResources}
+          blueprintId={blueprint.id}
+          queryClient={queryClient}
+          tiers={tiersQuery.data ?? []}
+          worldId={worldId}
+          onClose={() => {
+            setShowAddDialog(false);
+          }}
+        />
+      ) : null}
+
+      {editingTier !== null ? (
+        <EditTierDialog
+          activeEducationLevels={activeEducationLevels}
+          activeJobs={activeJobs}
+          activeResources={activeResources}
+          queryClient={queryClient}
+          tier={editingTier}
+          worldId={worldId}
+          onClose={() => {
+            setEditingTier(null);
+          }}
+        />
+      ) : null}
+
+      {deletingTier !== null ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeletingTier(null);
+          }}
+          title="Delete tier"
+          description={
+            <>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">
+                Tier {deletingTier.tierNumber}
+              </span>
+              ? This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete tier"
+          isPending={deleteMutation.isPending}
+          onConfirm={handleDeleteConfirm}
+        />
+      ) : null}
     </div>
   );
 }
@@ -326,7 +445,8 @@ function TierSubRows({
 // Table for the buildings config panel (#1168). Blueprint-level stats are
 // split into atomic, sortable columns instead of one combined "Stats" cell,
 // and each row expands in place to a per-tier breakdown (also atomic
-// columns) instead of requiring navigation to the separate tier editor page.
+// columns), with tier add/edit/delete handled via dialogs in that expanded
+// section (#1245) instead of a separate tier editor route.
 // Mutations are instantiated once here at the table level (not per row), and
 // Edit opens a dialog instead of always mounting an inline edit row, so a
 // world with hundreds of blueprints doesn't mount hundreds of mutation hooks.
@@ -453,6 +573,8 @@ export function BlueprintsTable({
             activeJobs={activeJobs}
             activeResources={activeResources}
             blueprint={blueprint}
+            canEdit={canEdit}
+            queryClient={queryClient}
             worldId={worldId}
           />
         )}

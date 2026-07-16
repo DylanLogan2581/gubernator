@@ -40,13 +40,11 @@ import type { JSX, ReactNode } from "react";
 
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
-  readonly selectedBlueprintId?: string;
   readonly worldId: string;
 };
 
 export function WorldConfigurationPage({
   activeTab,
-  selectedBlueprintId,
   worldId,
 }: WorldConfigurationPageProps): JSX.Element {
   const queryClient = useQueryClient();
@@ -132,7 +130,6 @@ export function WorldConfigurationPage({
             accessContext={accessContextQuery.data}
             activeTab={activeTab}
             queryClient={queryClient}
-            selectedBlueprintId={selectedBlueprintId}
             worldId={worldId}
           />
         )}
@@ -145,13 +142,11 @@ function WorldConfigurationContent({
   accessContext,
   activeTab,
   queryClient,
-  selectedBlueprintId,
   worldId,
 }: {
   readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
   readonly activeTab: string;
   readonly queryClient: ReturnType<typeof useQueryClient>;
-  readonly selectedBlueprintId?: string;
   readonly worldId: string;
 }): JSX.Element | null {
   const worldQuery = useQuery(
@@ -212,7 +207,6 @@ function WorldConfigurationContent({
         <BuildingsConfigPanel
           canAdmin={canAdmin}
           isArchived={header.isArchived}
-          selectedBlueprintId={selectedBlueprintId}
           worldId={worldId}
         />
       );

@@ -20,7 +20,6 @@ import {
   type BlueprintsSortBy,
 } from "../queries/buildingsQueries";
 
-import { BlueprintTierEditor } from "./BlueprintTierEditor";
 import { BlueprintsTable } from "./BuildingsConfigPanel/BlueprintsTable";
 import { CreateBlueprintForm } from "./BuildingsConfigPanel/CreateBlueprintForm";
 
@@ -36,40 +35,7 @@ const SORT_BY_ID: Record<string, BlueprintsSortBy> = {
   name: "name",
 };
 
-type BuildingsConfigPanelProps = {
-  readonly canAdmin: boolean;
-  readonly isArchived: boolean;
-  readonly selectedBlueprintId?: string;
-  readonly worldId: string;
-};
-
 export function BuildingsConfigPanel({
-  canAdmin,
-  isArchived,
-  selectedBlueprintId,
-  worldId,
-}: BuildingsConfigPanelProps): JSX.Element {
-  if (selectedBlueprintId !== undefined) {
-    return (
-      <BlueprintTierEditor
-        blueprintId={selectedBlueprintId}
-        canAdmin={canAdmin}
-        isArchived={isArchived}
-        worldId={worldId}
-      />
-    );
-  }
-
-  return (
-    <BlueprintListPanel
-      canAdmin={canAdmin}
-      isArchived={isArchived}
-      worldId={worldId}
-    />
-  );
-}
-
-function BlueprintListPanel({
   canAdmin,
   isArchived,
   worldId,

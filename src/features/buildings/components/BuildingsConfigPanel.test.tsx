@@ -339,18 +339,142 @@ describe("BuildingsConfigPanel", () => {
 
     await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
 
-    expect(await screen.findByText("Manage tiers")).toBeDefined();
+    expect(
+      await screen.findByRole("columnheader", { name: "Tier" }),
+    ).toBeDefined();
     expect(
       screen.getByRole("button", { name: "Farmhouse tiers" }),
     ).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("columnheader", { name: "Tier" })).toBeDefined();
+    // Non-admins can view tiers but not add/edit/delete them.
+    expect(screen.queryByRole("button", { name: "Add tier" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
 
-    expect(screen.queryByText("Manage tiers")).toBeNull();
+    expect(screen.queryByRole("columnheader", { name: "Tier" })).toBeNull();
     expect(
       screen.getByRole("button", { name: "Farmhouse tiers" }),
     ).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("adds a tier inline from the expanded section", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({ name: "Farmhouse", tier_count: [{ count: 0 }] }),
+        ],
+        tierRows: [],
+        tierInsertResult: {
+          data: createTierRow({ tier_number: 1 }),
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
+    await screen.findByText("No tiers yet.");
+
+    await user.click(screen.getByRole("button", { name: "Add tier" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Add tier" });
+    const tierNumberInput = within(dialog).getByRole("textbox", {
+      name: "Tier number",
+    });
+    await user.clear(tierNumberInput);
+    await user.type(tierNumberInput, "1");
+
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Tier created.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("edits a tier inline from the expanded section", async () => {
+    const user = userEvent.setup();
+    const tierRow = createTierRow({ tier_number: 1, worker_turns_required: 2 });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({ name: "Farmhouse", tier_count: [{ count: 1 }] }),
+        ],
+        tierRows: [tierRow],
+        tierUpdateResult: { data: tierRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
+    const tierColumnHeader = await screen.findByRole("columnheader", {
+      name: "Tier",
+    });
+    const tierTable = tierColumnHeader.closest("table");
+    if (tierTable === null) throw new Error("tier table not found");
+
+    await user.click(within(tierTable).getByRole("button", { name: "Edit" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Edit tier 1" });
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Tier saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("deletes a tier inline from the expanded section", async () => {
+    const user = userEvent.setup();
+    const tierRow = createTierRow({ tier_number: 1 });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({ name: "Farmhouse", tier_count: [{ count: 1 }] }),
+        ],
+        tierRows: [tierRow],
+        tierDeleteResult: {
+          data: {
+            building_blueprint_id: BLUEPRINT_ID,
+            id: tierRow.id,
+          },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    await user.click(screen.getByRole("button", { name: "Farmhouse tiers" }));
+    await screen.findByRole("columnheader", { name: "Tier" });
+
+    await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Delete tier",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete tier" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Tier deleted.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   // ── InlineTierDraftForm nested-form regression ───────────────────────────
@@ -615,8 +739,13 @@ function createClient({
   jobRows = [],
   resourceRows = [],
   rpcResult = { data: null, error: null },
+  tierDeleteResult = {
+    data: { building_blueprint_id: BLUEPRINT_ID, id: createTierRow().id },
+    error: null,
+  },
   tierInsertResult = { data: createTierRow(), error: null },
   tierRows = [],
+  tierUpdateResult = { data: createTierRow(), error: null },
   updateResult = { data: createBlueprintRow(), error: null },
 }: {
   readonly blueprintInsertSpy?: ReturnType<typeof vi.fn>;
@@ -632,11 +761,22 @@ function createClient({
     readonly data: { readonly id: string; readonly world_id: string } | null;
     readonly error: { readonly message: string } | null;
   };
+  readonly tierDeleteResult?: {
+    readonly data: {
+      readonly building_blueprint_id: string;
+      readonly id: string;
+    } | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly tierInsertResult?: {
     readonly data: TestTierRow | null;
     readonly error: { readonly message: string } | null;
   };
   readonly tierRows?: readonly TestTierRow[];
+  readonly tierUpdateResult?: {
+    readonly data: TestTierRow | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly updateResult?: {
     readonly data: TestBlueprintRow | null;
     readonly error: { readonly message: string } | null;
@@ -661,12 +801,26 @@ function createClient({
           unknown
         >;
         return {
+          delete: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue(tierDeleteResult),
+              })),
+            })),
+          })),
           insert: vi.fn(() => ({
             select: vi.fn(() => ({
               maybeSingle: vi.fn().mockResolvedValue(tierInsertResult),
             })),
           })),
           select: tiersReadBuilder.select,
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue(tierUpdateResult),
+              })),
+            })),
+          })),
         };
       }
       if (table === "resources") {
