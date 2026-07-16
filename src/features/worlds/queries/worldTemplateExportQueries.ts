@@ -1,6 +1,7 @@
 import { requireSupabaseClient } from "@/lib/supabase";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import {
+  WORLD_TEMPLATE_VERSION,
   worldTemplateSchema,
   type WorldTemplate,
 } from "@/shared/worldTemplateSchema";
@@ -127,6 +128,22 @@ export function parseWorldTemplate(jsonText: string): ParseWorldTemplateResult {
     const firstIssue = result.error.issues[0];
     if (firstIssue === undefined) {
       return { ok: false, error: "Invalid template." };
+    }
+    if (
+      firstIssue.path.length === 1 &&
+      firstIssue.path[0] === "template_version"
+    ) {
+      const uploadedVersion =
+        raw !== null && typeof raw === "object" && "template_version" in raw
+          ? (raw as Record<string, unknown>).template_version
+          : undefined;
+      return {
+        ok: false,
+        error:
+          typeof uploadedVersion === "number"
+            ? `Template version ${uploadedVersion} is no longer supported. Export a new template (version ${WORLD_TEMPLATE_VERSION}) to import it.`
+            : `Unsupported template version. Export a new template (version ${WORLD_TEMPLATE_VERSION}) to import it.`,
+      };
     }
     const field =
       firstIssue.path.length > 0 ? firstIssue.path.join(".") : "root";

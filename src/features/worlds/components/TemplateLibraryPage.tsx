@@ -46,6 +46,7 @@ function BundledScenarioCard({
     ["Jobs", counts.jobs],
     ["Blueprints", counts.blueprints],
     ["Deposit types", counts.depositTypes],
+    ["Unit types", counts.unitTypes],
   ];
   const summaryItems = allCounts.filter(([, n]) => n > 0);
 

@@ -306,15 +306,20 @@ export function DryRunSummary({
   readonly report: DryRunReport;
   readonly templateName: string;
 }): JSX.Element {
-  const { counts, danglingRefs } = report;
+  const { counts, danglingRefs, warnings } = report;
 
   const entityRows: Array<[string, number]> = [
+    ["Resource categories", counts.resourceCategories],
+    ["Education levels", counts.educationLevels],
+    ["Cultures", counts.cultures],
+    ["Religions", counts.religions],
     ["Resources", counts.resources],
     ["Jobs", counts.jobs],
     ["Blueprints", counts.blueprints],
     ["Blueprint tiers", counts.blueprintTiers],
     ["Deposit types", counts.depositTypes],
     ["Managed pop. types", counts.managedPopulationTypes],
+    ["Unit types", counts.unitTypes],
     ["Namesets", counts.namesets],
   ];
 
@@ -347,6 +352,20 @@ export function DryRunSummary({
           <ul className="space-y-0.5 text-xs text-destructive">
             {danglingRefs.map((ref) => (
               <li key={ref}>{ref}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {warnings.length > 0 ? (
+        <div className="mt-3 space-y-1">
+          <p className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-500">
+            <AlertTriangle size={14} aria-hidden="true" />
+            Warnings ({warnings.length})
+          </p>
+          <ul className="space-y-0.5 text-xs text-amber-600 dark:text-amber-500">
+            {warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
             ))}
           </ul>
         </div>
