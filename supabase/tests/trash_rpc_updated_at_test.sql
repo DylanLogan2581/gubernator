@@ -169,48 +169,25 @@ values
   );
 
 -- Deposit types: active (for soft_delete), pre-trashed (for restore).
--- The two rows share a job_id — allowed because the partial unique index
--- only covers rows WHERE NOT is_trashed.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    updated_at
-  )
+  public.deposit_types (id, world_id, name, slug, updated_at)
 values
   (
     'ee500000-0000-0000-0000-000000000001',
     'ee100000-0000-0000-0000-000000000001',
     'UA Coal',
     'ua-coal',
-    'ee300000-0000-0000-0000-000000000003',
-    1,
     '2000-01-01 00:00:00+00'::timestamptz
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed,
-    updated_at
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed, updated_at)
 values
   (
     'ee500000-0000-0000-0000-000000000002',
     'ee100000-0000-0000-0000-000000000001',
     'UA Coal Trashed',
     'ua-coal-trashed',
-    'ee300000-0000-0000-0000-000000000003',
-    1,
     true,
     '2000-01-01 00:00:00+00'::timestamptz
   );

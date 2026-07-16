@@ -336,22 +336,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a9800000-0000-0000-0000-000000000001',
     'a9200000-0000-0000-0000-000000000004',
     'ATTCP Iron Vein 4',
-    'attcp-iron-vein-4',
-    'a9700000-0000-0000-0000-000000000001',
-    10
+    'attcp-iron-vein-4'
   );
 
 insert into

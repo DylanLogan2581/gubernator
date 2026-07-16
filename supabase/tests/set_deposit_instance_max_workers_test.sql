@@ -127,22 +127,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'e5000000-0000-0000-0000-000000000001',
     'e2000000-0000-0000-0000-000000000001',
     'SDIMW Iron Seam',
-    'sdimw-iron-seam',
-    'e8000000-0000-0000-0000-000000000001',
-    10
+    'sdimw-iron-seam'
   );
 
 -- Deposit instances:

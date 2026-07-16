@@ -115,22 +115,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ef500000-0000-0000-0000-000000000001',
     'ef100000-0000-0000-0000-000000000001',
     'EC Coal Seam',
-    'ec-coal-seam',
-    'ef300000-0000-0000-0000-000000000002',
-    3
+    'ec-coal-seam'
   );
 
 insert into

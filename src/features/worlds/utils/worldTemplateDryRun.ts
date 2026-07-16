@@ -150,16 +150,18 @@ export function computeDryRunReport(template: WorldTemplate): DryRunReport {
 
   // Check deposit types
   for (const dt of template.deposit_types) {
-    if (!jobSlugs.has(dt.job_slug)) {
-      danglingRefs.push(
-        `Deposit type "${dt.slug}" references unknown job "${dt.job_slug}"`,
-      );
-    }
-    for (const wi of dt.worker_inputs) {
-      if (!resourceSlugs.has(wi.resource_slug)) {
+    for (const job of dt.jobs) {
+      if (!jobSlugs.has(job.job_slug)) {
         danglingRefs.push(
-          `Deposit type "${dt.slug}" worker input references unknown resource "${wi.resource_slug}"`,
+          `Deposit type "${dt.slug}" references unknown job "${job.job_slug}"`,
         );
+      }
+      for (const wi of job.worker_inputs) {
+        if (!resourceSlugs.has(wi.resource_slug)) {
+          danglingRefs.push(
+            `Deposit type "${dt.slug}" worker input references unknown resource "${wi.resource_slug}"`,
+          );
+        }
       }
     }
   }

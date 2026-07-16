@@ -64,13 +64,12 @@ describe("toCitizenAssignment", () => {
     expect(result.job).toBeNull();
   });
 
-  it("maps a deposit assignment with joined deposit type and job names", () => {
+  it("maps a deposit assignment with the joined deposit type name", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "deposit",
       deposit_instance: {
         deposit_types: {
-          job: { name: "Miner" },
           name: "Iron",
         },
         id: "dep-1",
@@ -82,7 +81,6 @@ describe("toCitizenAssignment", () => {
 
     expect(result.assignmentType).toBe("deposit");
     expect(result.depositInstance).toEqual({
-      depositTypeJobName: "Miner",
       depositTypeName: "Iron",
       id: "dep-1",
       name: "Iron Vein",
@@ -190,7 +188,7 @@ describe("toCitizenAssignment", () => {
 });
 
 describe("currentAssignmentForCitizenQueryOptions", () => {
-  it("disambiguates deposit_types→job_definitions via named FK constraint", async () => {
+  it("embeds deposit_types without the dropped single-job FK (#1246)", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     const eq = vi.fn(() => ({ maybeSingle }));
     const select = vi.fn(() => ({ eq }));
@@ -205,7 +203,10 @@ describe("currentAssignmentForCitizenQueryOptions", () => {
     );
 
     expect(select).toHaveBeenCalledWith(
-      expect.stringContaining("deposit_types_job_id_fk"),
+      expect.stringContaining("deposit_instances(id,name,deposit_types(name))"),
+    );
+    expect(select).toHaveBeenCalledWith(
+      expect.not.stringContaining("deposit_types_job_id_fk"),
     );
   });
 

@@ -109,6 +109,12 @@ export type SupabaseProjectRow = {
 export type SupabaseDepositTypeRow = {
   readonly id: string;
   readonly name: string;
+  readonly deposit_type_jobs: readonly unknown[];
+};
+
+export type SupabaseDepositTypeJobRow = {
+  readonly id: string;
+  readonly deposit_type_id: string;
   readonly job_id: string;
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: unknown;
@@ -475,6 +481,17 @@ export function isDepositTypeRow(v: unknown): v is SupabaseDepositTypeRow {
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.name === "string" &&
+    Array.isArray(v.deposit_type_jobs)
+  );
+}
+
+export function isDepositTypeJobRow(
+  v: unknown,
+): v is SupabaseDepositTypeJobRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.deposit_type_id === "string" &&
     typeof v.job_id === "string" &&
     typeof v.output_units_per_worker === "number"
   );

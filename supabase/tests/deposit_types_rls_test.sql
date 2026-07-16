@@ -1,10 +1,12 @@
--- pgTAP tests for public.deposit_types RLS, unique job linkage, and column
--- constraints.
+-- pgTAP tests for public.deposit_types RLS.
+-- Job linkage / per-job constraints now live on deposit_type_jobs — see
+-- deposit_type_jobs_rls_test.sql and
+-- deposit_type_jobs_worker_inputs_validation_test.sql.
 -- Run with: npx supabase test db
 begin;
 
 select
-  plan (22);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -94,100 +96,26 @@ values
     'a1000000-0000-0000-0000-000000000002'
   );
 
--- Deposit jobs needed for the job_id FK on deposit_types.
-insert into
-  public.job_definitions (id, world_id, name, slug, job_type)
-values
-  (
-    'a3000000-0000-0000-0000-000000000001',
-    'a2000000-0000-0000-0000-000000000001',
-    'Mining',
-    'mining',
-    'deposit'
-  ),
-  (
-    'a3000000-0000-0000-0000-000000000002',
-    'a2000000-0000-0000-0000-000000000002',
-    'Quarrying',
-    'quarrying',
-    'deposit'
-  ),
-  -- Extra jobs for owner / admin / super-admin write tests.
-  (
-    'a3000000-0000-0000-0000-000000000010',
-    'a2000000-0000-0000-0000-000000000001',
-    'Owner Mining',
-    'owner-mining',
-    'deposit'
-  ),
-  (
-    'a3000000-0000-0000-0000-000000000011',
-    'a2000000-0000-0000-0000-000000000001',
-    'Admin Mining',
-    'admin-mining',
-    'deposit'
-  ),
-  (
-    'a3000000-0000-0000-0000-000000000012',
-    'a2000000-0000-0000-0000-000000000003',
-    'Super Admin Mining',
-    'super-admin-mining',
-    'deposit'
-  ),
-  -- Extra jobs for constraint tests.
-  (
-    'a3000000-0000-0000-0000-000000000020',
-    'a2000000-0000-0000-0000-000000000001',
-    'Constraint Job A',
-    'constraint-job-a',
-    'deposit'
-  ),
-  (
-    'a3000000-0000-0000-0000-000000000021',
-    'a2000000-0000-0000-0000-000000000001',
-    'Constraint Job B',
-    'constraint-job-b',
-    'deposit'
-  );
-
 -- Seed a deposit type in the private world for write tests.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a4000000-0000-0000-0000-000000000001',
     'a2000000-0000-0000-0000-000000000001',
     'Iron Deposit',
-    'iron-deposit',
-    'a3000000-0000-0000-0000-000000000001',
-    5
+    'iron-deposit'
   );
 
 -- Seed a deposit type in the public world for outsider read tests.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a4000000-0000-0000-0000-000000000002',
     'a2000000-0000-0000-0000-000000000002',
     'Stone Deposit',
-    'stone-deposit',
-    'a3000000-0000-0000-0000-000000000002',
-    3
+    'stone-deposit'
   );
 
 -- ===========================================================================
@@ -251,13 +179,11 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_types (world_id, name, slug)
     values (
       'a2000000-0000-0000-0000-000000000001',
       'Outsider Deposit',
-      'outsider-deposit',
-      'a3000000-0000-0000-0000-000000000010',
-      1
+      'outsider-deposit'
     )
   $test$,
     '42501',
@@ -329,14 +255,12 @@ select
 select
   lives_ok (
     $test$
-    insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_types (id, world_id, name, slug)
     values (
       'a4000000-0000-0000-0000-000000000010',
       'a2000000-0000-0000-0000-000000000001',
       'Owner Deposit',
-      'owner-deposit',
-      'a3000000-0000-0000-0000-000000000010',
-      10
+      'owner-deposit'
     )
   $test$,
     'owner can insert deposit_types in their world'
@@ -388,14 +312,12 @@ select
 select
   lives_ok (
     $test$
-    insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_types (id, world_id, name, slug)
     values (
       'a4000000-0000-0000-0000-000000000011',
       'a2000000-0000-0000-0000-000000000001',
       'Admin Deposit',
-      'admin-deposit',
-      'a3000000-0000-0000-0000-000000000011',
-      8
+      'admin-deposit'
     )
   $test$,
     'world admin can insert deposit_types in the administered world'
@@ -452,14 +374,12 @@ select
 select
   lives_ok (
     $test$
-    insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_types (id, world_id, name, slug)
     values (
       'a4000000-0000-0000-0000-000000000012',
       'a2000000-0000-0000-0000-000000000003',
       'Super Admin Deposit',
-      'super-admin-deposit',
-      'a3000000-0000-0000-0000-000000000012',
-      7
+      'super-admin-deposit'
     )
   $test$,
     'super admin can insert deposit_types in any world'
@@ -485,103 +405,6 @@ select
   );
 
 reset role;
-
--- ===========================================================================
--- CONSTRAINTS: run without a role so postgres bypasses RLS
--- ===========================================================================
--- Seed a deposit type for the unique-job_id constraint test.
-insert into
-  public.deposit_types (
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
-values
-  (
-    'a2000000-0000-0000-0000-000000000001',
-    'Constraint Deposit',
-    'constraint-deposit',
-    'a3000000-0000-0000-0000-000000000020',
-    10
-  );
-
--- Duplicate active job_id must be rejected.
-select
-  throws_ok (
-    $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
-    values (
-      'a2000000-0000-0000-0000-000000000001',
-      'Duplicate Job Deposit',
-      'duplicate-job-deposit',
-      'a3000000-0000-0000-0000-000000000020',
-      5
-    )
-  $test$,
-    '23505',
-    null,
-    'duplicate active job_id rejected by partial unique index'
-  );
-
--- After trashing the existing record, the same job_id may be reused for a new active record.
-update public.deposit_types
-set
-  is_trashed = true
-where
-  job_id = 'a3000000-0000-0000-0000-000000000020';
-
-select
-  lives_ok (
-    $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
-    values (
-      'a2000000-0000-0000-0000-000000000001',
-      'Relinked Job Deposit',
-      'relinked-job-deposit',
-      'a3000000-0000-0000-0000-000000000020',
-      5
-    )
-  $test$,
-    'inactive record permits same job_id for a new active record'
-  );
-
--- With a new active record present, a second active record with the same job_id must be rejected.
-select
-  throws_ok (
-    $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
-    values (
-      'a2000000-0000-0000-0000-000000000001',
-      'Second Active Duplicate',
-      'second-active-duplicate',
-      'a3000000-0000-0000-0000-000000000020',
-      5
-    )
-  $test$,
-    '23505',
-    null,
-    'second active record with same job_id rejected after relinking'
-  );
-
--- output_units_per_worker = 0 must be rejected (check requires > 0).
-select
-  throws_ok (
-    $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
-    values (
-      'a2000000-0000-0000-0000-000000000001',
-      'Zero Units Deposit',
-      'zero-units-deposit',
-      'a3000000-0000-0000-0000-000000000021',
-      0
-    )
-  $test$,
-    '23514',
-    null,
-    'output_units_per_worker = 0 rejected by check constraint'
-  );
 
 select
   *

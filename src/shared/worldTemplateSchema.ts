@@ -233,15 +233,42 @@ const workerInputEntryTemplateSchema = z.object({
   amount_per_worker: z.number(),
 });
 
-const depositTypeTemplateSchema = z.object({
-  name: z.string(),
-  slug: z.string(),
+const depositTypeJobTemplateSchema = z.object({
   job_slug: z.string(),
   output_units_per_worker: z.number(),
   worker_inputs: z.array(workerInputEntryTemplateSchema),
-  icon: iconRef,
-  icon_color: iconColorRef,
 });
+
+// Legacy templates had a single job flattened onto the deposit type
+// (job_slug/output_units_per_worker/worker_inputs, no jobs array). Wrap that
+// shape into a single-element jobs array so old templates still import.
+const depositTypeTemplateSchema = z.preprocess(
+  (value) => {
+    const valueObj = value as Record<string, unknown>;
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      !("jobs" in valueObj) &&
+      "job_slug" in valueObj
+    ) {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { job_slug, output_units_per_worker, worker_inputs, ...rest } =
+        valueObj;
+      return {
+        ...rest,
+        jobs: [{ job_slug, output_units_per_worker, worker_inputs }],
+      };
+    }
+    return value;
+  },
+  z.object({
+    name: z.string(),
+    slug: z.string(),
+    jobs: z.array(depositTypeJobTemplateSchema),
+    icon: iconRef,
+    icon_color: iconColorRef,
+  }),
+);
 
 // ── managed population types ──────────────────────────────────────────────
 

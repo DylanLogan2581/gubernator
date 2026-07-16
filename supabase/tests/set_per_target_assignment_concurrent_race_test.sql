@@ -102,23 +102,13 @@ values
 
 -- Deposit type
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'fc700000-0000-0000-0000-000000000001',
     'fc200000-0000-0000-0000-000000000001',
     'CTRACE Ore',
     'ctrace-ore',
-    'fc600000-0000-0000-0000-000000000001',
-    5,
     false
   );
 

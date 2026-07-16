@@ -285,16 +285,22 @@ begin
     (v_job_pork_butcher,   v_world, 'Pork Butcher',   'pork-butcher',   'culling',   v_pop_pig_herd,   'game:meat-cleaver');
 
   -- Deposit types ------------------------------------------------------
-  insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json, icon) values
-    (v_dep_iron_vein,      v_world, 'Iron Vein',      'iron-vein',      v_job_iron_miner,   5,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 0.5)),
-       'game:minerals'),
-    (v_dep_copper_vein,    v_world, 'Copper Vein',    'copper-vein',    v_job_copper_miner, 4, '[]'::jsonb, 'game:metal-bar'),
-    (v_dep_stone_quarry,   v_world, 'Stone Quarry',   'stone-quarry',   v_job_stone_quarry, 8,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount_per_worker', 0.5)),
-       'mountain'),
-    (v_dep_hardwood_grove, v_world, 'Hardwood Grove', 'hardwood-grove', v_job_lumberjack,   6, '[]'::jsonb, 'trees'),
-    (v_dep_peat_bog,       v_world, 'Peat Bog',       'peat-bog',       v_job_peat_cutter,  6, '[]'::jsonb, 'game:swamp');
+  insert into public.deposit_types (id, world_id, name, slug, icon) values
+    (v_dep_iron_vein,      v_world, 'Iron Vein',      'iron-vein',      'game:minerals'),
+    (v_dep_copper_vein,    v_world, 'Copper Vein',    'copper-vein',    'game:metal-bar'),
+    (v_dep_stone_quarry,   v_world, 'Stone Quarry',   'stone-quarry',   'mountain'),
+    (v_dep_hardwood_grove, v_world, 'Hardwood Grove', 'hardwood-grove', 'trees'),
+    (v_dep_peat_bog,       v_world, 'Peat Bog',       'peat-bog',       'game:swamp');
+
+  -- Deposit type jobs ----------------------------------------------------
+  insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json) values
+    (v_dep_iron_vein,      v_job_iron_miner,   5,
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 0.5))),
+    (v_dep_copper_vein,    v_job_copper_miner, 4, '[]'::jsonb),
+    (v_dep_stone_quarry,   v_job_stone_quarry, 8,
+       jsonb_build_array(jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount_per_worker', 0.5))),
+    (v_dep_hardwood_grove, v_job_lumberjack,   6, '[]'::jsonb),
+    (v_dep_peat_bog,       v_job_peat_cutter,  6, '[]'::jsonb);
 
   -- Managed population types -------------------------------------------
   insert into public.managed_population_types (

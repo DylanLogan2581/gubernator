@@ -121,24 +121,23 @@ values
 
 -- Deposit type: soft-deleted so hard_delete is allowed.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ed500000-0000-0000-0000-000000000001',
     'ed100000-0000-0000-0000-000000000001',
     'HD Coal Seam',
     'hd-coal-seam',
-    'ed300000-0000-0000-0000-000000000001',
-    3,
     true
+  );
+
+insert into
+  public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker)
+values
+  (
+    'ed500000-0000-0000-0000-000000000001',
+    'ed300000-0000-0000-0000-000000000001',
+    3
   );
 
 -- Managed population type: soft-deleted so hard_delete is allowed.

@@ -141,43 +141,24 @@ values
 
 -- Deposit type in the world
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'f5000000-0000-0000-0000-000000000001',
     'f2000000-0000-0000-0000-000000000001',
     'Iron Seam',
-    'iron-seam-cdi',
-    'f8000000-0000-0000-0000-000000000001',
-    10
+    'iron-seam-cdi'
   );
 
 -- Trashed deposit type
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'f5000000-0000-0000-0000-000000000002',
     'f2000000-0000-0000-0000-000000000001',
     'Ruined Seam',
     'ruined-seam-cdi',
-    'f8000000-0000-0000-0000-000000000002',
-    5,
     true
   );
 

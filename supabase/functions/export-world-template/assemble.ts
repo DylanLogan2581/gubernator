@@ -242,25 +242,27 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
   // Deposit types (non-trashed, sorted by slug asc from query)
   const depositTypes = data.depositTypes
     .filter((d) => !d.is_trashed)
-    .flatMap((d) => {
-      const jobSlug = jobSlugById.get(d.job_id);
-      if (jobSlug === undefined) return [];
-      return [
-        {
-          name: d.name,
-          slug: d.slug,
-          job_slug: jobSlug,
-          output_units_per_worker: d.output_units_per_worker,
-          worker_inputs: d.worker_inputs_json.flatMap((wi) => {
-            const resourceSlug = resourceSlugById.get(wi.resource_id);
-            if (resourceSlug === undefined) return [];
-            return [{ resource_slug: resourceSlug, amount_per_worker: wi.amount_per_worker }];
-          }),
-          icon: d.icon,
-          icon_color: d.icon_color,
-        },
-      ];
-    });
+    .map((d) => ({
+      name: d.name,
+      slug: d.slug,
+      jobs: d.deposit_type_jobs.flatMap((dtj) => {
+        const jobSlug = jobSlugById.get(dtj.job_id);
+        if (jobSlug === undefined) return [];
+        return [
+          {
+            job_slug: jobSlug,
+            output_units_per_worker: dtj.output_units_per_worker,
+            worker_inputs: dtj.worker_inputs_json.flatMap((wi) => {
+              const resourceSlug = resourceSlugById.get(wi.resource_id);
+              if (resourceSlug === undefined) return [];
+              return [{ resource_slug: resourceSlug, amount_per_worker: wi.amount_per_worker }];
+            }),
+          },
+        ];
+      }),
+      icon: d.icon,
+      icon_color: d.icon_color,
+    }));
 
   // Managed population types (non-trashed, sorted by slug asc from query)
   const managedPopulationTypes = data.managedPopulationTypes

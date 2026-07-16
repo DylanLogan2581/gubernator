@@ -147,23 +147,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ff700000-0000-0000-0000-000000000001',
     'ff200000-0000-0000-0000-000000000001',
     'FFPTB Ore',
     'ffptb-ore',
-    'ff600000-0000-0000-0000-000000000001',
-    5,
     false
   );
 

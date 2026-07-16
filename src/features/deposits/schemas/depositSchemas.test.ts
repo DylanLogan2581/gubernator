@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createDepositTypeInputSchema,
+  depositTypeJobSchema,
   hardDeleteDepositTypeInputSchema,
   restoreDepositTypeInputSchema,
   softDeleteDepositTypeInputSchema,
@@ -12,6 +13,7 @@ import {
 const DEPOSIT_TYPE_ID = "11111111-1111-1111-1111-111111111111";
 const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 const JOB_ID = "33333333-3333-3333-3333-333333333333";
+const JOB_ID_2 = "55555555-5555-5555-5555-555555555555";
 const RESOURCE_ID = "44444444-4444-4444-4444-444444444444";
 
 describe("workerInputEntrySchema", () => {
@@ -67,50 +69,123 @@ describe("workerInputEntrySchema", () => {
   });
 });
 
-describe("createDepositTypeInputSchema", () => {
-  it("accepts a valid minimal input", () => {
-    const result = createDepositTypeInputSchema.safeParse({
+describe("depositTypeJobSchema", () => {
+  it("accepts a valid job entry", () => {
+    const result = depositTypeJobSchema.safeParse({
       jobId: JOB_ID,
-      name: "Iron Ore Deposit",
       outputUnitsPerWorker: 3,
-      slug: "iron-ore-deposit",
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts input with workerInputsJson", () => {
-    const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
-      name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
-      slug: "iron-ore-deposit",
-      workerInputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts input with an empty workerInputsJson", () => {
-    const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
-      name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
-      slug: "iron-ore-deposit",
       workerInputsJson: [],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects outputUnitsPerWorker of zero", () => {
+    const result = depositTypeJobSchema.safeParse({
+      jobId: JOB_ID,
+      outputUnitsPerWorker: 0,
+      workerInputsJson: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-integer outputUnitsPerWorker", () => {
+    const result = depositTypeJobSchema.safeParse({
+      jobId: JOB_ID,
+      outputUnitsPerWorker: 2.5,
+      workerInputsJson: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid jobId", () => {
+    const result = depositTypeJobSchema.safeParse({
+      jobId: "not-a-uuid",
+      outputUnitsPerWorker: 3,
+      workerInputsJson: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("createDepositTypeInputSchema", () => {
+  function validJob(
+    overrides: Partial<{
+      jobId: string;
+      outputUnitsPerWorker: number;
+      workerInputsJson: { amountPerWorker: number; resourceId: string }[];
+    }> = {},
+  ): {
+    jobId: string;
+    outputUnitsPerWorker: number;
+    workerInputsJson: { amountPerWorker: number; resourceId: string }[];
+  } {
+    return {
+      jobId: JOB_ID,
+      outputUnitsPerWorker: 3,
+      workerInputsJson: [],
+      ...overrides,
+    };
+  }
+
+  it("accepts a valid minimal input with one job", () => {
+    const result = createDepositTypeInputSchema.safeParse({
+      jobs: [validJob()],
+      name: "Iron Ore Deposit",
+      slug: "iron-ore-deposit",
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("accepts input with multiple jobs", () => {
+    const result = createDepositTypeInputSchema.safeParse({
+      jobs: [
+        validJob({ jobId: JOB_ID }),
+        validJob({
+          jobId: JOB_ID_2,
+          outputUnitsPerWorker: 5,
+          workerInputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+        }),
+      ],
+      name: "Iron Ore Deposit",
+      slug: "iron-ore-deposit",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty jobs array", () => {
+    const result = createDepositTypeInputSchema.safeParse({
+      jobs: [],
+      name: "Iron Ore Deposit",
+      slug: "iron-ore-deposit",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate jobIds within the jobs array", () => {
+    const result = createDepositTypeInputSchema.safeParse({
+      jobs: [validJob({ jobId: JOB_ID }), validJob({ jobId: JOB_ID })],
+      name: "Iron Ore Deposit",
+      slug: "iron-ore-deposit",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it("rejects a blank name", () => {
     const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
+      jobs: [validJob()],
       name: "   ",
-      outputUnitsPerWorker: 3,
       slug: "iron-ore-deposit",
       worldId: WORLD_ID,
     });
@@ -120,9 +195,8 @@ describe("createDepositTypeInputSchema", () => {
 
   it("rejects a name that is too long", () => {
     const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
+      jobs: [validJob()],
       name: "a".repeat(65),
-      outputUnitsPerWorker: 3,
       slug: "iron-ore-deposit",
       worldId: WORLD_ID,
     });
@@ -132,46 +206,9 @@ describe("createDepositTypeInputSchema", () => {
 
   it("rejects a blank slug", () => {
     const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
+      jobs: [validJob()],
       name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
       slug: "   ",
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects outputUnitsPerWorker of zero", () => {
-    const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
-      name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 0,
-      slug: "iron-ore-deposit",
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects a non-integer outputUnitsPerWorker", () => {
-    const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
-      name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 2.5,
-      slug: "iron-ore-deposit",
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects an invalid jobId", () => {
-    const result = createDepositTypeInputSchema.safeParse({
-      jobId: "not-a-uuid",
-      name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
-      slug: "iron-ore-deposit",
       worldId: WORLD_ID,
     });
 
@@ -180,9 +217,8 @@ describe("createDepositTypeInputSchema", () => {
 
   it("rejects an invalid worldId", () => {
     const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
+      jobs: [validJob()],
       name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
       slug: "iron-ore-deposit",
       worldId: "not-a-uuid",
     });
@@ -193,9 +229,8 @@ describe("createDepositTypeInputSchema", () => {
   it("rejects unknown fields", () => {
     const result = createDepositTypeInputSchema.safeParse({
       extra: "field",
-      jobId: JOB_ID,
+      jobs: [validJob()],
       name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
       slug: "iron-ore-deposit",
       worldId: WORLD_ID,
     });
@@ -203,13 +238,15 @@ describe("createDepositTypeInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an invalid workerInputsJson entry", () => {
+  it("rejects an invalid workerInputsJson entry within a job", () => {
     const result = createDepositTypeInputSchema.safeParse({
-      jobId: JOB_ID,
+      jobs: [
+        validJob({
+          workerInputsJson: [{ amountPerWorker: -1, resourceId: RESOURCE_ID }],
+        }),
+      ],
       name: "Iron Ore Deposit",
-      outputUnitsPerWorker: 3,
       slug: "iron-ore-deposit",
-      workerInputsJson: [{ amountPerWorker: -1, resourceId: RESOURCE_ID }],
       worldId: WORLD_ID,
     });
 
@@ -238,34 +275,24 @@ describe("updateDepositTypeInputSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts a partial update with only outputUnitsPerWorker", () => {
+  it("accepts a partial update with only jobs", () => {
     const result = updateDepositTypeInputSchema.safeParse({
       depositTypeId: DEPOSIT_TYPE_ID,
-      outputUnitsPerWorker: 5,
+      jobs: [{ jobId: JOB_ID, outputUnitsPerWorker: 5, workerInputsJson: [] }],
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("accepts a partial update with only jobId", () => {
+  it("rejects an empty jobs array on update", () => {
     const result = updateDepositTypeInputSchema.safeParse({
       depositTypeId: DEPOSIT_TYPE_ID,
-      jobId: JOB_ID,
+      jobs: [],
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts a partial update with only workerInputsJson", () => {
-    const result = updateDepositTypeInputSchema.safeParse({
-      depositTypeId: DEPOSIT_TYPE_ID,
-      workerInputsJson: [{ amountPerWorker: 2, resourceId: RESOURCE_ID }],
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 
   it("rejects an update with no updatable fields", () => {

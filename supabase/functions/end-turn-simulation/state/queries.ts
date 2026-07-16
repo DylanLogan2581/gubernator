@@ -414,7 +414,8 @@ export function fetchDepositTypes(
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "id.asc",
-      select: "id,name,job_id,output_units_per_worker,worker_inputs_json",
+      select:
+        "id,name,deposit_type_jobs(id,deposit_type_id,job_id,output_units_per_worker,worker_inputs_json)",
     },
   });
 }

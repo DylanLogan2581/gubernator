@@ -56,6 +56,7 @@ function makeInput(
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
+    depositTypeJobs: [],
     depositTypes: [],
     deposits: [],
     educationEnrollments: [],

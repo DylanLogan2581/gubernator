@@ -188,30 +188,19 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ee700000-0000-0000-0000-000000000001',
     'ee200000-0000-0000-0000-000000000001',
     'EECW Ore A',
-    'eecw-ore-a',
-    'ee600000-0000-0000-0000-000000000003',
-    1
+    'eecw-ore-a'
   ),
   (
     'ee700000-0000-0000-0000-000000000002',
     'ee200000-0000-0000-0000-000000000002',
     'EECW Ore B',
-    'eecw-ore-b',
-    'ee600000-0000-0000-0000-000000000004',
-    1
+    'eecw-ore-b'
   );
 
 insert into

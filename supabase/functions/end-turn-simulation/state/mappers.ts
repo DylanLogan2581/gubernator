@@ -1,7 +1,14 @@
 import { parseTierEducationConfig } from "../../_shared/education/index.ts";
 import { isRecord } from "../utils.ts";
 
-import { isBlueprintRow, isDepositResourceRow, isDepositRow, isTierRow } from "./rowTypes.ts";
+import {
+  isBlueprintRow,
+  isDepositResourceRow,
+  isDepositRow,
+  isDepositTypeJobRow,
+  isDepositTypeRow,
+  isTierRow,
+} from "./rowTypes.ts";
 
 import type {
   SupabaseArmyRow,
@@ -9,7 +16,7 @@ import type {
   SupabaseAssignmentRow,
   SupabaseBuildingRow,
   SupabaseCitizenRow,
-  SupabaseDepositTypeRow,
+  SupabaseDepositTypeJobRow,
   SupabaseEducationEnrollmentRow,
   SupabaseEducationLevelRow,
   SupabaseEventEffectRow,
@@ -46,6 +53,7 @@ import type {
   SimDeposit,
   SimDepositResource,
   SimDepositType,
+  SimDepositTypeJob,
   SimEducationEnrollment,
   SimEducationLevel,
   SimEffect,
@@ -250,11 +258,13 @@ export function toSimProject(row: SupabaseProjectRow): SimConstructionProject {
   };
 }
 
-export function toSimDepositType(row: SupabaseDepositTypeRow): SimDepositType {
+export function toSimDepositTypeJob(
+  row: SupabaseDepositTypeJobRow,
+): SimDepositTypeJob {
   return {
+    depositTypeId: row.deposit_type_id,
     id: row.id,
     jobId: row.job_id,
-    name: row.name,
     outputUnitsPerWorker: row.output_units_per_worker,
     workerInputsJson: toSimWorkerInputEntries(row.worker_inputs_json),
   };
@@ -588,6 +598,25 @@ export function toBlueprintsAndTiers(rows: readonly unknown[]): {
   }
 
   return { buildingBlueprints, buildingTiers };
+}
+
+export function toDepositTypesAndJobs(rows: readonly unknown[]): {
+  readonly depositTypeJobs: SimDepositTypeJob[];
+  readonly depositTypes: SimDepositType[];
+} {
+  const depositTypes: SimDepositType[] = [];
+  const depositTypeJobs: SimDepositTypeJob[] = [];
+
+  for (const raw of rows) {
+    if (!isDepositTypeRow(raw)) continue;
+    depositTypes.push({ id: raw.id, name: raw.name });
+    for (const job of raw.deposit_type_jobs) {
+      if (!isDepositTypeJobRow(job)) continue;
+      depositTypeJobs.push(toSimDepositTypeJob(job));
+    }
+  }
+
+  return { depositTypeJobs, depositTypes };
 }
 
 export function toDeposits(rows: readonly unknown[]): SimDeposit[] {

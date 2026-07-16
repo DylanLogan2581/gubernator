@@ -24,6 +24,7 @@ const PROJECT_ID = "00000000-0000-0000-0000-000000000050";
 const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000060";
 const DEPOSIT_ID = "00000000-0000-0000-0000-000000000061";
 const DEPOSIT_RES_ID = "00000000-0000-0000-0000-000000000062";
+const DEPOSIT_TYPE_JOB_ID = "00000000-0000-0000-0000-000000000063";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000070";
 const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000080";
 const MANAGED_POP_ID = "00000000-0000-0000-0000-000000000081";
@@ -232,13 +233,19 @@ function makeAllSuccessResponses(): Record<
     "/rest/v1/deposit_types": {
       body: [
         {
-          id: DEPOSIT_TYPE_ID,
-          job_id: JOB_ID,
-          name: "Iron Vein",
-          output_units_per_worker: 2,
-          worker_inputs_json: [
-            { amount_per_worker: 0.5, resource_id: FOOD_ID },
+          deposit_type_jobs: [
+            {
+              deposit_type_id: DEPOSIT_TYPE_ID,
+              id: DEPOSIT_TYPE_JOB_ID,
+              job_id: JOB_ID,
+              output_units_per_worker: 2,
+              worker_inputs_json: [
+                { amount_per_worker: 0.5, resource_id: FOOD_ID },
+              ],
+            },
           ],
+          id: DEPOSIT_TYPE_ID,
+          name: "Iron Vein",
         },
       ],
       status: 200,
@@ -590,8 +597,13 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.depositTypes).toHaveLength(1);
     const depositType = input.depositTypes[0];
     expect(depositType.id).toBe(DEPOSIT_TYPE_ID);
-    expect(depositType.outputUnitsPerWorker).toBe(2);
-    expect(depositType.workerInputsJson).toEqual([
+
+    expect(input.depositTypeJobs).toHaveLength(1);
+    const depositTypeJob = input.depositTypeJobs[0];
+    expect(depositTypeJob.depositTypeId).toBe(DEPOSIT_TYPE_ID);
+    expect(depositTypeJob.jobId).toBe(JOB_ID);
+    expect(depositTypeJob.outputUnitsPerWorker).toBe(2);
+    expect(depositTypeJob.workerInputsJson).toEqual([
       { amountPerWorker: 0.5, resourceId: FOOD_ID },
     ]);
 

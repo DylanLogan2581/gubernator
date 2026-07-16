@@ -263,22 +263,13 @@ values
 
 -- Deposit type (world-level; referenced by deposit_instances)
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a5610000-0000-0000-0000-000000000001',
     'a5100000-0000-0000-0000-000000000001',
     'A5 Iron Vein',
-    'a5-iron-vein',
-    'a5600000-0000-0000-0000-000000000002',
-    1
+    'a5-iron-vein'
   );
 
 -- Managed population type

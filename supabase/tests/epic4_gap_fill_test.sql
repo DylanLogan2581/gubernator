@@ -224,13 +224,11 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_types (world_id, name, slug)
     values (
       '92000000-0000-0000-0000-000000000002',
       'Alpha Into Beta Deposit',
-      'alpha-into-beta-deposit',
-      '94000000-0000-0000-0000-000000000001',
-      1
+      'alpha-into-beta-deposit'
     )
     $test$,
     '42501',

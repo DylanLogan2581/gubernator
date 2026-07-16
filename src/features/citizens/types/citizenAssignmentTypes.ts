@@ -11,7 +11,6 @@ export type CitizenAssignment = {
   } | null;
   readonly createdAt: string;
   readonly depositInstance: {
-    readonly depositTypeJobName: string;
     readonly depositTypeName: string;
     readonly id: string;
     readonly name: string;

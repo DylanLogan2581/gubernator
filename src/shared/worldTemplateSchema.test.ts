@@ -126,9 +126,13 @@ const VALID_TEMPLATE = {
     {
       name: "Iron Vein",
       slug: "iron-vein",
-      job_slug: "farming",
-      output_units_per_worker: 3,
-      worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+      jobs: [
+        {
+          job_slug: "farming",
+          output_units_per_worker: 3,
+          worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+        },
+      ],
     },
   ],
   managed_population_types: [
@@ -383,6 +387,57 @@ describe("worldTemplateSchema", () => {
     };
     const result = worldTemplateSchema.safeParse(withUnitType);
     expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("accepts a deposit type with multiple linked jobs", () => {
+    const withMultipleJobs = {
+      ...VALID_TEMPLATE,
+      deposit_types: [
+        {
+          name: "Copper Vein",
+          slug: "copper-vein",
+          jobs: [
+            {
+              job_slug: "copper-miner",
+              output_units_per_worker: 4,
+              worker_inputs: [],
+            },
+            {
+              job_slug: "skilled-copper-miner",
+              output_units_per_worker: 8,
+              worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+            },
+          ],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withMultipleJobs);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(result.data?.deposit_types[0]?.jobs).toHaveLength(2);
+  });
+
+  it("is lenient toward legacy single-job deposit type templates (job_slug flattened onto the deposit type)", () => {
+    const legacyShape = {
+      ...VALID_TEMPLATE,
+      deposit_types: [
+        {
+          name: "Iron Vein",
+          slug: "iron-vein",
+          job_slug: "farming",
+          output_units_per_worker: 3,
+          worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(legacyShape);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(result.data?.deposit_types[0]?.jobs).toEqual([
+      {
+        job_slug: "farming",
+        output_units_per_worker: 3,
+        worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+      },
+    ]);
   });
 
   it("rejects a unit type with an out-of-range desertion rate", () => {

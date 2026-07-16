@@ -186,7 +186,7 @@ export function buildSettlementAssignmentRows(
     rows.push({
       kind: "deposit",
       deposit,
-      jobName: deposit.depositTypeJobName,
+      jobName: deposit.depositTypeName,
       targetId: deposit.id,
       targetName: deposit.name,
     });

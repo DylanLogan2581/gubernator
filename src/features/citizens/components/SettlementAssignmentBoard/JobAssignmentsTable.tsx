@@ -238,7 +238,7 @@ export function JobAssignmentsTable({
     rows.push({
       kind: "deposit",
       deposit,
-      jobName: deposit.depositTypeJobName,
+      jobName: deposit.depositTypeName,
       targetId: deposit.id,
       targetName: deposit.name,
     });
@@ -749,7 +749,7 @@ function DepositTargetRow({
     setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
-  const label = `${deposit.name} — ${deposit.depositTypeJobName}`;
+  const label = `${deposit.name} — ${deposit.depositTypeName}`;
   const capacity = deposit.maxWorkers;
   const dirtyKey = `deposit-${deposit.id}`;
 

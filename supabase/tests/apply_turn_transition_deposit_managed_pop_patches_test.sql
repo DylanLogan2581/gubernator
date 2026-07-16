@@ -230,30 +230,19 @@ values
 
 -- deposit_types: one per deposit world
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a7700000-0000-0000-0000-000000000001',
     'a7200000-0000-0000-0000-000000000001',
     'ATTDMP Iron Vein 1',
-    'attdmp-iron-vein-1',
-    'a7600000-0000-0000-0000-000000000001',
-    10
+    'attdmp-iron-vein-1'
   ),
   (
     'a7700000-0000-0000-0000-000000000002',
     'a7200000-0000-0000-0000-000000000002',
     'ATTDMP Iron Vein 2',
-    'attdmp-iron-vein-2',
-    'a7600000-0000-0000-0000-000000000002',
-    10
+    'attdmp-iron-vein-2'
   );
 
 -- deposit_instances: world 1 (partial extraction), world 2 (will deplete)

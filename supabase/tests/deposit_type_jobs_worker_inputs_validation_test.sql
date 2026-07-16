@@ -1,4 +1,4 @@
--- pgTAP tests for worker_inputs_json validation on deposit_types.
+-- pgTAP tests for worker_inputs_json validation on deposit_type_jobs.
 -- Covers: malformed shape, unknown resource_id, cross-world resource_id,
 -- soft-deleted resource_id, and valid happy path.
 -- Run with: npx supabase test db
@@ -81,7 +81,7 @@ values
     true
   );
 
--- Deposit job needed for the job_id FK on deposit_types.
+-- Deposit job needed for the job_id FK on deposit_type_jobs.
 insert into
   public.job_definitions (id, world_id, name, slug, job_type)
 values
@@ -93,7 +93,7 @@ values
     'deposit'
   );
 
--- Extra deposit jobs for each test that inserts a deposit_type row.
+-- Extra deposit jobs for each test that inserts a deposit_type_jobs row.
 insert into
   public.job_definitions (id, world_id, name, slug, job_type)
 select
@@ -108,6 +108,17 @@ select
 from
   generate_series(2, 13) as n;
 
+-- The parent deposit type all deposit_type_jobs rows below link to.
+insert into
+  public.deposit_types (id, world_id, name, slug)
+values
+  (
+    'b6000000-0000-0000-0000-000000000001',
+    'b2000000-0000-0000-0000-000000000001',
+    'Iron Deposit',
+    'iron-deposit'
+  );
+
 -- ===========================================================================
 -- SHAPE VALIDATION
 -- All tests run as the postgres superuser (no role set) so RLS is bypassed
@@ -117,10 +128,10 @@ from
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't1', 'b4000000-0000-0000-0000-000000000002', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000002', 1,
       '"not an array"'
     )
     $test$,
@@ -133,10 +144,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't2', 'b4000000-0000-0000-0000-000000000003', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000003', 1,
       '[42]'
     )
     $test$,
@@ -149,10 +160,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't3', 'b4000000-0000-0000-0000-000000000004', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000004', 1,
       '[{"amount_per_worker": 1}]'
     )
     $test$,
@@ -165,10 +176,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't4', 'b4000000-0000-0000-0000-000000000005', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000005', 1,
       '[{"resource_id": 1, "amount_per_worker": 1}]'
     )
     $test$,
@@ -181,10 +192,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't5', 'b4000000-0000-0000-0000-000000000006', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000006', 1,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000001"}]'
     )
     $test$,
@@ -197,10 +208,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't6', 'b4000000-0000-0000-0000-000000000007', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000007', 1,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": "ten"}]'
     )
     $test$,
@@ -213,10 +224,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't7', 'b4000000-0000-0000-0000-000000000008', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000008', 1,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1, "extra": true}]'
     )
     $test$,
@@ -232,10 +243,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't8', 'b4000000-0000-0000-0000-000000000009', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000009', 1,
       '[{"resource_id": "00000000-0000-0000-0000-000000000000", "amount_per_worker": 1}]'
     )
     $test$,
@@ -248,10 +259,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't9', 'b4000000-0000-0000-0000-000000000010', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000010', 1,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000002", "amount_per_worker": 1}]'
     )
     $test$,
@@ -264,10 +275,10 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
-      'b2000000-0000-0000-0000-000000000001',
-      'Test', 't10', 'b4000000-0000-0000-0000-000000000011', 1,
+      'b6000000-0000-0000-0000-000000000001',
+      'b4000000-0000-0000-0000-000000000011', 1,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000003", "amount_per_worker": 1}]'
     )
     $test$,
@@ -283,11 +294,10 @@ select
 select
   lives_ok (
     $test$
-    insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_type_jobs (id, deposit_type_id, job_id, output_units_per_worker)
     values (
       'b5000000-0000-0000-0000-000000000001',
-      'b2000000-0000-0000-0000-000000000001',
-      'Empty Inputs Deposit', 'empty-inputs-deposit',
+      'b6000000-0000-0000-0000-000000000001',
       'b4000000-0000-0000-0000-000000000001', 5
     )
     $test$,
@@ -298,11 +308,10 @@ select
 select
   lives_ok (
     $test$
-    insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (id, deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
       'b5000000-0000-0000-0000-000000000002',
-      'b2000000-0000-0000-0000-000000000001',
-      'Valid Inputs Deposit', 'valid-inputs-deposit',
+      'b6000000-0000-0000-0000-000000000001',
       'b4000000-0000-0000-0000-000000000012', 10,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 2}]'
     )
@@ -314,17 +323,16 @@ select
 select
   lives_ok (
     $test$
-    insert into public.deposit_types (id, world_id, name, slug, job_id, output_units_per_worker, worker_inputs_json)
+    insert into public.deposit_type_jobs (id, deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
     values (
       'b5000000-0000-0000-0000-000000000003',
-      'b2000000-0000-0000-0000-000000000001',
-      'Multi Inputs Deposit', 'multi-inputs-deposit',
+      'b6000000-0000-0000-0000-000000000001',
       'b4000000-0000-0000-0000-000000000013', 4,
       '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1},
         {"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 3}]'
     )
     $test$,
-    'deposit_types with multiple worker_inputs entries is accepted'
+    'deposit_type_jobs with multiple worker_inputs entries is accepted'
   );
 
 select

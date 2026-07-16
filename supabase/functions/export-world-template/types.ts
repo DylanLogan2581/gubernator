@@ -102,16 +102,22 @@ export type RawWorkerInputRow = {
   readonly amount_per_worker: number;
 };
 
+export type RawDepositTypeJobRow = {
+  readonly id: string;
+  readonly deposit_type_id: string;
+  readonly job_id: string;
+  readonly output_units_per_worker: number;
+  readonly worker_inputs_json: readonly RawWorkerInputRow[];
+};
+
 export type RawDepositTypeRow = {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
-  readonly job_id: string;
-  readonly output_units_per_worker: number;
-  readonly worker_inputs_json: readonly RawWorkerInputRow[];
   readonly icon: string | null;
   readonly icon_color: number | null;
   readonly is_trashed: boolean;
+  readonly deposit_type_jobs: readonly RawDepositTypeJobRow[];
 };
 
 export type RawPopulationResourceRow = {
@@ -356,11 +362,13 @@ export type WorldTemplateOutput = {
   readonly deposit_types: readonly {
     readonly name: string;
     readonly slug: string;
-    readonly job_slug: string;
-    readonly output_units_per_worker: number;
-    readonly worker_inputs: readonly {
-      readonly resource_slug: string;
-      readonly amount_per_worker: number;
+    readonly jobs: readonly {
+      readonly job_slug: string;
+      readonly output_units_per_worker: number;
+      readonly worker_inputs: readonly {
+        readonly resource_slug: string;
+        readonly amount_per_worker: number;
+      }[];
     }[];
     readonly icon: string | null;
     readonly icon_color: number | null;

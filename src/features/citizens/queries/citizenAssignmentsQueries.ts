@@ -43,7 +43,6 @@ type CitizenAssignmentRow = {
   readonly created_at: string;
   readonly deposit_instance: {
     readonly deposit_types: {
-      readonly job: { readonly name: string };
       readonly name: string;
     };
     readonly id: string;
@@ -81,7 +80,7 @@ const CITIZEN_ASSIGNMENT_SELECT = [
   "citizen_id,assignment_type,trade_route_end,assigned_on_turn_number,created_at,updated_at",
   "job:job_definitions(id,name)",
   "construction_project:construction_projects(id,building_blueprints(name),building_blueprint_tiers(tier_number))",
-  "deposit_instance:deposit_instances(id,name,deposit_types(name,job:job_definitions!deposit_types_job_id_fk(name)))",
+  "deposit_instance:deposit_instances(id,name,deposit_types(name))",
   "managed_population_instance:managed_population_instances(id,name,managed_population_types(husbandry_job:husbandry_job_id(name),culling_job:culling_job_id(name)))",
   "trade_route:trade_routes(id,trade_route_legs(direction,resource:resources(name)),origin:origin_settlement_id(name),destination:destination_settlement_id(name))",
 ].join(",");
@@ -166,7 +165,6 @@ export function toCitizenAssignment(
       row.deposit_instance === null
         ? null
         : {
-            depositTypeJobName: row.deposit_instance.deposit_types.job.name,
             depositTypeName: row.deposit_instance.deposit_types.name,
             id: row.deposit_instance.id,
             name: row.deposit_instance.name,

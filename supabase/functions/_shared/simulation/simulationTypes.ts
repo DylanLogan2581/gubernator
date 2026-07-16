@@ -320,8 +320,13 @@ export type SimWorkerInputEntry = {
 
 export type SimDepositType = {
   readonly id: string;
-  readonly jobId: string;
   readonly name: string;
+};
+
+export type SimDepositTypeJob = {
+  readonly depositTypeId: string;
+  readonly id: string;
+  readonly jobId: string;
   readonly outputUnitsPerWorker: number;
   readonly workerInputsJson: readonly SimWorkerInputEntry[];
 };
@@ -518,6 +523,7 @@ export type SimulationInputState = {
   readonly citizenAssignments: readonly SimCitizenAssignment[];
   readonly citizens: readonly SimCitizen[];
   readonly constructionProjects: readonly SimConstructionProject[];
+  readonly depositTypeJobs: readonly SimDepositTypeJob[];
   readonly depositTypes: readonly SimDepositType[];
   readonly deposits: readonly SimDeposit[];
   readonly educationEnrollments: readonly SimEducationEnrollment[];

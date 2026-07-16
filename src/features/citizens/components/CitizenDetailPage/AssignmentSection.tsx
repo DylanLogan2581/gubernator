@@ -100,7 +100,7 @@ function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
     }
     case "deposit": {
       if (assignment.depositInstance === null) return null;
-      return `${assignment.depositInstance.name} — ${assignment.depositInstance.depositTypeJobName}`;
+      return `${assignment.depositInstance.name} — ${assignment.depositInstance.depositTypeName}`;
     }
     case "husbandry":
     case "culling": {

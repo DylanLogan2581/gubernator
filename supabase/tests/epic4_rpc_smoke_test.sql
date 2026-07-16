@@ -148,42 +148,23 @@ values
 
 -- Deposit types: one active, one pre-trashed.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ab500000-0000-0000-0000-000000000001',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Coal',
-    'smoke-coal',
-    'ab300000-0000-0000-0000-000000000003',
-    1
+    'smoke-coal'
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ab500000-0000-0000-0000-000000000002',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Coal Trashed',
     'smoke-coal-trashed',
-    'ab300000-0000-0000-0000-000000000003',
-    1,
     true
   );
 

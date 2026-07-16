@@ -201,51 +201,31 @@ values
 
 -- Deposit types
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    worker_inputs_json,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'f3700000-0000-0000-0000-000000000001',
     'f3200000-0000-0000-0000-000000000001',
     'ATDMPD Forest',
-    'atdmpd-forest',
-    'f3700000-0000-0000-0000-000000000020',
-    '[]'::jsonb,
-    1
+    'atdmpd-forest'
   ),
   (
     'f3700000-0000-0000-0000-000000000002',
     'f3200000-0000-0000-0000-000000000002',
     'ATDMPD Quarry',
-    'atdmpd-quarry',
-    'f3700000-0000-0000-0000-000000000021',
-    '[]'::jsonb,
-    1
+    'atdmpd-quarry'
   ),
   (
     'f3700000-0000-0000-0000-000000000003',
     'f3200000-0000-0000-0000-000000000003',
     'ATDMPD Mine',
-    'atdmpd-mine',
-    'f3700000-0000-0000-0000-000000000022',
-    '[]'::jsonb,
-    1
+    'atdmpd-mine'
   ),
   (
     'f3700000-0000-0000-0000-000000000004',
     'f3200000-0000-0000-0000-000000000004',
     'ATDMPD Vault',
-    'atdmpd-vault',
-    'f3700000-0000-0000-0000-000000000023',
-    '[]'::jsonb,
-    1
+    'atdmpd-vault'
   );
 
 -- Job definitions for managed population types (husbandry and culling)

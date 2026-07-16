@@ -6,7 +6,7 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import { depositInstancesBySettlementQueryOptions } from "./depositInstancesQueries";
 
 describe("depositInstancesBySettlementQueryOptions", () => {
-  it("disambiguates deposit_types→job_definitions via named FK constraint", async () => {
+  it("embeds deposit_types without the dropped single-job FK (#1246)", async () => {
     const returns = vi.fn().mockResolvedValue({ data: [], error: null });
     const secondOrder = vi.fn(() => ({ returns }));
     const firstOrder = vi.fn(() => ({ order: secondOrder }));
@@ -23,7 +23,10 @@ describe("depositInstancesBySettlementQueryOptions", () => {
     );
 
     expect(select).toHaveBeenCalledWith(
-      expect.stringContaining("deposit_types_job_id_fk"),
+      expect.stringContaining("deposit_types(name,icon,icon_color)"),
+    );
+    expect(select).toHaveBeenCalledWith(
+      expect.not.stringContaining("deposit_types_job_id_fk"),
     );
   });
 });

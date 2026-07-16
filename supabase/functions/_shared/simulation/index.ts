@@ -44,6 +44,7 @@ export type {
   SimDepositResource,
   SimDepositStatus,
   SimDepositType,
+  SimDepositTypeJob,
   SimJob,
   SimJobIoEntry,
   SimJobType,

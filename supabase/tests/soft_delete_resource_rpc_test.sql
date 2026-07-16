@@ -151,23 +151,30 @@ values
     'deposit'
   );
 
--- Deposit type referencing the deletable resource in worker_inputs_json.
+-- Deposit type (job link now lives on deposit_type_jobs).
 insert into
-  public.deposit_types (
+  public.deposit_types (id, world_id, name, slug)
+values
+  (
+    'd7000000-0000-0000-0000-000000000001',
+    'd2000000-0000-0000-0000-000000000001',
+    'Ore Deposit',
+    'ore-deposit'
+  );
+
+-- Deposit type job referencing the deletable resource in worker_inputs_json.
+insert into
+  public.deposit_type_jobs (
     id,
-    world_id,
-    name,
-    slug,
+    deposit_type_id,
     job_id,
     output_units_per_worker,
     worker_inputs_json
   )
 values
   (
+    'd7100000-0000-0000-0000-000000000001',
     'd7000000-0000-0000-0000-000000000001',
-    'd2000000-0000-0000-0000-000000000001',
-    'Ore Deposit',
-    'ore-deposit',
     'd4000000-0000-0000-0000-000000000002',
     5,
     '[{"resource_id":"d3000000-0000-0000-0000-000000000001","amount_per_worker":1},
@@ -421,7 +428,7 @@ select
   );
 
 -- ---------------------------------------------------------------------------
--- Branch 6: deposit_types.worker_inputs_json
+-- Branch 6: deposit_type_jobs.worker_inputs_json
 -- Deletable Ore removed; Keeper Stone entry preserved.
 -- ---------------------------------------------------------------------------
 select
@@ -430,9 +437,9 @@ select
       select
         worker_inputs_json
       from
-        public.deposit_types
+        public.deposit_type_jobs
       where
-        id = 'd7000000-0000-0000-0000-000000000001'
+        id = 'd7100000-0000-0000-0000-000000000001'
     ),
     '[{"resource_id":"d3000000-0000-0000-0000-000000000002","amount_per_worker":2}]'::jsonb,
     'deletable resource stripped from deposit worker_inputs_json; keeper entry preserved'

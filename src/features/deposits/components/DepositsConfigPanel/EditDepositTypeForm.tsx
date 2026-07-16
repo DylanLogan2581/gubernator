@@ -1,16 +1,12 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
-import {
-  ResourceAmountListEditor,
-  type ResourceAmountEntry,
-} from "@/components/shared/ResourceAmountListEditor";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,14 +18,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
-import { sortByName } from "@/lib/sortUtils";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
@@ -41,27 +35,39 @@ import {
   type UpdateDepositTypeInput,
 } from "../../schemas/depositSchemas";
 
-import { useDepositTypeJobLink } from "./hooks/UseDepositTypeJobLink";
+import { DepositTypeJobRow } from "./DepositTypeJobRow";
+import {
+  useDepositTypeJobRows,
+  type DepositTypeJobRowState,
+} from "./hooks/UseDepositTypeJobRows";
 import { toWorkerInputsEntries } from "./utils/WorkerInputsUtils";
 
 import type { DepositType } from "../../types/depositTypes";
 
 type DepositTypeFieldErrors = {
-  readonly jobId?: string;
+  readonly jobs?: string;
   readonly name?: string;
-  readonly outputUnitsPerWorker?: string;
   readonly slug?: string;
 };
 
+function toInitialRows(
+  depositType: DepositType,
+): readonly DepositTypeJobRowState[] {
+  return depositType.jobs.map((job) => ({
+    localId: job.id,
+    jobId: job.jobId,
+    outputUnitsPerWorker: String(job.outputUnitsPerWorker),
+    workerInputs: toWorkerInputsEntries(job.workerInputsJson),
+  }));
+}
+
 export function EditDepositTypeForm({
-  allDepositTypes,
   depositJobs,
   depositType,
   onClose,
   queryClient,
   worldId,
 }: {
-  readonly allDepositTypes: readonly DepositType[];
   readonly depositJobs: readonly JobDefinition[];
   readonly depositType: DepositType;
   readonly onClose: () => void;
@@ -78,25 +84,18 @@ export function EditDepositTypeForm({
 
   const [name, setName] = useState(depositType.name);
   const [slug, setSlug] = useState(depositType.slug);
-  const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState(
-    String(depositType.outputUnitsPerWorker),
-  );
-  const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>(() =>
-    toWorkerInputsEntries(depositType.workerInputsJson),
-  );
   const [icon, setIcon] = useState<string | null>(depositType.icon);
   const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
     depositType.iconColor as CategoricalSlot | null,
   );
+  const { rows, addRow, removeRow, updateRow, duplicateJobIds } =
+    useDepositTypeJobRows(toInitialRows(depositType));
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof DepositTypeFieldErrors>();
-  const { jobId, jobLinkError, handleJobChange } = useDepositTypeJobLink(
-    allDepositTypes,
-    depositType.id,
-    depositType.jobId,
-  );
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
+  const hasEmptyJobSelection = rows.some((row) => row.jobId === "");
+  const hasDuplicateJobs = duplicateJobIds.size > 0;
 
   function handleNameChange(value: string): void {
     setName(value);
@@ -111,23 +110,25 @@ export function EditDepositTypeForm({
     event.preventDefault();
     clear();
 
-    if (jobLinkError !== undefined) return;
+    if (hasDuplicateJobs || hasEmptyJobSelection) return;
 
     const updateInput: UpdateDepositTypeInput = {
       depositTypeId: depositType.id,
       icon,
       iconColor,
-      jobId,
-      name,
-      outputUnitsPerWorker:
-        outputUnitsPerWorker !== ""
-          ? parseInt(outputUnitsPerWorker, 10)
-          : undefined,
-      slug,
-      workerInputsJson: workerInputs.map((e) => ({
-        amountPerWorker: parseFloat(e.amount),
-        resourceId: e.resourceId,
+      jobs: rows.map((row) => ({
+        jobId: row.jobId,
+        outputUnitsPerWorker:
+          row.outputUnitsPerWorker !== ""
+            ? parseInt(row.outputUnitsPerWorker, 10)
+            : 0,
+        workerInputsJson: row.workerInputs.map((e) => ({
+          amountPerWorker: parseFloat(e.amount),
+          resourceId: e.resourceId,
+        })),
       })),
+      name,
+      slug,
       worldId,
     };
 
@@ -180,7 +181,7 @@ export function EditDepositTypeForm({
           <DialogHeader>
             <DialogTitle>Edit deposit type</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
+          <div className="grid max-h-[70vh] gap-3 overflow-y-auto pr-1">
             <Label htmlFor="deposit-edit-name" className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Name</span>
               <Input
@@ -217,9 +218,7 @@ export function EditDepositTypeForm({
             </Label>
             {depositJobs.length === 0 ? (
               <div className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">
-                  Linked deposit job
-                </span>
+                <span className="text-muted-foreground">Linked jobs</span>
                 <EmptyState
                   title="No deposit jobs yet"
                   description="Create one to assign to this deposit type."
@@ -237,69 +236,53 @@ export function EditDepositTypeForm({
                 />
               </div>
             ) : (
-              <Label htmlFor="deposit-edit-job" className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">
-                  Linked deposit job
-                </span>
-                <NativeSelect
-                  id="deposit-edit-job"
-                  aria-invalid={
-                    fieldErrors.jobId !== undefined ||
-                    jobLinkError !== undefined
-                  }
-                  className="w-full"
-                  disabled={isPending}
-                  value={jobId}
-                  onChange={(e) => {
-                    handleJobChange(e.currentTarget.value);
-                  }}
-                >
-                  <option value="">Select a deposit job…</option>
-                  {sortByName(depositJobs).map((job) => (
-                    <option key={job.id} value={job.id}>
-                      {job.name}
-                    </option>
-                  ))}
-                </NativeSelect>
-                {jobLinkError !== undefined ? (
-                  <p className="text-xs text-destructive">{jobLinkError}</p>
-                ) : fieldErrors.jobId !== undefined ? (
-                  <p className="text-xs text-destructive">
-                    {fieldErrors.jobId}
-                  </p>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Linked jobs
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={addRow}
+                  >
+                    <Plus aria-hidden="true" />
+                    Add job
+                  </Button>
+                </div>
+                {fieldErrors.jobs !== undefined ? (
+                  <p className="text-xs text-destructive">{fieldErrors.jobs}</p>
                 ) : null}
-              </Label>
+                {rows.map((row, index) => (
+                  <DepositTypeJobRow
+                    key={row.localId}
+                    canRemove={rows.length > 1}
+                    disabled={isPending}
+                    depositJobs={depositJobs}
+                    index={index}
+                    isDuplicate={duplicateJobIds.has(row.jobId)}
+                    jobId={row.jobId}
+                    outputUnitsPerWorker={row.outputUnitsPerWorker}
+                    resources={resources}
+                    workerInputs={row.workerInputs}
+                    onJobIdChange={(jobId) => {
+                      updateRow(row.localId, { jobId });
+                    }}
+                    onOutputUnitsPerWorkerChange={(outputUnitsPerWorker) => {
+                      updateRow(row.localId, { outputUnitsPerWorker });
+                    }}
+                    onRemove={() => {
+                      removeRow(row.localId);
+                    }}
+                    onWorkerInputsChange={(workerInputs) => {
+                      updateRow(row.localId, { workerInputs });
+                    }}
+                  />
+                ))}
+              </div>
             )}
-            <Label htmlFor="deposit-edit-output" className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Output units per worker
-              </span>
-              <Input
-                id="deposit-edit-output"
-                aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
-                disabled={isPending}
-                inputMode="numeric"
-                placeholder="1"
-                value={outputUnitsPerWorker}
-                onChange={(e) => {
-                  setOutputUnitsPerWorker(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.outputUnitsPerWorker !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.outputUnitsPerWorker}
-                </p>
-              ) : null}
-            </Label>
-            <ResourceAmountListEditor
-              addLabel="Add input"
-              amountLabel="amount per worker"
-              disabled={isPending}
-              entries={workerInputs}
-              label="Worker inputs"
-              resources={resources}
-              onChange={setWorkerInputs}
-            />
           </div>
           <DialogFooter className="sm:justify-between">
             <Button
@@ -327,7 +310,7 @@ export function EditDepositTypeForm({
               <Button
                 type="submit"
                 size="sm"
-                disabled={isPending || jobLinkError !== undefined}
+                disabled={isPending || hasDuplicateJobs || hasEmptyJobSelection}
               >
                 Save
               </Button>

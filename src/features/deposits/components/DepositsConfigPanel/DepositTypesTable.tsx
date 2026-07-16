@@ -5,12 +5,14 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { type JobDefinition } from "@/features/jobs";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
 import { resolveIconTone } from "@/lib/categoricalPalette";
+import { sortByName } from "@/lib/sortUtils";
 
 import {
   hardDeleteDepositTypeMutationOptions,
@@ -25,7 +27,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type DepositTypesTableProps = {
-  readonly allDepositTypes: readonly DepositType[];
   readonly canEdit: boolean;
   readonly depositJobs: readonly JobDefinition[];
   readonly depositTypes: readonly DepositType[];
@@ -83,30 +84,35 @@ function buildColumns({
       },
     },
     {
-      id: "job",
-      accessorFn: (row) => row.jobId,
-      enableSorting: true,
-      header: "Linked job",
+      id: "jobs",
+      accessorFn: (row) => row.jobs.length,
+      enableSorting: false,
+      header: "Linked jobs",
       cell: ({ row }) => {
         const depositType = row.original;
-        const linkedJob = depositJobs.find((j) => j.id === depositType.jobId);
-        if (linkedJob === undefined) {
+        if (depositType.jobs.length === 0) {
           return <span className="text-sm text-muted-foreground">—</span>;
         }
-        return <span className="text-sm">{linkedJob.name}</span>;
+        const jobNames = sortByName(
+          depositType.jobs.flatMap((job) => {
+            const linkedJob = depositJobs.find((j) => j.id === job.jobId);
+            return linkedJob === undefined ? [] : [linkedJob];
+          }),
+        ).map((job) => job.name);
+        return (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary">
+              {depositType.jobs.length}{" "}
+              {depositType.jobs.length === 1 ? "job" : "jobs"}
+            </Badge>
+            {jobNames.length > 0 ? (
+              <span className="text-sm text-muted-foreground">
+                {jobNames.join(", ")}
+              </span>
+            ) : null}
+          </div>
+        );
       },
-    },
-    {
-      id: "outputUnitsPerWorker",
-      accessorFn: (row) => row.outputUnitsPerWorker,
-      enableSorting: true,
-      header: "Output / worker",
-      meta: { align: "right" },
-      cell: ({ row }) => (
-        <span className="tabular-nums text-sm text-muted-foreground">
-          {row.original.outputUnitsPerWorker.toLocaleString()}
-        </span>
-      ),
     },
     {
       id: "actions",
@@ -202,7 +208,6 @@ function buildColumns({
 // instead of always mounting an inline edit row, so a world with hundreds
 // of deposit types doesn't mount hundreds of mutation hooks.
 export function DepositTypesTable({
-  allDepositTypes,
   canEdit,
   depositJobs,
   depositTypes,
@@ -287,7 +292,6 @@ export function DepositTypesTable({
 
       {editingDepositType !== null ? (
         <EditDepositTypeForm
-          allDepositTypes={allDepositTypes}
           depositJobs={depositJobs}
           depositType={editingDepositType}
           queryClient={queryClient}

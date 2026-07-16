@@ -110,6 +110,8 @@ export type {
 export type {
   CreateDepositTypeInput,
   CreateDepositTypeValues,
+  DepositTypeJobInput,
+  DepositTypeJobValues,
   HardDeleteDepositTypeInput,
   HardDeleteDepositTypeValues,
   RestoreDepositTypeInput,
@@ -134,6 +136,7 @@ export type {
 } from "./types/depositInstanceTypes";
 export type {
   DepositType,
+  DepositTypeJob,
   HardDeleteDepositTypeResult,
   RestoreDepositTypeResult,
   SoftDeleteDepositTypeResult,

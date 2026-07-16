@@ -156,23 +156,13 @@ values
 
 -- deposit_types: fe7...001 = active deposit type (job = fe6...001)
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'fe700000-0000-0000-0000-000000000001',
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA Ore',
     'fepta-ore',
-    'fe600000-0000-0000-0000-000000000001',
-    5,
     false
   );
 

@@ -10,13 +10,13 @@ import {
 } from "./configParsers.ts";
 import {
   toBlueprintsAndTiers,
+  toDepositTypesAndJobs,
   toDeposits,
   toSimArmy,
   toSimArmyUnit,
   toSimBuilding,
   toSimCitizen,
   toSimCitizenAssignment,
-  toSimDepositType,
   toSimEducationEnrollment,
   toSimEducationLevel,
   toSimEffect,
@@ -80,7 +80,6 @@ import {
   isAssignmentRow,
   isBuildingRow,
   isCitizenRow,
-  isDepositTypeRow,
   isEducationEnrollmentRow,
   isEducationLevelRow,
   isEventEffectRow,
@@ -344,6 +343,11 @@ async function resolveEndTurnInputFromCtx(
     (blueprintsResult as Extract<typeof blueprintsResult, { ok: true }>).rows,
   );
 
+  const { depositTypeJobs, depositTypes } = toDepositTypesAndJobs(
+    (depositTypesResult as Extract<typeof depositTypesResult, { ok: true }>)
+      .rows,
+  );
+
   // Group event effects by event_id
   const effectsByEventId = new Map<string, ReturnType<typeof toSimEffect>[]>();
   (eventEffectsResult as Extract<typeof eventEffectsResult, { ok: true }>).rows
@@ -382,11 +386,8 @@ async function resolveEndTurnInputFromCtx(
     ).rows
       .filter(isProjectRow)
       .map(toSimProject),
-    depositTypes: (
-      depositTypesResult as Extract<typeof depositTypesResult, { ok: true }>
-    ).rows
-      .filter(isDepositTypeRow)
-      .map(toSimDepositType),
+    depositTypeJobs,
+    depositTypes,
     deposits: toDeposits(
       (depositsResult as Extract<typeof depositsResult, { ok: true }>).rows,
     ),

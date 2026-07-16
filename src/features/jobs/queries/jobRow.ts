@@ -11,7 +11,7 @@ export type JobIoEntryRow = {
 export type JobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly icon: string | null;
@@ -35,7 +35,10 @@ export const JOB_SELECT = [
   "id,world_id,name,slug,icon,icon_color,job_type,base_capacity,trader_capacity_per_worker",
   "linked_deposit_type_id,linked_managed_population_type_id,required_education_level_id",
   "inputs_json,outputs_json,is_trashed,created_at,updated_at",
-  "deposit_types!deposit_types_job_id_fk(id)",
+  // A job is "active" if it's still linked from any deposit type's job list
+  // (deposit_type_jobs, #1246) — replaces the old one-job-per-deposit-type
+  // deposit_types!deposit_types_job_id_fk embed.
+  "deposit_type_jobs!deposit_type_jobs_job_world_fk(id)",
   "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
   "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
   // Embedded solely so the page query can order by education level rank
@@ -60,7 +63,7 @@ export function toJob(row: JobRow): JobDefinition {
     baseCapacity: row.base_capacity,
     createdAt: row.created_at,
     hasActiveReferences:
-      row.deposit_types.length > 0 ||
+      row.deposit_type_jobs.length > 0 ||
       row.husbandry_mpt.length > 0 ||
       row.culling_mpt.length > 0,
     icon: row.icon,

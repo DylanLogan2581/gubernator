@@ -276,22 +276,13 @@ values
 
 -- Deposit type in World B
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'e1910000-0000-0000-0000-000000000001',
     'e1200000-0000-0000-0000-000000000002',
     'ATTCW Ore B',
-    'attcw-ore-b',
-    'e1900000-0000-0000-0000-000000000001',
-    1
+    'attcw-ore-b'
   );
 
 -- Deposit instance in World B's settlement B1

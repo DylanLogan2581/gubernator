@@ -19,7 +19,7 @@ describe("settlementTargetAssignmentsQueryOptions", () => {
     return { client: { from } as unknown as GubernatorSupabaseClient, select };
   }
 
-  it("disambiguates deposit_types→job_definitions via named FK constraint", async () => {
+  it("embeds deposit_types without the dropped single-job FK (#1246)", async () => {
     const { client, select } = buildClient();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, retryDelay: 0 } },
@@ -30,7 +30,10 @@ describe("settlementTargetAssignmentsQueryOptions", () => {
     );
 
     expect(select).toHaveBeenCalledWith(
-      expect.stringContaining("deposit_types_job_id_fk"),
+      expect.stringContaining("deposit_instances(id,name,deposit_types(name))"),
+    );
+    expect(select).toHaveBeenCalledWith(
+      expect.not.stringContaining("deposit_types_job_id_fk"),
     );
   });
 

@@ -96,7 +96,7 @@ psql "$DB" -v ON_ERROR_STOP=1 -f "$HERE/cleanup.sql" >/dev/null
 
 echo "[4/4] dumping and assembling seed.sql"
 q "delete from public.settlement_turn_resource_snapshots where turn_transition_id is null; delete from public.settlement_turn_snapshots where turn_transition_id is null;"
-TABLES="worlds namesets resources job_definitions building_blueprints building_blueprint_tiers deposit_types managed_population_types nations settlements citizens nation_relationships partnerships settlement_resource_stockpiles deposit_instances deposit_instance_resources managed_population_instances construction_projects settlement_buildings trade_routes trade_route_legs citizen_assignments world_admins user_active_player_characters turn_transitions turn_log_entries notifications settlement_turn_snapshots settlement_turn_resource_snapshots"
+TABLES="worlds namesets resources job_definitions building_blueprints building_blueprint_tiers deposit_types deposit_type_jobs managed_population_types nations settlements citizens nation_relationships partnerships settlement_resource_stockpiles deposit_instances deposit_instance_resources managed_population_instances construction_projects settlement_buildings trade_routes trade_route_legs citizen_assignments world_admins user_active_player_characters turn_transitions turn_log_entries notifications settlement_turn_snapshots settlement_turn_resource_snapshots"
 TFLAGS=""
 for t in $TABLES; do TFLAGS="$TFLAGS -t public.$t"; done
 # shellcheck disable=SC2086
@@ -104,7 +104,7 @@ pg_dump "$DB" --data-only --column-inserts --no-owner --no-privileges --no-comme
 
 DATA="$HERE/world_data.sql" AUTH="$HERE/auth_users.sql" BASE="$HERE/baseline.sql" OUT="$ROOT/supabase/seed.sql" python3 - << 'PYEOF'
 import os, re
-order = ['worlds','resources','job_definitions','deposit_types','managed_population_types',
+order = ['worlds','resources','job_definitions','deposit_types','deposit_type_jobs','managed_population_types',
  'building_blueprints','building_blueprint_tiers','namesets','nations','settlements','citizens',
  'nation_relationships','partnerships','settlement_resource_stockpiles','deposit_instances',
  'deposit_instance_resources','managed_population_instances','construction_projects',

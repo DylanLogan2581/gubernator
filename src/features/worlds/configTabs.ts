@@ -26,7 +26,7 @@ export const CONFIG_TABS = [
   { id: "resources", label: "Resources", icon: Package },
   { id: "jobs", label: "Jobs", icon: Briefcase },
   { id: "buildings", label: "Buildings", icon: Building2 },
-  { id: "deposits", label: "Deposits", icon: Gem },
+  { id: "deposits", label: "Deposit Types", icon: Gem },
   { id: "managed-populations", label: "Managed Populations", icon: PawPrint },
   { id: "cultures-religions", label: "Cultures & Religions", icon: Landmark },
   { id: "education", label: "Education", icon: GraduationCap },

@@ -159,9 +159,13 @@ const BASE_TEMPLATE: WorldTemplate = {
     {
       name: "Iron Vein",
       slug: "iron-vein",
-      job_slug: "farming",
-      output_units_per_worker: 3,
-      worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+      jobs: [
+        {
+          job_slug: "farming",
+          output_units_per_worker: 3,
+          worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+        },
+      ],
       icon: null,
       icon_color: null,
     },
@@ -348,7 +352,7 @@ describe("computeDryRunReport", () => {
     template.jobs[0].outputs = [
       { resource_slug: "missing-resource", amount_per_worker: 2 },
     ];
-    template.deposit_types[0].job_slug = "missing-job";
+    template.deposit_types[0].jobs[0].job_slug = "missing-job";
     template.managed_population_types[0].husbandry_job_slug = "missing-job";
     const report = computeDryRunReport(template);
     expect(report.danglingRefs).toContain(

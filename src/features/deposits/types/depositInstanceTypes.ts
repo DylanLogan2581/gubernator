@@ -16,7 +16,6 @@ export type DepositInstance = {
   readonly depositTypeIcon: string | null;
   readonly depositTypeIconColor: number | null;
   readonly depositTypeId: string;
-  readonly depositTypeJobName: string;
   readonly depositTypeName: string;
   readonly discoveredByEventId: string | null;
   readonly id: string;

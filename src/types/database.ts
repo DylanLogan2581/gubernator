@@ -1133,6 +1133,54 @@ export type Database = {
           },
         ];
       };
+      deposit_type_jobs: {
+        Row: {
+          created_at: string;
+          deposit_type_id: string;
+          id: string;
+          job_id: string;
+          output_units_per_worker: number;
+          updated_at: string;
+          worker_inputs_json: Json;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          deposit_type_id: string;
+          id?: string;
+          job_id: string;
+          output_units_per_worker: number;
+          updated_at?: string;
+          worker_inputs_json?: Json;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          deposit_type_id?: string;
+          id?: string;
+          job_id?: string;
+          output_units_per_worker?: number;
+          updated_at?: string;
+          worker_inputs_json?: Json;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deposit_type_jobs_deposit_type_world_fk";
+            columns: ["deposit_type_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_types";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "deposit_type_jobs_job_world_fk";
+            columns: ["job_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id", "world_id"];
+          },
+        ];
+      };
       deposit_types: {
         Row: {
           created_at: string;
@@ -1140,12 +1188,9 @@ export type Database = {
           icon_color: number | null;
           id: string;
           is_trashed: boolean;
-          job_id: string;
           name: string;
-          output_units_per_worker: number;
           slug: string;
           updated_at: string;
-          worker_inputs_json: Json;
           world_id: string;
         };
         Insert: {
@@ -1154,12 +1199,9 @@ export type Database = {
           icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
-          job_id: string;
           name: string;
-          output_units_per_worker: number;
           slug: string;
           updated_at?: string;
-          worker_inputs_json?: Json;
           world_id: string;
         };
         Update: {
@@ -1168,22 +1210,12 @@ export type Database = {
           icon_color?: number | null;
           id?: string;
           is_trashed?: boolean;
-          job_id?: string;
           name?: string;
-          output_units_per_worker?: number;
           slug?: string;
           updated_at?: string;
-          worker_inputs_json?: Json;
           world_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "deposit_types_job_id_fk";
-            columns: ["job_id"];
-            isOneToOne: false;
-            referencedRelation: "job_definitions";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "deposit_types_world_id_fkey";
             columns: ["world_id"];
@@ -7288,12 +7320,9 @@ export type Database = {
           icon_color: number | null;
           id: string;
           is_trashed: boolean;
-          job_id: string;
           name: string;
-          output_units_per_worker: number;
           slug: string;
           updated_at: string;
-          worker_inputs_json: Json;
           world_id: string;
         }[];
         SetofOptions: {
@@ -8047,12 +8076,9 @@ export type Database = {
           icon_color: number | null;
           id: string;
           is_trashed: boolean;
-          job_id: string;
           name: string;
-          output_units_per_worker: number;
           slug: string;
           updated_at: string;
-          worker_inputs_json: Json;
           world_id: string;
         }[];
         SetofOptions: {

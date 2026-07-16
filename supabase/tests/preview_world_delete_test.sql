@@ -124,24 +124,15 @@ values
     'pwd-granary'
   );
 
--- Deposit type (needs job FK; reuse job_definition above)
+-- Deposit type
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'bf800000-0000-0000-0000-000000000001',
     'bf200000-0000-0000-0000-000000000001',
     'PWD Iron Seam',
-    'pwd-iron-seam',
-    'bf600000-0000-0000-0000-000000000001',
-    5
+    'pwd-iron-seam'
   );
 
 -- Event group

@@ -119,22 +119,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     '49000000-0000-0000-0000-000000000001',
     '45000000-0000-0000-0000-000000000001',
     'DIR Iron Deposit',
-    'dir-iron-deposit',
-    '48000000-0000-0000-0000-000000000001',
-    5
+    'dir-iron-deposit'
   );
 
 insert into

@@ -16,10 +16,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { createDepositTypeMutationOptions } from "../../mutations/depositsMutations";
-import {
-  activeDepositTypesByWorldQueryOptions,
-  depositTypesPageQueryOptions,
-} from "../../queries/depositsQueries";
+import { depositTypesPageQueryOptions } from "../../queries/depositsQueries";
 
 import { CreateDepositTypeForm } from "./CreateDepositTypeForm";
 import { DepositsFilters } from "./DepositsFilters";
@@ -32,11 +29,11 @@ import type { SortingState } from "@tanstack/react-table";
 const PAGE_SIZE = 25;
 
 // Maps a DataTable column id to the deposit types page query's sort column
-// (see depositsQueries.ts), mirroring the jobs/resources config panels.
+// (see depositsQueries.ts). Only "name" is sortable now: a deposit type can
+// link 1..n jobs, so neither "linked job" nor "output per worker" is a
+// single-valued, sortable column anymore (#1246).
 const SORT_BY_ID: Record<string, DepositTypesSortBy> = {
-  job: "job",
   name: "name",
-  outputUnitsPerWorker: "outputUnitsPerWorker",
 };
 
 type DepositsConfigPanelProps = {
@@ -54,7 +51,6 @@ export function DepositsConfigPanel({
   const canEdit = canAdmin && !isArchived;
 
   const [search, setSearch] = useState("");
-  const [jobId, setJobId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
@@ -68,7 +64,6 @@ export function DepositsConfigPanel({
 
   const depositTypesPageQuery = useQuery(
     depositTypesPageQueryOptions(worldId, {
-      jobId,
       page: pageIndex,
       pageSize: PAGE_SIZE,
       search: debouncedSearch,
@@ -77,18 +72,11 @@ export function DepositsConfigPanel({
       trash: showTrash,
     }),
   );
-  // Full active list, kept unpaginated (as today) so create/edit forms can
-  // validate slug/job-link conflicts against every active deposit type in
-  // the world, not just the rows visible on the current page.
-  const activeDepositTypesQuery = useQuery(
-    activeDepositTypesByWorldQueryOptions(worldId),
-  );
   const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
   const createMutation = useMutation(
     createDepositTypeMutationOptions({ queryClient }),
   );
 
-  const allDepositTypes = activeDepositTypesQuery.data ?? [];
   const depositJobs = depositJobsQuery.data ?? [];
 
   function resetToFirstPage(): void {
@@ -128,13 +116,7 @@ export function DepositsConfigPanel({
       </div>
 
       <DepositsFilters
-        depositJobs={depositJobs}
-        jobId={jobId}
         search={search}
-        onJobIdChange={(next) => {
-          setJobId(next);
-          resetToFirstPage();
-        }}
         onSearchChange={(next) => {
           setSearch(next);
           resetToFirstPage();
@@ -142,7 +124,7 @@ export function DepositsConfigPanel({
       />
 
       {depositTypesPageQuery.isPending ? (
-        <TableSkeleton columnCount={4} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
       ) : depositTypesPageQuery.isError ? (
         <ErrorState
           title="Deposit types could not be loaded"
@@ -151,10 +133,10 @@ export function DepositsConfigPanel({
       ) : items.length === 0 ? (
         showTrash ? (
           <EmptyState title="No deposit types in trash" />
-        ) : debouncedSearch !== "" || jobId !== null ? (
+        ) : debouncedSearch !== "" ? (
           <EmptyState
             title="No matching deposit types"
-            description="Try a different search or filter."
+            description="Try a different search."
             action={
               <Button
                 type="button"
@@ -162,11 +144,10 @@ export function DepositsConfigPanel({
                 size="sm"
                 onClick={() => {
                   setSearch("");
-                  setJobId(null);
                   resetToFirstPage();
                 }}
               >
-                Clear filters
+                Clear search
               </Button>
             }
           />
@@ -185,7 +166,6 @@ export function DepositsConfigPanel({
             ).toString()} of ${totalCount.toString()}`}
           </p>
           <DepositTypesTable
-            allDepositTypes={allDepositTypes}
             canEdit={canEdit}
             depositJobs={depositJobs}
             depositTypes={items}
@@ -207,7 +187,6 @@ export function DepositsConfigPanel({
 
       {canEdit && showForm && !showTrash ? (
         <CreateDepositTypeForm
-          allDepositTypes={allDepositTypes}
           depositJobs={depositJobs}
           isPending={createMutation.isPending}
           worldId={worldId}

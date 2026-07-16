@@ -137,6 +137,7 @@ function makeContext(
       citizenAssignments: assignments,
       citizens,
       constructionProjects: [],
+      depositTypeJobs: [],
       depositTypes: [],
       deposits: [],
       educationEnrollments,

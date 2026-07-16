@@ -1222,7 +1222,7 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly icon: string | null;
   readonly icon_color: number | null;
@@ -1259,15 +1259,18 @@ type TestEducationLevelRow = {
 
 type TestDepositTypeRow = {
   readonly created_at: string;
+  readonly deposit_type_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly output_units_per_worker: number;
+    readonly worker_inputs_json: readonly unknown[];
+  }>;
   readonly id: string;
   readonly is_trashed: boolean;
-  readonly job_id: string;
   readonly name: string;
-  readonly output_units_per_worker: number;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
-  readonly worker_inputs_json: readonly unknown[];
   readonly world_id: string;
 };
 
@@ -1307,7 +1310,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
     culling_mpt: [],
-    deposit_types: [],
+    deposit_type_jobs: [],
     husbandry_mpt: [],
     icon: null,
     icon_color: null,
@@ -1333,15 +1336,20 @@ function createDepositTypeRow(
 ): TestDepositTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
+    deposit_type_jobs: [
+      {
+        id: "00000000-0000-0000-0000-0000000000b1",
+        job_id: JOB_ID,
+        output_units_per_worker: 1,
+        worker_inputs_json: [],
+      },
+    ],
     id: DEPOSIT_TYPE_ID,
     is_trashed: false,
-    job_id: JOB_ID,
     name: "Test Deposit Type",
-    output_units_per_worker: 1,
     referencing_jobs: [],
     slug: "test-deposit-type",
     updated_at: "2026-01-01T00:00:00.000Z",
-    worker_inputs_json: [],
     world_id: WORLD_ID,
     ...overrides,
   };

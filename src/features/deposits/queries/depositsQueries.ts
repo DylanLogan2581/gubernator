@@ -74,10 +74,12 @@ export function depositTypeByIdQueryOptions(
   });
 }
 
-export type DepositTypesSortBy = "job" | "name" | "outputUnitsPerWorker";
+// Sorting is limited to name: deposit types can now link 1..n jobs (each
+// with its own output rate), so neither "linked job" nor "output per worker"
+// is a single-valued, sortable column on deposit_types anymore (#1246).
+export type DepositTypesSortBy = "name";
 
 export type DepositTypesPageParams = {
-  readonly jobId?: string | null;
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
@@ -129,30 +131,12 @@ async function getDepositTypesPage(
     .eq("world_id", worldId)
     .eq("is_trashed", params.trash);
 
-  if (params.jobId !== undefined && params.jobId !== null) {
-    query = query.eq("job_id", params.jobId);
-  }
-
   if (search !== "") {
     query = query.ilike("name", `%${search}%`);
   }
 
   const sortAscending = params.sortDirection !== "desc";
-
-  if (params.sortBy === "job") {
-    query = query
-      .order("name", {
-        ascending: sortAscending,
-        referencedTable: "job",
-      })
-      .order("name", { ascending: true });
-  } else if (params.sortBy === "outputUnitsPerWorker") {
-    query = query
-      .order("output_units_per_worker", { ascending: sortAscending })
-      .order("name", { ascending: true });
-  } else {
-    query = query.order("name", { ascending: sortAscending });
-  }
+  query = query.order("name", { ascending: sortAscending });
 
   const { data, error, count } = await query
     .order("id", { ascending: true })

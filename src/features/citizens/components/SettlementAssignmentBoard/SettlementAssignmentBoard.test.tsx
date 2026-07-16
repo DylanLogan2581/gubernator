@@ -105,7 +105,6 @@ type CitizenAssignmentRowFixture = {
     readonly name: string;
     readonly deposit_types: {
       readonly name: string;
-      readonly job: { readonly name: string };
     };
   } | null;
   readonly job: null;
@@ -132,7 +131,6 @@ type DepositInstanceRowFixture = {
   readonly deposit_instance_resources: readonly [];
   readonly deposit_type_id: string;
   readonly deposit_types: {
-    readonly job: { readonly name: string };
     readonly name: string;
   };
   readonly discovered_by_event_id: null;
@@ -249,7 +247,7 @@ function createCitizenAssignmentRow(
     deposit_instance: {
       id: "dep-1",
       name: "Iron Vein",
-      deposit_types: { name: "Iron", job: { name: "Miner" } },
+      deposit_types: { name: "Iron" },
     },
     job: null,
     managed_population_instance: null,
@@ -267,7 +265,7 @@ function createDepositInstanceRow(
     created_at: "2026-01-01T00:00:00Z",
     deposit_instance_resources: [],
     deposit_type_id: "dt-1",
-    deposit_types: { job: { name: "Miner" }, name: "Iron" },
+    deposit_types: { name: "Iron" },
     discovered_by_event_id: null,
     id: "dep-1",
     max_workers: null,
@@ -530,7 +528,7 @@ describe("SettlementAssignmentBoard", () => {
 
     // Unified table renders both bulk and per-target rows in one table
     expect(await screen.findByText("Farmer")).toBeDefined();
-    expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
+    expect(await screen.findByText("Iron Vein — Iron")).toBeDefined();
     // Only one table tbody (not separate tabs)
     const tables = screen.getAllByRole("table");
     expect(tables).toHaveLength(1);
@@ -942,7 +940,7 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
+    expect(await screen.findByText("Iron Vein — Iron")).toBeDefined();
     expect(screen.getByText("0 / 4")).toBeDefined();
   });
 
@@ -964,9 +962,9 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    expect(await screen.findByText("Coal Seam — Miner")).toBeDefined();
+    expect(await screen.findByText("Coal Seam — Iron")).toBeDefined();
     // Multiple "no upper bound" labels exist (unassigned + deposit rows), so check the deposit row specifically
-    const depositRow = screen.getByText("Coal Seam — Miner").closest("tr");
+    const depositRow = screen.getByText("Coal Seam — Iron").closest("tr");
     expect(
       depositRow?.querySelector("[aria-label='no upper bound']"),
     ).toBeInTheDocument();
@@ -1066,7 +1064,7 @@ describe("SettlementAssignmentBoard", () => {
             deposit_instance: {
               id: "dep-1",
               name: "Iron Vein",
-              deposit_types: { name: "Iron", job: { name: "Miner" } },
+              deposit_types: { name: "Iron" },
             },
           }),
         ],
@@ -1080,7 +1078,7 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
+    expect(await screen.findByText("Iron Vein — Iron")).toBeDefined();
     expect(
       screen.getByText((_, el) => el?.textContent === "1 / unlimited"),
     ).toBeDefined();
@@ -1103,7 +1101,7 @@ describe("SettlementAssignmentBoard", () => {
       isArchived: false,
     });
 
-    await screen.findByText("Iron Vein — Miner");
+    await screen.findByText("Iron Vein — Iron");
     expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
   });
 
@@ -1124,7 +1122,7 @@ describe("SettlementAssignmentBoard", () => {
       isArchived: false,
     });
 
-    await screen.findByText("Iron Vein — Miner");
+    await screen.findByText("Iron Vein — Iron");
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
@@ -1145,7 +1143,7 @@ describe("SettlementAssignmentBoard", () => {
       isArchived: true,
     });
 
-    await screen.findByText("Iron Vein — Miner");
+    await screen.findByText("Iron Vein — Iron");
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
@@ -1172,7 +1170,7 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    expect(await screen.findByText("Active Vein — Miner")).toBeDefined();
+    expect(await screen.findByText("Active Vein — Iron")).toBeDefined();
     expect(screen.queryByText("Depleted Vein")).toBeNull();
   });
 
@@ -1217,9 +1215,9 @@ describe("SettlementAssignmentBoard", () => {
       settlementId: SETTLEMENT_UUID,
     });
 
-    await screen.findByText("Iron Vein — Miner");
+    await screen.findByText("Iron Vein — Iron");
     const input = screen.getByRole("spinbutton", {
-      name: "Target count for Iron Vein — Miner",
+      name: "Target count for Iron Vein — Iron",
     });
     await user.clear(input);
     await user.type(input, "1");
@@ -1320,9 +1318,9 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard({ canManageSettlement: true });
 
-    await screen.findByText("Iron Vein — Miner");
+    await screen.findByText("Iron Vein — Iron");
     const input = screen.getByRole("spinbutton", {
-      name: "Target count for Iron Vein — Miner",
+      name: "Target count for Iron Vein — Iron",
     });
     await user.clear(input);
     await user.type(input, "1");

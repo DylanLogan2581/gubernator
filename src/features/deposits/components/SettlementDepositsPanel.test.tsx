@@ -43,7 +43,6 @@ type TestDepositInstanceRow = {
   readonly settlement_id: string;
   readonly deposit_type_id: string;
   readonly deposit_types: {
-    readonly job: { readonly name: string };
     readonly name: string;
   };
   readonly name: string;
@@ -71,7 +70,7 @@ function createInstanceRow(
     id: INSTANCE_ID_1,
     settlement_id: SETTLEMENT_ID,
     deposit_type_id: DEPOSIT_TYPE_ID,
-    deposit_types: { job: { name: "Miner" }, name: "Coal Vein" },
+    deposit_types: { name: "Coal Vein" },
     name: "North Mine",
     status: "active",
     max_workers: 5,
@@ -104,7 +103,6 @@ type TestAssignmentRow = {
     readonly name: string;
     readonly deposit_types: {
       readonly name: string;
-      readonly job: { readonly name: string };
     };
   } | null;
   readonly managed_population_instance: null;
@@ -127,7 +125,7 @@ function createAssignmentRow(
     deposit_instance: {
       id: INSTANCE_ID_1,
       name: "North Mine",
-      deposit_types: { name: "Coal Vein", job: { name: "Miner" } },
+      deposit_types: { name: "Coal Vein" },
     },
     managed_population_instance: null,
     trade_route: null,
@@ -147,9 +145,12 @@ type TestDepositTypeRow = {
   readonly slug: string;
   readonly is_trashed: boolean;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
-  readonly job_id: string | null;
-  readonly output_units_per_worker: number;
-  readonly worker_inputs_json: unknown[];
+  readonly deposit_type_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly output_units_per_worker: number;
+    readonly worker_inputs_json: unknown[];
+  }>;
   readonly created_at: string;
   readonly updated_at: string;
 };
@@ -164,9 +165,7 @@ function createDepositTypeRow(
     slug: "coal-vein",
     is_trashed: false,
     referencing_jobs: [],
-    job_id: null,
-    output_units_per_worker: 1,
-    worker_inputs_json: [],
+    deposit_type_jobs: [],
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     ...overrides,

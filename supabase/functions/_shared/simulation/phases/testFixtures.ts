@@ -70,6 +70,7 @@ export function makeInputState(
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
+    depositTypeJobs: [],
     depositTypes: [],
     deposits: [],
     educationEnrollments: [],

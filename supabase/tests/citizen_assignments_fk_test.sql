@@ -149,23 +149,24 @@ values
   );
 
 -- Deposit type + instance for deposit tests.
--- deposit_types.job_id FK is DEFERRABLE INITIALLY DEFERRED, so any UUID works
--- here; the constraint is never checked because this transaction is rolled back.
+-- deposit_type_jobs.job_id FK is DEFERRABLE INITIALLY DEFERRED, so any UUID
+-- works here; the constraint is never checked because this transaction is
+-- rolled back.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'e8000000-0000-0000-0000-000000000001',
     'e1000000-0000-0000-0000-000000000002',
     'FK Test Deposit Type',
-    'fk-test-deposit-type',
+    'fk-test-deposit-type'
+  );
+
+insert into
+  public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker)
+values
+  (
+    'e8000000-0000-0000-0000-000000000001',
     'ecffffff-ffff-ffff-ffff-000000000001',
     1
   );

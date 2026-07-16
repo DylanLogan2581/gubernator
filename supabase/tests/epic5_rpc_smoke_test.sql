@@ -202,22 +202,13 @@ values
 
 -- Deposit type
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     '5e900000-0000-0000-0000-000000000001',
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 Coal',
-    'smoke5-coal',
-    '5e800000-0000-0000-0000-000000000002',
-    1
+    'smoke5-coal'
   );
 
 -- Managed population type

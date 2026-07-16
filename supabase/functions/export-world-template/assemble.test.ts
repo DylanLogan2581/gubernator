@@ -15,6 +15,7 @@ const RESOURCE_ID = "00000000-0000-0000-0000-000000000010";
 const JOB_ID = "00000000-0000-0000-0000-000000000020";
 const BLUEPRINT_ID = "00000000-0000-0000-0000-000000000030";
 const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000040";
+const DEPOSIT_TYPE_JOB_ID = "00000000-0000-0000-0000-000000000041";
 const MANAGED_POP_ID = "00000000-0000-0000-0000-000000000050";
 const HUSBANDRY_JOB_ID = "00000000-0000-0000-0000-000000000021";
 const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000022";
@@ -215,15 +216,21 @@ function makeMinimalData(): WorldConfigData {
     ],
     depositTypes: [
       {
-        id: DEPOSIT_TYPE_ID,
-        name: "Iron Vein",
-        slug: "iron-vein",
-        job_id: JOB_ID,
-        output_units_per_worker: 3,
-        worker_inputs_json: [{ resource_id: RESOURCE_ID, amount_per_worker: 1 }],
+        deposit_type_jobs: [
+          {
+            deposit_type_id: DEPOSIT_TYPE_ID,
+            id: DEPOSIT_TYPE_JOB_ID,
+            job_id: JOB_ID,
+            output_units_per_worker: 3,
+            worker_inputs_json: [{ resource_id: RESOURCE_ID, amount_per_worker: 1 }],
+          },
+        ],
         icon: "pickaxe",
         icon_color: 4,
+        id: DEPOSIT_TYPE_ID,
         is_trashed: false,
+        name: "Iron Vein",
+        slug: "iron-vein",
       },
     ],
     managedPopulationTypes: [
@@ -354,9 +361,13 @@ describe("assembleWorldTemplate", () => {
     const template = assembleWorldTemplate(makeMinimalData());
     expect(template.deposit_types[0]).toMatchObject({
       slug: "iron-vein",
-      job_slug: "farming",
-      output_units_per_worker: 3,
       icon: "pickaxe",
+      jobs: [
+        {
+          job_slug: "farming",
+          output_units_per_worker: 3,
+        },
+      ],
     });
   });
 
@@ -443,15 +454,17 @@ describe("assembleWorldTemplate", () => {
     expect(template.namesets).toHaveLength(0);
   });
 
-  it("drops deposit types whose job is unresolvable", () => {
+  it("drops a deposit type job whose job is unresolvable", () => {
     const base = makeMinimalData();
     const data: WorldConfigData = {
       ...base,
       jobs: base.jobs.map((j) => ({ ...j, is_trashed: true })),
     };
     const template = assembleWorldTemplate(data);
-    // all jobs are trashed → deposit type's job_id unresolvable → dropped
-    expect(template.deposit_types).toHaveLength(0);
+    // all jobs are trashed → deposit type job's job_id unresolvable → dropped,
+    // but the deposit type itself remains (with no jobs).
+    expect(template.deposit_types).toHaveLength(1);
+    expect(template.deposit_types[0]?.jobs).toHaveLength(0);
   });
 
   it("drops education tier effect entirely when teacher job is unresolvable", () => {
