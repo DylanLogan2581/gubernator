@@ -5,11 +5,16 @@ import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import type {
   RawBlueprintRow,
+  RawCultureRow,
   RawDepositTypeRow,
+  RawEducationLevelRow,
   RawJobRow,
   RawManagedPopulationTypeRow,
   RawNamesetRow,
+  RawReligionRow,
+  RawResourceCategoryRow,
   RawResourceRow,
+  RawUnitTypeRow,
   RawWorldRow,
   WorldConfigData,
 } from "./types.ts";
@@ -69,13 +74,20 @@ export async function fetchWorldConfigData(
 ): Promise<FetchResult<WorldConfigData>> {
   // Fan out all independent queries in parallel.
   // Tiers are fetched as an embedded relationship inside blueprints.
+  // resource_categories, education_levels, cultures, religions and unit_types
+  // have no is_trashed column, so they are not filtered on one.
   const [
     worldResult,
+    resourceCategoriesResult,
+    educationLevelsResult,
+    culturesResult,
+    religionsResult,
     resourcesResult,
     jobsResult,
     blueprintsResult,
     depositTypesResult,
     managedPopResult,
+    unitTypesResult,
     namesetsResult,
   ] = await Promise.all([
     fetchSingleRow<RawWorldRow>(ctx, "worlds", {
@@ -99,25 +111,48 @@ export async function fetchWorldConfigData(
         "water_consumption_per_citizen",
       ].join(","),
     }),
+    fetchRows<RawResourceCategoryRow>(ctx, "resource_categories", {
+      world_id: `eq.${worldId}`,
+      order: "sort_order.asc,name.asc",
+      select: "id,name,icon,color,sort_order",
+    }),
+    fetchRows<RawEducationLevelRow>(ctx, "education_levels", {
+      world_id: `eq.${worldId}`,
+      order: "rank.asc",
+      select: "id,name,description,rank,natural_born_percent",
+    }),
+    fetchRows<RawCultureRow>(ctx, "cultures", {
+      world_id: `eq.${worldId}`,
+      order: "name.asc",
+      select: "id,name,description,color",
+    }),
+    fetchRows<RawReligionRow>(ctx, "religions", {
+      world_id: `eq.${worldId}`,
+      order: "name.asc",
+      select: "id,name,description,color",
+    }),
     fetchRows<RawResourceRow>(ctx, "resources", {
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
-      select: "id,name,slug,base_stockpile_cap,change_mode,change_amount,is_system_resource,is_trashed",
+      select:
+        "id,name,slug,base_stockpile_cap,change_mode,change_amount,is_system_resource,icon,category_id,is_trashed",
     }),
     fetchRows<RawJobRow>(ctx, "job_definitions", {
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
-      select:
-        "id,name,slug,job_type,base_capacity,trader_capacity_per_worker,inputs_json,outputs_json,is_trashed",
+      select: [
+        "id,name,slug,job_type,base_capacity,trader_capacity_per_worker,inputs_json,outputs_json",
+        "icon,required_education_level_id,is_trashed",
+      ].join(","),
     }),
     fetchRows<RawBlueprintRow>(ctx, "building_blueprints", {
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
       select: [
-        "id,name,slug,description,max_instances_per_settlement,grace_period_turns,is_trashed",
+        "id,name,slug,description,max_instances_per_settlement,grace_period_turns,icon,is_trashed",
         "building_blueprint_tiers(building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json)",
       ].join(","),
     }),
@@ -125,7 +160,7 @@ export async function fetchWorldConfigData(
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "slug.asc,id.asc",
-      select: "id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_trashed",
+      select: "id,name,slug,job_id,output_units_per_worker,worker_inputs_json,icon,is_trashed",
     }),
     fetchRows<RawManagedPopulationTypeRow>(ctx, "managed_population_types", {
       world_id: `eq.${worldId}`,
@@ -134,7 +169,16 @@ export async function fetchWorldConfigData(
       select: [
         "id,name,slug,husbandry_job_id,culling_job_id",
         "husbandry_workers_per_n_animals,growth_rate",
-        "maintenance_rules_json,culling_outputs_json,regular_outputs_json,is_trashed",
+        "maintenance_rules_json,culling_outputs_json,regular_outputs_json,icon,is_trashed",
+      ].join(","),
+    }),
+    fetchRows<RawUnitTypeRow>(ctx, "unit_types", {
+      world_id: `eq.${worldId}`,
+      order: "name.asc,id.asc",
+      select: [
+        "id,name,description,soldiers_per_unit,required_education_level_id",
+        "required_building_blueprint_id,required_building_tier_number",
+        "recruitment_costs_json,upkeep_costs_json,desertion_rate",
       ].join(","),
     }),
     fetchRows<RawNamesetRow>(ctx, "namesets", {
@@ -146,22 +190,32 @@ export async function fetchWorldConfigData(
   ]);
 
   if (!worldResult.ok) return { ok: false, reason: worldResult.reason };
+  if (!resourceCategoriesResult.ok) return { ok: false, reason: resourceCategoriesResult.reason };
+  if (!educationLevelsResult.ok) return { ok: false, reason: educationLevelsResult.reason };
+  if (!culturesResult.ok) return { ok: false, reason: culturesResult.reason };
+  if (!religionsResult.ok) return { ok: false, reason: religionsResult.reason };
   if (!resourcesResult.ok) return { ok: false, reason: resourcesResult.reason };
   if (!jobsResult.ok) return { ok: false, reason: jobsResult.reason };
   if (!blueprintsResult.ok) return { ok: false, reason: blueprintsResult.reason };
   if (!depositTypesResult.ok) return { ok: false, reason: depositTypesResult.reason };
   if (!managedPopResult.ok) return { ok: false, reason: managedPopResult.reason };
+  if (!unitTypesResult.ok) return { ok: false, reason: unitTypesResult.reason };
   if (!namesetsResult.ok) return { ok: false, reason: namesetsResult.reason };
 
   return {
     ok: true,
     data: {
       world: worldResult.data,
+      resourceCategories: resourceCategoriesResult.data,
+      educationLevels: educationLevelsResult.data,
+      cultures: culturesResult.data,
+      religions: religionsResult.data,
       resources: resourcesResult.data,
       jobs: jobsResult.data,
       blueprints: blueprintsResult.data,
       depositTypes: depositTypesResult.data,
       managedPopulationTypes: managedPopResult.data,
+      unitTypes: unitTypesResult.data,
       namesets: namesetsResult.data,
       exportedAt,
     },

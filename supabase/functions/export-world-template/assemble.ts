@@ -2,6 +2,7 @@
 // No zod, no @/ imports, no browser APIs.
 
 import type {
+  RawEducationTierLevelRow,
   RawTierEffectRow,
   TierEffectOutput,
   WorldConfigData,
@@ -22,10 +23,27 @@ function deriveWorldSlug(name: string, id: string): string {
   return `${slugBase}-${normalizedId}`;
 }
 
+function resolveEducationTierLevel(
+  level: RawEducationTierLevelRow,
+  eduNameById: ReadonlyMap<string, string>,
+): { readonly from_level: string | null; readonly to_level: string; readonly turns: number } | null {
+  if (level.from_level_id !== null) {
+    const fromLevel = eduNameById.get(level.from_level_id);
+    if (fromLevel === undefined) return null;
+    const toLevel = eduNameById.get(level.to_level_id);
+    if (toLevel === undefined) return null;
+    return { from_level: fromLevel, to_level: toLevel, turns: level.turns };
+  }
+  const toLevel = eduNameById.get(level.to_level_id);
+  if (toLevel === undefined) return null;
+  return { from_level: null, to_level: toLevel, turns: level.turns };
+}
+
 function resolveTierEffect(
   effect: RawTierEffectRow,
   resourceSlugById: ReadonlyMap<string, string>,
   jobSlugById: ReadonlyMap<string, string>,
+  eduNameById: ReadonlyMap<string, string>,
 ): TierEffectOutput | null {
   if (effect.type === "population_cap_increase") {
     return { type: "population_cap_increase", amount: effect.amount };
@@ -53,6 +71,21 @@ function resolveTierEffect(
       amount: effect.amount,
     };
   }
+  if (effect.type === "education") {
+    const teacherJobSlug = jobSlugById.get(effect.teacher_job_id);
+    if (teacherJobSlug === undefined) return null;
+    const levels = effect.levels.flatMap((level) => {
+      const resolved = resolveEducationTierLevel(level, eduNameById);
+      return resolved !== null ? [resolved] : [];
+    });
+    return {
+      type: "education",
+      teacher_job_slug: teacherJobSlug,
+      teacher_capacity: effect.teacher_capacity,
+      students_per_teacher: effect.students_per_teacher,
+      levels,
+    };
+  }
   return null;
 }
 
@@ -66,7 +99,15 @@ function resolveTierEffect(
  * deterministic (byte-stable) for the same world snapshot.
  */
 export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutput {
-  // Build lookup maps for slug resolution
+  // Build lookup maps for slug/name resolution
+  const categoryNameById = new Map<string, string>(
+    data.resourceCategories.map((c) => [c.id, c.name]),
+  );
+
+  const eduNameById = new Map<string, string>(
+    data.educationLevels.map((e) => [e.id, e.name]),
+  );
+
   const resourceSlugById = new Map<string, string>(
     data.resources
       .filter((r) => !r.is_trashed)
@@ -79,6 +120,41 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
       .map((j) => [j.id, j.slug]),
   );
 
+  const blueprintSlugById = new Map<string, string>(
+    data.blueprints
+      .filter((b) => !b.is_trashed)
+      .map((b) => [b.id, b.slug]),
+  );
+
+  // Resource categories (sorted by sort_order asc, name asc from query)
+  const resourceCategories = data.resourceCategories.map((c) => ({
+    name: c.name,
+    icon: c.icon,
+    color: c.color,
+    sort_order: c.sort_order,
+  }));
+
+  // Education levels (sorted by rank asc from query)
+  const educationLevels = data.educationLevels.map((e) => ({
+    name: e.name,
+    description: e.description,
+    rank: e.rank,
+    natural_born_percent: e.natural_born_percent,
+  }));
+
+  // Cultures / religions (sorted by name asc from query)
+  const cultures = data.cultures.map((c) => ({
+    name: c.name,
+    description: c.description,
+    color: c.color,
+  }));
+
+  const religions = data.religions.map((r) => ({
+    name: r.name,
+    description: r.description,
+    color: r.color,
+  }));
+
   // Resources (non-trashed, sorted by slug asc from query)
   const resources = data.resources
     .filter((r) => !r.is_trashed)
@@ -89,6 +165,8 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
       change_amount: r.change_amount,
       change_mode: r.change_mode,
       is_system_resource: r.is_system_resource,
+      icon: r.icon,
+      category: r.category_id === null ? null : categoryNameById.get(r.category_id) ?? null,
     }));
 
   // Jobs (non-trashed, sorted by slug asc from query)
@@ -120,6 +198,10 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
         if (io.notes !== undefined) entry.notes = io.notes;
         return [entry];
       }),
+      icon: j.icon,
+      required_education_level: j.required_education_level_id === null
+        ? null
+        : eduNameById.get(j.required_education_level_id) ?? null,
     }));
 
   // Blueprints (non-trashed, sorted by slug asc from query)
@@ -148,10 +230,11 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
             return [{ resource_slug: resourceSlug, amount: c.amount }];
           }),
           effects: t.effects_json.flatMap((e) => {
-            const resolved = resolveTierEffect(e, resourceSlugById, jobSlugById);
+            const resolved = resolveTierEffect(e, resourceSlugById, jobSlugById, eduNameById);
             return resolved !== null ? [resolved] : [];
           }),
         })),
+      icon: b.icon,
     }));
 
   // Deposit types (non-trashed, sorted by slug asc from query)
@@ -171,6 +254,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
             if (resourceSlug === undefined) return [];
             return [{ resource_slug: resourceSlug, amount_per_worker: wi.amount_per_worker }];
           }),
+          icon: d.icon,
         },
       ];
     });
@@ -205,9 +289,45 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
             if (resourceSlug === undefined) return [];
             return [{ resource_slug: resourceSlug, amount_per_n_animals: e.amount_per_n_animals }];
           }),
+          icon: m.icon,
         },
       ];
     });
+
+  // Unit types (sorted by name asc from query)
+  const unitTypes = data.unitTypes.map((u) => {
+    const requiredBlueprintId = u.required_building_blueprint_id;
+    const requiredTierNumber = u.required_building_tier_number;
+    let requiredBuilding: { readonly blueprint_slug: string; readonly tier_number: number } | null =
+      null;
+    if (requiredBlueprintId !== null && requiredTierNumber !== null) {
+      const blueprintSlug = blueprintSlugById.get(requiredBlueprintId);
+      if (blueprintSlug !== undefined) {
+        requiredBuilding = { blueprint_slug: blueprintSlug, tier_number: requiredTierNumber };
+      }
+    }
+
+    return {
+      name: u.name,
+      description: u.description,
+      soldiers_per_unit: u.soldiers_per_unit,
+      required_education_level: u.required_education_level_id === null
+        ? null
+        : eduNameById.get(u.required_education_level_id) ?? null,
+      required_building: requiredBuilding,
+      recruitment_costs: u.recruitment_costs_json.flatMap((c) => {
+        const resourceSlug = resourceSlugById.get(c.resource_id);
+        if (resourceSlug === undefined) return [];
+        return [{ resource_slug: resourceSlug, amount: c.amount }];
+      }),
+      upkeep_costs: u.upkeep_costs_json.flatMap((c) => {
+        const resourceSlug = resourceSlugById.get(c.resource_id);
+        if (resourceSlug === undefined) return [];
+        return [{ resource_slug: resourceSlug, amount: c.amount }];
+      }),
+      desertion_rate: u.desertion_rate,
+    };
+  });
 
   // Namesets (non-trashed, sorted by name asc from query)
   const namesets = data.namesets
@@ -222,7 +342,7 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
   const slug = deriveWorldSlug(world.name, world.id);
 
   return {
-    template_version: 1,
+    template_version: 2,
     meta: {
       name: world.name,
       slug,
@@ -244,10 +364,15 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
     npc_flavor: world.npc_flavor_config_json,
     naming_config: world.naming_config_json,
     namesets,
+    resource_categories: resourceCategories,
+    education_levels: educationLevels,
+    cultures,
+    religions,
     resources,
     jobs,
     blueprints,
     deposit_types: depositTypes,
     managed_population_types: managedPopulationTypes,
+    unit_types: unitTypes,
   };
 }
