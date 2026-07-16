@@ -107,6 +107,26 @@ export async function exportWorldTemplate(
   return response.data.data;
 }
 
+const EXPORT_ERROR_MESSAGES: Record<string, string> = {
+  authorization_check_failed:
+    "Could not verify your permissions. Please try again.",
+  forbidden: "You do not have permission to export this world template.",
+  origin_not_allowed:
+    "This app is not allowed to export templates. Contact an administrator.",
+  rate_limit_exceeded:
+    "Too many export attempts. Please wait a moment and try again.",
+  unauthenticated: "Your session has expired. Sign in again and retry.",
+  world_not_found: "World not found.",
+};
+
+export function describeWorldTemplateExportError(error: unknown): string {
+  if (error instanceof WorldTemplateExportError) {
+    const knownMessage = EXPORT_ERROR_MESSAGES[error.code];
+    if (knownMessage !== undefined) return knownMessage;
+  }
+  return "Could not export world template. Please try again.";
+}
+
 export function serializeWorldTemplate(template: WorldTemplate): string {
   return JSON.stringify(template, null, 2);
 }

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 import {
+  describeWorldTemplateExportError,
   exportWorldTemplateMutationOptions,
   serializeWorldTemplate,
 } from "../queries/worldTemplateExportQueries";
@@ -38,9 +39,9 @@ export function WorldTemplateExportButton({
         description: `Saved as ${filename}`,
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast.error("Export failed", {
-        description: "Could not export world template. Check your permissions.",
+        description: describeWorldTemplateExportError(error),
       });
     },
   });
