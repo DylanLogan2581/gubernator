@@ -437,6 +437,109 @@ describe("RoleAssignmentControls — nation variant", () => {
       });
     });
   });
+
+  it("confirms before replacing a settlement's existing manager", async () => {
+    const updatedRow = createCitizenRow({
+      citizen_type: "player_character",
+      id: CITIZEN_ELIGIBLE_ID,
+      role_settlement_id: SETTLEMENT_ID,
+      role_type: "settlement_manager",
+      settlement_id: SETTLEMENT_ID,
+    });
+    const rpcAssign = vi.fn().mockReturnValue({
+      maybeSingle: () => Promise.resolve({ data: updatedRow, error: null }),
+    });
+    requireSupabaseClient.mockReturnValue(
+      createSupabaseClient({
+        directoryRows: [
+          {
+            citizen_type: "player_character",
+            id: CITIZEN_ELIGIBLE_ID,
+            name: "Eligible",
+            nation_id: NATION_ID,
+            settlement_id: SETTLEMENT_ID,
+            settlement_name: "Riverside",
+            status: "alive",
+            world_id: WORLD_ID,
+          },
+        ],
+        nationSettlements: [
+          {
+            id: SETTLEMENT_ID,
+            name: "Riverside",
+            nation_id: NATION_ID,
+            nations: { name: "Aurelia" },
+          },
+        ],
+        playerCharacters: [
+          createCitizenRow({
+            citizen_type: "player_character",
+            id: CITIZEN_EXISTING_SM_ID,
+            name: "Existing SM",
+            role_settlement_id: SETTLEMENT_ID,
+            role_type: "settlement_manager",
+            settlement_id: SETTLEMENT_ID,
+          }),
+          createCitizenRow({
+            citizen_type: "player_character",
+            id: CITIZEN_ELIGIBLE_ID,
+            name: "Eligible",
+            role_type: "none",
+            settlement_id: SETTLEMENT_ID,
+          }),
+        ],
+        rpc: vi.fn((name: string, _args: unknown): unknown => {
+          if (name === "assign_citizen_role") {
+            return rpcAssign(_args);
+          }
+          throw new Error(`Unexpected rpc ${name}`);
+        }),
+      }),
+    );
+
+    renderControls(
+      <RoleAssignmentControls
+        canAdminWorld={false}
+        isArchived={false}
+        isNationManager={true}
+        nation={createNation()}
+        variant="nation"
+      />,
+    );
+
+    const user = userEvent.setup();
+    expect(await screen.findByText("Existing SM")).toBeDefined();
+
+    await user.selectOptions(
+      await screen.findByLabelText("Settlement"),
+      SETTLEMENT_ID,
+    );
+    await user.click(screen.getByText("Select citizen…"));
+    await user.type(screen.getByPlaceholderText("Search citizens…"), "elig");
+    await user.click(await screen.findByText("Eligible"));
+
+    await user.click(
+      await screen.findByRole("button", { name: "Assign Settlement Manager" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Replace settlement manager?",
+      }),
+    ).toBeDefined();
+    expect(rpcAssign).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Replace manager" }));
+
+    await waitFor(() => {
+      expect(rpcAssign).toHaveBeenCalledWith({
+        p_citizen_id: CITIZEN_ELIGIBLE_ID,
+        p_role_nation_id: undefined,
+        p_role_settlement_id: SETTLEMENT_ID,
+        p_role_type: "settlement_manager",
+      });
+    });
+  });
 });
 
 function renderControls(node: ReactNode): ReturnType<typeof render> {

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
@@ -175,6 +176,15 @@ function NationRoleAssignmentList({
           <ul className="grid gap-2" aria-label="Selected citizen">
             <NationRoleAssignmentRow
               citizen={selectedCitizen}
+              existingManager={
+                selectedSettlementId === null
+                  ? null
+                  : (managers.find(
+                      (manager) =>
+                        manager.roleSettlementId === selectedSettlementId &&
+                        manager.id !== selectedCitizen.id,
+                    ) ?? null)
+              }
               isArchived={isArchived}
               settlementName={
                 selectedSettlementId === null
@@ -195,16 +205,19 @@ function NationRoleAssignmentList({
 
 function NationRoleAssignmentRow({
   citizen,
+  existingManager = null,
   isArchived,
   onAssigned,
   settlementName,
 }: {
   readonly citizen: Citizen;
+  readonly existingManager?: Citizen | null;
   readonly isArchived: boolean;
   readonly onAssigned?: () => void;
   readonly settlementName: string | null;
 }): JSX.Element {
   const queryClient = useQueryClient();
+  const [isConfirmingReplace, setIsConfirmingReplace] = useState(false);
   const assignMutation = useMutation(
     assignCitizenRoleMutationOptions({ queryClient }),
   );
@@ -218,7 +231,7 @@ function NationRoleAssignmentRow({
     managerScopeLabel(citizen.roleType) === "settlement";
   const isNationManager = managerScopeLabel(citizen.roleType) === "nation";
 
-  function handleAssign(): void {
+  function runAssign(): void {
     if (settlementId === null) {
       return;
     }
@@ -238,12 +251,26 @@ function NationRoleAssignmentRow({
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);
           notifyMutationSuccess(
-            `Assigned Settlement Manager to ${citizen.name}.`,
+            existingManager === null
+              ? `Assigned Settlement Manager to ${citizen.name}.`
+              : `Assigned Settlement Manager to ${citizen.name}, replacing ${existingManager.name}.`,
           );
+          setIsConfirmingReplace(false);
           onAssigned?.();
         },
       },
     );
+  }
+
+  function handleAssign(): void {
+    if (settlementId === null) {
+      return;
+    }
+    if (existingManager !== null) {
+      setIsConfirmingReplace(true);
+      return;
+    }
+    runAssign();
   }
 
   function handleRevoke(): void {
@@ -317,6 +344,18 @@ function NationRoleAssignmentRow({
           )}
         </div>
       </div>
+      {existingManager === null ? null : (
+        <ConfirmDialog
+          open={isConfirmingReplace}
+          onOpenChange={setIsConfirmingReplace}
+          title="Replace settlement manager?"
+          description={`${existingManager.name} is currently the manager of ${settlementName ?? "this settlement"}. Assigning ${citizen.name} will remove ${existingManager.name}'s manager role.`}
+          confirmLabel="Replace manager"
+          confirmVariant="default"
+          isPending={assignMutation.isPending}
+          onConfirm={runAssign}
+        />
+      )}
     </li>
   );
 }
