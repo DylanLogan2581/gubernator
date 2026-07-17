@@ -476,6 +476,7 @@ select
         public.citizen_memories
       where
         source = 'event'
+        and citizen_id = 'cd300000-0000-0000-0000-000000000001'
     ),
     1::bigint,
     'event-sourced memory distinguishable by source column'
