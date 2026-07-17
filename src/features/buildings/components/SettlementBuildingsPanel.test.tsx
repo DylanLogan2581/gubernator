@@ -124,7 +124,7 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
@@ -664,7 +664,7 @@ describe("SettlementBuildingsPanel", () => {
             base_capacity: null,
             created_at: "2026-05-01T00:00:00.000Z",
             culling_mpt: [],
-            deposit_types: [],
+            deposit_type_jobs: [],
             husbandry_mpt: [],
             id: JOB_ID,
             inputs_json: [],
