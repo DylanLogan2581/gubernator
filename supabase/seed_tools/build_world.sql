@@ -90,7 +90,36 @@ values (
   'Bovold Seed World',
   0,
   'active',
-  public.default_calendar_config(),
+  -- Elder Scrolls (Tamrielic) calendar: twelve named months of the Empire and
+  -- the seven days of the week, dated in the Third Era.
+  '{
+    "months": [
+      {"name": "Morning Star",  "index": 0,  "dayCount": 31},
+      {"name": "Sun''s Dawn",    "index": 1,  "dayCount": 28},
+      {"name": "First Seed",     "index": 2,  "dayCount": 31},
+      {"name": "Rain''s Hand",   "index": 3,  "dayCount": 30},
+      {"name": "Second Seed",    "index": 4,  "dayCount": 31},
+      {"name": "Mid Year",       "index": 5,  "dayCount": 30},
+      {"name": "Sun''s Height",  "index": 6,  "dayCount": 31},
+      {"name": "Last Seed",      "index": 7,  "dayCount": 31},
+      {"name": "Hearthfire",     "index": 8,  "dayCount": 30},
+      {"name": "Frostfall",      "index": 9,  "dayCount": 31},
+      {"name": "Sun''s Dusk",    "index": 10, "dayCount": 30},
+      {"name": "Evening Star",   "index": 11, "dayCount": 31}
+    ],
+    "weekdays": [
+      {"name": "Sundas",  "index": 0}, {"name": "Morndas", "index": 1},
+      {"name": "Tirdas",  "index": 2}, {"name": "Middas",  "index": 3},
+      {"name": "Turdas",  "index": 4}, {"name": "Fredas",  "index": 5},
+      {"name": "Loredas", "index": 6}
+    ],
+    "startingYear": 433,
+    "dateFormatTemplate": "{weekday}, {day} {month}, 3E {year}",
+    "startingDayOfMonth": 1,
+    "startingMonthIndex": 0,
+    "startingWeekdayOffset": 0,
+    "shortDateFormatTemplate": "{monthNumber}/{dayNumber}/{yearNumber}"
+  }'::jsonb,
   0.25,
   0.08,
   16,
@@ -507,287 +536,542 @@ where s.tier = 'capital' and n.id = pg_temp.seed_uuid('nation:' || s.nation);
 -- 8. Education ladder (world-scoped). Untaught -> Lettered -> Scholar -> Sage.
 --    natural_born_percent weights the level a newborn rolls at birth.
 -- ---------------------------------------------------------------------------
-insert into public.education_levels (id, world_id, name, description, rank, natural_born_percent) values
-  (pg_temp.seed_uuid('edu:untaught'), pg_temp.seed_uuid('world:bovold'), 'Untaught',  'No formal schooling.',                      0, 70),
-  (pg_temp.seed_uuid('edu:lettered'), pg_temp.seed_uuid('world:bovold'), 'Lettered',  'Reads, writes and reckons a ledger.',       1, 22),
-  (pg_temp.seed_uuid('edu:scholar'),  pg_temp.seed_uuid('world:bovold'), 'Scholar',   'Schooled in law, letters or the sutras.',   2, 6),
-  (pg_temp.seed_uuid('edu:sage'),     pg_temp.seed_uuid('world:bovold'), 'Sage',      'A master of a discipline; rare and prized.', 3, 2);
+insert into public.education_levels (id, world_id, name, description, rank, natural_born_percent, icon) values
+  (pg_temp.seed_uuid('edu:untaught'), pg_temp.seed_uuid('world:bovold'), 'Untaught',  'No formal schooling.',                      0, 70, 'game:person'),
+  (pg_temp.seed_uuid('edu:lettered'), pg_temp.seed_uuid('world:bovold'), 'Lettered',  'Reads, writes and reckons a ledger.',       1, 22, 'game:book-cover'),
+  (pg_temp.seed_uuid('edu:scholar'),  pg_temp.seed_uuid('world:bovold'), 'Scholar',   'Schooled in law, letters or the sutras.',   2, 6,  'game:scroll-quill'),
+  (pg_temp.seed_uuid('edu:sage'),     pg_temp.seed_uuid('world:bovold'), 'Sage',      'A master of a discipline; rare and prized.', 3, 2,  'game:graduate-cap');
 
 -- ---------------------------------------------------------------------------
--- 9. Economy pack: resources, jobs (all 6 job types + a teacher + dedicated
---    food/water producers), deposit types, managed-population types,
---    blueprints/tiers (including a school tier). Mechanically identical to the
---    proven baseline economy; only ids (seed_uuid) and a teacher/school are new.
+-- 9. Economy pack — a deep, categorised catalogue: 10 resource categories,
+--    ~80 resources, ~55 jobs across all six job types (real production chains:
+--    ore -> ingot -> bronze/steel/tools; hides -> leather; milk -> cheese;
+--    grain -> flour -> bread; etc.), 12 deposit types, 5 managed-population
+--    types (sheep/pig/bee/cow/chicken) and ~52 building blueprints. Ids are
+--    deterministic (seed_uuid); resource ids resolve as seed_uuid('resource:'||slug).
+--    Food and water stay deliberately over-provisioned so the 32-turn replay
+--    grows healthily; every other chain simply idles if its inputs run dry.
 -- ---------------------------------------------------------------------------
 do $$
 declare
   v_world constant uuid := pg_temp.seed_uuid('world:bovold');
-
-  v_res_grain         uuid := pg_temp.seed_uuid('resource:grain');
-  v_res_salted_pork   uuid := pg_temp.seed_uuid('resource:salted-pork');
-  v_res_smoked_mutton uuid := pg_temp.seed_uuid('resource:smoked-mutton');
-  v_res_honey         uuid := pg_temp.seed_uuid('resource:honey');
-  v_res_ale           uuid := pg_temp.seed_uuid('resource:ale');
-  v_res_linen_cloth   uuid := pg_temp.seed_uuid('resource:linen-cloth');
-  v_res_wool          uuid := pg_temp.seed_uuid('resource:wool');
-  v_res_hardwood_logs uuid := pg_temp.seed_uuid('resource:hardwood-logs');
-  v_res_stone_block   uuid := pg_temp.seed_uuid('resource:stone-block');
-  v_res_iron_ore      uuid := pg_temp.seed_uuid('resource:iron-ore');
-  v_res_copper_ingot  uuid := pg_temp.seed_uuid('resource:copper-ingot');
-  v_res_peat          uuid := pg_temp.seed_uuid('resource:peat');
-  v_res_sea_salt      uuid := pg_temp.seed_uuid('resource:sea-salt');
-  v_res_food          uuid;
-  v_res_water         uuid;
-
-  v_job_field_hand     uuid := pg_temp.seed_uuid('job:field-hand');
-  v_job_water_bearer   uuid := pg_temp.seed_uuid('job:water-bearer');
-  v_job_grain_farmer   uuid := pg_temp.seed_uuid('job:grain-farmer');
-  v_job_brewer         uuid := pg_temp.seed_uuid('job:brewer');
-  v_job_cloth_weaver   uuid := pg_temp.seed_uuid('job:cloth-weaver');
-  v_job_fisher         uuid := pg_temp.seed_uuid('job:fisher');
-  v_job_teacher        uuid := pg_temp.seed_uuid('job:teacher');
-  v_job_stone_mason    uuid := pg_temp.seed_uuid('job:stone-mason');
-  v_job_caravan_trader uuid := pg_temp.seed_uuid('job:caravan-trader');
-  v_job_iron_miner     uuid := pg_temp.seed_uuid('job:iron-miner');
-  v_job_copper_miner   uuid := pg_temp.seed_uuid('job:copper-miner');
-  v_job_stone_quarry   uuid := pg_temp.seed_uuid('job:stone-quarryman');
-  v_job_lumberjack     uuid := pg_temp.seed_uuid('job:lumberjack');
-  v_job_peat_cutter    uuid := pg_temp.seed_uuid('job:peat-cutter');
-  v_job_shepherd       uuid := pg_temp.seed_uuid('job:shepherd');
-  v_job_beekeeper      uuid := pg_temp.seed_uuid('job:beekeeper');
-  v_job_swineherd      uuid := pg_temp.seed_uuid('job:swineherd');
-  v_job_mutton_butcher uuid := pg_temp.seed_uuid('job:mutton-butcher');
-  v_job_honey_gatherer uuid := pg_temp.seed_uuid('job:honey-gatherer');
-  v_job_pork_butcher   uuid := pg_temp.seed_uuid('job:pork-butcher');
-
-  v_dep_iron_vein      uuid := pg_temp.seed_uuid('deposit:iron-vein');
-  v_dep_copper_vein    uuid := pg_temp.seed_uuid('deposit:copper-vein');
-  v_dep_stone_quarry   uuid := pg_temp.seed_uuid('deposit:stone-quarry');
-  v_dep_hardwood_grove uuid := pg_temp.seed_uuid('deposit:hardwood-grove');
-  v_dep_peat_bog       uuid := pg_temp.seed_uuid('deposit:peat-bog');
-
-  v_pop_sheep_herd uuid := pg_temp.seed_uuid('pop:sheep-herd');
-  v_pop_bee_colony uuid := pg_temp.seed_uuid('pop:bee-colony');
-  v_pop_pig_herd   uuid := pg_temp.seed_uuid('pop:pig-herd');
-
-  v_bp_granary    uuid := pg_temp.seed_uuid('bp:granary');
-  v_bp_cistern    uuid := pg_temp.seed_uuid('bp:cistern');
-  v_bp_storehouse uuid := pg_temp.seed_uuid('bp:storehouse');
-  v_bp_workshop   uuid := pg_temp.seed_uuid('bp:workshop');
-  v_bp_longhouse  uuid := pg_temp.seed_uuid('bp:longhouse');
-  v_bp_smithy     uuid := pg_temp.seed_uuid('bp:smithy');
-  v_bp_school     uuid := pg_temp.seed_uuid('bp:school');
-  v_tier_granary_1    uuid := pg_temp.seed_uuid('tier:granary:1');
-  v_tier_cistern_1    uuid := pg_temp.seed_uuid('tier:cistern:1');
-  v_tier_storehouse_1 uuid := pg_temp.seed_uuid('tier:storehouse:1');
-  v_tier_workshop_1   uuid := pg_temp.seed_uuid('tier:workshop:1');
-  v_tier_longhouse_1  uuid := pg_temp.seed_uuid('tier:longhouse:1');
-  v_tier_smithy_1     uuid := pg_temp.seed_uuid('tier:smithy:1');
-  v_tier_smithy_2     uuid := pg_temp.seed_uuid('tier:smithy:2');
-  v_tier_school_1     uuid := pg_temp.seed_uuid('tier:school:1');
+  v_res_food  uuid;
+  v_res_water uuid;
 begin
   select id into v_res_food  from public.resources where world_id = v_world and slug = 'food';
   select id into v_res_water from public.resources where world_id = v_world and slug = 'fresh-water';
 
-  insert into public.resources (id, world_id, name, slug, base_stockpile_cap, icon) values
-    (v_res_grain,         v_world, 'Grain',         'grain',         2000, 'game:wheat'),
-    (v_res_salted_pork,   v_world, 'Cured Meat',    'salted-pork',    500, 'game:bacon'),
-    (v_res_smoked_mutton, v_world, 'Smoked Mutton', 'smoked-mutton',  500, 'game:meat'),
-    (v_res_honey,         v_world, 'Honey',         'honey',          300, 'game:honeycomb'),
-    (v_res_ale,           v_world, 'Rice-Wine',     'ale',            400, 'game:beer-stein'),
-    (v_res_linen_cloth,   v_world, 'Silk Cloth',    'linen-cloth',    300, 'game:rolled-cloth'),
-    (v_res_wool,          v_world, 'Wool',          'wool',           500, 'game:wool'),
-    (v_res_hardwood_logs, v_world, 'Hardwood Logs', 'hardwood-logs', 1000, 'game:wood-pile'),
-    (v_res_stone_block,   v_world, 'Stone Block',   'stone-block',   1200, 'game:stone-block'),
-    (v_res_iron_ore,      v_world, 'Iron Ore',      'iron-ore',       800, 'game:ore'),
-    (v_res_copper_ingot,  v_world, 'Jade',          'copper-ingot',   400, 'game:metal-bar'),
-    (v_res_peat,          v_world, 'Peat',          'peat',           600, 'game:brick-pile'),
-    (v_res_sea_salt,      v_world, 'Sea Salt',      'sea-salt',       400, 'game:salt-shaker');
+  -- Resource categories --------------------------------------------------
+  insert into public.resource_categories (id, world_id, name, color, sort_order)
+  select pg_temp.seed_uuid('cat:' || slug), v_world, name, color, ord
+  from (values
+    ('foodstuffs',   'Foodstuffs',                '#5aa469', 1),
+    ('livestock',    'Livestock & Animal Products','#c98a3a', 2),
+    ('ore',          'Ore & Minerals',            '#7d7d8c', 3),
+    ('metals',       'Metals & Ingots',           '#b0894a', 4),
+    ('timber',       'Timber & Fiber',            '#6b8e4e', 5),
+    ('textiles',     'Textiles & Leather',        '#a05fb0', 6),
+    ('metalwork',    'Tools & Metalwork',         '#8a8a99', 7),
+    ('construction', 'Construction Materials',    '#9c8163', 8),
+    ('luxury',       'Luxury & Trade Goods',      '#d4a017', 9),
+    ('provisions',   'Provisions & Preserved',    '#b5652f', 10)
+  ) as t(slug, name, color, ord);
 
+  -- The two system resources (auto-created) join the foodstuffs category.
+  update public.resources set category_id = pg_temp.seed_uuid('cat:foodstuffs')
+  where world_id = v_world and slug in ('food', 'fresh-water');
+
+  -- Resources (~80). id = seed_uuid('resource:'||slug); category by slug.
+  insert into public.resources (id, world_id, name, slug, base_stockpile_cap, category_id, icon)
+  select pg_temp.seed_uuid('resource:' || slug), v_world, name, slug, cap,
+         pg_temp.seed_uuid('cat:' || cat), icon
+  from (values
+    -- Foodstuffs
+    ('grain','Grain',2000,'foodstuffs','game:wheat'),
+    ('rice','Rice',2000,'foodstuffs','game:rice'),
+    ('vegetables','Vegetables',800,'foodstuffs','game:carrot'),
+    ('fruit','Fruit',600,'foodstuffs','game:fruiting'),
+    ('fish','Fish',600,'foodstuffs','game:fishing-net'),
+    ('flour','Flour',800,'foodstuffs','game:flour-bag'),
+    ('bread','Bread',600,'foodstuffs','game:bread'),
+    ('cheese','Cheese',400,'foodstuffs','game:cheese-wedge'),
+    ('eggs','Eggs',400,'foodstuffs','game:egg'),
+    ('milk','Milk',400,'foodstuffs','game:milk-carton'),
+    ('honey','Honey',300,'foodstuffs','game:honeycomb'),
+    ('mushrooms','Mushrooms',400,'foodstuffs','game:mushroom-gills'),
+    -- Livestock & animal products
+    ('wool','Wool',500,'livestock','game:wool'),
+    ('hides','Raw Hides',500,'livestock','game:animal-hide'),
+    ('tallow','Tallow',300,'livestock','game:candle-flame'),
+    ('beef','Beef',400,'livestock','game:steak'),
+    ('mutton','Mutton',400,'livestock','game:meat'),
+    ('pork','Pork',400,'livestock','game:ham-shank'),
+    ('poultry','Poultry',400,'livestock','game:roast-chicken'),
+    ('feathers','Feathers',300,'livestock','game:feather'),
+    -- Ore & minerals
+    ('iron-ore','Iron Ore',800,'ore','game:ore'),
+    ('copper-ore','Copper Ore',800,'ore','game:ore'),
+    ('tin-ore','Tin Ore',800,'ore','game:ore'),
+    ('gold-ore','Gold Ore',500,'ore','game:gold-nuggets'),
+    ('silver-ore','Silver Ore',500,'ore','game:ore'),
+    ('coal','Coal',800,'ore','game:coal-pile'),
+    ('stone','Raw Stone',1500,'ore','game:stone-pile'),
+    ('clay','Clay',800,'ore','game:powder'),
+    ('sand','Sand',800,'ore','game:sands'),
+    ('rough-gems','Rough Gems',300,'ore','game:gems'),
+    -- Metals & ingots
+    ('iron-ingot','Iron Ingot',500,'metals','game:metal-bar'),
+    ('copper-ingot','Copper Ingot',400,'metals','game:metal-bar'),
+    ('tin-ingot','Tin Ingot',400,'metals','game:metal-bar'),
+    ('bronze','Bronze',400,'metals','game:metal-bar'),
+    ('steel','Steel',400,'metals','game:metal-bar'),
+    ('gold-ingot','Gold Ingot',300,'metals','game:gold-bar'),
+    ('silver-ingot','Silver Ingot',300,'metals','game:metal-bar'),
+    -- Timber & fiber
+    ('hardwood-logs','Hardwood Logs',1000,'timber','game:wood-pile'),
+    ('softwood-logs','Softwood Logs',1000,'timber','game:log'),
+    ('planks','Planks',800,'timber','game:wood-beam'),
+    ('charcoal','Charcoal',600,'timber','game:charcoal'),
+    ('flax','Flax',500,'timber','game:plant-roots'),
+    ('cotton','Cotton',500,'timber','game:cotton-flower'),
+    ('raw-silk','Raw Silk',400,'timber','game:cocooned'),
+    ('peat','Peat',600,'timber','game:brick-pile'),
+    -- Textiles & leather
+    ('linen-cloth','Linen Cloth',300,'textiles','game:rolled-cloth'),
+    ('wool-cloth','Wool Cloth',300,'textiles','game:wool'),
+    ('silk-cloth','Silk Cloth',300,'textiles','game:rolled-cloth'),
+    ('cotton-cloth','Cotton Cloth',300,'textiles','game:rolled-cloth'),
+    ('leather','Leather',400,'textiles','game:leather-armor'),
+    ('rope','Rope',400,'textiles','game:rope-coil'),
+    ('dye','Dye',300,'textiles','game:paint-bucket'),
+    ('thread','Thread',300,'textiles','game:spool'),
+    -- Tools & metalwork
+    ('tools','Tools',400,'metalwork','game:hammer-nails'),
+    ('nails','Nails',400,'metalwork','game:nails'),
+    ('weapons','Weapons',300,'metalwork','game:crossed-swords'),
+    ('armor','Armor',300,'metalwork','game:breastplate'),
+    ('cookware','Cookware',300,'metalwork','game:cooking-pot'),
+    ('horseshoes','Horseshoes',300,'metalwork','game:horseshoe'),
+    -- Construction materials
+    ('stone-block','Stone Block',1200,'construction','game:stone-block'),
+    ('bricks','Bricks',1000,'construction','game:brick-pile'),
+    ('mortar','Mortar',600,'construction','game:bucket'),
+    ('glass','Glass',400,'construction','game:round-bottom-flask'),
+    ('roof-tiles','Roof Tiles',600,'construction','game:brick-wall'),
+    ('cut-stone','Cut Stone',800,'construction','game:stone-block'),
+    ('timber-beams','Timber Beams',600,'construction','game:wood-beam'),
+    -- Luxury & trade goods
+    ('jade','Jade',300,'luxury','game:emerald'),
+    ('gold','Gold',400,'luxury','game:gold-bar'),
+    ('silver','Silver',400,'luxury','game:metal-bar'),
+    ('gemstones','Gemstones',200,'luxury','game:gems'),
+    ('spices','Spices',300,'luxury','game:powder'),
+    ('incense','Incense',300,'luxury','game:incense'),
+    ('perfume','Perfume',200,'luxury','game:perfume-bottle'),
+    ('wine','Wine',400,'luxury','game:wine-bottle'),
+    ('jewelry','Jewelry',200,'luxury','game:diamond-ring'),
+    ('pottery','Pottery',400,'luxury','game:amphora'),
+    -- Provisions & preserved
+    ('salted-pork','Cured Pork',500,'provisions','game:bacon'),
+    ('smoked-mutton','Smoked Mutton',500,'provisions','game:meat'),
+    ('dried-fish','Dried Fish',500,'provisions','game:fish'),
+    ('sea-salt','Sea Salt',400,'provisions','game:salt-shaker'),
+    ('preserves','Preserves',300,'provisions','game:jam-jar'),
+    ('sugar','Sugar',400,'provisions','game:sugar-cane'),
+    ('ale','Ale',400,'provisions','game:beer-stein'),
+    ('rice-wine','Rice-Wine',400,'provisions','game:bottle-vapors')
+  ) as t(slug, name, cap, cat, icon);
+
+  -- Standard producers: food/water/gather + the craft chains. inputs/outputs
+  -- reference resources by seed_uuid('resource:'||slug). base_capacity is
+  -- generous so chains can run everywhere; only field/water are heavily staffed.
+  insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, inputs_json, outputs_json, icon)
+  select pg_temp.seed_uuid('job:' || slug), v_world, name, slug, 'standard', cap,
+         coalesce(inp, '[]'::jsonb), out, icon
+  from (values
+    ('field-hand','Field Hand',30,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text,'amount_per_worker',8)),'game:farmer'),
+    ('water-bearer','Water Bearer',24,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', v_res_water::text,'amount_per_worker',8)),'game:full-wood-bucket-handle'),
+    ('grain-farmer','Grain Farmer',16,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_worker',6)),'game:sickle'),
+    ('rice-farmer','Rice Farmer',16,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:rice')::text,'amount_per_worker',6)),'game:rice'),
+    ('fisher','Fisher',12,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text,'amount_per_worker',3),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:fish')::text,'amount_per_worker',2)),'game:fishing-pole'),
+    ('hunter','Hunter',10,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text,'amount_per_worker',2),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hides')::text,'amount_per_worker',1)),'game:high-shot'),
+    ('forager','Forager',10,'[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text,'amount_per_worker',2),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:fruit')::text,'amount_per_worker',2),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:mushrooms')::text,'amount_per_worker',1)),'game:berries-bowl'),
+    ('miller','Miller',8,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_worker',3)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flour')::text,'amount_per_worker',3)),'game:watermill'),
+    ('baker','Baker',8,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flour')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:bread')::text,'amount_per_worker',3)),'game:bread'),
+    ('brewer','Brewer',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:ale')::text,'amount_per_worker',1)),'game:beer-stein'),
+    ('vintner','Vintner',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:fruit')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:wine')::text,'amount_per_worker',1)),'game:wine-bottle'),
+    ('cheesemaker','Cheesemaker',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:milk')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:cheese')::text,'amount_per_worker',1)),'game:cheese-wedge'),
+    ('tanner','Tanner',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hides')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:leather')::text,'amount_per_worker',1)),'game:animal-hide'),
+    ('cloth-weaver','Wool Weaver',8,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:wool')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:wool-cloth')::text,'amount_per_worker',1)),'game:wool'),
+    ('linen-weaver','Linen Weaver',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flax')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:linen-cloth')::text,'amount_per_worker',1)),'game:sewing-needle'),
+    ('silk-weaver','Silk Weaver',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:raw-silk')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:silk-cloth')::text,'amount_per_worker',1)),'game:rolled-cloth'),
+    ('ropemaker','Ropemaker',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flax')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:rope')::text,'amount_per_worker',2)),'game:rope-coil'),
+    ('iron-smelter','Iron Smelter',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ore')::text,'amount_per_worker',2),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:coal')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ingot')::text,'amount_per_worker',1)),'game:metal-bar'),
+    ('copper-smelter','Copper Smelter',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:copper-ore')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:copper-ingot')::text,'amount_per_worker',1)),'game:metal-bar'),
+    ('tin-smelter','Tin Smelter',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:tin-ore')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:tin-ingot')::text,'amount_per_worker',1)),'game:metal-bar'),
+    ('gold-smelter','Gold Smelter',4,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:gold-ore')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:gold-ingot')::text,'amount_per_worker',1)),'game:gold-bar'),
+    ('bronzesmith','Bronzesmith',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:copper-ingot')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:tin-ingot')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:bronze')::text,'amount_per_worker',1)),'game:anvil-impact'),
+    ('steelworker','Steelworker',5,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ingot')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:coal')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:steel')::text,'amount_per_worker',1)),'game:metal-bar'),
+    ('blacksmith','Blacksmith',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ingot')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:tools')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:nails')::text,'amount_per_worker',2)),'game:anvil'),
+    ('weaponsmith','Weaponsmith',5,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:steel')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:weapons')::text,'amount_per_worker',1)),'game:crossed-swords'),
+    ('armorer','Armorer',5,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:bronze')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:leather')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:armor')::text,'amount_per_worker',1)),'game:breastplate'),
+    ('jeweler','Jeweler',4,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:gold-ingot')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:rough-gems')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:jewelry')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:gemstones')::text,'amount_per_worker',1)),'game:diamond-ring'),
+    ('potter','Potter',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:clay')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:pottery')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:bricks')::text,'amount_per_worker',1)),'game:amphora'),
+    ('glassblower','Glassblower',5,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:sand')::text,'amount_per_worker',2),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:coal')::text,'amount_per_worker',1)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:glass')::text,'amount_per_worker',1)),'game:round-bottom-flask'),
+    ('carpenter','Carpenter',8,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:planks')::text,'amount_per_worker',2),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:timber-beams')::text,'amount_per_worker',1)),'game:hand-saw'),
+    ('charcoal-burner','Charcoal Burner',6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:softwood-logs')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:charcoal')::text,'amount_per_worker',2)),'game:charcoal'),
+    ('stonecutter','Stonecutter',8,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone')::text,'amount_per_worker',2)),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount_per_worker',1),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:cut-stone')::text,'amount_per_worker',1)),'game:stone-crafting')
+  ) as t(slug, name, cap, inp, out, icon);
+
+  -- Construction, trader and teacher jobs.
   insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, inputs_json, outputs_json, icon) values
-    -- Food/water outputs are deliberately generous so the world grows healthily
-    -- across the 32-turn replay at 200-pop settlements (Aldermoor's 4/5 were
-    -- tuned for ~50-pop and starved this world).
-    (v_job_field_hand, v_world, 'Field Hand', 'field-hand', 'standard', 30,
-       '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text, 'amount_per_worker', 8)),
-       'game:farmer'),
-    (v_job_water_bearer, v_world, 'Water Bearer', 'water-bearer', 'standard', 24,
-       '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_water::text, 'amount_per_worker', 8)),
-       'game:full-wood-bucket-handle'),
-    (v_job_grain_farmer, v_world, 'Grain Farmer', 'grain-farmer', 'standard', 16,
-       '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 6)),
-       'game:sickle'),
-    (v_job_brewer, v_world, 'Vintner', 'brewer', 'standard', 6,
-       jsonb_build_array(
-         jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 2),
-         jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_worker', 0.5)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_ale::text, 'amount_per_worker', 1)),
-       'game:cauldron'),
-    (v_job_cloth_weaver, v_world, 'Silk Weaver', 'cloth-weaver', 'standard', 8,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_worker', 2)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 1)),
-       'game:sewing-needle'),
-    (v_job_fisher, v_world, 'Fisher', 'fisher', 'standard', 12,
-       '[]'::jsonb,
-       jsonb_build_array(
-         jsonb_build_object('resource_id', v_res_food::text, 'amount_per_worker', 2),
-         jsonb_build_object('resource_id', v_res_sea_salt::text, 'amount_per_worker', 1)),
-       'game:fishing-pole'),
-    (v_job_teacher, v_world, 'Teacher', 'teacher', 'teacher', 6,
-       '[]'::jsonb, '[]'::jsonb, 'game:teacher');
-
+    (pg_temp.seed_uuid('job:teacher'), v_world, 'Teacher', 'teacher', 'teacher', 6, '[]'::jsonb, '[]'::jsonb, 'game:teacher');
   insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, icon) values
-    (v_job_stone_mason, v_world, 'Stone Mason', 'stone-mason', 'construction', 6, 'game:trowel');
+    (pg_temp.seed_uuid('job:stone-mason'), v_world, 'Stone Mason', 'stone-mason', 'construction', 8, 'game:trowel');
   insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker, required_education_level_id, icon) values
-    (v_job_caravan_trader, v_world, 'Caravan Trader', 'caravan-trader', 'trader', 3, pg_temp.seed_uuid('edu:lettered'), 'game:caravan');
+    (pg_temp.seed_uuid('job:caravan-trader'), v_world, 'Caravan Trader', 'caravan-trader', 'trader', 3, pg_temp.seed_uuid('edu:lettered'), 'game:caravan');
 
-  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_deposit_type_id, icon) values
-    (v_job_iron_miner,   v_world, 'Iron Miner',      'iron-miner',      'deposit', v_dep_iron_vein,      'pickaxe'),
-    (v_job_copper_miner, v_world, 'Jade Cutter',     'copper-miner',    'deposit', v_dep_copper_vein,    'game:mining-helmet'),
-    (v_job_stone_quarry, v_world, 'Stone Quarryman', 'stone-quarryman', 'deposit', v_dep_stone_quarry,   'game:rock'),
-    (v_job_lumberjack,   v_world, 'Lumberjack',      'lumberjack',      'deposit', v_dep_hardwood_grove, 'axe'),
-    (v_job_peat_cutter,  v_world, 'Peat Cutter',     'peat-cutter',     'deposit', v_dep_peat_bog,       'shovel');
+  -- Deposit types (12) + their miner jobs.
+  insert into public.deposit_types (id, world_id, name, slug, icon)
+  select pg_temp.seed_uuid('deposit:' || slug), v_world, name, slug, icon
+  from (values
+    ('iron-vein','Iron Vein','game:minerals'),
+    ('copper-vein','Copper Vein','game:ore'),
+    ('tin-vein','Tin Vein','game:ore'),
+    ('gold-vein','Gold Vein','game:gold-mine'),
+    ('silver-vein','Silver Vein','game:ore'),
+    ('coal-seam','Coal Seam','game:coal-pile'),
+    ('stone-quarry','Stone Quarry','mountain'),
+    ('clay-pit','Clay Pit','game:powder'),
+    ('hardwood-grove','Hardwood Grove','trees'),
+    ('peat-bog','Peat Bog','game:swamp'),
+    ('salt-flat','Salt Flat','game:salt-shaker'),
+    ('sand-pit','Sand Pit','game:sands')
+  ) as t(slug, name, icon);
 
-  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_managed_population_type_id, icon) values
-    (v_job_shepherd,       v_world, 'Shepherd',       'shepherd',       'husbandry', v_pop_sheep_herd, 'game:shepherds-crook'),
-    (v_job_beekeeper,      v_world, 'Beekeeper',      'beekeeper',      'husbandry', v_pop_bee_colony, 'game:beehive'),
-    (v_job_swineherd,      v_world, 'Swineherd',      'swineherd',      'husbandry', v_pop_pig_herd,   'game:pig'),
-    (v_job_mutton_butcher, v_world, 'Mutton Butcher', 'mutton-butcher', 'culling',   v_pop_sheep_herd, 'game:cleaver'),
-    (v_job_honey_gatherer, v_world, 'Honey Gatherer', 'honey-gatherer', 'culling',   v_pop_bee_colony, 'game:honey-jar'),
-    (v_job_pork_butcher,   v_world, 'Pork Butcher',   'pork-butcher',   'culling',   v_pop_pig_herd,   'game:meat-cleaver');
+  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_deposit_type_id, icon)
+  select pg_temp.seed_uuid('job:' || jslug), v_world, name, jslug, 'deposit', pg_temp.seed_uuid('deposit:' || dslug), icon
+  from (values
+    ('iron-miner','Iron Miner','iron-vein','pickaxe'),
+    ('copper-miner','Copper Miner','copper-vein','game:mining-helmet'),
+    ('tin-miner','Tin Miner','tin-vein','game:mining-helmet'),
+    ('gold-miner','Gold Miner','gold-vein','game:gold-nuggets'),
+    ('silver-miner','Silver Miner','silver-vein','game:mining-helmet'),
+    ('coal-miner','Coal Miner','coal-seam','game:coal-pile'),
+    ('stone-quarryman','Stone Quarryman','stone-quarry','game:rock'),
+    ('clay-digger','Clay Digger','clay-pit','shovel'),
+    ('lumberjack','Lumberjack','hardwood-grove','axe'),
+    ('peat-cutter','Peat Cutter','peat-bog','shovel'),
+    ('salt-panner','Salt Panner','salt-flat','game:salt-shaker'),
+    ('sand-digger','Sand Digger','sand-pit','shovel')
+  ) as t(jslug, name, dslug, icon);
 
-  insert into public.deposit_types (id, world_id, name, slug, icon) values
-    (v_dep_iron_vein,      v_world, 'Iron Vein',      'iron-vein',      'game:minerals'),
-    (v_dep_copper_vein,    v_world, 'Jade Vein',      'copper-vein',    'game:metal-bar'),
-    (v_dep_stone_quarry,   v_world, 'Stone Quarry',   'stone-quarry',   'mountain'),
-    (v_dep_hardwood_grove, v_world, 'Hardwood Grove', 'hardwood-grove', 'trees'),
-    (v_dep_peat_bog,       v_world, 'Peat Bog',       'peat-bog',       'game:swamp');
+  insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
+  select pg_temp.seed_uuid('deposit:' || dslug), pg_temp.seed_uuid('job:' || jslug), yield, '[]'::jsonb
+  from (values
+    ('iron-vein','iron-miner',5), ('copper-vein','copper-miner',5), ('tin-vein','tin-miner',5),
+    ('gold-vein','gold-miner',3), ('silver-vein','silver-miner',4), ('coal-seam','coal-miner',6),
+    ('stone-quarry','stone-quarryman',8), ('clay-pit','clay-digger',6), ('hardwood-grove','lumberjack',6),
+    ('peat-bog','peat-cutter',6), ('salt-flat','salt-panner',5), ('sand-pit','sand-digger',6)
+  ) as t(dslug, jslug, yield);
 
-  insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json) values
-    (v_dep_iron_vein,      v_job_iron_miner,   5,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 0.5))),
-    (v_dep_copper_vein,    v_job_copper_miner, 4, '[]'::jsonb),
-    (v_dep_stone_quarry,   v_job_stone_quarry, 8,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount_per_worker', 0.5))),
-    (v_dep_hardwood_grove, v_job_lumberjack,   6, '[]'::jsonb),
-    (v_dep_peat_bog,       v_job_peat_cutter,  6, '[]'::jsonb);
-
-  insert into public.managed_population_types (
-    id, world_id, name, slug, growth_rate,
-    maintenance_rules_json, culling_outputs_json, regular_outputs_json, icon
-  ) values
-    (v_pop_sheep_herd, v_world, 'Sheep Herd', 'sheep-herd', 0.10,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 0.1)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_smoked_mutton::text, 'amount_per_n_animals', 0.5)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_n_animals', 0.25)),
-       'game:sheep'),
-    (v_pop_bee_colony, v_world, 'Bee Colony', 'bee-colony', 0.05,
+  -- Managed populations (5: sheep, pig, bee, cow, chicken) with husbandry
+  -- (regular per-animal output) and culling (harvest) jobs.
+  insert into public.managed_population_types (id, world_id, name, slug, growth_rate, maintenance_rules_json, culling_outputs_json, regular_outputs_json, icon) values
+    (pg_temp.seed_uuid('pop:sheep-herd'), v_world, 'Sheep Herd', 'sheep-herd', 0.10,
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_n_animals',0.1)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:mutton')::text,'amount_per_n_animals',0.5),
+                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hides')::text,'amount_per_n_animals',0.25)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:wool')::text,'amount_per_n_animals',0.25)),'game:sheep'),
+    (pg_temp.seed_uuid('pop:pig-herd'), v_world, 'Pig Herd', 'pig-herd', 0.15,
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_n_animals',0.2)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:pork')::text,'amount_per_n_animals',2),
+                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hides')::text,'amount_per_n_animals',0.25)),
+       '[]'::jsonb,'game:pig'),
+    (pg_temp.seed_uuid('pop:bee-colony'), v_world, 'Bee Colony', 'bee-colony', 0.05,
        '[]'::jsonb,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_n_animals', 2)),
        '[]'::jsonb,
-       'game:hive'),
-    (v_pop_pig_herd, v_world, 'Pig Herd', 'pig-herd', 0.15,
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 0.2)),
-       jsonb_build_array(jsonb_build_object('resource_id', v_res_salted_pork::text, 'amount_per_n_animals', 2)),
-       '[]'::jsonb,
-       'game:pig-face');
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:honey')::text,'amount_per_n_animals',0.5)),'game:bee'),
+    (pg_temp.seed_uuid('pop:cow-herd'), v_world, 'Cow Herd', 'cow-herd', 0.08,
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_n_animals',0.2)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:beef')::text,'amount_per_n_animals',1.5),
+                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hides')::text,'amount_per_n_animals',0.5)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:milk')::text,'amount_per_n_animals',0.4)),'game:cow'),
+    (pg_temp.seed_uuid('pop:chicken-flock'), v_world, 'Chicken Flock', 'chicken-flock', 0.20,
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_n_animals',0.1)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:poultry')::text,'amount_per_n_animals',0.8),
+                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:feathers')::text,'amount_per_n_animals',0.5)),
+       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:eggs')::text,'amount_per_n_animals',0.5)),'game:chicken');
+
+  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_managed_population_type_id, icon)
+  select pg_temp.seed_uuid('job:' || jslug), v_world, name, jslug, jtype, pg_temp.seed_uuid('pop:' || pslug), icon
+  from (values
+    ('shepherd','Shepherd','husbandry','sheep-herd','game:shepherds-crook'),
+    ('swineherd','Swineherd','husbandry','pig-herd','game:pig'),
+    ('cowherd','Cowherd','husbandry','cow-herd','game:cow'),
+    ('beekeeper','Beekeeper','husbandry','bee-colony','game:beehive'),
+    ('poultry-keeper','Poultry Keeper','husbandry','chicken-flock','game:chicken'),
+    ('mutton-butcher','Mutton Butcher','culling','sheep-herd','game:cleaver'),
+    ('pork-butcher','Pork Butcher','culling','pig-herd','game:meat-cleaver'),
+    ('cattle-butcher','Cattle Butcher','culling','cow-herd','game:cleaver'),
+    ('honey-gatherer','Honey Gatherer','culling','bee-colony','game:honey-jar'),
+    ('poulterer','Poulterer','culling','chicken-flock','game:cleaver')
+  ) as t(jslug, name, jtype, pslug, icon);
 
   insert into public.managed_population_husbandry_jobs (managed_population_type_id, job_id, workers_per_n_animals) values
-    (v_pop_sheep_herd, v_job_shepherd,  10),
-    (v_pop_bee_colony, v_job_beekeeper, 20),
-    (v_pop_pig_herd,   v_job_swineherd, 8);
+    (pg_temp.seed_uuid('pop:sheep-herd'),     pg_temp.seed_uuid('job:shepherd'),       10),
+    (pg_temp.seed_uuid('pop:pig-herd'),       pg_temp.seed_uuid('job:swineherd'),       8),
+    (pg_temp.seed_uuid('pop:cow-herd'),       pg_temp.seed_uuid('job:cowherd'),        10),
+    (pg_temp.seed_uuid('pop:bee-colony'),     pg_temp.seed_uuid('job:beekeeper'),      20),
+    (pg_temp.seed_uuid('pop:chicken-flock'),  pg_temp.seed_uuid('job:poultry-keeper'), 15);
 
   insert into public.managed_population_culling_jobs (managed_population_type_id, job_id, max_cull_per_worker) values
-    (v_pop_sheep_herd, v_job_mutton_butcher, 10),
-    (v_pop_bee_colony, v_job_honey_gatherer, 10),
-    (v_pop_pig_herd,   v_job_pork_butcher,   10);
+    (pg_temp.seed_uuid('pop:sheep-herd'),     pg_temp.seed_uuid('job:mutton-butcher'), 10),
+    (pg_temp.seed_uuid('pop:pig-herd'),       pg_temp.seed_uuid('job:pork-butcher'),   10),
+    (pg_temp.seed_uuid('pop:cow-herd'),       pg_temp.seed_uuid('job:cattle-butcher'),  8),
+    (pg_temp.seed_uuid('pop:bee-colony'),     pg_temp.seed_uuid('job:honey-gatherer'), 10),
+    (pg_temp.seed_uuid('pop:chicken-flock'),  pg_temp.seed_uuid('job:poulterer'),      12);
 
+  -- Special buildings authored explicitly (food/water/storage/housing/school/smithy).
   insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon) values
-    (v_bp_granary,    v_world, 'Granary',           'granary',          'A raised granary that yields food passively and widens the field-hand rota.', 0, null, 'game:granary'),
-    (v_bp_cistern,    v_world, 'Cistern',           'cistern',          'A stone cistern that gathers fresh water and supports the water-bearers.', 0, null, 'game:well'),
-    (v_bp_storehouse, v_world, 'Storehouse',        'storehouse',       'Roofed storage adding stockpile capacity for grain and cured goods.', 1, 4, 'warehouse'),
-    (v_bp_workshop,   v_world, 'Weaver''s Workshop','weavers-workshop', 'A workshop where weavers raise the settlement''s cloth output.', 0, 4, 'game:yarn'),
-    (v_bp_longhouse,  v_world, 'Longhouse',         'longhouse',        'A communal hall that raises the settlement''s sustainable population.', 2, 8, 'game:viking-longhouse'),
-    (v_bp_smithy,     v_world, 'Smithy',            'smithy',           'A two-tier smithy that expands iron storage and bolsters the mason corps.', 1, 2, 'game:anvil'),
-    (v_bp_school,     v_world, 'School',            'school',           'A schoolhouse where a teacher lifts pupils from Untaught through Scholar.', 0, 1, 'game:teacher');
+    (pg_temp.seed_uuid('bp:granary'),    v_world, 'Granary',    'granary',    'A raised granary that yields food passively and widens the field-hand rota.', 0, null, 'game:granary'),
+    (pg_temp.seed_uuid('bp:cistern'),    v_world, 'Cistern',    'cistern',    'A stone cistern that gathers fresh water and supports the water-bearers.', 0, null, 'game:well'),
+    (pg_temp.seed_uuid('bp:storehouse'), v_world, 'Storehouse', 'storehouse', 'Roofed storage adding stockpile capacity for grain and cured goods.', 1, 6, 'warehouse'),
+    (pg_temp.seed_uuid('bp:longhouse'),  v_world, 'Longhouse',  'longhouse',  'A communal hall that raises the settlement''s sustainable population.', 2, 8, 'game:viking-longhouse'),
+    (pg_temp.seed_uuid('bp:smithy'),     v_world, 'Smithy',     'smithy',     'A two-tier smithy that expands iron storage and bolsters the mason corps.', 1, 2, 'game:anvil'),
+    (pg_temp.seed_uuid('bp:school'),     v_world, 'School',     'school',     'A schoolhouse where a teacher lifts pupils from Untaught through Scholar.', 0, 1, 'game:teacher');
 
-  insert into public.building_blueprint_tiers (
-    id, building_blueprint_id, tier_number, worker_turns_required,
-    construction_costs_json, upkeep_costs_json, effects_json
-  ) values
-    (v_tier_granary_1, v_bp_granary, 1, 6,
-      jsonb_build_array(
-        jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 10),
-        jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount', 5)),
+  insert into public.building_blueprint_tiers (id, building_blueprint_id, tier_number, worker_turns_required, construction_costs_json, upkeep_costs_json, effects_json) values
+    (pg_temp.seed_uuid('tier:granary:1'), pg_temp.seed_uuid('bp:granary'), 1, 6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',10),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount',5)),
       '[]'::jsonb,
       jsonb_build_array(
-        jsonb_build_object('type','passive_resource_production','resource_id', v_res_food::text, 'amount', 24),
-        jsonb_build_object('type','job_capacity_increase','job_id', v_job_field_hand::text, 'amount', 6),
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_food::text, 'amount', 800),
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_grain::text, 'amount', 400))),
-    (v_tier_cistern_1, v_bp_cistern, 1, 5,
-      jsonb_build_array(jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 8)),
+        jsonb_build_object('type','passive_resource_production','resource_id', v_res_food::text,'amount',24),
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:field-hand')::text,'amount',6),
+        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_food::text,'amount',800),
+        jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount',400))),
+    (pg_temp.seed_uuid('tier:cistern:1'), pg_temp.seed_uuid('bp:cistern'), 1, 5,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',8)),
       '[]'::jsonb,
       jsonb_build_array(
-        jsonb_build_object('type','passive_resource_production','resource_id', v_res_water::text, 'amount', 24),
-        jsonb_build_object('type','job_capacity_increase','job_id', v_job_water_bearer::text, 'amount', 6),
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_water::text, 'amount', 800))),
-    (v_tier_storehouse_1, v_bp_storehouse, 1, 4,
-      jsonb_build_array(jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 20)),
+        jsonb_build_object('type','passive_resource_production','resource_id', v_res_water::text,'amount',24),
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:water-bearer')::text,'amount',6),
+        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_water::text,'amount',800))),
+    (pg_temp.seed_uuid('tier:storehouse:1'), pg_temp.seed_uuid('bp:storehouse'), 1, 4,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',20)),
       '[]'::jsonb,
       jsonb_build_array(
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_grain::text, 'amount', 500),
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_salted_pork::text, 'amount', 250))),
-    (v_tier_workshop_1, v_bp_workshop, 1, 5,
-      jsonb_build_array(
-        jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount', 8),
-        jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 4)),
+        jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount',500),
+        jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:salted-pork')::text,'amount',250))),
+    (pg_temp.seed_uuid('tier:longhouse:1'), pg_temp.seed_uuid('bp:longhouse'), 1, 8,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount',15),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',10)),
       '[]'::jsonb,
-      jsonb_build_array(jsonb_build_object('type','job_capacity_increase','job_id', v_job_cloth_weaver::text, 'amount', 3))),
-    -- No upkeep: an unpaid grain upkeep would suspend longhouses mid-replay,
-    -- collapsing the population cap into mass homelessness. +50 cap each gives
-    -- generous headroom for births over 32 turns.
-    (v_tier_longhouse_1, v_bp_longhouse, 1, 8,
-      jsonb_build_array(
-        jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount', 15),
-        jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 10)),
-      '[]'::jsonb,
-      jsonb_build_array(jsonb_build_object('type','population_cap_increase','amount', 50))),
-    (v_tier_smithy_1, v_bp_smithy, 1, 7,
-      jsonb_build_array(
-        jsonb_build_object('resource_id', v_res_iron_ore::text, 'amount', 4),
-        jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 6)),
+      jsonb_build_array(jsonb_build_object('type','population_cap_increase','amount',50))),
+    (pg_temp.seed_uuid('tier:smithy:1'), pg_temp.seed_uuid('bp:smithy'), 1, 7,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ore')::text,'amount',4),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',6)),
       '[]'::jsonb,
       jsonb_build_array(
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_iron_ore::text, 'amount', 100),
-        jsonb_build_object('type','job_capacity_increase','job_id', v_job_stone_mason::text, 'amount', 1))),
-    (v_tier_smithy_2, v_bp_smithy, 2, 12,
-      jsonb_build_array(
-        jsonb_build_object('resource_id', v_res_iron_ore::text, 'amount', 8),
-        jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 12),
-        jsonb_build_object('resource_id', v_res_copper_ingot::text, 'amount', 4)),
+        jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:iron-ore')::text,'amount',100),
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:stone-mason')::text,'amount',2),
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:blacksmith')::text,'amount',3))),
+    (pg_temp.seed_uuid('tier:smithy:2'), pg_temp.seed_uuid('bp:smithy'), 2, 12,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ore')::text,'amount',8),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',12),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:bronze')::text,'amount',4)),
       '[]'::jsonb,
       jsonb_build_array(
-        jsonb_build_object('type','resource_storage_increase','resource_id', v_res_iron_ore::text, 'amount', 250),
-        jsonb_build_object('type','job_capacity_increase','job_id', v_job_stone_mason::text, 'amount', 2))),
-    (v_tier_school_1, v_bp_school, 1, 6,
-      jsonb_build_array(
-        jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount', 10),
-        jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 8)),
+        jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:iron-ingot')::text,'amount',250),
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:blacksmith')::text,'amount',3),
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:weaponsmith')::text,'amount',2))),
+    (pg_temp.seed_uuid('tier:school:1'), pg_temp.seed_uuid('bp:school'), 1, 6,
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount',10),
+                        jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',8)),
       '[]'::jsonb,
       jsonb_build_array(
-        jsonb_build_object('type','job_capacity_increase','job_id', v_job_teacher::text, 'amount', 2),
-        jsonb_build_object(
-          'type','education',
-          'teacher_job_id', v_job_teacher::text,
-          'teacher_capacity', 2,
-          'students_per_teacher', 6,
+        jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:teacher')::text,'amount',2),
+        jsonb_build_object('type','education','teacher_job_id', pg_temp.seed_uuid('job:teacher')::text,
+          'teacher_capacity',2,'students_per_teacher',6,
           'levels', jsonb_build_array(
-            jsonb_build_object('from_level_id', null, 'to_level_id', pg_temp.seed_uuid('edu:lettered')::text, 'turns', 3),
-            jsonb_build_object('from_level_id', pg_temp.seed_uuid('edu:lettered')::text, 'to_level_id', pg_temp.seed_uuid('edu:scholar')::text, 'turns', 4)))));
+            jsonb_build_object('from_level_id', null,'to_level_id', pg_temp.seed_uuid('edu:lettered')::text,'turns',3),
+            jsonb_build_object('from_level_id', pg_temp.seed_uuid('edu:lettered')::text,'to_level_id', pg_temp.seed_uuid('edu:scholar')::text,'turns',4)))));
+
+  -- Craft / production / civic / military buildings via a driver: each grants
+  -- +capacity for its linked job and storage for its output good.
+  insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon)
+  select pg_temp.seed_uuid('bp:' || slug), v_world, name, slug, descr, 0, cap_max, icon
+  from (values
+    ('watermill','Watermill','Grinds grain into flour.',3,'game:watermill','miller','flour'),
+    ('bakery','Bakery','Bakes bread from flour.',3,'game:bread','baker','bread'),
+    ('brewery','Brewery','Brews ale from grain.',2,'game:barrel','brewer','ale'),
+    ('winery','Winery','Presses fruit into wine.',2,'game:wine-bottle','vintner','wine'),
+    ('dairy','Dairy','Turns milk into cheese.',2,'game:cheese-wedge','cheesemaker','cheese'),
+    ('smokehouse','Smokehouse','Cures and smokes meat and fish.',3,'game:meat','fisher','dried-fish'),
+    ('weavers-workshop','Weaver''s Workshop','Weaves wool into cloth.',4,'game:yarn','cloth-weaver','wool-cloth'),
+    ('linen-workshop','Linen Workshop','Weaves flax into linen.',3,'game:sewing-needle','linen-weaver','linen-cloth'),
+    ('silk-workshop','Silk Workshop','Weaves raw silk into fine cloth.',2,'game:rolled-cloth','silk-weaver','silk-cloth'),
+    ('tannery','Tannery','Tans raw hides into leather.',3,'game:animal-hide','tanner','leather'),
+    ('ropewalk','Ropewalk','Twists flax into rope.',2,'game:rope-coil','ropemaker','rope'),
+    ('smelter','Smelter','Smelts iron ore into ingots.',3,'game:furnace','iron-smelter','iron-ingot'),
+    ('copper-smeltery','Copper Smeltery','Smelts copper ore into ingots.',2,'game:furnace','copper-smelter','copper-ingot'),
+    ('tin-smeltery','Tin Smeltery','Smelts tin ore into ingots.',2,'game:furnace','tin-smelter','tin-ingot'),
+    ('bronze-foundry','Bronze Foundry','Alloys copper and tin into bronze.',2,'game:anvil-impact','bronzesmith','bronze'),
+    ('steelworks','Steelworks','Forges iron and coal into steel.',2,'game:metal-bar','steelworker','steel'),
+    ('armory','Armory','Forges weapons and armor.',2,'game:crossed-swords','weaponsmith','weapons'),
+    ('goldsmithy','Goldsmithy','Works gold and gems into jewelry.',1,'game:diamond-ring','jeweler','jewelry'),
+    ('pottery','Pottery','Fires clay into pots and bricks.',3,'game:amphora','potter','pottery'),
+    ('glassworks','Glassworks','Blows sand into glass.',2,'game:round-bottom-flask','glassblower','glass'),
+    ('carpenters-shop','Carpenter''s Shop','Saws logs into planks and beams.',3,'game:hand-saw','carpenter','planks'),
+    ('charcoal-kiln','Charcoal Kiln','Chars softwood into charcoal.',2,'game:charcoal','charcoal-burner','charcoal'),
+    ('masons-yard','Mason''s Yard','Cuts raw stone into blocks.',3,'game:stone-crafting','stonecutter','stone-block'),
+    ('fishery','Fishery','A wharf that widens the fisher rota.',4,'game:fishing-net','fisher','fish'),
+    ('hunting-lodge','Hunting Lodge','A lodge for hunters and their game.',3,'game:high-shot','hunter','hides'),
+    ('foragers-hut','Forager''s Hut','A hut for foragers of the wild.',3,'game:berries-bowl','forager','fruit'),
+    ('sheepfold','Sheepfold','Shelters and grows the sheep herd.',3,'game:sheep','shepherd','wool'),
+    ('pigpen','Pigpen','Shelters and grows the pig herd.',3,'game:pig','swineherd','pork'),
+    ('cow-barn','Cow Barn','Shelters and grows the cow herd.',3,'game:cow','cowherd','milk'),
+    ('henhouse','Henhouse','Shelters and grows the chicken flock.',3,'game:chicken','poultry-keeper','eggs'),
+    ('apiary','Apiary','Tends and grows the bee colonies.',3,'game:beehive','beekeeper','honey'),
+    ('market','Market','Widens the caravan-trader rota.',2,'game:market','caravan-trader','spices'),
+    ('warehouse','Warehouse','Extra bulk storage for trade goods.',6,'warehouse','stonecutter','cut-stone')
+  ) as t(slug, name, descr, cap_max, icon, job_slug, out_slug);
+
+  insert into public.building_blueprint_tiers (id, building_blueprint_id, tier_number, worker_turns_required, construction_costs_json, upkeep_costs_json, effects_json)
+  select pg_temp.seed_uuid('tier:' || slug || ':1'), pg_temp.seed_uuid('bp:' || slug), 1, 5,
+    jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount',8),
+                      jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',5)),
+    '[]'::jsonb,
+    jsonb_build_array(
+      jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:' || job_slug)::text,'amount',4),
+      jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:' || out_slug)::text,'amount',300))
+  from (values
+    ('watermill','miller','flour'),('bakery','baker','bread'),('brewery','brewer','ale'),
+    ('winery','vintner','wine'),('dairy','cheesemaker','cheese'),('smokehouse','fisher','dried-fish'),
+    ('weavers-workshop','cloth-weaver','wool-cloth'),('linen-workshop','linen-weaver','linen-cloth'),
+    ('silk-workshop','silk-weaver','silk-cloth'),('tannery','tanner','leather'),('ropewalk','ropemaker','rope'),
+    ('smelter','iron-smelter','iron-ingot'),('copper-smeltery','copper-smelter','copper-ingot'),
+    ('tin-smeltery','tin-smelter','tin-ingot'),('bronze-foundry','bronzesmith','bronze'),
+    ('steelworks','steelworker','steel'),('armory','weaponsmith','weapons'),('goldsmithy','jeweler','jewelry'),
+    ('pottery','potter','pottery'),('glassworks','glassblower','glass'),('carpenters-shop','carpenter','planks'),
+    ('charcoal-kiln','charcoal-burner','charcoal'),('masons-yard','stonecutter','stone-block'),
+    ('fishery','fisher','fish'),('hunting-lodge','hunter','hides'),('foragers-hut','forager','fruit'),
+    ('sheepfold','shepherd','wool'),('pigpen','swineherd','pork'),('cow-barn','cowherd','milk'),
+    ('henhouse','poultry-keeper','eggs'),('apiary','beekeeper','honey'),('market','caravan-trader','spices'),
+    ('warehouse','stonecutter','cut-stone')
+  ) as t(slug, job_slug, out_slug);
+
+  -- Purely civic / cultural / military buildings (flavour + pop cap / storage;
+  -- no new sim mechanics), authored via a second driver.
+  insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon)
+  select pg_temp.seed_uuid('bp:' || slug), v_world, name, slug, descr, 0, cap_max, icon
+  from (values
+    ('library','Library','A hall of records and learning.',1,'game:book-cover'),
+    ('temple','Temple','A great house of worship.',1,'game:greek-temple'),
+    ('shrine','Shrine','A small sacred site.',3,'game:temple-gate'),
+    ('town-hall','Town Hall','The seat of local governance.',1,'game:town-hall'),
+    ('courthouse','Courthouse','Where the law is heard.',1,'game:scales'),
+    ('mint','Mint','Strikes and stores the nation''s coin.',1,'game:cash'),
+    ('bank','Bank','Vaults for the nation''s reserves.',1,'game:bank'),
+    ('barracks','Barracks','Quarters and drills the garrison.',2,'game:barracks'),
+    ('watchtower','Watchtower','Watches the approaches.',4,'game:watchtower'),
+    ('city-wall','City Wall','Ramparts guarding the settlement.',1,'game:defensive-wall'),
+    ('manor','Manor','A grand hall raising the population cap.',3,'game:castle'),
+    ('tenement','Tenement','Dense housing raising the population cap.',4,'game:house')
+  ) as t(slug, name, descr, cap_max, icon);
+
+  insert into public.building_blueprint_tiers (id, building_blueprint_id, tier_number, worker_turns_required, construction_costs_json, upkeep_costs_json, effects_json)
+  select pg_temp.seed_uuid('tier:' || slug || ':1'), pg_temp.seed_uuid('bp:' || slug), 1, 6,
+    jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',12),
+                      jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount',8)),
+    '[]'::jsonb, effects
+  from (values
+    ('library',    jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:pottery')::text,'amount',200))),
+    ('temple',     jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:incense')::text,'amount',200))),
+    ('shrine',     jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:incense')::text,'amount',100))),
+    ('town-hall',  jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:gold')::text,'amount',200))),
+    ('courthouse', jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:jade')::text,'amount',100))),
+    ('mint',       jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:gold')::text,'amount',400))),
+    ('bank',       jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:silver')::text,'amount',400))),
+    ('barracks',   jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:weapons')::text,'amount',200))),
+    ('watchtower', jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:armor')::text,'amount',100))),
+    ('city-wall',  jsonb_build_array(jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:cut-stone')::text,'amount',300))),
+    ('manor',      jsonb_build_array(jsonb_build_object('type','population_cap_increase','amount',40))),
+    ('tenement',   jsonb_build_array(jsonb_build_object('type','population_cap_increase','amount',30)))
+  ) as t(slug, effects);
 end$$;
 
 -- ---------------------------------------------------------------------------
@@ -798,26 +1082,18 @@ end$$;
 -- ---------------------------------------------------------------------------
 do $$
 declare
-  r record;
-  v_pop int;
-  v_gran int; v_cist int; v_long int; v_i int;
-  v_dep_res uuid; v_pop_type uuid; v_cull int;
-  v_bp_granary uuid := pg_temp.seed_uuid('bp:granary');
-  v_bp_cistern uuid := pg_temp.seed_uuid('bp:cistern');
-  v_bp_store   uuid := pg_temp.seed_uuid('bp:storehouse');
-  v_bp_work    uuid := pg_temp.seed_uuid('bp:workshop');
-  v_bp_long    uuid := pg_temp.seed_uuid('bp:longhouse');
-  v_bp_smithy  uuid := pg_temp.seed_uuid('bp:smithy');
-  v_bp_school  uuid := pg_temp.seed_uuid('bp:school');
-  v_t_gran uuid := pg_temp.seed_uuid('tier:granary:1');
-  v_t_cist uuid := pg_temp.seed_uuid('tier:cistern:1');
-  v_t_store uuid := pg_temp.seed_uuid('tier:storehouse:1');
-  v_t_work uuid := pg_temp.seed_uuid('tier:workshop:1');
-  v_t_long uuid := pg_temp.seed_uuid('tier:longhouse:1');
-  v_t_smithy uuid := pg_temp.seed_uuid('tier:smithy:1');
-  v_t_school uuid := pg_temp.seed_uuid('tier:school:1');
-  v_sid uuid;
-  v_rn int := 0;
+  r record; v_sid uuid; v_pop int; v_gran int; v_cist int; v_long int; v_i int; v_rn int := 0;
+  b text; d text; p text; v_res text; v_cull int;
+  -- Building sets by settlement size. Core = every settlement; city adds the
+  -- refining/trade layer; capital adds the full craft + civic + military layer.
+  v_core_bp text[] := array['masons-yard','carpenters-shop','watermill','bakery','smokehouse','sheepfold','cow-barn','henhouse'];
+  v_city_bp text[] := array['smelter','bronze-foundry','weavers-workshop','tannery','pottery','brewery','market','apiary','pigpen','fishery','copper-smeltery','tin-smeltery'];
+  v_cap_bp  text[] := array['steelworks','armory','goldsmithy','glassworks','dairy','winery','silk-workshop','ropewalk','charcoal-kiln','warehouse','hunting-lodge','foragers-hut','mint','bank','temple','town-hall','courthouse','library','barracks','watchtower','manor'];
+  v_core_dep text[] := array['hardwood-grove','stone-quarry','clay-pit','sand-pit','coal-seam','salt-flat'];
+  v_city_dep text[] := array['iron-vein','copper-vein','tin-vein'];
+  v_cap_dep  text[] := array['gold-vein','silver-vein'];
+  v_core_pop text[] := array['sheep-herd','cow-herd','chicken-flock'];
+  v_big_pop  text[] := array['pig-herd','bee-colony'];
 begin
   for r in select * from tmp_setts order by key loop
     v_rn := v_rn + 1;
@@ -827,77 +1103,94 @@ begin
     v_cist := greatest(1, ceil(v_pop / 120.0))::int;
     v_long := least(8, greatest(2, ceil(v_pop / 28.0)::int));
 
-    -- Granaries + cisterns (scaled), one storehouse, one workshop.
     for v_i in 1..v_gran loop
       insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
-      values (pg_temp.seed_uuid('building:' || r.key || ':granary:' || v_i), v_sid, v_bp_granary, v_t_gran, 'active', 0);
+      values (pg_temp.seed_uuid('building:' || r.key || ':granary:' || v_i), v_sid, pg_temp.seed_uuid('bp:granary'), pg_temp.seed_uuid('tier:granary:1'), 'active', 0);
     end loop;
     for v_i in 1..v_cist loop
       insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
-      values (pg_temp.seed_uuid('building:' || r.key || ':cistern:' || v_i), v_sid, v_bp_cistern, v_t_cist, 'active', 0);
+      values (pg_temp.seed_uuid('building:' || r.key || ':cistern:' || v_i), v_sid, pg_temp.seed_uuid('bp:cistern'), pg_temp.seed_uuid('tier:cistern:1'), 'active', 0);
     end loop;
-    insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number) values
-      (pg_temp.seed_uuid('building:' || r.key || ':storehouse'), v_sid, v_bp_store, v_t_store, 'active', 0),
-      (pg_temp.seed_uuid('building:' || r.key || ':workshop'),   v_sid, v_bp_work,  v_t_work,  'active', 0);
-
-    -- Longhouses (population cap).
+    insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
+      values (pg_temp.seed_uuid('building:' || r.key || ':storehouse'), v_sid, pg_temp.seed_uuid('bp:storehouse'), pg_temp.seed_uuid('tier:storehouse:1'), 'active', 0);
     for v_i in 1..v_long loop
       insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
-      values (pg_temp.seed_uuid('building:' || r.key || ':longhouse:' || v_i), v_sid, v_bp_long, v_t_long, 'active', 0);
+      values (pg_temp.seed_uuid('building:' || r.key || ':longhouse:' || v_i), v_sid, pg_temp.seed_uuid('bp:longhouse'), pg_temp.seed_uuid('tier:longhouse:1'), 'active', 0);
     end loop;
-
-    -- Smithy for capitals + Tsaesci cities; school for capitals.
-    if r.tier in ('capital','city') then
+    if r.tier <> 'isle' then
       insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
-      values (pg_temp.seed_uuid('building:' || r.key || ':smithy'), v_sid, v_bp_smithy, v_t_smithy, 'active', 0);
+      values (pg_temp.seed_uuid('building:' || r.key || ':smithy'), v_sid, pg_temp.seed_uuid('bp:smithy'), pg_temp.seed_uuid('tier:smithy:1'), 'active', 0);
     end if;
     if r.tier = 'capital' then
       insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
-      values (pg_temp.seed_uuid('building:' || r.key || ':school'), v_sid, v_bp_school, v_t_school, 'active', 0);
+      values (pg_temp.seed_uuid('building:' || r.key || ':school'), v_sid, pg_temp.seed_uuid('bp:school'), pg_temp.seed_uuid('tier:school:1'), 'active', 0);
     end if;
 
-    -- Deposits: every settlement gets a hardwood grove + stone quarry; larger
-    -- settlements also an iron vein. Provides construction materials + trade.
-    insert into public.deposit_instances (id, settlement_id, deposit_type_id, name, status, max_workers) values
-      (pg_temp.seed_uuid('depinst:' || r.key || ':grove'),  v_sid, pg_temp.seed_uuid('deposit:hardwood-grove'), r.name || ' Grove',  'active', 8),
-      (pg_temp.seed_uuid('depinst:' || r.key || ':quarry'), v_sid, pg_temp.seed_uuid('deposit:stone-quarry'),   r.name || ' Quarry', 'active', 8);
-    insert into public.deposit_instance_resources (deposit_instance_id, resource_id, initial_quantity, remaining_quantity) values
-      (pg_temp.seed_uuid('depinst:' || r.key || ':grove'),  pg_temp.seed_uuid('resource:hardwood-logs'), 4000, 4000),
-      (pg_temp.seed_uuid('depinst:' || r.key || ':quarry'), pg_temp.seed_uuid('resource:stone-block'),   6000, 6000);
-    if r.tier in ('capital','city') then
+    -- Craft/production/civic buildings by tier (each just needs one instance).
+    foreach b in array v_core_bp loop
+      insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
+      values (pg_temp.seed_uuid('building:' || r.key || ':' || b), v_sid, pg_temp.seed_uuid('bp:' || b), pg_temp.seed_uuid('tier:' || b || ':1'), 'active', 0);
+    end loop;
+    if r.tier <> 'isle' then
+      foreach b in array v_city_bp loop
+        insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
+        values (pg_temp.seed_uuid('building:' || r.key || ':' || b), v_sid, pg_temp.seed_uuid('bp:' || b), pg_temp.seed_uuid('tier:' || b || ':1'), 'active', 0);
+      end loop;
+    end if;
+    if r.tier = 'capital' then
+      foreach b in array v_cap_bp loop
+        insert into public.settlement_buildings (id, settlement_id, building_blueprint_id, current_tier_id, state, activated_on_turn_number)
+        values (pg_temp.seed_uuid('building:' || r.key || ':' || b), v_sid, pg_temp.seed_uuid('bp:' || b), pg_temp.seed_uuid('tier:' || b || ':1'), 'active', 0);
+      end loop;
+    end if;
+
+    -- Deposits: core everywhere; metal veins in cities+capitals; precious in capitals.
+    foreach d in array (case when r.tier = 'isle' then v_core_dep
+                             when r.tier = 'capital' then v_core_dep || v_city_dep || v_cap_dep
+                             else v_core_dep || v_city_dep end) loop
+      v_res := case d
+        when 'hardwood-grove' then 'hardwood-logs' when 'stone-quarry' then 'stone'
+        when 'clay-pit' then 'clay' when 'sand-pit' then 'sand' when 'coal-seam' then 'coal'
+        when 'salt-flat' then 'sea-salt' when 'iron-vein' then 'iron-ore'
+        when 'copper-vein' then 'copper-ore' when 'tin-vein' then 'tin-ore'
+        when 'gold-vein' then 'gold-ore' when 'silver-vein' then 'silver-ore' else 'stone' end;
       insert into public.deposit_instances (id, settlement_id, deposit_type_id, name, status, max_workers)
-      values (pg_temp.seed_uuid('depinst:' || r.key || ':iron'), v_sid, pg_temp.seed_uuid('deposit:iron-vein'), r.name || ' Iron Vein', 'active', 8);
+      values (pg_temp.seed_uuid('depinst:' || r.key || ':' || d), v_sid, pg_temp.seed_uuid('deposit:' || d), r.name || ' ' || initcap(replace(d, '-', ' ')), 'active', 8);
       insert into public.deposit_instance_resources (deposit_instance_id, resource_id, initial_quantity, remaining_quantity)
-      values (pg_temp.seed_uuid('depinst:' || r.key || ':iron'), pg_temp.seed_uuid('resource:iron-ore'), 5000, 5000);
-    end if;
+      values (pg_temp.seed_uuid('depinst:' || r.key || ':' || d), pg_temp.seed_uuid('resource:' || v_res), 6000, 6000);
+    end loop;
 
-    -- One managed population per settlement, rotating sheep / pig / bee.
-    if v_rn % 3 = 1 then v_pop_type := pg_temp.seed_uuid('pop:sheep-herd'); v_cull := 10;
-    elsif v_rn % 3 = 2 then v_pop_type := pg_temp.seed_uuid('pop:pig-herd'); v_cull := 8;
-    else v_pop_type := pg_temp.seed_uuid('pop:bee-colony'); v_cull := 6;
-    end if;
-    insert into public.managed_population_instances (id, settlement_id, managed_population_type_id, name, current_count, configured_cull_quantity, status)
-    values (pg_temp.seed_uuid('popinst:' || r.key), v_sid, v_pop_type, r.name || ' Herd', greatest(30, v_pop), v_cull, 'active');
+    -- Managed populations: core herds everywhere; pigs & bees at larger settlements.
+    foreach p in array (case when v_pop >= 50 then v_core_pop || v_big_pop else v_core_pop end) loop
+      v_cull := case p when 'bee-colony' then 0 else greatest(4, (v_pop / 12)) end;
+      insert into public.managed_population_instances (id, settlement_id, managed_population_type_id, name, current_count, configured_cull_quantity, status)
+      values (pg_temp.seed_uuid('popinst:' || r.key || ':' || p), v_sid, pg_temp.seed_uuid('pop:' || p),
+              r.name || ' ' || initcap(replace(p, '-', ' ')), greatest(40, v_pop), v_cull, 'active');
+    end loop;
 
-    -- Starting stockpiles, scaled so production has a buffer to build on.
+    -- Starting stockpiles: food/water buffer + raw materials and intermediates
+    -- so every chain has something to start converting.
     update public.settlement_resource_stockpiles s set quantity = v.qty
     from public.resources res,
       (values
-        ('food', v_pop * 3), ('fresh-water', v_pop * 3), ('grain', v_pop * 2),
-        ('ale', 40), ('wool', 120), ('linen-cloth', 30), ('hardwood-logs', 300),
-        ('stone-block', 350), ('iron-ore', 120), ('copper-ingot', 60),
-        ('salted-pork', 80), ('smoked-mutton', 60), ('honey', 60),
-        ('peat', 80), ('sea-salt', 60)
+        ('food', v_pop * 3), ('fresh-water', v_pop * 3), ('grain', v_pop * 2), ('rice', v_pop),
+        ('hardwood-logs', 500), ('stone-block', 500), ('softwood-logs', 200), ('stone', 200),
+        ('iron-ore', 150), ('copper-ore', 150), ('tin-ore', 150), ('coal', 200), ('clay', 200), ('sand', 200),
+        ('iron-ingot', 80), ('copper-ingot', 80), ('tin-ingot', 80), ('bronze', 40), ('steel', 40),
+        ('hides', 120), ('wool', 150), ('milk', 80), ('eggs', 80), ('flax', 100), ('flour', 80),
+        ('leather', 60), ('wool-cloth', 40), ('linen-cloth', 40), ('planks', 120), ('charcoal', 80),
+        ('ale', 40), ('cheese', 40), ('bread', 60), ('pottery', 40), ('tools', 40),
+        ('salted-pork', 80), ('smoked-mutton', 60), ('honey', 60), ('sea-salt', 80), ('peat', 80)
       ) as v(slug, qty)
     where res.world_id = pg_temp.seed_uuid('world:bovold') and res.slug = v.slug
       and s.resource_id = res.id and s.settlement_id = v_sid;
   end loop;
 end$$;
 
--- In-progress construction: a second workshop at each capital (varied progress).
+-- In-progress construction: a library rising at each capital (varied progress).
 insert into public.construction_projects (id, settlement_id, building_blueprint_id, target_tier_id, status, queue_position, progress_worker_turns)
 select pg_temp.seed_uuid('construction:' || key), pg_temp.seed_uuid('settlement:' || key),
-       pg_temp.seed_uuid('bp:workshop'), pg_temp.seed_uuid('tier:workshop:1'), 'in_progress', 1,
+       pg_temp.seed_uuid('bp:watchtower'), pg_temp.seed_uuid('tier:watchtower:1'), 'in_progress', 1,
        (row_number() over (order by key))::int
 from tmp_setts where tier = 'capital';
 
@@ -1125,26 +1418,68 @@ insert into public.law_amendment_votes (id, amendment_id, voter_citizen_id, vote
   (pg_temp.seed_uuid('vote:sanctuary:council1'), pg_temp.seed_uuid('amendment:bovold:sanctuary'), pg_temp.seed_uuid('citizen:notable:bovold-council1'), true),
   (pg_temp.seed_uuid('vote:sanctuary:council2'), pg_temp.seed_uuid('amendment:bovold:sanctuary'), pg_temp.seed_uuid('citizen:notable:bovold-council2'), false);
 
+-- A passed amendment on each of the other three nations' charters.
+insert into public.law_amendments (id, document_id, title, rationale_markdown, operations_json, status, proposed_by_citizen_id, proposed_turn_number, resolved_turn_number) values
+  (pg_temp.seed_uuid('amendment:tsaesci:servitude'), pg_temp.seed_uuid('law:tsaesci'), 'The Edict of Bound Servitude',
+    'That the larder-peoples be counted as property of the eldest coil, in law as in the Communion.',
+    jsonb_build_array(jsonb_build_object('op','add_article','heading','Of the Larder','body_markdown','The short-lived peoples are property of the coil that holds them, to be fed, worked, or Feasted upon as the elders decree.','position',3)),
+    'passed', pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), 0, 0),
+  (pg_temp.seed_uuid('amendment:tangmo:freewind'), pg_temp.seed_uuid('law:tangmo'), 'The Free-Wind Clause',
+    'That no isle may bind another to its will, for the isles are many and free.',
+    jsonb_build_array(jsonb_build_object('op','add_article','heading','Of Free Isles','body_markdown','No isle shall command another; each keeps its own council and comes to the Moot as an equal.','position',3)),
+    'passed', pg_temp.seed_uuid('citizen:notable:tangmo-speaker'), 0, 0),
+  (pg_temp.seed_uuid('amendment:kapotun:vigil'), pg_temp.seed_uuid('law:kapotun'), 'The Ninefold Vigil',
+    'That every cloister keep the Nine Roars, lest the climb toward the Dragon falter in any valley.',
+    jsonb_build_array(jsonb_build_object('op','add_article','heading','Of the Vigil','body_markdown','Every cloister shall keep the Nine Roars and the dawn-salute without fail, on pain of losing its ascension-rank.','position',3)),
+    'passed', pg_temp.seed_uuid('citizen:notable:kapotun-abbot'), 0, 0);
+
+insert into public.law_amendment_votes (id, amendment_id, voter_citizen_id, vote) values
+  (pg_temp.seed_uuid('vote:servitude:potentate'), pg_temp.seed_uuid('amendment:tsaesci:servitude'), pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), true),
+  (pg_temp.seed_uuid('vote:servitude:vizier'),    pg_temp.seed_uuid('amendment:tsaesci:servitude'), pg_temp.seed_uuid('citizen:notable:tsaesci-vizier'),    true),
+  (pg_temp.seed_uuid('vote:freewind:speaker'),    pg_temp.seed_uuid('amendment:tangmo:freewind'),   pg_temp.seed_uuid('citizen:notable:tangmo-speaker'),   true),
+  (pg_temp.seed_uuid('vote:freewind:warchief'),   pg_temp.seed_uuid('amendment:tangmo:freewind'),   pg_temp.seed_uuid('citizen:notable:tangmo-warchief'),  true),
+  (pg_temp.seed_uuid('vote:vigil:emperor'),       pg_temp.seed_uuid('amendment:kapotun:vigil'),     pg_temp.seed_uuid('citizen:notable:kapotun-emperor'),  true),
+  (pg_temp.seed_uuid('vote:vigil:abbot'),         pg_temp.seed_uuid('amendment:kapotun:vigil'),     pg_temp.seed_uuid('citizen:notable:kapotun-abbot'),    true);
+
 insert into public.decrees (id, world_id, nation_id, title, body_markdown, issued_by_citizen_id, issued_turn_number) values
   (pg_temp.seed_uuid('decree:bovold:tariff'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'),  'The Harbor Tariff', 'A modest tariff is laid on all goods crossing the sea-wall, that the harbor and its lighthouse be kept.', pg_temp.seed_uuid('citizen:notable:bovold-mayor'), 0),
   (pg_temp.seed_uuid('decree:tsaesci:feast'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tsaesci'), 'Edict of the Long Feast', 'The Potentate ordains a Long Feast at the turning of the sun, that the worthy dead endure in the living.', pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), 0),
   (pg_temp.seed_uuid('decree:tangmo:defense'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tangmo'), 'The Lantern-Watch', 'Each isle shall keep a lantern lit against the summer thaw, and raise the drum if the snow-demons come.', pg_temp.seed_uuid('citizen:notable:tangmo-speaker'), 0),
   (pg_temp.seed_uuid('decree:kapotun:rite'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:kapotun'), 'The Rite of Ascension', 'Every cloister shall keep the Nine Roars and the dawn-salute, that the climb toward the Dragon never falter.', pg_temp.seed_uuid('citizen:notable:kapotun-emperor'), 0);
 
+-- Established currencies: Bovold and Ka'Po'Tun back their coin with precious
+-- metal; the serpent empire and the isles run fiat currencies.
+insert into public.nation_currencies (id, world_id, nation_id, name, symbol, currency_type, backing_resource_id, backing_ratio, money_supply, reserve_quantity, confidence, established_turn_number, is_in_default) values
+  (pg_temp.seed_uuid('currency:bovold'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'),  'Bovold Drake', 'Dk', 'resource_backed', pg_temp.seed_uuid('resource:gold-ingot'),   0.5, 50000,  8000, 0.90, 0, false),
+  (pg_temp.seed_uuid('currency:tsaesci'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tsaesci'), 'Serpent Coil', 'Co', 'fiat',            null,                                    null, 200000, 20000, 0.75, 0, false),
+  (pg_temp.seed_uuid('currency:tangmo'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tangmo'),  'Isle Shell',   'Sh', 'fiat',            null,                                    null, 30000,  5000, 0.70, 0, false),
+  (pg_temp.seed_uuid('currency:kapotun'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:kapotun'), 'Dragon Scale', 'Sc', 'resource_backed', pg_temp.seed_uuid('resource:silver-ingot'), 0.4, 40000,  6000, 0.85, 0, false);
+
 -- ---------------------------------------------------------------------------
 -- 13a. Military. One army per nation, stationed at its capital, funded by the
 --      host settlement. Unit types carry NO upkeep and zero desertion so the
 --      standing armies never perturb the economy during the 32-turn replay.
 -- ---------------------------------------------------------------------------
-insert into public.unit_types (id, world_id, name, description, soldiers_per_unit, recruitment_costs_json, upkeep_costs_json, desertion_rate) values
-  (pg_temp.seed_uuid('unit:militia'),    pg_temp.seed_uuid('world:bovold'), 'City Militia',    'Guild volunteers who guard the harbor and sea-wall.', 10,
-     jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ore')::text, 'amount', 4)), '[]'::jsonb, 0),
-  (pg_temp.seed_uuid('unit:serpentguard'),pg_temp.seed_uuid('world:bovold'), 'Serpent Guard',   'Scaled duelists of the immortal court.', 8,
-     jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ore')::text, 'amount', 6)), '[]'::jsonb, 0),
-  (pg_temp.seed_uuid('unit:skirmisher'), pg_temp.seed_uuid('world:bovold'), 'Isle Skirmisher', 'Brave, reckless canopy-fighters of the isles.', 12,
-     jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text, 'amount', 4)), '[]'::jsonb, 0),
-  (pg_temp.seed_uuid('unit:tigermonk'),  pg_temp.seed_uuid('world:bovold'), 'Tiger-Monk',      'Breath-disciplined monk-warriors of the ascension.', 8,
-     jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:iron-ore')::text, 'amount', 6)), '[]'::jsonb, 0);
+-- Unit types (world catalogue). No upkeep and zero desertion so the standing
+-- armies never perturb the economy during the 32-turn replay.
+insert into public.unit_types (id, world_id, name, description, soldiers_per_unit, recruitment_costs_json, upkeep_costs_json, desertion_rate)
+select pg_temp.seed_uuid('unit:' || slug), pg_temp.seed_uuid('world:bovold'), name, descr, spu,
+  jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:' || rres)::text, 'amount', ramt)),
+  '[]'::jsonb, 0
+from (values
+  ('militia','City Militia','Guild volunteers who guard the harbor and sea-wall.',10,'iron-ore',4),
+  ('pikeman','Pikeman','A hedge of long spears.',10,'bronze',4),
+  ('crossbowman','Crossbowman','Steady bolt-throwers behind the wall.',8,'steel',3),
+  ('serpentguard','Serpent Guard','Scaled duelists of the immortal court.',8,'bronze',6),
+  ('coilblade','Coil-Blade','Immortal katana-duelists of Coil-of-Gold.',6,'steel',6),
+  ('venomarcher','Venom Archer','Archers of the poisoned shaft.',8,'tin-ingot',4),
+  ('skirmisher','Isle Skirmisher','Brave, reckless canopy-fighters of the isles.',12,'hardwood-logs',4),
+  ('slinger','Isle Slinger','Sling-stone throwers of the high crags.',12,'stone-block',3),
+  ('warcanoe','War-Canoe Crew','Fast raiders of the shallows.',10,'planks',4),
+  ('tigermonk','Tiger-Monk','Breath-disciplined monk-warriors of the ascension.',8,'iron-ore',6),
+  ('dragonguard','Dragon Guard','Elite guard of the god-emperor.',6,'steel',6),
+  ('breathadept','Breath-Adept','Masters of the roaring disciplines.',6,'bronze',5)
+) as t(slug, name, descr, spu, rres, ramt);
 
 insert into public.armies (id, world_id, nation_id, name, funding_source, stationed_settlement_id, created_turn_number) values
   (pg_temp.seed_uuid('army:bovold'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'),  'Bovold Harbor Watch', 'host_settlement', pg_temp.seed_uuid('settlement:bovold'),  0),
@@ -1152,41 +1487,68 @@ insert into public.armies (id, world_id, nation_id, name, funding_source, statio
   (pg_temp.seed_uuid('army:tangmo'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tangmo'),  'The Isle Levy',       'host_settlement', pg_temp.seed_uuid('settlement:motang'),  0),
   (pg_temp.seed_uuid('army:kapotun'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:kapotun'), 'The Dragon Host',     'host_settlement', pg_temp.seed_uuid('settlement:potun'),   0);
 
-insert into public.army_groups (id, army_id, name, sort_order) values
-  (pg_temp.seed_uuid('group:bovold'),  pg_temp.seed_uuid('army:bovold'),  'Harbor Ward',    0),
-  (pg_temp.seed_uuid('group:tsaesci'), pg_temp.seed_uuid('army:tsaesci'), 'First Coil',     0),
-  (pg_temp.seed_uuid('group:tangmo'),  pg_temp.seed_uuid('army:tangmo'),  'Canopy Company', 0),
-  (pg_temp.seed_uuid('group:kapotun'), pg_temp.seed_uuid('army:kapotun'), 'Ascension Fist', 0);
+-- Two groups per army.
+insert into public.army_groups (id, army_id, name, sort_order)
+select pg_temp.seed_uuid('group:' || nation || ':' || g), pg_temp.seed_uuid('army:' || nation), gname, ord
+from (values
+  ('bovold','van','Harbor Van',0),('bovold','rear','Sea-Wall Reserve',1),
+  ('tsaesci','van','First Coil',0),('tsaesci','rear','Gilt Fangs',1),
+  ('tangmo','van','Canopy Company',0),('tangmo','rear','Isle Reserve',1),
+  ('kapotun','van','Ascension Fist',0),('kapotun','rear','Dragon Vigil',1)
+) as t(nation, g, gname, ord);
 
-insert into public.army_units (id, army_id, group_id, unit_type_id, name, sort_order, created_turn_number) values
-  (pg_temp.seed_uuid('armyunit:bovold'),  pg_temp.seed_uuid('army:bovold'),  pg_temp.seed_uuid('group:bovold'),  pg_temp.seed_uuid('unit:militia'),     'Harbor Militia Cohort', 0, 0),
-  (pg_temp.seed_uuid('armyunit:tsaesci'), pg_temp.seed_uuid('army:tsaesci'), pg_temp.seed_uuid('group:tsaesci'), pg_temp.seed_uuid('unit:serpentguard'),'Gilt Fang Guard',       0, 0),
-  (pg_temp.seed_uuid('armyunit:tangmo'),  pg_temp.seed_uuid('army:tangmo'),  pg_temp.seed_uuid('group:tangmo'),  pg_temp.seed_uuid('unit:skirmisher'),  'Free Palms Skirmishers',0, 0),
-  (pg_temp.seed_uuid('armyunit:kapotun'), pg_temp.seed_uuid('army:kapotun'), pg_temp.seed_uuid('group:kapotun'), pg_temp.seed_uuid('unit:tigermonk'),   'Sunspire Monks',        0, 0);
+-- Five units per army across the two groups.
+insert into public.army_units (id, army_id, group_id, unit_type_id, name, sort_order, created_turn_number)
+select pg_temp.seed_uuid('armyunit:' || nation || ':' || u), pg_temp.seed_uuid('army:' || nation),
+       pg_temp.seed_uuid('group:' || nation || ':' || g), pg_temp.seed_uuid('unit:' || utype), uname, ord, 0
+from (values
+  ('bovold','u1','van','militia','Harbor Militia Cohort',0),
+  ('bovold','u2','van','pikeman','Sea-Wall Pikes',1),
+  ('bovold','u3','van','crossbowman','Lighthouse Crossbows',2),
+  ('bovold','u4','rear','militia','Lower-Ward Levy',0),
+  ('bovold','u5','rear','pikeman','Merchant Guard',1),
+  ('tsaesci','u1','van','serpentguard','Gilt Fang Guard',0),
+  ('tsaesci','u2','van','coilblade','Coil-of-Gold Duelists',1),
+  ('tsaesci','u3','van','venomarcher','Xheenmar Archers',2),
+  ('tsaesci','u4','rear','serpentguard','Scaled Court Guard',0),
+  ('tsaesci','u5','rear','pikeman','Slave Levies',1),
+  ('tangmo','u1','van','skirmisher','Free Palms Skirmishers',0),
+  ('tangmo','u2','van','slinger','Highcanopy Slings',1),
+  ('tangmo','u3','van','warcanoe','Laughing Harbor Raiders',2),
+  ('tangmo','u4','rear','skirmisher','Braided-Isle Bands',0),
+  ('tangmo','u5','rear','slinger','Chatter Bay Slings',1),
+  ('kapotun','u1','van','tigermonk','Sunspire Monks',0),
+  ('kapotun','u2','van','dragonguard','Po''Tun Dragon Guard',1),
+  ('kapotun','u3','van','breathadept','Nine Roars Adepts',2),
+  ('kapotun','u4','rear','tigermonk','Tigermount Monks',0),
+  ('kapotun','u5','rear','breathadept','Ember Cloister Adepts',1)
+) as t(nation, u, g, utype, uname, ord);
 
--- Recruit a small number of soldiers per army from capital residents. These
+-- Recruit ~4 soldiers per unit, drawn from anywhere in the unit's nation (not
+-- just the small capital) so no settlement is stripped of its labour. These
 -- citizens are then excluded from the labour pool below.
 do $$
 declare
-  r record; v_cid uuid; v_i int;
+  au record; v_cid uuid; v_i int;
 begin
-  for r in select * from (values
-    ('bovold','armyunit:bovold','settlement:bovold', 8),
-    ('tsaesci','armyunit:tsaesci','settlement:coilgold', 10),
-    ('tangmo','armyunit:tangmo','settlement:motang', 6),
-    ('kapotun','armyunit:kapotun','settlement:potun', 8)
-  ) as t(nation, unitkey, setkey, n) loop
+  for au in
+    select u.id unit_id, a.nation_id
+    from public.army_units u
+    join public.armies a on a.id = u.army_id
+  loop
     v_i := 0;
     for v_cid in
-      select id from public.citizens
-      where settlement_id = pg_temp.seed_uuid(r.setkey) and citizen_type = 'npc' and status = 'alive'
-        and born_on_turn_number <= -18 and id not in (select citizen_id from public.unit_soldiers)
-      order by born_on_turn_number, id limit r.n
+      select c.id from public.citizens c
+      join public.settlements s on s.id = c.settlement_id
+      where s.nation_id = au.nation_id and c.citizen_type = 'npc' and c.status = 'alive'
+        and c.born_on_turn_number <= -18 and c.id not in (select citizen_id from public.unit_soldiers)
+      order by c.born_on_turn_number, c.id limit 4
     loop
       v_i := v_i + 1;
       insert into public.unit_soldiers (id, world_id, unit_id, citizen_id, home_settlement_id, recruited_turn_number)
-      values (pg_temp.seed_uuid('soldier:' || r.nation || ':' || v_i), pg_temp.seed_uuid('world:bovold'),
-              pg_temp.seed_uuid(r.unitkey), v_cid, pg_temp.seed_uuid(r.setkey), 0);
+      select pg_temp.seed_uuid('soldier:' || au.unit_id::text || ':' || v_i), pg_temp.seed_uuid('world:bovold'),
+             au.unit_id, v_cid, c.settlement_id, 0
+      from public.citizens c where c.id = v_cid;
     end loop;
   end loop;
 end$$;
@@ -1204,8 +1566,13 @@ declare
   v_pop int; v_gran int; v_cist int; v_field_cap int; v_water_cap int;
   j int; k int;
   v_jobs uuid[]; v_cnts int[];
-  dep record; pop record;
+  dep record; pop record; b text;
   v_has_school boolean;
+  -- Craft chains staffed after the essentials: core everywhere, the refining
+  -- chain in cities+capitals, the luxury/steel chain in capitals.
+  v_craft_core text[] := array['miller','baker','cheesemaker','tanner','cloth-weaver','carpenter','stonecutter','potter','hunter','forager'];
+  v_craft_city text[] := array['iron-smelter','copper-smelter','tin-smelter','bronzesmith','steelworker','blacksmith','brewer','linen-weaver','glassblower'];
+  v_craft_cap  text[] := array['gold-smelter','jeweler','weaponsmith','armorer','vintner','silk-weaver','ropemaker','charcoal-burner'];
 begin
   for r in select * from tmp_setts order by key loop
     v_pop := r.couples * 2 + r.children;
@@ -1225,15 +1592,16 @@ begin
     v_n := coalesce(array_length(v_ids,1), 0);
     v_idx := 1;
 
-    -- standard jobs. Food AND water are staffed proportionally to population
-    -- (~pop/4 each, floored at 8, capped at building capacity) so small
-    -- capitals never spend their whole adult pool on fields and starve for
-    -- water — the failure that killed rulers and soldiers in earlier runs.
-    v_jobs := array[pg_temp.seed_uuid('job:field-hand'), pg_temp.seed_uuid('job:water-bearer'), pg_temp.seed_uuid('job:grain-farmer'), pg_temp.seed_uuid('job:fisher')];
+    -- ESSENTIALS FIRST. Food and water are staffed proportionally to population
+    -- (~pop/5 each, floored at 6, capped at building capacity) so the loop is
+    -- never starved by the many production jobs that follow. At output 8 this is
+    -- a large surplus that carries growth across 32 turns.
+    v_jobs := array[pg_temp.seed_uuid('job:field-hand'), pg_temp.seed_uuid('job:water-bearer'),
+                    pg_temp.seed_uuid('job:grain-farmer'), pg_temp.seed_uuid('job:rice-farmer'), pg_temp.seed_uuid('job:fisher')];
     v_cnts := array[
-      least(v_field_cap, greatest(8, ceil(v_pop / 4.0)::int)),
-      least(v_water_cap, greatest(8, ceil(v_pop / 4.0)::int)),
-      3, 6];
+      least(v_field_cap, greatest(6, ceil(v_pop / 5.0)::int)),
+      least(v_water_cap, greatest(6, ceil(v_pop / 5.0)::int)),
+      4, 3, 4];
     for j in 1..array_length(v_jobs,1) loop
       for k in 1..v_cnts[j] loop
         exit when v_idx > v_n;
@@ -1243,7 +1611,7 @@ begin
       end loop;
     end loop;
 
-    -- deposits: 2 workers each
+    -- Deposits: 2 workers each (feeds the raw-material chains).
     for dep in select di.id did from public.deposit_instances di where di.settlement_id = pg_temp.seed_uuid('settlement:' || r.key) and di.status = 'active' loop
       for k in 1..2 loop
         exit when v_idx > v_n;
@@ -1253,7 +1621,7 @@ begin
       end loop;
     end loop;
 
-    -- husbandry (2) + culling (1) per managed population
+    -- Husbandry (2) + culling (1) per managed population.
     for pop in select mpi.id mid, mpi.configured_cull_quantity cq from public.managed_population_instances mpi where mpi.settlement_id = pg_temp.seed_uuid('settlement:' || r.key) and mpi.status = 'active' loop
       for k in 1..2 loop
         exit when v_idx > v_n;
@@ -1268,31 +1636,50 @@ begin
       end if;
     end loop;
 
-    -- construction pool (3)
-    for k in 1..3 loop
-      exit when v_idx > v_n;
-      insert into public.citizen_assignments (citizen_id, assignment_type, construction_project_id, assigned_on_turn_number)
-      values (v_ids[v_idx], 'construction_project', null, 0);
-      v_idx := v_idx + 1;
-    end loop;
-
-    -- teacher (capitals only)
+    -- Teacher (capitals only).
     if v_has_school and v_idx <= v_n then
       insert into public.citizen_assignments (citizen_id, assignment_type, job_id, assigned_on_turn_number)
       values (v_ids[v_idx], 'standard_job', pg_temp.seed_uuid('job:teacher'), 0);
       v_idx := v_idx + 1;
     end if;
 
-    -- ale + cloth chains (lowest priority)
-    v_jobs := array[pg_temp.seed_uuid('job:brewer'), pg_temp.seed_uuid('job:cloth-weaver')];
-    v_cnts := array[2, 2];
-    for j in 1..array_length(v_jobs,1) loop
-      for k in 1..v_cnts[j] loop
+    -- CRAFT CHAINS. Core everywhere; refining in cities+capitals; luxury in
+    -- capitals. 2 workers per core/city craft, 1 per capital craft — clamped to
+    -- whatever labour remains after the essentials.
+    foreach b in array v_craft_core loop
+      for k in 1..2 loop
         exit when v_idx > v_n;
         insert into public.citizen_assignments (citizen_id, assignment_type, job_id, assigned_on_turn_number)
-        values (v_ids[v_idx], 'standard_job', v_jobs[j], 0);
+        values (v_ids[v_idx], 'standard_job', pg_temp.seed_uuid('job:' || b), 0);
         v_idx := v_idx + 1;
       end loop;
+    end loop;
+    if r.tier <> 'isle' then
+      foreach b in array v_craft_city loop
+        for k in 1..2 loop
+          exit when v_idx > v_n;
+          insert into public.citizen_assignments (citizen_id, assignment_type, job_id, assigned_on_turn_number)
+          values (v_ids[v_idx], 'standard_job', pg_temp.seed_uuid('job:' || b), 0);
+          v_idx := v_idx + 1;
+        end loop;
+      end loop;
+    end if;
+    if r.tier = 'capital' then
+      foreach b in array v_craft_cap loop
+        exit when v_idx > v_n;
+        insert into public.citizen_assignments (citizen_id, assignment_type, job_id, assigned_on_turn_number)
+        values (v_ids[v_idx], 'standard_job', pg_temp.seed_uuid('job:' || b), 0);
+        v_idx := v_idx + 1;
+      end loop;
+    end if;
+
+    -- A construction pool with the remaining labour (traders are staffed via
+    -- the trade routes below, not as standard jobs).
+    for k in 1..3 loop
+      exit when v_idx > v_n;
+      insert into public.citizen_assignments (citizen_id, assignment_type, construction_project_id, assigned_on_turn_number)
+      values (v_ids[v_idx], 'construction_project', null, 0);
+      v_idx := v_idx + 1;
     end loop;
   end loop;
 end$$;

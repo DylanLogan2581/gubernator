@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (68);
+  plan (86);
 
 -- ---------------------------------------------------------------------------
 -- World
@@ -1520,6 +1520,426 @@ select
         )
     ),
     'User 003 resumes as their Free City envoy'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Expanded economy catalogue, currencies, and Elder Scrolls calendar
+-- ---------------------------------------------------------------------------
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.resource_categories
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ),
+    10,
+    'Ten resource categories'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)
+      from
+        public.resources
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ) >= 80,
+    'At least 80 resources'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.resources
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and category_id is null
+    ),
+    0,
+    'Every resource is assigned to a category'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)
+      from
+        public.job_definitions
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ) >= 40,
+    'At least 40 job types'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)
+      from
+        public.building_blueprints
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ) >= 50,
+    'At least 50 building blueprints'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)
+      from
+        public.deposit_types
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ) >= 12,
+    'At least 12 deposit types'
+  );
+
+select
+  ok (
+    (
+      select
+        exists (
+          select
+            1
+          from
+            public.deposit_types
+          where
+            world_id = (
+              select
+                id
+              from
+                public.worlds
+              where
+                name = 'Bovold Seed World'
+            )
+            and slug = 'copper-vein'
+        )
+        and exists (
+          select
+            1
+          from
+            public.deposit_types
+          where
+            world_id = (
+              select
+                id
+              from
+                public.worlds
+              where
+                name = 'Bovold Seed World'
+            )
+            and slug = 'tin-vein'
+        )
+    ),
+    'Copper and tin veins exist'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.managed_population_types
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ),
+    5,
+    'Five managed-population types'
+  );
+
+select
+  ok (
+    (
+      select
+        exists (
+          select
+            1
+          from
+            public.managed_population_types
+          where
+            world_id = (
+              select
+                id
+              from
+                public.worlds
+              where
+                name = 'Bovold Seed World'
+            )
+            and slug = 'cow-herd'
+        )
+        and exists (
+          select
+            1
+          from
+            public.managed_population_types
+          where
+            world_id = (
+              select
+                id
+              from
+                public.worlds
+              where
+                name = 'Bovold Seed World'
+            )
+            and slug = 'chicken-flock'
+        )
+    ),
+    'Cow herds and chicken flocks exist'
+  );
+
+select
+  ok (
+    (
+      select
+        exists (
+          select
+            1
+          from
+            public.job_definitions
+          where
+            world_id = (
+              select
+                id
+              from
+                public.worlds
+              where
+                name = 'Bovold Seed World'
+            )
+            and slug = 'bronzesmith'
+        )
+    ),
+    'A bronzesmith job exists (copper + tin -> bronze)'
+  );
+
+select
+  ok (
+    (
+      select
+        icon
+      from
+        public.managed_population_types
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and slug = 'pig-herd'
+    ) = 'game:pig',
+    'The pig herd uses the pig icon'
+  );
+
+select
+  ok (
+    (
+      select
+        icon
+      from
+        public.managed_population_types
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and slug = 'bee-colony'
+    ) = 'game:bee',
+    'The bee colony uses the bee icon'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.education_levels
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and icon is null
+    ),
+    0,
+    'Every education level has an icon'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.nation_currencies
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ),
+    4,
+    'Every nation has an established currency'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.law_amendments am
+        join public.law_documents d on d.id = am.document_id
+      where
+        d.world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and am.status = 'passed'
+    ),
+    4,
+    'Every nation has a passed charter amendment'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)
+      from
+        public.unit_types
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+    ) >= 10,
+    'At least ten unit types'
+  );
+
+select
+  ok (
+    (
+      select
+        min(cnt)
+      from
+        (
+          select
+            count(*) cnt
+          from
+            public.army_units u
+            join public.armies a on a.id = u.army_id
+          where
+            a.world_id = (
+              select
+                id
+              from
+                public.worlds
+              where
+                name = 'Bovold Seed World'
+            )
+          group by
+            a.id
+        ) q
+    ) >= 4,
+    'Every nation''s army fields at least four units'
+  );
+
+select
+  ok (
+    (
+      select
+        (calendar_config_json -> 'months' -> 0 ->> 'name') = 'Morning Star'
+      from
+        public.worlds
+      where
+        name = 'Bovold Seed World'
+    ),
+    'The world uses the Elder Scrolls calendar'
   );
 
 select
