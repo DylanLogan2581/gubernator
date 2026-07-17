@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Save, Sparkles } from "lucide-react";
+import { RotateCw, Save, Sparkles } from "lucide-react";
 import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
@@ -14,7 +14,13 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { TagListEditor } from "@/components/shared/TagListEditor";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
@@ -261,7 +267,20 @@ function WorldNpcFlavorConfigPanelContent({
 
           <Dialog open={exampleDialogOpen} onOpenChange={setExampleDialogOpen}>
             <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Example output</DialogTitle>
+              </DialogHeader>
               <p className="text-sm text-foreground">{exampleOutput}</p>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateExample}
+                >
+                  <RotateCw aria-hidden="true" />
+                  Regenerate
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </>
