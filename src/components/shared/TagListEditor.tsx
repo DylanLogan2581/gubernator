@@ -1,20 +1,35 @@
-import { Plus, X } from "lucide-react";
+import { ClipboardList, Plus, X } from "lucide-react";
 import { useState, type JSX, type KeyboardEvent } from "react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { generateLocalId } from "@/lib/uid";
+
+import { countBulkPastePieces, parseBulkPaste } from "./PoolEditorUtils";
 
 type TagListEditorProps = {
   readonly entries: readonly string[];
   readonly label: string;
+  readonly maxEntryLength?: number;
+  readonly maxPoolSize?: number;
   readonly onChange: (entries: string[]) => void;
 };
 
 export function TagListEditor({
   entries,
   label,
+  maxEntryLength,
+  maxPoolSize,
   onChange,
 }: TagListEditorProps): JSX.Element {
   const [entryKeys, setEntryKeys] = useState(() =>
@@ -37,9 +52,70 @@ export function TagListEditor({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [newTagValue, setNewTagValue] = useState("");
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
 
   const getEntryKey = (index: number): string =>
     entryKeys[index] ?? `pending-${String(index)}`;
+
+  function handleBulkApply(): void {
+    const pieceCount = countBulkPastePieces(bulkText);
+    const deduped = parseBulkPaste(bulkText, entries);
+    const duplicateCount = pieceCount - deduped.length;
+
+    let accepted = deduped;
+    let tooLongCount = 0;
+    if (maxEntryLength !== undefined) {
+      const withinLength: string[] = [];
+      for (const entry of accepted) {
+        if (entry.length > maxEntryLength) {
+          tooLongCount++;
+        } else {
+          withinLength.push(entry);
+        }
+      }
+      accepted = withinLength;
+    }
+
+    let overLimitCount = 0;
+    if (maxPoolSize !== undefined) {
+      const availableSlots = Math.max(0, maxPoolSize - entries.length);
+      if (accepted.length > availableSlots) {
+        overLimitCount = accepted.length - availableSlots;
+        accepted = accepted.slice(0, availableSlots);
+      }
+    }
+
+    if (accepted.length > 0) {
+      setEntryKeys((prev) => [...prev, ...createEntryKeys(accepted.length)]);
+      onChange([...entries, ...accepted]);
+    }
+
+    const messageParts: string[] = [
+      accepted.length === 1
+        ? "Added 1 entry."
+        : `Added ${String(accepted.length)} entries.`,
+    ];
+    if (duplicateCount > 0) {
+      messageParts.push(`Skipped ${String(duplicateCount)} duplicate.`);
+    }
+    if (tooLongCount > 0) {
+      messageParts.push(`Skipped ${String(tooLongCount)} too long.`);
+    }
+    if (overLimitCount > 0) {
+      messageParts.push(
+        `Skipped ${String(overLimitCount)} — pool limit reached.`,
+      );
+    }
+    if (accepted.length > 0) {
+      toast.success(messageParts.join(" "));
+    } else {
+      toast.error(messageParts.join(" "));
+    }
+
+    setBulkText("");
+    setBulkOpen(false);
+  }
 
   function handleAddTag(): void {
     const trimmed = newTagValue.trim();
@@ -167,7 +243,63 @@ export function TagListEditor({
           <Plus aria-hidden="true" />
           Add entry
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setBulkOpen(true)}
+        >
+          <ClipboardList aria-hidden="true" />
+          Bulk import
+        </Button>
       </div>
+
+      <Dialog
+        open={bulkOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setBulkText("");
+            setBulkOpen(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bulk import — {label}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Add multiple entries from pasted text.
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            aria-label="Bulk import entries — one per line"
+            className="h-32 w-full min-w-0 resize-y rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            placeholder="Paste one entry per line, or comma-separated…"
+            value={bulkText}
+            onChange={(event) => setBulkText(event.currentTarget.value)}
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBulkText("");
+                setBulkOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleBulkApply}
+              disabled={bulkText.trim() === ""}
+            >
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </fieldset>
   );
 }

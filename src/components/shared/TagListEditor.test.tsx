@@ -1,8 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 
 import { TagListEditor } from "./TagListEditor";
+
+vi.mock("sonner", () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}));
 
 describe("TagListEditor", () => {
   it("renders the label and entries as chips", () => {
@@ -113,5 +118,97 @@ describe("TagListEditor", () => {
       "disabled",
       true,
     );
+  });
+
+  describe("bulk import", () => {
+    it("adds newline and comma separated entries, trimmed and deduped", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TagListEditor label="Pool" entries={["alpha"]} onChange={onChange} />,
+      );
+      await user.click(screen.getByRole("button", { name: "Bulk import" }));
+      await user.type(
+        screen.getByRole("textbox", {
+          name: "Bulk import entries — one per line",
+        }),
+        " beta ,gamma\nalpha\nbeta",
+      );
+      await user.click(screen.getByRole("button", { name: "Apply" }));
+      expect(onChange).toHaveBeenCalledWith(["alpha", "beta", "gamma"]);
+      expect(toast.success).toHaveBeenCalledWith(
+        "Added 2 entries. Skipped 2 duplicate.",
+      );
+    });
+
+    it("skips entries longer than maxEntryLength", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TagListEditor
+          label="Pool"
+          entries={[]}
+          maxEntryLength={5}
+          onChange={onChange}
+        />,
+      );
+      await user.click(screen.getByRole("button", { name: "Bulk import" }));
+      await user.type(
+        screen.getByRole("textbox", {
+          name: "Bulk import entries — one per line",
+        }),
+        "short\ntoolongvalue",
+      );
+      await user.click(screen.getByRole("button", { name: "Apply" }));
+      expect(onChange).toHaveBeenCalledWith(["short"]);
+      expect(toast.success).toHaveBeenCalledWith(
+        "Added 1 entry. Skipped 1 too long.",
+      );
+    });
+
+    it("caps added entries at maxPoolSize and reports skipped count", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TagListEditor
+          label="Pool"
+          entries={["existing"]}
+          maxPoolSize={2}
+          onChange={onChange}
+        />,
+      );
+      await user.click(screen.getByRole("button", { name: "Bulk import" }));
+      await user.type(
+        screen.getByRole("textbox", {
+          name: "Bulk import entries — one per line",
+        }),
+        "alpha\nbeta",
+      );
+      await user.click(screen.getByRole("button", { name: "Apply" }));
+      expect(onChange).toHaveBeenCalledWith(["existing", "alpha"]);
+      expect(toast.success).toHaveBeenCalledWith(
+        "Added 1 entry. Skipped 1 — pool limit reached.",
+      );
+    });
+
+    it("shows an error toast and does not call onChange when everything is a duplicate", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TagListEditor label="Pool" entries={["alpha"]} onChange={onChange} />,
+      );
+      await user.click(screen.getByRole("button", { name: "Bulk import" }));
+      await user.type(
+        screen.getByRole("textbox", {
+          name: "Bulk import entries — one per line",
+        }),
+        "alpha",
+      );
+      await user.click(screen.getByRole("button", { name: "Apply" }));
+      expect(onChange).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Added 0 entries. Skipped 1 duplicate.",
+      );
+    });
   });
 });

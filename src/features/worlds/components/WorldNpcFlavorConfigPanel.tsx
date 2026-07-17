@@ -24,6 +24,7 @@ import {
 import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { npcFlavorInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
@@ -208,6 +209,8 @@ function WorldNpcFlavorConfigPanelContent({
                 <TagListEditor
                   label="Traits"
                   entries={draftConfig.traits}
+                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
                   onChange={(traits) => {
                     setDraftConfig((current) => ({ ...current, traits }));
                     setIsDirty(true);
@@ -218,6 +221,8 @@ function WorldNpcFlavorConfigPanelContent({
                 <TagListEditor
                   label="Contradictions"
                   entries={draftConfig.contradictions}
+                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
                   onChange={(contradictions) => {
                     setDraftConfig((current) => ({
                       ...current,
@@ -231,6 +236,8 @@ function WorldNpcFlavorConfigPanelContent({
                 <TagListEditor
                   label="Goals"
                   entries={draftConfig.goals}
+                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
                   onChange={(goals) => {
                     setDraftConfig((current) => ({ ...current, goals }));
                     setIsDirty(true);
@@ -241,6 +248,8 @@ function WorldNpcFlavorConfigPanelContent({
                 <TagListEditor
                   label="Flaws"
                   entries={draftConfig.flaws}
+                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
                   onChange={(flaws) => {
                     setDraftConfig((current) => ({ ...current, flaws }));
                     setIsDirty(true);
