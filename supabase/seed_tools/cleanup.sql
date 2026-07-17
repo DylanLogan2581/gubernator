@@ -35,6 +35,21 @@ begin
   join public.nations n on n.id = s.nation_id
   where mpi.settlement_id = s.id and n.world_id = v_world;
 
+  -- Reactivate every trade route the 32-turn run paused, so the neutral trade
+  -- hub is visibly trading at the snapshot (and the trade_route assignment type
+  -- gets staffed below). Approvals are backfilled to the Lord-Mayor.
+  update public.trade_routes tr
+  set status = 'active',
+      origin_approval_status = 'approved',
+      destination_approval_status = 'approved',
+      origin_approved_by_citizen_id = coalesce(tr.origin_approved_by_citizen_id,
+        (select id from public.citizens where world_id = v_world and given_name = 'Bertram' and surname = 'Underhill' limit 1)),
+      destination_approved_by_citizen_id = coalesce(tr.destination_approved_by_citizen_id,
+        (select id from public.citizens where world_id = v_world and given_name = 'Bertram' and surname = 'Underhill' limit 1))
+  from public.settlements s
+  join public.nations n on n.id = s.nation_id
+  where tr.origin_settlement_id = s.id and n.world_id = v_world;
+
   -- Trade-route workers first (guarantees the trade_route assignment type
   -- survives before the main staffing loop consumes the adult pool).
   for r in
