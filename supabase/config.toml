@@ -118,6 +118,26 @@ file_size_limit = "50MiB"
 # allowed_mime_types = ["image/png", "image/jpeg"]
 # objects_path = "./images"
 
+# Seed the Bovold demo world/nation images into their (migration-created)
+# private buckets on `supabase db reset`. objects_path is relative to this
+# config.toml. Files are laid out by the paths the app expects:
+#   world-images/<world_id>/{thumbnail,hero}.webp
+#   nation-images/<nation_id>/flag.webp
+# Properties mirror the migration-created buckets (20260821000000 /
+# 20260829000000) exactly so `db reset` seeds the objects without prompting to
+# overwrite bucket properties.
+[storage.buckets.world-images]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/*"]
+objects_path = "./seed_tools/storage/world-images"
+
+[storage.buckets.nation-images]
+public = false
+file_size_limit = "2MiB"
+allowed_mime_types = ["image/*"]
+objects_path = "./seed_tools/storage/nation-images"
+
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
 enabled = true

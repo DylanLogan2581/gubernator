@@ -82,6 +82,7 @@ insert into public.worlds (
   id, name, current_turn_number, status, calendar_config_json,
   partnership_seek_chance, fertility_chance, minimum_partnership_age_turns,
   maximum_fertility_age_turns, mourning_period_turns,
+  thumbnail_path, hero_path,
   npc_flavor_config_json
 )
 values (
@@ -95,6 +96,9 @@ values (
   16,
   45,
   3,
+  -- Image paths point at objects the config.toml storage buckets seed on reset.
+  pg_temp.seed_uuid('world:bovold')::text || '/thumbnail.webp',
+  pg_temp.seed_uuid('world:bovold')::text || '/hero.webp',
   '{
     "traits": ["watchful","shrewd","devout","proud","patient","fierce","cunning","stoic","boisterous","reverent","venomous","ascetic","generous","wary","ambitious"],
     "contradictions": ["mourns a rival they devoured","serves a god they doubt","shelters an enemy of the state","keeps a shed skin they never named","holds a vow older than their memory","owes a debt to the drowned","hides a wound that should have killed them","prays toward a silent dragon"],
@@ -362,30 +366,36 @@ from tmp_pools p;
 -- 5. Nations (4), each wired to its culture/religion/nameset. Government types
 --    from the enum: republic / despotism / confederation / theocracy.
 -- ---------------------------------------------------------------------------
-insert into public.nations (id, world_id, name, description, nameset_id, primary_culture_id, state_religion_id, government_type) values
+-- flag_path points at the nation-images objects the config.toml storage bucket
+-- seeds on reset (<nation_id>/flag.webp).
+insert into public.nations (id, world_id, name, description, nameset_id, primary_culture_id, state_religion_id, government_type, flag_path) values
   (
     pg_temp.seed_uuid('nation:bovold'), pg_temp.seed_uuid('world:bovold'),
     'Free City of Bovold',
     'The one human city of Akavir — a chartered neutral free port that trades with every beast-nation and bows to none.',
-    pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), 'republic'
+    pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), 'republic',
+    pg_temp.seed_uuid('nation:bovold')::text || '/flag.webp'
   ),
   (
     pg_temp.seed_uuid('nation:tsaesci'), pg_temp.seed_uuid('world:bovold'),
     'Tsaesciland Empire',
     'The immortal cannibal serpent-folk empire, ruled from the coiling palaces of Coil-of-Gold by an ageless Potentate.',
-    pg_temp.seed_uuid('nameset:2'), pg_temp.seed_uuid('culture:tsaesci'), pg_temp.seed_uuid('religion:tsaesci'), 'despotism'
+    pg_temp.seed_uuid('nameset:2'), pg_temp.seed_uuid('culture:tsaesci'), pg_temp.seed_uuid('religion:tsaesci'), 'despotism',
+    pg_temp.seed_uuid('nation:tsaesci')::text || '/flag.webp'
   ),
   (
     pg_temp.seed_uuid('nation:tangmo'), pg_temp.seed_uuid('world:bovold'),
     'Thousand Monkey Islands',
     'A free confederation of many-breed monkey-folk across a thousand isles — kind, unconquered, and fiercely opposed to all slavery.',
-    pg_temp.seed_uuid('nameset:3'), pg_temp.seed_uuid('culture:tangmo'), pg_temp.seed_uuid('religion:tangmo'), 'confederation'
+    pg_temp.seed_uuid('nameset:3'), pg_temp.seed_uuid('culture:tangmo'), pg_temp.seed_uuid('religion:tangmo'), 'confederation',
+    pg_temp.seed_uuid('nation:tangmo')::text || '/flag.webp'
   ),
   (
     pg_temp.seed_uuid('nation:kapotun'), pg_temp.seed_uuid('world:bovold'),
     'Ka''Po''Tun Confederacy',
     'The mountain empire of tiger-folk striving to become dragons, led by the god-emperor Tosh Raka from the cloister-city of Po''Tun.',
-    pg_temp.seed_uuid('nameset:4'), pg_temp.seed_uuid('culture:kapotun'), pg_temp.seed_uuid('religion:kapotun'), 'theocracy'
+    pg_temp.seed_uuid('nameset:4'), pg_temp.seed_uuid('culture:kapotun'), pg_temp.seed_uuid('religion:kapotun'), 'theocracy',
+    pg_temp.seed_uuid('nation:kapotun')::text || '/flag.webp'
   );
 
 -- All four nations already know each other at turn 0.
