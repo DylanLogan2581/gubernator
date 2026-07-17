@@ -213,9 +213,7 @@ export function NationOfficesSection({
         hasAppointableTypes={appointableTypes.length > 0}
         onAppoint={isArchived ? undefined : () => setIsAppointing(true)}
         onManageTypes={
-          isArchived || !isNationManager
-            ? undefined
-            : () => setIsManagingTypes(true)
+          isArchived || !canManage ? undefined : () => setIsManagingTypes(true)
         }
       >
         {appointableTypes.length === 0 ? (
@@ -255,7 +253,7 @@ export function NationOfficesSection({
         />
       ) : null}
 
-      {isNationManager && isManagingTypes ? (
+      {canManage && isManagingTypes ? (
         <OfficeTypeManagerDialog
           allOfficeTypes={allOfficeTypes}
           isArchived={isArchived}
@@ -567,9 +565,10 @@ function AppointOfficeDialog({
   );
 }
 
-// Nation manager only (#1114): invent, edit, and delete custom offices for
-// this nation. World-default offices are listed for context but are not
-// editable here -- those belong to the world admin config panel.
+// Nation manager, world admin, or super admin (#1114, #1262): invent, edit,
+// and delete custom offices for this nation. World-default offices are
+// listed for context but are not editable here -- those belong to the
+// world admin config panel.
 function OfficeTypeManagerDialog({
   allOfficeTypes,
   isArchived,

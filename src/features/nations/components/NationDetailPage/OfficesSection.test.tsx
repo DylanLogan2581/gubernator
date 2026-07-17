@@ -364,6 +364,52 @@ describe("NationOfficesSection", () => {
     });
   });
 
+  it("lets a world admin manage office types without being the nation manager", async () => {
+    const user = userEvent.setup();
+
+    const clientFixture = createClientFixture({
+      citizens: [],
+      customOfficeTypes: [
+        {
+          id: "office-type-custom-1",
+          world_id: "world-1",
+          nation_id: "nation-1",
+          name: "Lord Commander",
+          description: null,
+          scope: "nation",
+          icon: null,
+          color: null,
+          max_holders: 1,
+          excludes_from_labor: true,
+          default_term_turns: null,
+        },
+      ],
+      offices: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderOfficesSection({
+      canAdminWorld: true,
+      nation: createNation("republic"),
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Manage office types" }),
+    );
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+
+    const nameInput = screen.getByLabelText("Name");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Lord Commander of the Night Watch");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(clientFixture.update).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Lord Commander of the Night Watch" }),
+      );
+    });
+  });
+
   it("requires confirmation before deleting a custom office type", async () => {
     const user = userEvent.setup();
     useActivePlayerCharacterMock.mockReturnValue({

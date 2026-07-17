@@ -1,12 +1,13 @@
 -- pgTAP tests for public.office_types (#1114): world-default seeding on
 -- world creation, RLS authority (world/super admin for nation_id-null rows,
--- nation manager for nation-owned custom rows), delete-blocked-while-holders,
--- and max_holders enforcement in appoint_nation_office.
+-- nation manager or world admin for nation-owned custom rows, #1262),
+-- delete-blocked-while-holders, and max_holders enforcement in
+-- appoint_nation_office.
 -- Run with: npx supabase test db
 begin;
 
 select
-  plan (13);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -337,6 +338,56 @@ select
     ),
     row (false, 1),
     'a nation manager can invent a custom office type for their own nation'
+  );
+
+-- ===========================================================================
+-- #1262: a world admin (not the nation's own manager) can also create,
+-- update, and delete a nation's custom office types --
+-- current_user_can_own_office_type / current_user_manages_nation already
+-- admit world admins and super admins alongside the nation manager.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ab000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+insert into
+  public.office_types (id, world_id, nation_id, name, scope, max_holders)
+values
+  (
+    'b0000000-0000-0000-0000-000000000004',
+    'ac000000-0000-0000-0000-000000000001',
+    'ad000000-0000-0000-0000-000000000001',
+    'Master of Coin',
+    'nation',
+    1
+  );
+
+update public.office_types
+set
+  description = 'Set by a world admin.'
+where
+  id = 'b0000000-0000-0000-0000-000000000004';
+
+delete from public.office_types
+where
+  id = 'b0000000-0000-0000-0000-000000000004';
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.office_types
+      where
+        id = 'b0000000-0000-0000-0000-000000000004'
+    ),
+    0,
+    'a world admin can create, update, and delete a nation''s custom office type'
   );
 
 -- ===========================================================================
