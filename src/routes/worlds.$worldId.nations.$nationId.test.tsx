@@ -144,6 +144,13 @@ type TestRelationshipRow = {
   readonly updated_at: string;
 };
 
+type TestDiscoveryRow = {
+  readonly created_by_user_id: string | null;
+  readonly met_at_turn_number: number;
+  readonly nation_a_id: string;
+  readonly nation_b_id: string;
+};
+
 type NationDeleteResult = {
   readonly data: { readonly id: string; readonly world_id: string } | null;
   readonly error: { readonly message: string } | null;
@@ -208,6 +215,7 @@ function createRelationshipRow(
 
 function createClient({
   adminRows = [],
+  discoveryRows = [],
   isSuperAdmin = false,
   nationDeleteResult,
   nationRows,
@@ -217,6 +225,7 @@ function createClient({
   settlementRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly discoveryRows?: readonly TestDiscoveryRow[];
   readonly isSuperAdmin?: boolean;
   readonly nationDeleteResult?: NationDeleteResult;
   readonly nationRows: readonly TestNationRow[];
@@ -360,6 +369,19 @@ function createClient({
               eq: vi.fn(() => builder),
               order: vi.fn(() => builder),
               returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+            return builder;
+          }),
+        };
+      }
+      if (table === "nation_discoveries") {
+        return {
+          select: vi.fn(() => {
+            const builder = {
+              eq: vi.fn(() => builder),
+              returns: vi
+                .fn()
+                .mockResolvedValue({ data: discoveryRows, error: null }),
             };
             return builder;
           }),
@@ -573,6 +595,14 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
+          discoveryRows: [
+            {
+              created_by_user_id: null,
+              met_at_turn_number: 1,
+              nation_a_id: NATION_ID,
+              nation_b_id: OTHER_NATION_ID,
+            },
+          ],
           nationRows: [
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),
@@ -595,6 +625,14 @@ describe("nation detail route", () => {
     it("hides relationship proposal controls from non-admin viewers at /relationships", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
+          discoveryRows: [
+            {
+              created_by_user_id: null,
+              met_at_turn_number: 1,
+              nation_a_id: NATION_ID,
+              nation_b_id: OTHER_NATION_ID,
+            },
+          ],
           nationRows: [
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),
@@ -819,6 +857,14 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
+          discoveryRows: [
+            {
+              created_by_user_id: null,
+              met_at_turn_number: 1,
+              nation_a_id: NATION_ID,
+              nation_b_id: OTHER_NATION_ID,
+            },
+          ],
           nationRows: [
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),
