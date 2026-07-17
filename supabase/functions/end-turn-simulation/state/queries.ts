@@ -118,7 +118,11 @@ async function fetchRowsPaginated({
     let response: Response;
 
     try {
-      const rangeHeader = `rows=${offset}-${offset + pageSize - 1}`;
+      // PostgREST honours the default `items` range unit; a `rows=` prefix is
+      // parsed as an unknown unit and silently ignored, so every page returns
+      // the first `max-rows` rows and pagination never advances (infinite loop
+      // / OOM for any table exceeding one page). Send the bare `start-end`.
+      const rangeHeader = `${offset}-${offset + pageSize - 1}`;
       response = await supabaseFetch(
         `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
         {

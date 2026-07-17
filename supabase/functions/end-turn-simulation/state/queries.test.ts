@@ -470,8 +470,11 @@ describe("pagination", () => {
     if (result.ok) {
       expect(result.rows).toHaveLength(1500);
       expect(fetchCalls).toHaveLength(2);
-      expect(fetchCalls[0].rangeHeader).toBe("rows=0-999");
-      expect(fetchCalls[1].rangeHeader).toBe("rows=1000-1999");
+      // Bare `start-end` (default `items` range unit). A `rows=` prefix is
+      // parsed by PostgREST as an unknown unit and ignored, which would return
+      // the first page forever (infinite loop / OOM for >1 page of rows).
+      expect(fetchCalls[0].rangeHeader).toBe("0-999");
+      expect(fetchCalls[1].rangeHeader).toBe("1000-1999");
     }
   });
 
