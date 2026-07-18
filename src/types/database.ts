@@ -7781,6 +7781,7 @@ export type Database = {
         Args: { p_user_id: string; p_world_id: string };
         Returns: undefined;
       };
+      run_scheduled_retention: { Args: never; Returns: undefined };
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] };
