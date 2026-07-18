@@ -7,6 +7,31 @@ export type Json =
   | Json[];
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       admin_create_user_idempotency_keys: {
@@ -4002,6 +4027,57 @@ export type Database = {
           },
         ];
       };
+      settlement_turn_resource_snapshots_p_default: {
+        Row: {
+          adjustment_amount: number;
+          consumed_amount: number;
+          created_at: string;
+          id: string;
+          produced_amount: number;
+          quantity_after: number;
+          quantity_before: number;
+          resource_id: string;
+          settlement_id: string;
+          trade_in_amount: number;
+          trade_out_amount: number;
+          turn_number: number;
+          turn_transition_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          adjustment_amount?: number;
+          consumed_amount?: number;
+          created_at?: string;
+          id?: string;
+          produced_amount?: number;
+          quantity_after?: number;
+          quantity_before?: number;
+          resource_id: string;
+          settlement_id: string;
+          trade_in_amount?: number;
+          trade_out_amount?: number;
+          turn_number: number;
+          turn_transition_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          adjustment_amount?: number;
+          consumed_amount?: number;
+          created_at?: string;
+          id?: string;
+          produced_amount?: number;
+          quantity_after?: number;
+          quantity_before?: number;
+          resource_id?: string;
+          settlement_id?: string;
+          trade_in_amount?: number;
+          trade_out_amount?: number;
+          turn_number?: number;
+          turn_transition_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [];
+      };
       settlement_turn_snapshots: {
         Row: {
           birth_count: number;
@@ -6371,6 +6447,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      ensure_str_snapshot_partitions: {
+        Args: { p_turn_number: number; p_world_id: string };
+        Returns: undefined;
+      };
       establish_nation_currency: {
         Args: {
           p_backing_ratio?: number;
@@ -6738,6 +6818,10 @@ export type Database = {
           p_world_id: string;
         };
         Returns: Json;
+      };
+      internal_secure_str_snapshot_partition: {
+        Args: { p_partition: unknown };
+        Returns: undefined;
       };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
@@ -8823,6 +8907,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       death_cause_category: [
