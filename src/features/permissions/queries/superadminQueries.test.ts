@@ -4,11 +4,14 @@ import {
   FunctionsRelayError,
 } from "@supabase/supabase-js";
 import { QueryClient } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
-import { smtpStatusQueryOptions } from "./superadminQueries";
+import {
+  smtpStatusQueryOptions,
+  worldRetentionConfigQueryOptions,
+} from "./superadminQueries";
 
 describe("smtpStatusQueryOptions", () => {
   it("returns SMTP status on success", async () => {
@@ -118,6 +121,54 @@ describe("smtpStatusQueryOptions", () => {
   });
 });
 
+describe("worldRetentionConfigQueryOptions", () => {
+  it("has a query key scoped to the world and is disabled for an empty id", () => {
+    const options = worldRetentionConfigQueryOptions(
+      "",
+      createTableClient(null),
+    );
+
+    expect(options.queryKey).toEqual(["superadmin", "retention-config", ""]);
+    expect(options.enabled).toBe(false);
+  });
+
+  it("fills in the documented defaults when no row exists", async () => {
+    const client = createTableClient(null);
+    const queryClient = createQueryClient();
+
+    const config = await queryClient.fetchQuery(
+      worldRetentionConfigQueryOptions("world-1", client),
+    );
+
+    expect(config).toEqual({
+      logRetentionTurns: 200,
+      memoryRetentionTurns: null,
+      snapshotRetentionTurns: 200,
+      worldId: "world-1",
+    });
+  });
+
+  it("returns configured values, keeping null memory as keep-all", async () => {
+    const client = createTableClient({
+      log_retention_turns: 50,
+      memory_retention_turns: null,
+      snapshot_retention_turns: 75,
+    });
+    const queryClient = createQueryClient();
+
+    const config = await queryClient.fetchQuery(
+      worldRetentionConfigQueryOptions("world-1", client),
+    );
+
+    expect(config).toEqual({
+      logRetentionTurns: 50,
+      memoryRetentionTurns: null,
+      snapshotRetentionTurns: 75,
+      worldId: "world-1",
+    });
+  });
+});
+
 function createClient(response: {
   readonly data: unknown;
   readonly error: unknown;
@@ -127,6 +178,14 @@ function createClient(response: {
       invoke: () => Promise.resolve(response),
     },
   } as unknown as GubernatorSupabaseClient;
+}
+
+function createTableClient(row: unknown): GubernatorSupabaseClient {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
+  const eq = vi.fn().mockReturnValue({ maybeSingle });
+  const select = vi.fn().mockReturnValue({ eq });
+  const from = vi.fn().mockReturnValue({ select });
+  return { from } as unknown as GubernatorSupabaseClient;
 }
 
 function createQueryClient(): QueryClient {

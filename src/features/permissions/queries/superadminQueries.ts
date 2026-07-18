@@ -12,6 +12,7 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { WORLD_RETENTION_DEFAULTS } from "../types/superadminTypes";
 import {
   isSendEmailErrorPayload,
   readSendEmailErrorPayload,
@@ -26,6 +27,7 @@ import type {
   SuperadminUser,
   SuperadminWorld,
   SuperadminWorldAdmin,
+  WorldRetentionConfig,
 } from "../types/superadminTypes";
 import type { SendEmailErrorPayload } from "../utils/sendEmailErrorPayload";
 
@@ -76,6 +78,15 @@ type WorldAdminsForUserQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly SuperadminWorldAdmin[],
   WorldAdminsForUserQueryKey
+>;
+type RetentionConfigQueryKey = ReturnType<
+  typeof superadminQueryKeys.retentionConfig
+>;
+type RetentionConfigQueryOptions = UseQueryOptions<
+  WorldRetentionConfig,
+  AuthUiError,
+  WorldRetentionConfig,
+  RetentionConfigQueryKey
 >;
 
 export function allUsersForSuperadminQueryOptions(
@@ -141,6 +152,52 @@ export function worldAdminsForUserQueryOptions(
     queryFn: () => getWorldAdminsForUser(client, userId),
     queryKey: superadminQueryKeys.worldAdminsForUser(userId),
   });
+}
+
+export function worldRetentionConfigQueryOptions(
+  worldId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): RetentionConfigQueryOptions {
+  // The client is the configured Supabase singleton in app code; tests inject a fake.
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    enabled: worldId !== "",
+    queryFn: () => getWorldRetentionConfig(client, worldId),
+    queryKey: superadminQueryKeys.retentionConfig(worldId),
+  });
+}
+
+type WorldRetentionConfigRow = {
+  readonly log_retention_turns: number | null;
+  readonly memory_retention_turns: number | null;
+  readonly snapshot_retention_turns: number | null;
+};
+
+async function getWorldRetentionConfig(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+): Promise<WorldRetentionConfig> {
+  const { data, error } = await client
+    .from("world_retention_config")
+    .select(
+      "log_retention_turns,memory_retention_turns,snapshot_retention_turns",
+    )
+    .eq("world_id", worldId)
+    .maybeSingle<WorldRetentionConfigRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    logRetentionTurns:
+      data?.log_retention_turns ?? WORLD_RETENTION_DEFAULTS.logRetentionTurns,
+    memoryRetentionTurns: data?.memory_retention_turns ?? null,
+    snapshotRetentionTurns:
+      data?.snapshot_retention_turns ??
+      WORLD_RETENTION_DEFAULTS.snapshotRetentionTurns,
+    worldId,
+  };
 }
 
 async function getAllWorlds(

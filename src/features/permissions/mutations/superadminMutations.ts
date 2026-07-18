@@ -25,6 +25,7 @@ import type {
   PruneWorldDataResult,
   SendEmailInput,
   SendEmailResult,
+  SetWorldRetentionConfigInput,
   UpdateSmtpSettingsInput,
 } from "../types/superadminTypes";
 
@@ -34,7 +35,8 @@ type SuperadminErrorCode =
   | "superadmin_user_exists"
   | "superadmin_operation_failed"
   | "superadmin_no_recipients"
-  | "superadmin_rate_limited";
+  | "superadmin_rate_limited"
+  | "superadmin_invalid_retention";
 
 export const {
   ErrorClass: SuperadminMutationError,
@@ -562,6 +564,61 @@ async function pruneWorldData(
   }
 
   return data as PruneWorldDataResult;
+}
+
+export function setWorldRetentionConfigMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  void,
+  SuperadminMutationError,
+  SetWorldRetentionConfigInput
+> {
+  return mutationOptions({
+    mutationFn: (input: SetWorldRetentionConfigInput) =>
+      setWorldRetentionConfig(client, input),
+    mutationKey: [...superadminQueryKeys.all, "set-world-retention-config"],
+    onSuccess: async (_result, input): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: superadminQueryKeys.retentionConfig(input.worldId),
+      });
+    },
+  });
+}
+
+async function setWorldRetentionConfig(
+  client: GubernatorSupabaseClient,
+  input: SetWorldRetentionConfigInput,
+): Promise<void> {
+  const { error } = await client.from("world_retention_config").upsert(
+    {
+      log_retention_turns: input.logRetentionTurns,
+      memory_retention_turns: input.memoryRetentionTurns,
+      snapshot_retention_turns: input.snapshotRetentionTurns,
+      world_id: input.worldId,
+    },
+    { onConflict: "world_id" },
+  );
+
+  if (error !== null) {
+    if (error.code === "42501") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: "Superadmin privileges are required.",
+      });
+    }
+    if (error.code === "23514") {
+      throw new SuperadminMutationError({
+        code: "superadmin_invalid_retention",
+        message:
+          "Retention values must be empty (keep all) or a whole number of at least 1.",
+      });
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: error.message,
+    });
+  }
 }
 
 async function readFunctionErrorPayload(
