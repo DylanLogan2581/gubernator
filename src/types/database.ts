@@ -4780,6 +4780,7 @@ export type Database = {
         Row: {
           created_at: string;
           log_retention_turns: number | null;
+          memory_retention_turns: number | null;
           snapshot_retention_turns: number | null;
           updated_at: string;
           world_id: string;
@@ -4787,6 +4788,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           log_retention_turns?: number | null;
+          memory_retention_turns?: number | null;
           snapshot_retention_turns?: number | null;
           updated_at?: string;
           world_id: string;
@@ -4794,6 +4796,7 @@ export type Database = {
         Update: {
           created_at?: string;
           log_retention_turns?: number | null;
+          memory_retention_turns?: number | null;
           snapshot_retention_turns?: number | null;
           updated_at?: string;
           world_id?: string;
@@ -6699,6 +6702,14 @@ export type Database = {
       internal_apply_turn_transition_treaty_patches: {
         Args: { p_payload: Json };
         Returns: number;
+      };
+      internal_effective_retention: {
+        Args: { p_world_id: string };
+        Returns: {
+          log_turns: number;
+          memory_turns: number;
+          snapshot_turns: number;
+        }[];
       };
       internal_notify_law_amendment: {
         Args: {
