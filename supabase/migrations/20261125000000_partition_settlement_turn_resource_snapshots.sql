@@ -89,6 +89,13 @@ begin
   execute format('create policy "settlement_turn_resource_snapshots_insert_world_admin" on %s for insert to authenticated with check (public.is_world_admin(world_id) or public.is_super_admin())', p_partition);
   execute format('create policy "settlement_turn_resource_snapshots_update_super_admin" on %s for update to authenticated using (public.is_super_admin()) with check (public.is_super_admin())', p_partition);
   execute format('create policy "settlement_turn_resource_snapshots_delete_super_admin" on %s for delete to authenticated using (public.is_super_admin())', p_partition);
+  -- Append-only posture: child partitions are ordinary public tables that keep
+  -- Supabase's default broad authenticated/anon write grants. The parent revokes
+  -- direct INSERT/UPDATE (writes go only through the SECURITY DEFINER RPC); the
+  -- same must hold on every child or a world admin could POST directly to a
+  -- partition (whose insert policy permits world admins) and fabricate snapshot
+  -- rows, bypassing the RPC-only write path. Fully revoke direct writes on children.
+  execute format('revoke insert, update, delete on %s from authenticated, anon', p_partition);
 end;
 $$;
 
@@ -261,31 +268,44 @@ declare
   v_new_after  numeric;
   v_old_flow   numeric;
   v_new_flow   numeric;
+  v_old_digest numeric;
+  v_new_digest numeric;
 begin
   select count(*),
          coalesce(sum(quantity_before), 0),
          coalesce(sum(quantity_after), 0),
          coalesce(sum(produced_amount + consumed_amount + trade_in_amount
-                      + trade_out_amount + adjustment_amount), 0)
-    into v_old_count, v_old_before, v_old_after, v_old_flow
+                      + trade_out_amount + adjustment_amount), 0),
+         -- Order-independent set digest over the key columns: catches a
+         -- key-mismatched / mis-copied row even when numeric totals still tie.
+         coalesce(sum(hashtextextended(
+           id::text || '|' || coalesce(turn_transition_id::text, '') || '|'
+           || settlement_id::text || '|' || resource_id::text || '|'
+           || turn_number::text, 0)), 0)
+    into v_old_count, v_old_before, v_old_after, v_old_flow, v_old_digest
   from public.settlement_turn_resource_snapshots;
 
   select count(*),
          coalesce(sum(quantity_before), 0),
          coalesce(sum(quantity_after), 0),
          coalesce(sum(produced_amount + consumed_amount + trade_in_amount
-                      + trade_out_amount + adjustment_amount), 0)
-    into v_new_count, v_new_before, v_new_after, v_new_flow
+                      + trade_out_amount + adjustment_amount), 0),
+         coalesce(sum(hashtextextended(
+           id::text || '|' || coalesce(turn_transition_id::text, '') || '|'
+           || settlement_id::text || '|' || resource_id::text || '|'
+           || turn_number::text, 0)), 0)
+    into v_new_count, v_new_before, v_new_after, v_new_flow, v_new_digest
   from public.settlement_turn_resource_snapshots_p;
 
   if v_old_count <> v_new_count
      or v_old_before <> v_new_before
      or v_old_after <> v_new_after
-     or v_old_flow <> v_new_flow then
+     or v_old_flow <> v_new_flow
+     or v_old_digest <> v_new_digest then
     raise exception 'settlement_turn_resource_snapshots partition integrity check FAILED: '
-      'count(old=%, new=%), sum_before(old=%, new=%), sum_after(old=%, new=%), sum_flow(old=%, new=%)',
+      'count(old=%, new=%), sum_before(old=%, new=%), sum_after(old=%, new=%), sum_flow(old=%, new=%), digest(old=%, new=%)',
       v_old_count, v_new_count, v_old_before, v_new_before,
-      v_old_after, v_new_after, v_old_flow, v_new_flow;
+      v_old_after, v_new_after, v_old_flow, v_new_flow, v_old_digest, v_new_digest;
   end if;
 end;
 $$;

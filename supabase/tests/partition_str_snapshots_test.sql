@@ -16,7 +16,7 @@
 begin;
 
 select
-  plan (11);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -259,6 +259,59 @@ select
       'public.str_snap_w_' || replace('f2000000-0000-0000-0000-00000000000b', '-', '') || '_t0'
     )::regclass,
     'world B turn 5 routes to its window-0 (t0) sub-partition'
+  );
+
+-- ===========================================================================
+-- Append-only posture must hold on CHILD partitions, not just the parent.
+-- Child partitions are ordinary public tables and keep Supabase's default broad
+-- authenticated write grants unless explicitly revoked; combined with the child
+-- insert policy (world admin OR super admin) a world admin could otherwise POST
+-- directly to a partition and fabricate snapshot rows, bypassing the RPC.
+-- ===========================================================================
+select
+  ok (
+    not has_table_privilege(
+      'authenticated',
+      'public.settlement_turn_resource_snapshots_p_default',
+      'INSERT'
+    )
+    and not has_table_privilege(
+      'authenticated',
+      'public.settlement_turn_resource_snapshots_p_default',
+      'UPDATE'
+    )
+    and not has_table_privilege(
+      'authenticated',
+      'public.settlement_turn_resource_snapshots_p_default',
+      'DELETE'
+    ),
+    'DEFAULT partition denies direct authenticated INSERT/UPDATE/DELETE (append-only)'
+  );
+
+select
+  ok (
+    not has_table_privilege(
+      'authenticated',
+      (
+        'public.str_snap_w_' || replace('f2000000-0000-0000-0000-00000000000a', '-', '') || '_t100'
+      ),
+      'INSERT'
+    )
+    and not has_table_privilege(
+      'authenticated',
+      (
+        'public.str_snap_w_' || replace('f2000000-0000-0000-0000-00000000000a', '-', '') || '_t100'
+      ),
+      'UPDATE'
+    )
+    and not has_table_privilege(
+      'authenticated',
+      (
+        'public.str_snap_w_' || replace('f2000000-0000-0000-0000-00000000000a', '-', '') || '_t100'
+      ),
+      'DELETE'
+    ),
+    'runtime-created sub-partition denies direct authenticated INSERT/UPDATE/DELETE (append-only)'
   );
 
 -- ===========================================================================
