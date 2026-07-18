@@ -71,10 +71,23 @@ from
 -- Step 0b: ensure_turn_log_partition -- idempotently creates a world's LIST
 -- partition (secured via the helper) if missing. Called at the top of the
 -- bulk log-insert path so the target partition exists before insert. Safe to
--- call every turn. Not granted to authenticated. The DEFAULT partition is a
--- safety net, but running ensure_ first gives a new world's rows a dedicated
--- secured partition instead of landing them in DEFAULT (which would later block
--- attaching that world's partition with a check_violation).
+-- call every turn. Not granted to authenticated.
+--
+-- Partition residency (accurate guarantee):
+--   * Existing worlds get dedicated partitions at migration time (step 2 below).
+--   * A NEW world gets a dedicated partition the first time the bulk log-insert
+--     path runs ensure_ for it -- PROVIDED no earlier turn_log_entries insert
+--     for that world happened first. Several other paths
+--     (internal_apply_turn_transition_event_patches and manual RPCs such as
+--     create_partnership) can insert a row for a brand-new world BEFORE its
+--     first bulk-path ensure_ call; that row lands in DEFAULT, and because
+--     ensure_ then swallows the check_violation each turn, the world stays in
+--     DEFAULT permanently.
+-- Landing in DEFAULT is correct and safe (DEFAULT is RLS-secured, write-revoked
+-- via the helper, and pruned by the batched-DELETE retention) -- it only forfeits
+-- per-world physical isolation for that world. Guaranteeing isolation for ALL new
+-- worlds would require calling ensure_turn_log_partition at world creation and in
+-- the manual log-writing RPCs (tracked follow-up).
 -- ---------------------------------------------------------------------------
 create or replace function public.ensure_turn_log_partition (p_world_id uuid) returns void language plpgsql security definer
 set
@@ -99,7 +112,7 @@ begin
 end;
 $$;
 
-comment on function public.ensure_turn_log_partition (uuid) is 'Internal: idempotently ensures the LIST partition for p_world_id exists on turn_log_entries and is secured (RLS + SELECT policy + write-revoke). Called at the top of internal_apply_turn_transition_log_entries_and_notifications so the target partition exists before insert. Safe to call every turn. Not granted to authenticated.';
+comment on function public.ensure_turn_log_partition (uuid) is 'Internal: idempotently ensures the LIST partition for p_world_id exists on turn_log_entries and is secured (RLS + SELECT policy + write-revoke). Called at the top of internal_apply_turn_transition_log_entries_and_notifications so the target partition exists before insert. Safe to call every turn. Not granted to authenticated. Residency caveat: a new world whose first turn_log_entries insert (e.g. via internal_apply_turn_transition_event_patches or a manual RPC like create_partnership) precedes its first bulk-path ensure_ call remains in the secured, pruned DEFAULT partition -- correct and safe, but without per-world isolation; full isolation for all new worlds is a tracked follow-up (call ensure_ at world creation and in the manual log-writing RPCs).';
 
 revoke all on function public.ensure_turn_log_partition (uuid)
 from
