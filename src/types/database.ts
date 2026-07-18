@@ -6823,6 +6823,14 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: number;
       };
+      internal_drop_elapsed_str_snapshot_partitions: {
+        Args: {
+          p_cutoff_turn: number;
+          p_dry_run?: boolean;
+          p_world_id: string;
+        };
+        Returns: number;
+      };
       internal_effective_retention: {
         Args: { p_world_id: string };
         Returns: {
