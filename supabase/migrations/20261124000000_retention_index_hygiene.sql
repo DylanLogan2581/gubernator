@@ -1,0 +1,54 @@
+-- Migration: retention_index_hygiene
+-- Task 1.4 of the database scaling roadmap. Two index changes that align the
+-- physical index set with the per-world retention pruning added in Task 1.2
+-- (internal_prune_world_retention).
+--
+-- ---------------------------------------------------------------------------
+-- 1. ADD citizen_memories_world_occurred_turn_idx (world_id, occurred_on_turn_number)
+-- ---------------------------------------------------------------------------
+-- Task 1.2's internal_prune_world_retention deletes citizen_memories with
+--   where world_id = <w> and occurred_on_turn_number < <cutoff>
+-- The only pre-existing turn index on this table is
+-- citizen_memories_citizen_turn_idx (citizen_id, occurred_on_turn_number),
+-- which leads with citizen_id and so cannot serve the world+turn prune
+-- predicate. citizen_memories is the highest-multiplier newly-pruned table
+-- (rows scale per-citizen), so an uncovered prune predicate here is the most
+-- expensive gap. This composite covers it directly (world_id equality +
+-- occurred_on_turn_number range).
+--
+-- ---------------------------------------------------------------------------
+-- 2. DROP turn_log_entries_world_id_idx (redundant single-column index)
+-- ---------------------------------------------------------------------------
+-- Original brief called for dropping
+-- settlement_turn_snapshots_world_transition_idx (world_id, turn_transition_id).
+-- Investigation shows that index is STILL USED: getTransitionOutcome in
+-- src/features/turns/queries/turnTransitionOutcomeQueries.ts filters
+-- settlement_turn_snapshots by .eq("world_id", ...).eq("turn_transition_id", ...)
+-- (the exact leading (world_id, turn_transition_id) form), so it is kept.
+--
+-- Instead we drop turn_log_entries_world_id_idx (world_id) from
+-- 20260502000004_add_turn_log_entries.sql. It is provably redundant: migration
+-- 20260728000000 added turn_log_entries_world_category_idx (world_id,
+-- log_category) as a NON-partial composite whose leading column already serves
+-- every world_id-only lookup (equality/sort on world_id). The retention prune
+-- for turn_log_entries also filters on world_id (plus a turn_transition_id
+-- subquery), likewise served by the composite's leading column. The
+-- single-column index therefore only adds write/storage overhead with no read
+-- benefit — matching the storage-reduction goal of this epic.
+--
+-- ---------------------------------------------------------------------------
+-- INTENTIONALLY NOT ADDED: notifications(world_id, created_at)
+-- ---------------------------------------------------------------------------
+-- The original brief called for a notifications(world_id, created_at) prune
+-- index. That is intentionally OMITTED: Task 1.2 changed notification pruning
+-- from created_at-based to TRANSITION-based
+--   world_id = <w> and generated_in_transition_id in (
+--     select id from public.turn_transitions where world_id = <w> and to_turn_number < <cutoff>)
+-- (see internal_prune_world_retention in
+-- 20261122000000_retention_config_defaults_and_coverage.sql). That predicate is
+-- already served by notifications_generated_in_transition_id_idx. Adding a
+-- created_at index would be dead weight and contradict this epic's storage goal.
+-- ---------------------------------------------------------------------------
+create index if not exists citizen_memories_world_occurred_turn_idx on public.citizen_memories (world_id, occurred_on_turn_number);
+
+drop index if exists public.turn_log_entries_world_id_idx;
