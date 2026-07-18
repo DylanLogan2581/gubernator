@@ -4536,6 +4536,42 @@ export type Database = {
           },
         ];
       };
+      turn_log_entries_p_default: {
+        Row: {
+          citizen_id: string | null;
+          id: string;
+          log_category: string;
+          nation_id: string | null;
+          payload_jsonb: Json;
+          resource_id: string | null;
+          settlement_id: string | null;
+          turn_transition_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id?: string | null;
+          id?: string;
+          log_category: string;
+          nation_id?: string | null;
+          payload_jsonb?: Json;
+          resource_id?: string | null;
+          settlement_id?: string | null;
+          turn_transition_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string | null;
+          id?: string;
+          log_category?: string;
+          nation_id?: string | null;
+          payload_jsonb?: Json;
+          resource_id?: string | null;
+          settlement_id?: string | null;
+          turn_transition_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [];
+      };
       turn_transitions: {
         Row: {
           finished_at: string | null;
@@ -6451,6 +6487,10 @@ export type Database = {
         Args: { p_turn_number: number; p_world_id: string };
         Returns: undefined;
       };
+      ensure_turn_log_partition: {
+        Args: { p_world_id: string };
+        Returns: undefined;
+      };
       establish_nation_currency: {
         Args: {
           p_backing_ratio?: number;
@@ -6820,6 +6860,10 @@ export type Database = {
         Returns: Json;
       };
       internal_secure_str_snapshot_partition: {
+        Args: { p_partition: unknown };
+        Returns: undefined;
+      };
+      internal_secure_turn_log_partition: {
         Args: { p_partition: unknown };
         Returns: undefined;
       };
