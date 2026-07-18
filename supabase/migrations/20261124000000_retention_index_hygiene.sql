@@ -52,3 +52,9 @@
 create index if not exists citizen_memories_world_occurred_turn_idx on public.citizen_memories (world_id, occurred_on_turn_number);
 
 drop index if exists public.turn_log_entries_world_id_idx;
+
+-- Redundant with the new (world_id, occurred_on_turn_number) composite above:
+-- a btree leading with world_id already serves any world_id-only predicate, so
+-- the single-column citizen_memories_world_id_idx (20260630000001, non-partial)
+-- only carries write/storage overhead. Nothing references it by name.
+drop index if exists public.citizen_memories_world_id_idx;

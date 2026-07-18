@@ -22,7 +22,7 @@
 begin;
 
 select
-  plan (3);
+  plan (4);
 
 -- ===========================================================================
 -- Test 1: citizen_memories_world_occurred_turn_idx exists.
@@ -77,6 +77,25 @@ select
         and indexname = 'settlement_turn_snapshots_world_transition_idx'
     ),
     'settlement_turn_snapshots_world_transition_idx is kept (still used by getTransitionOutcome)'
+  );
+
+-- ===========================================================================
+-- Test 4: citizen_memories_world_id_idx is dropped (redundant with composite).
+-- ===========================================================================
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        pg_indexes
+      where
+        schemaname = 'public'
+        and tablename = 'citizen_memories'
+        and indexname = 'citizen_memories_world_id_idx'
+    ),
+    0,
+    'citizen_memories_world_id_idx is dropped (redundant with world_occurred_turn composite)'
   );
 
 select
