@@ -6722,6 +6722,23 @@ export type Database = {
         };
         Returns: undefined;
       };
+      internal_prune_batch_delete: {
+        Args: {
+          p_batch_limit: number;
+          p_dry_run: boolean;
+          p_predicate: string;
+          p_table: unknown;
+        };
+        Returns: number;
+      };
+      internal_prune_world_retention: {
+        Args: {
+          p_batch_limit?: number;
+          p_dry_run?: boolean;
+          p_world_id: string;
+        };
+        Returns: Json;
+      };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
       is_empty: { Args: { "": string }; Returns: string };
