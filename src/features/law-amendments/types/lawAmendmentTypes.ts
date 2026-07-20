@@ -24,6 +24,7 @@ export type LawAmendment = {
   readonly proposedTurnNumber: number;
   readonly deadlineTurnNumber: number | null;
   readonly resolvedTurnNumber: number | null;
+  readonly enactedVersion: number | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 };

@@ -30,9 +30,8 @@ const STATUS_BADGE_VARIANTS: Readonly<
   withdrawn: "secondary",
 };
 
-// Resolved (non-"proposed") amendments, with a best-effort link to the
-// version each passed amendment created -- see zipPassedAmendmentsToVersions
-// for the positional-zip invariant this relies on.
+// Resolved (non-"proposed") amendments, with a link to the version each
+// passed amendment enacted (law_amendments.enacted_version, #1300).
 export function ResolvedAmendmentsList({
   amendments,
   documentId,

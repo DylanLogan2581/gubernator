@@ -14,12 +14,13 @@ import type {
 } from "../types/lawAmendmentTypes";
 
 const LAW_AMENDMENT_SELECT =
-  "id,document_id,title,rationale_markdown,operations_json,status,proposed_by_citizen_id,proposed_turn_number,deadline_turn_number,resolved_turn_number,created_at,updated_at";
+  "id,document_id,title,rationale_markdown,operations_json,status,proposed_by_citizen_id,proposed_turn_number,deadline_turn_number,resolved_turn_number,enacted_version,created_at,updated_at";
 
 type LawAmendmentRow = {
   readonly created_at: string;
   readonly deadline_turn_number: number | null;
   readonly document_id: string;
+  readonly enacted_version: number | null;
   readonly id: string;
   readonly operations_json: unknown;
   readonly proposed_by_citizen_id: string;
@@ -36,6 +37,7 @@ function toLawAmendment(row: LawAmendmentRow): LawAmendment {
     createdAt: row.created_at,
     deadlineTurnNumber: row.deadline_turn_number,
     documentId: row.document_id,
+    enactedVersion: row.enacted_version,
     id: row.id,
     operations: row.operations_json,
     proposedByCitizenId: row.proposed_by_citizen_id,

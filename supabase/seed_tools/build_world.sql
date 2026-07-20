@@ -1407,11 +1407,12 @@ insert into public.law_document_versions (id, document_id, version, articles_sna
     'Charter enacted at the founding', 0);
 
 -- A passed amendment on the Bovold charter, ratified by the Council.
-insert into public.law_amendments (id, document_id, title, rationale_markdown, operations_json, status, proposed_by_citizen_id, proposed_turn_number, resolved_turn_number) values
+insert into public.law_amendments (id, document_id, title, rationale_markdown, operations_json, status, proposed_by_citizen_id, proposed_turn_number, resolved_turn_number, amendment_procedure_snapshot_json, enacted_version) values
   (pg_temp.seed_uuid('amendment:bovold:sanctuary'), pg_temp.seed_uuid('law:bovold'), 'The Sanctuary Clause',
     'To make plain that the harbor is a refuge, so that fleeing isle-folk and serpent-slaves alike are safe within our walls.',
     jsonb_build_array(jsonb_build_object('op','add_article','heading','Of Sanctuary','body_markdown','None who reaches the harbor gate in peace shall be enslaved or turned away.','position',3)),
-    'passed', pg_temp.seed_uuid('citizen:notable:bovold-council1'), 0, 0);
+    'passed', pg_temp.seed_uuid('citizen:notable:bovold-council1'), 0, 0,
+    jsonb_build_object('kind','vote','bodyId', pg_temp.seed_uuid('body:bovold')::text, 'threshold','majority','votingPeriodTurns',3), 1);
 
 insert into public.law_amendment_votes (id, amendment_id, voter_citizen_id, vote) values
   (pg_temp.seed_uuid('vote:sanctuary:mayor'),    pg_temp.seed_uuid('amendment:bovold:sanctuary'), pg_temp.seed_uuid('citizen:notable:bovold-mayor'),    true),
@@ -1419,19 +1420,22 @@ insert into public.law_amendment_votes (id, amendment_id, voter_citizen_id, vote
   (pg_temp.seed_uuid('vote:sanctuary:council2'), pg_temp.seed_uuid('amendment:bovold:sanctuary'), pg_temp.seed_uuid('citizen:notable:bovold-council2'), false);
 
 -- A passed amendment on each of the other three nations' charters.
-insert into public.law_amendments (id, document_id, title, rationale_markdown, operations_json, status, proposed_by_citizen_id, proposed_turn_number, resolved_turn_number) values
+insert into public.law_amendments (id, document_id, title, rationale_markdown, operations_json, status, proposed_by_citizen_id, proposed_turn_number, resolved_turn_number, amendment_procedure_snapshot_json, enacted_version) values
   (pg_temp.seed_uuid('amendment:tsaesci:servitude'), pg_temp.seed_uuid('law:tsaesci'), 'The Edict of Bound Servitude',
     'That the larder-peoples be counted as property of the eldest coil, in law as in the Communion.',
     jsonb_build_array(jsonb_build_object('op','add_article','heading','Of the Larder','body_markdown','The short-lived peoples are property of the coil that holds them, to be fed, worked, or Feasted upon as the elders decree.','position',3)),
-    'passed', pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), 0, 0),
+    'passed', pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), 0, 0,
+    jsonb_build_object('kind','decree','authority','ruler'), 1),
   (pg_temp.seed_uuid('amendment:tangmo:freewind'), pg_temp.seed_uuid('law:tangmo'), 'The Free-Wind Clause',
     'That no isle may bind another to its will, for the isles are many and free.',
     jsonb_build_array(jsonb_build_object('op','add_article','heading','Of Free Isles','body_markdown','No isle shall command another; each keeps its own council and comes to the Moot as an equal.','position',3)),
-    'passed', pg_temp.seed_uuid('citizen:notable:tangmo-speaker'), 0, 0),
+    'passed', pg_temp.seed_uuid('citizen:notable:tangmo-speaker'), 0, 0,
+    jsonb_build_object('kind','vote','bodyId', pg_temp.seed_uuid('body:tangmo')::text, 'threshold','majority','votingPeriodTurns',4), 1),
   (pg_temp.seed_uuid('amendment:kapotun:vigil'), pg_temp.seed_uuid('law:kapotun'), 'The Ninefold Vigil',
     'That every cloister keep the Nine Roars, lest the climb toward the Dragon falter in any valley.',
     jsonb_build_array(jsonb_build_object('op','add_article','heading','Of the Vigil','body_markdown','Every cloister shall keep the Nine Roars and the dawn-salute without fail, on pain of losing its ascension-rank.','position',3)),
-    'passed', pg_temp.seed_uuid('citizen:notable:kapotun-abbot'), 0, 0);
+    'passed', pg_temp.seed_uuid('citizen:notable:kapotun-abbot'), 0, 0,
+    jsonb_build_object('kind','decree','authority','ruler'), 1);
 
 insert into public.law_amendment_votes (id, amendment_id, voter_citizen_id, vote) values
   (pg_temp.seed_uuid('vote:servitude:potentate'), pg_temp.seed_uuid('amendment:tsaesci:servitude'), pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), true),

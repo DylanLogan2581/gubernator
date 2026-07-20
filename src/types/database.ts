@@ -1983,9 +1983,11 @@ export type Database = {
       };
       law_amendments: {
         Row: {
+          amendment_procedure_snapshot_json: Json;
           created_at: string;
           deadline_turn_number: number | null;
           document_id: string;
+          enacted_version: number | null;
           id: string;
           operations_json: Json;
           proposed_by_citizen_id: string;
@@ -1997,9 +1999,11 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          amendment_procedure_snapshot_json: Json;
           created_at?: string;
           deadline_turn_number?: number | null;
           document_id: string;
+          enacted_version?: number | null;
           id?: string;
           operations_json: Json;
           proposed_by_citizen_id: string;
@@ -2011,9 +2015,11 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          amendment_procedure_snapshot_json?: Json;
           created_at?: string;
           deadline_turn_number?: number | null;
           document_id?: string;
+          enacted_version?: number | null;
           id?: string;
           operations_json?: Json;
           proposed_by_citizen_id?: string;
@@ -6712,7 +6718,7 @@ export type Database = {
           p_operations_json: Json;
           p_turn_number: number;
         };
-        Returns: number;
+        Returns: Record<string, unknown>;
       };
       internal_apply_turn_transition_advance_world_turn: {
         Args: { p_expected_turn_number: number; p_world_id: string };
@@ -7199,9 +7205,11 @@ export type Database = {
           p_title: string;
         };
         Returns: {
+          amendment_procedure_snapshot_json: Json;
           created_at: string;
           deadline_turn_number: number | null;
           document_id: string;
+          enacted_version: number | null;
           id: string;
           operations_json: Json;
           proposed_by_citizen_id: string;
@@ -8722,9 +8730,11 @@ export type Database = {
       withdraw_law_amendment: {
         Args: { p_amendment_id: string };
         Returns: {
+          amendment_procedure_snapshot_json: Json;
           created_at: string;
           deadline_turn_number: number | null;
           document_id: string;
+          enacted_version: number | null;
           id: string;
           operations_json: Json;
           proposed_by_citizen_id: string;

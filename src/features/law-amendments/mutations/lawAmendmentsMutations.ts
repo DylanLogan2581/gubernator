@@ -104,6 +104,7 @@ function toLawAmendment(row: ProposeLawAmendmentRow): LawAmendment {
     createdAt: row.created_at,
     deadlineTurnNumber: row.deadline_turn_number,
     documentId: row.document_id,
+    enactedVersion: row.enacted_version,
     id: row.id,
     operations: row.operations_json,
     proposedByCitizenId: row.proposed_by_citizen_id,

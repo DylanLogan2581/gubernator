@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (52);
+  plan (57);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- mirrors law_documents_test.sql / nation_readiness_voting_test.sql.
@@ -766,6 +766,99 @@ values
   (
     '48000000-0000-0000-0000-00000000000b',
     '4d000000-0000-0000-0000-00000000000b',
+    1,
+    'Article I',
+    'Original body.',
+    'active',
+    1
+  );
+
+-- #1300 snapshot fixture: a 3-member body/vote-kind document used to prove
+-- an in-flight amendment tallies against the procedure it was proposed
+-- under, even after a concurrent set_procedure amendment on the same
+-- document changes the document's live procedure mid-vote.
+insert into
+  public.government_bodies (
+    id,
+    world_id,
+    nation_id,
+    settlement_id,
+    name,
+    description,
+    composition_json
+  )
+values
+  (
+    '4f000000-0000-0000-0000-000000000005',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'The Snapshot Council',
+    null,
+    jsonb_build_array(
+      jsonb_build_object(
+        'kind',
+        'citizens',
+        'citizen_ids',
+        jsonb_build_array(
+          '4e000000-0000-0000-0000-000000000002',
+          '4e000000-0000-0000-0000-000000000003',
+          '4e000000-0000-0000-0000-000000000004'
+        )
+      )
+    )
+  );
+
+insert into
+  public.law_documents (
+    id,
+    world_id,
+    nation_id,
+    settlement_id,
+    title,
+    status,
+    amendment_procedure_json,
+    current_version,
+    created_turn_number
+  )
+values
+  (
+    '4d000000-0000-0000-0000-00000000000c',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'Snapshot Charter',
+    'active',
+    jsonb_build_object(
+      'kind',
+      'vote',
+      'bodyId',
+      '4f000000-0000-0000-0000-000000000005',
+      'threshold',
+      'majority',
+      'votingPeriodTurns',
+      5,
+      'secondBodyId',
+      null
+    ),
+    1,
+    10
+  );
+
+insert into
+  public.law_articles (
+    id,
+    document_id,
+    article_number,
+    heading,
+    body_markdown,
+    status,
+    sort_order
+  )
+values
+  (
+    '48000000-0000-0000-0000-00000000000c',
+    '4d000000-0000-0000-0000-00000000000c',
     1,
     'Article I',
     'Original body.',
@@ -2714,6 +2807,260 @@ select
   );
 
 reset role;
+
+-- ===========================================================================
+-- #1300: an in-flight amendment tallies against the procedure snapshotted
+-- at proposal time, not the document's live procedure -- and a passed
+-- amendment persists the version it enacted.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+insert into
+  amendment_test_ids (key, id)
+select
+  'snapshot_t1',
+  (
+    public.propose_law_amendment (
+      '4d000000-0000-0000-0000-00000000000c',
+      '4e000000-0000-0000-0000-000000000002',
+      'Tariff Rider',
+      null,
+      jsonb_build_array(
+        jsonb_build_object(
+          'op',
+          'add_article',
+          'heading',
+          'Tariff Rider',
+          'body_markdown',
+          'New tariff.'
+        )
+      )
+    )
+  ).id;
+
+insert into
+  amendment_test_ids (key, id)
+select
+  'snapshot_t2',
+  (
+    public.propose_law_amendment (
+      '4d000000-0000-0000-0000-00000000000c',
+      '4e000000-0000-0000-0000-000000000002',
+      'Tighten Threshold',
+      null,
+      jsonb_build_array(
+        jsonb_build_object(
+          'op',
+          'set_procedure',
+          'procedure',
+          jsonb_build_object(
+            'kind',
+            'vote',
+            'bodyId',
+            '4f000000-0000-0000-0000-000000000005',
+            'threshold',
+            'unanimous',
+            'votingPeriodTurns',
+            5,
+            'secondBodyId',
+            null
+          )
+        )
+      )
+    )
+  ).id;
+
+reset role;
+
+select
+  is (
+    (
+      select
+        amendment_procedure_snapshot_json ->> 'threshold'
+      from
+        public.law_amendments
+      where
+        id = (
+          select
+            id
+          from
+            amendment_test_ids
+          where
+            key = 'snapshot_t1'
+        )
+    ),
+    'majority',
+    'propose_law_amendment snapshots the document''s live procedure onto the new row'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  public.cast_law_amendment_vote (
+    (
+      select
+        id
+      from
+        amendment_test_ids
+      where
+        key = 'snapshot_t2'
+    ),
+    '4e000000-0000-0000-0000-000000000002',
+    true
+  );
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  public.cast_law_amendment_vote (
+    (
+      select
+        id
+      from
+        amendment_test_ids
+      where
+        key = 'snapshot_t2'
+    ),
+    '4e000000-0000-0000-0000-000000000003',
+    true
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        format('%s|%s', status, enacted_version)
+      from
+        public.law_amendments
+      where
+        id = (
+          select
+            id
+          from
+            amendment_test_ids
+          where
+            key = 'snapshot_t2'
+        )
+    ),
+    'passed|2',
+    'the set_procedure amendment passes and persists the version it enacted'
+  );
+
+select
+  is (
+    (
+      select
+        amendment_procedure_json ->> 'threshold'
+      from
+        public.law_documents
+      where
+        id = '4d000000-0000-0000-0000-00000000000c'
+    ),
+    'unanimous',
+    'the set_procedure amendment flips the document''s live procedure to unanimous'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  public.cast_law_amendment_vote (
+    (
+      select
+        id
+      from
+        amendment_test_ids
+      where
+        key = 'snapshot_t1'
+    ),
+    '4e000000-0000-0000-0000-000000000002',
+    true
+  );
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  public.cast_law_amendment_vote (
+    (
+      select
+        id
+      from
+        amendment_test_ids
+      where
+        key = 'snapshot_t1'
+    ),
+    '4e000000-0000-0000-0000-000000000003',
+    true
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        format('%s|%s', status, enacted_version)
+      from
+        public.law_amendments
+      where
+        id = (
+          select
+            id
+          from
+            amendment_test_ids
+          where
+            key = 'snapshot_t1'
+        )
+    ),
+    'passed|3',
+    'a still-open amendment passes on its own snapshotted majority threshold even though the document''s live procedure has since become unanimous'
+  );
+
+select
+  is (
+    (
+      select
+        amendment_procedure_snapshot_json ->> 'threshold'
+      from
+        public.law_amendments
+      where
+        id = (
+          select
+            id
+          from
+            amendment_test_ids
+          where
+            key = 'snapshot_t1'
+        )
+    ),
+    'majority',
+    'the amendment''s own procedure snapshot stays frozen at majority regardless of the later set_procedure amendment'
+  );
 
 select
   *

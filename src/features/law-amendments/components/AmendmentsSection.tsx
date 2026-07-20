@@ -11,7 +11,6 @@ import {
   settlementGovernmentBodiesQueryOptions,
 } from "@/features/government-bodies";
 import type { LawDocument } from "@/features/law-documents";
-import { lawDocumentVersionsQueryOptions } from "@/features/law-documents";
 import {
   nationOfficeTypesQueryOptions,
   settlementOfficeTypesQueryOptions,
@@ -27,7 +26,6 @@ import {
 } from "@/shared/government";
 
 import { lawAmendmentsForDocumentQueryOptions } from "../queries/lawAmendmentsQueries";
-import { zipPassedAmendmentsToVersions } from "../utils/zipPassedAmendmentsToVersions";
 
 import { OpenAmendmentCard } from "./OpenAmendmentCard";
 import { ProposeAmendmentDialog } from "./ProposeAmendmentDialog";
@@ -111,13 +109,6 @@ export function AmendmentsSection(props: AmendmentsSectionProps): JSX.Element {
     : settlementOfficeTypesQuery;
 
   const amendments = amendmentsQuery.data ?? [];
-  const hasPassedAmendment = amendments.some(
-    (amendment) => amendment.status === "passed",
-  );
-  const versionsQuery = useQuery({
-    ...lawDocumentVersionsQueryOptions(document.id),
-    enabled: hasPassedAmendment,
-  });
 
   const [proposing, setProposing] = useState(false);
 
@@ -217,9 +208,11 @@ export function AmendmentsSection(props: AmendmentsSectionProps): JSX.Element {
   const resolvedAmendments = amendments.filter(
     (amendment) => amendment.status !== "proposed",
   );
-  const versionByAmendmentId = hasPassedAmendment
-    ? zipPassedAmendmentsToVersions(amendments, versionsQuery.data ?? [])
-    : new Map<string, number>();
+  const versionByAmendmentId = new Map(
+    amendments
+      .filter((amendment) => amendment.enactedVersion !== null)
+      .map((amendment) => [amendment.id, amendment.enactedVersion as number]),
+  );
 
   return (
     <AmendmentsCardFrame
