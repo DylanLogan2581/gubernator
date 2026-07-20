@@ -251,7 +251,6 @@ export function assembleWorldTemplate(data: WorldConfigData): WorldTemplateOutpu
         return [
           {
             job_slug: jobSlug,
-            tier_number: dtj.tier_number,
             output_units_per_worker: dtj.output_units_per_worker,
             worker_inputs: dtj.worker_inputs_json.flatMap((wi) => {
               const resourceSlug = resourceSlugById.get(wi.resource_id);

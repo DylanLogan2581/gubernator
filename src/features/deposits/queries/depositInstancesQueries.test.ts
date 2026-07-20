@@ -23,9 +23,7 @@ describe("depositInstancesBySettlementQueryOptions", () => {
     );
 
     expect(select).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "deposit_types(name,icon,icon_color,deposit_type_jobs(",
-      ),
+      expect.stringContaining("deposit_types(name,icon,icon_color)"),
     );
     expect(select).toHaveBeenCalledWith(
       expect.not.stringContaining("deposit_types_job_id_fk"),

@@ -12,6 +12,7 @@ import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
 import { resolveIconTone } from "@/lib/categoricalPalette";
+import { sortByName } from "@/lib/sortUtils";
 
 import {
   hardDeleteDepositTypeMutationOptions,
@@ -92,23 +93,21 @@ function buildColumns({
         if (depositType.jobs.length === 0) {
           return <span className="text-sm text-muted-foreground">—</span>;
         }
-        const tierLabels = [...depositType.jobs]
-          .sort((a, b) => a.tierNumber - b.tierNumber)
-          .flatMap((job) => {
+        const jobNames = sortByName(
+          depositType.jobs.flatMap((job) => {
             const linkedJob = depositJobs.find((j) => j.id === job.jobId);
-            return linkedJob === undefined
-              ? []
-              : [`T${job.tierNumber.toString()}: ${linkedJob.name}`];
-          });
+            return linkedJob === undefined ? [] : [linkedJob];
+          }),
+        ).map((job) => job.name);
         return (
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary">
               {depositType.jobs.length}{" "}
               {depositType.jobs.length === 1 ? "job" : "jobs"}
             </Badge>
-            {tierLabels.length > 0 ? (
+            {jobNames.length > 0 ? (
               <span className="text-sm text-muted-foreground">
-                {tierLabels.join(", ")}
+                {jobNames.join(", ")}
               </span>
             ) : null}
           </div>

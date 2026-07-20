@@ -106,7 +106,6 @@ export type RawDepositTypeJobRow = {
   readonly id: string;
   readonly deposit_type_id: string;
   readonly job_id: string;
-  readonly tier_number: number;
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: readonly RawWorkerInputRow[];
 };

@@ -12,7 +12,6 @@ export type WorkerInputEntryRow = {
 export type DepositTypeJobRow = {
   readonly id: string;
   readonly job_id: string;
-  readonly tier_number: number;
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: readonly WorkerInputEntryRow[];
 };
@@ -35,7 +34,7 @@ export type DepositTypeRow = {
 export const DEPOSIT_TYPE_SELECT = [
   "id,world_id,name,slug,icon,icon_color,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_deposit_type_fk(id)",
-  "deposit_type_jobs(id,job_id,tier_number,output_units_per_worker,worker_inputs_json)",
+  "deposit_type_jobs(id,job_id,output_units_per_worker,worker_inputs_json)",
 ].join(",");
 
 export function toWorkerInputEntry(row: WorkerInputEntryRow): WorkerInputEntry {
@@ -49,7 +48,6 @@ export function toDepositTypeJob(row: DepositTypeJobRow): DepositTypeJob {
   return {
     id: row.id,
     jobId: row.job_id,
-    tierNumber: row.tier_number,
     outputUnitsPerWorker: row.output_units_per_worker,
     workerInputsJson: row.worker_inputs_json.map(toWorkerInputEntry),
   };

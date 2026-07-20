@@ -38,8 +38,7 @@ type DepositTypeMutationErrorCode =
   | "deposit_type_input_invalid"
   | "deposit_type_job_already_linked"
   | "deposit_type_not_authorized"
-  | "deposit_type_not_found"
-  | "deposit_type_tier_already_used";
+  | "deposit_type_not_found";
 
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
 type DepositTypeInsertPayload = {
@@ -64,7 +63,6 @@ type DepositTypeUpdatePayload = {
 type DepositTypeJobInsertPayload = {
   deposit_type_id: string;
   job_id: string;
-  tier_number: number;
   output_units_per_worker: number;
   worker_inputs_json?: Json;
   world_id: string;
@@ -268,7 +266,6 @@ async function insertDepositTypeJobs(
   const insertPayload: DepositTypeJobInsertPayload[] = jobs.map((job) => ({
     deposit_type_id: depositTypeId,
     job_id: job.jobId,
-    tier_number: job.tierNumber,
     output_units_per_worker: job.outputUnitsPerWorker,
     worker_inputs_json: toWorkerInputsJson(job.workerInputsJson),
     world_id: worldId,
@@ -283,12 +280,6 @@ async function insertDepositTypeJobs(
       throw new DepositTypeMutationError({
         code: "deposit_type_job_already_linked",
         message: "Each job may only be linked once per deposit type.",
-      });
-    }
-    if (isDuplicateTierInDepositTypeConflict(error)) {
-      throw new DepositTypeMutationError({
-        code: "deposit_type_tier_already_used",
-        message: "Each tier number may only be used once per deposit type.",
       });
     }
     throw normalizeSupabaseError(error);
@@ -453,15 +444,5 @@ function isDuplicateJobInDepositTypeConflict(error: {
 }): boolean {
   return (
     error.code === "23505" && error.message.includes("deposit_type_jobs_unique")
-  );
-}
-
-function isDuplicateTierInDepositTypeConflict(error: {
-  code: string;
-  message: string;
-}): boolean {
-  return (
-    error.code === "23505" &&
-    error.message.includes("deposit_type_jobs_tier_number_unique")
   );
 }

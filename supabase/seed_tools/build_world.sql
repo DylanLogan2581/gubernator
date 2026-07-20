@@ -838,20 +838,14 @@ begin
     ('sand-digger','Sand Digger','sand-pit','shovel')
   ) as t(jslug, name, dslug, icon);
 
-  -- Sand Pit's tier 2 job (#1308): a "Skilled" variant gated by education,
-  -- demonstrating the tier_number dimension on deposit_type_jobs.
-  insert into public.job_definitions (id, world_id, name, slug, job_type, linked_deposit_type_id, required_education_level_id, icon)
-  values (pg_temp.seed_uuid('job:skilled-sand-digger'), v_world, 'Skilled Sand Digger', 'skilled-sand-digger', 'deposit', pg_temp.seed_uuid('deposit:sand-pit'), pg_temp.seed_uuid('edu:lettered'), 'shovel');
-
-  insert into public.deposit_type_jobs (deposit_type_id, job_id, tier_number, output_units_per_worker, worker_inputs_json)
-  select pg_temp.seed_uuid('deposit:' || dslug), pg_temp.seed_uuid('job:' || jslug), tier, yield, '[]'::jsonb
+  insert into public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker, worker_inputs_json)
+  select pg_temp.seed_uuid('deposit:' || dslug), pg_temp.seed_uuid('job:' || jslug), yield, '[]'::jsonb
   from (values
-    ('iron-vein','iron-miner',1,5), ('copper-vein','copper-miner',1,5), ('tin-vein','tin-miner',1,5),
-    ('gold-vein','gold-miner',1,3), ('silver-vein','silver-miner',1,4), ('coal-seam','coal-miner',1,6),
-    ('stone-quarry','stone-quarryman',1,8), ('clay-pit','clay-digger',1,6), ('hardwood-grove','lumberjack',1,6),
-    ('peat-bog','peat-cutter',1,6), ('salt-flat','salt-panner',1,5), ('sand-pit','sand-digger',1,6),
-    ('sand-pit','skilled-sand-digger',2,10)
-  ) as t(dslug, jslug, tier, yield);
+    ('iron-vein','iron-miner',5), ('copper-vein','copper-miner',5), ('tin-vein','tin-miner',5),
+    ('gold-vein','gold-miner',3), ('silver-vein','silver-miner',4), ('coal-seam','coal-miner',6),
+    ('stone-quarry','stone-quarryman',8), ('clay-pit','clay-digger',6), ('hardwood-grove','lumberjack',6),
+    ('peat-bog','peat-cutter',6), ('salt-flat','salt-panner',5), ('sand-pit','sand-digger',6)
+  ) as t(dslug, jslug, yield);
 
   -- Managed populations (5: sheep, pig, bee, cow, chicken) with husbandry
   -- (regular per-animal output) and culling (harvest) jobs.

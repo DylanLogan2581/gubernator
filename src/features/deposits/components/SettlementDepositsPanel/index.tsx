@@ -446,25 +446,6 @@ function DepositDetailPanel({
           </ul>
         )}
       </div>
-      <div className="grid gap-1">
-        <span className="text-muted-foreground">Tiers</span>
-        {instance.tiers.length === 0 ? (
-          <span className="text-muted-foreground">—</span>
-        ) : (
-          <ul className="grid gap-0.5">
-            {[...instance.tiers]
-              .sort((a, b) => a.tierNumber - b.tierNumber)
-              .map((tier) => (
-                <li key={tier.id} className="flex justify-between tabular-nums">
-                  <span>
-                    Tier {tier.tierNumber}: {tier.jobName}
-                  </span>
-                  <span>{tier.outputUnitsPerWorker}/worker</span>
-                </li>
-              ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 }

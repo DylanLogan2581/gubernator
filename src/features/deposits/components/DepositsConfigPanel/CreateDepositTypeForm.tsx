@@ -57,14 +57,8 @@ export function CreateDepositTypeForm({
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
   const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
-  const {
-    rows,
-    addRow,
-    removeRow,
-    updateRow,
-    duplicateJobIds,
-    duplicateTierNumbers,
-  } = useDepositTypeJobRows();
+  const { rows, addRow, removeRow, updateRow, duplicateJobIds } =
+    useDepositTypeJobRows();
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof DepositTypeFieldErrors>();
 
@@ -74,20 +68,18 @@ export function CreateDepositTypeForm({
 
   const hasEmptyJobSelection = rows.some((row) => row.jobId === "");
   const hasDuplicateJobs = duplicateJobIds.size > 0;
-  const hasDuplicateTiers = duplicateTierNumbers.size > 0;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     clear();
 
-    if (hasDuplicateJobs || hasDuplicateTiers || hasEmptyJobSelection) return;
+    if (hasDuplicateJobs || hasEmptyJobSelection) return;
 
     const input: CreateDepositTypeInput = {
       icon,
       iconColor,
       jobs: rows.map((row) => ({
         jobId: row.jobId,
-        tierNumber: row.tierNumber !== "" ? parseInt(row.tierNumber, 10) : 0,
         outputUnitsPerWorker:
           row.outputUnitsPerWorker !== ""
             ? parseInt(row.outputUnitsPerWorker, 10)
@@ -211,11 +203,9 @@ export function CreateDepositTypeForm({
                     depositJobs={depositJobs}
                     index={index}
                     isDuplicate={duplicateJobIds.has(row.jobId)}
-                    isDuplicateTier={duplicateTierNumbers.has(row.tierNumber)}
                     jobId={row.jobId}
                     outputUnitsPerWorker={row.outputUnitsPerWorker}
                     resources={resources}
-                    tierNumber={row.tierNumber}
                     workerInputs={row.workerInputs}
                     onJobIdChange={(jobId) => {
                       updateRow(row.localId, { jobId });
@@ -225,9 +215,6 @@ export function CreateDepositTypeForm({
                     }}
                     onRemove={() => {
                       removeRow(row.localId);
-                    }}
-                    onTierNumberChange={(tierNumber) => {
-                      updateRow(row.localId, { tierNumber });
                     }}
                     onWorkerInputsChange={(workerInputs) => {
                       updateRow(row.localId, { workerInputs });
@@ -247,12 +234,7 @@ export function CreateDepositTypeForm({
               Cancel
             </Button>
             <Button
-              disabled={
-                isPending ||
-                hasDuplicateJobs ||
-                hasDuplicateTiers ||
-                hasEmptyJobSelection
-              }
+              disabled={isPending || hasDuplicateJobs || hasEmptyJobSelection}
               type="submit"
             >
               Create

@@ -221,7 +221,6 @@ function makeMinimalData(): WorldConfigData {
             deposit_type_id: DEPOSIT_TYPE_ID,
             id: DEPOSIT_TYPE_JOB_ID,
             job_id: JOB_ID,
-            tier_number: 1,
             output_units_per_worker: 3,
             worker_inputs_json: [{ resource_id: RESOURCE_ID, amount_per_worker: 1 }],
           },
@@ -369,7 +368,6 @@ describe("assembleWorldTemplate", () => {
       jobs: [
         {
           job_slug: "farming",
-          tier_number: 1,
           output_units_per_worker: 3,
         },
       ],
