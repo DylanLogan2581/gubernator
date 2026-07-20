@@ -8171,7 +8171,11 @@ export type Database = {
         };
       };
       set_nation_nameset: {
-        Args: { p_nameset_id: string; p_nation_id: string; p_world_id: string };
+        Args: {
+          p_nameset_id?: string;
+          p_nation_id: string;
+          p_world_id: string;
+        };
         Returns: {
           id: string;
           nameset_id: string;
@@ -8293,7 +8297,7 @@ export type Database = {
       };
       set_settlement_nameset: {
         Args: {
-          p_nameset_id: string;
+          p_nameset_id?: string;
           p_settlement_id: string;
           p_world_id: string;
         };

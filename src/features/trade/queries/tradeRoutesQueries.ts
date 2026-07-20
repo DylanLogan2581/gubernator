@@ -7,6 +7,8 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
+import { parseTradeRouteLegDirection } from "../utils/parseTradeRouteLegDirection";
+
 import { tradeRoutesQueryKeys } from "./tradeRoutesQueryKeys";
 
 import type {
@@ -135,7 +137,7 @@ function toTradeRoute(row: TradeRouteRow): TradeRoute {
 
 function toLeg(row: TradeRouteLegRow): TradeRouteLeg {
   return {
-    direction: row.direction as TradeRouteLeg["direction"],
+    direction: parseTradeRouteLegDirection(row.direction),
     id: row.id,
     quantityPerTransition: row.quantity_per_transition,
     resourceId: row.resource_id,

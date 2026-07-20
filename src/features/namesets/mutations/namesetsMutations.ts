@@ -497,8 +497,8 @@ async function setNationNameset(
     .rpc("set_nation_nameset", {
       p_nation_id: values.nationId,
       p_world_id: values.worldId,
-      // Generated types don't reflect nullable parameter; null clears the override
-      p_nameset_id: values.namesetId as string,
+      // Omitting clears the override; the RPC defaults p_nameset_id to null.
+      p_nameset_id: values.namesetId ?? undefined,
     })
     .maybeSingle<{
       readonly id: string;
@@ -568,8 +568,8 @@ async function setSettlementNameset(
     .rpc("set_settlement_nameset", {
       p_settlement_id: values.settlementId,
       p_world_id: values.worldId,
-      // Generated types don't reflect nullable parameter; null clears the override
-      p_nameset_id: values.namesetId as string,
+      // Omitting clears the override; the RPC defaults p_nameset_id to null.
+      p_nameset_id: values.namesetId ?? undefined,
     })
     .maybeSingle<{
       readonly id: string;

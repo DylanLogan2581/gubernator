@@ -203,18 +203,12 @@ async function restoreSettlementBuilding(
 ): Promise<RestoreSettlementBuildingResult> {
   const values = parseRestoreInput(restoreSettlementBuildingInputSchema, input);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-  const rpcCall = (client as any).rpc("restore_settlement_building", {
-    p_building_id: values.settlementBuildingId,
-    p_world_id: values.worldId,
-  });
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const result = await rpcCall.maybeSingle();
-
-  const { data, error } = result as {
-    data: { readonly id: string } | null;
-    error: { code?: string; message?: string } | null;
-  };
+  const { data, error } = await client
+    .rpc("restore_settlement_building", {
+      p_building_id: values.settlementBuildingId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle();
 
   if (error !== null) {
     if (error.code === "42501") {
@@ -279,18 +273,12 @@ async function hardDeleteSettlementBuilding(
     input,
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-  const rpcCall = (client as any).rpc("hard_delete_settlement_building", {
-    p_building_id: values.settlementBuildingId,
-    p_world_id: values.worldId,
-  });
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const result = await rpcCall.maybeSingle();
-
-  const { data, error } = result as {
-    data: { readonly id: string; readonly world_id: string } | null;
-    error: { code?: string; message?: string } | null;
-  };
+  const { data, error } = await client
+    .rpc("hard_delete_settlement_building", {
+      p_building_id: values.settlementBuildingId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle();
 
   if (error !== null) {
     if (error.code === "42501") {

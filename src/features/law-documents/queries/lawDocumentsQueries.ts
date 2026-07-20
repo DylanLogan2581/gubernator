@@ -5,6 +5,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { validateAmendmentProcedure } from "@/shared/government";
 
 import { lawDocumentsQueryKeys } from "./lawDocumentsQueryKeys";
 
@@ -36,7 +37,9 @@ type LawDocumentRow = {
 
 function toLawDocument(row: LawDocumentRow): LawDocument {
   return {
-    amendmentProcedure: row.amendment_procedure_json,
+    amendmentProcedure: validateAmendmentProcedure(
+      row.amendment_procedure_json,
+    ),
     createdAt: row.created_at,
     createdTurnNumber: row.created_turn_number,
     currentVersion: row.current_version,

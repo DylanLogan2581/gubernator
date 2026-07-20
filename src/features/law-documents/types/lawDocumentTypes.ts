@@ -1,3 +1,5 @@
+import type { AmendmentProcedure } from "@/shared/government";
+
 // #1117: a nation or settlement's book of law -- title + preamble + a
 // versioned set of articles. Exactly one of nationId / settlementId is set,
 // matching the DB scope-exclusive check. DM-reference only, zero simulation
@@ -5,7 +7,7 @@
 export type LawDocumentStatus = "active" | "repealed";
 
 export type LawDocument = {
-  readonly amendmentProcedure: unknown;
+  readonly amendmentProcedure: AmendmentProcedure;
   readonly createdAt: string;
   readonly createdTurnNumber: number;
   readonly currentVersion: number;
