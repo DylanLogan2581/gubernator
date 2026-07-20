@@ -103,11 +103,11 @@ psql "$DB" -v ON_ERROR_STOP=1 -f "$HERE/cleanup.sql" >/dev/null
 
 echo "[4/4] dumping and assembling seed.sql"
 q "delete from public.settlement_turn_resource_snapshots where turn_transition_id is null; delete from public.settlement_turn_snapshots where turn_transition_id is null;"
-TABLES="worlds namesets cultures religions resource_categories resources education_levels job_definitions building_blueprints building_blueprint_tiers deposit_types deposit_type_jobs managed_population_types managed_population_husbandry_jobs managed_population_culling_jobs nations nation_discoveries settlements citizens nation_relationships nation_treaties nation_currencies nation_currency_ledger_entries partnerships office_types nation_offices government_bodies law_documents law_articles law_document_versions law_amendments law_amendment_votes decrees settlement_resource_stockpiles deposit_instances deposit_instance_resources managed_population_instances construction_projects settlement_buildings education_enrollments unit_types armies army_groups army_units unit_soldiers trade_routes trade_route_legs citizen_assignments event_groups events event_effects citizen_memories world_admins user_active_player_characters turn_transitions turn_log_entries notifications settlement_turn_snapshots settlement_turn_resource_snapshots"
-TFLAGS=""
-for t in $TABLES; do TFLAGS="$TFLAGS -t public.$t"; done
-# shellcheck disable=SC2086
-pg_dump "$DB" --data-only --column-inserts --no-owner --no-privileges --no-comments $TFLAGS > "$HERE/world_data.sql"
+# --load-via-partition-root folds rows from dynamically-named per-world
+# partitions (turn_log_entries, settlement_turn_resource_snapshots) back
+# under their root table name; a -t table filter list would miss those
+# partitions entirely since their generated names don't match the filter.
+pg_dump "$DB" --data-only --column-inserts --no-owner --no-privileges --no-comments --schema=public --load-via-partition-root > "$HERE/world_data.sql"
 
 DATA="$HERE/world_data.sql" AUTH="$HERE/auth_users.sql" BASE="$HERE/baseline.sql" OUT="$ROOT/supabase/seed.sql" python3 - << 'PYEOF'
 import os, re
@@ -127,7 +127,12 @@ groups = {t: [] for t in order}
 pat = re.compile(r'^INSERT INTO public\.(\w+) ')
 for line in open(os.environ['DATA']):
     if line.startswith('INSERT INTO public.'):
-        groups[pat.match(line).group(1)].append(line.rstrip('\n'))
+        table = pat.match(line).group(1)
+        # Full-schema dump (needed so --load-via-partition-root can fold
+        # dynamically-named per-world partitions back to their root table)
+        # picks up runtime-only tables outside `order` too; skip those.
+        if table in groups:
+            groups[table].append(line.rstrip('\n'))
 hdr = ['', '-- ' + '=' * 73, '-- Bovold Seed World.', '--',
  '-- A single, richly populated Akaviri world (4 nations, 36 settlements, ~2,830',
  '-- citizens named from 4 culture namesets, with full culture/religion/government/',

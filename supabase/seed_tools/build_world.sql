@@ -588,14 +588,14 @@ begin
   from (values
     -- Foodstuffs
     ('grain','Grain',2000,'foodstuffs','game:wheat'),
-    ('rice','Rice',2000,'foodstuffs','game:rice'),
+    ('rice','Rice',2000,'foodstuffs','game:bowl-of-rice'),
     ('vegetables','Vegetables',800,'foodstuffs','game:carrot'),
     ('fruit','Fruit',600,'foodstuffs','game:fruiting'),
     ('fish','Fish',600,'foodstuffs','game:fishing-net'),
-    ('flour','Flour',800,'foodstuffs','game:flour-bag'),
+    ('flour','Flour',800,'foodstuffs','game:flour'),
     ('bread','Bread',600,'foodstuffs','game:bread'),
     ('cheese','Cheese',400,'foodstuffs','game:cheese-wedge'),
-    ('eggs','Eggs',400,'foodstuffs','game:egg'),
+    ('eggs','Eggs',400,'foodstuffs','game:raw-egg'),
     ('milk','Milk',400,'foodstuffs','game:milk-carton'),
     ('honey','Honey',300,'foodstuffs','game:honeycomb'),
     ('mushrooms','Mushrooms',400,'foodstuffs','game:mushroom-gills'),
@@ -617,7 +617,7 @@ begin
     ('coal','Coal',800,'ore','game:coal-pile'),
     ('stone','Raw Stone',1500,'ore','game:stone-pile'),
     ('clay','Clay',800,'ore','game:powder'),
-    ('sand','Sand',800,'ore','game:sands'),
+    ('sand','Sand',800,'ore','game:sand-castle'),
     ('rough-gems','Rough Gems',300,'ore','game:gems'),
     -- Metals & ingots
     ('iron-ingot','Iron Ingot',500,'metals','game:metal-bar'),
@@ -631,10 +631,10 @@ begin
     ('hardwood-logs','Hardwood Logs',1000,'timber','game:wood-pile'),
     ('softwood-logs','Softwood Logs',1000,'timber','game:log'),
     ('planks','Planks',800,'timber','game:wood-beam'),
-    ('charcoal','Charcoal',600,'timber','game:charcoal'),
+    ('charcoal','Charcoal',600,'timber','game:thrown-charcoal'),
     ('flax','Flax',500,'timber','game:plant-roots'),
     ('cotton','Cotton',500,'timber','game:cotton-flower'),
-    ('raw-silk','Raw Silk',400,'timber','game:cocooned'),
+    ('raw-silk','Raw Silk',400,'timber','game:caterpillar'),
     ('peat','Peat',600,'timber','game:brick-pile'),
     -- Textiles & leather
     ('linen-cloth','Linen Cloth',300,'textiles','game:rolled-cloth'),
@@ -644,7 +644,7 @@ begin
     ('leather','Leather',400,'textiles','game:leather-armor'),
     ('rope','Rope',400,'textiles','game:rope-coil'),
     ('dye','Dye',300,'textiles','game:paint-bucket'),
-    ('thread','Thread',300,'textiles','game:spool'),
+    ('thread','Thread',300,'textiles','game:film-spool'),
     -- Tools & metalwork
     ('tools','Tools',400,'metalwork','game:hammer-nails'),
     ('nails','Nails',400,'metalwork','game:nails'),
@@ -655,7 +655,7 @@ begin
     -- Construction materials
     ('stone-block','Stone Block',1200,'construction','game:stone-block'),
     ('bricks','Bricks',1000,'construction','game:brick-pile'),
-    ('mortar','Mortar',600,'construction','game:bucket'),
+    ('mortar','Mortar',600,'construction','game:mortar'),
     ('glass','Glass',400,'construction','game:round-bottom-flask'),
     ('roof-tiles','Roof Tiles',600,'construction','game:brick-wall'),
     ('cut-stone','Cut Stone',800,'construction','game:stone-block'),
@@ -674,9 +674,9 @@ begin
     -- Provisions & preserved
     ('salted-pork','Cured Pork',500,'provisions','game:bacon'),
     ('smoked-mutton','Smoked Mutton',500,'provisions','game:meat'),
-    ('dried-fish','Dried Fish',500,'provisions','game:fish'),
+    ('dried-fish','Dried Fish',500,'provisions','game:canned-fish'),
     ('sea-salt','Sea Salt',400,'provisions','game:salt-shaker'),
-    ('preserves','Preserves',300,'provisions','game:jam-jar'),
+    ('preserves','Preserves',300,'provisions','game:mason-jar'),
     ('sugar','Sugar',400,'provisions','game:sugar-cane'),
     ('ale','Ale',400,'provisions','game:beer-stein'),
     ('rice-wine','Rice-Wine',400,'provisions','game:bottle-vapors')
@@ -696,7 +696,7 @@ begin
     ('grain-farmer','Grain Farmer',16,'[]'::jsonb,
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_worker',6)),'game:sickle'),
     ('rice-farmer','Rice Farmer',16,'[]'::jsonb,
-      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:rice')::text,'amount_per_worker',6)),'game:rice'),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:rice')::text,'amount_per_worker',6)),'game:bowl-of-rice'),
     ('fisher','Fisher',12,'[]'::jsonb,
       jsonb_build_array(jsonb_build_object('resource_id', v_res_food::text,'amount_per_worker',3),
                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:fish')::text,'amount_per_worker',2)),'game:fishing-pole'),
@@ -709,7 +709,7 @@ begin
                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:mushrooms')::text,'amount_per_worker',1)),'game:berries-bowl'),
     ('miller','Miller',8,
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:grain')::text,'amount_per_worker',3)),
-      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flour')::text,'amount_per_worker',3)),'game:watermill'),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flour')::text,'amount_per_worker',3)),'game:water-mill'),
     ('baker','Baker',8,
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:flour')::text,'amount_per_worker',2)),
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:bread')::text,'amount_per_worker',3)),'game:bread'),
@@ -788,7 +788,7 @@ begin
                         jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:timber-beams')::text,'amount_per_worker',1)),'game:hand-saw'),
     ('charcoal-burner','Charcoal Burner',6,
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:softwood-logs')::text,'amount_per_worker',2)),
-      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:charcoal')::text,'amount_per_worker',2)),'game:charcoal'),
+      jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:charcoal')::text,'amount_per_worker',2)),'game:thrown-charcoal'),
     ('stonecutter','Stonecutter',8,
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone')::text,'amount_per_worker',2)),
       jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount_per_worker',1),
@@ -818,7 +818,7 @@ begin
     ('hardwood-grove','Hardwood Grove','trees'),
     ('peat-bog','Peat Bog','game:swamp'),
     ('salt-flat','Salt Flat','game:salt-shaker'),
-    ('sand-pit','Sand Pit','game:sands')
+    ('sand-pit','Sand Pit','game:sand-castle')
   ) as t(slug, name, icon);
 
   insert into public.job_definitions (id, world_id, name, slug, job_type, linked_deposit_type_id, icon)
@@ -975,7 +975,7 @@ begin
   insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon)
   select pg_temp.seed_uuid('bp:' || slug), v_world, name, slug, descr, 0, cap_max, icon
   from (values
-    ('watermill','Watermill','Grinds grain into flour.',3,'game:watermill','miller','flour'),
+    ('watermill','Watermill','Grinds grain into flour.',3,'game:water-mill','miller','flour'),
     ('bakery','Bakery','Bakes bread from flour.',3,'game:bread','baker','bread'),
     ('brewery','Brewery','Brews ale from grain.',2,'game:barrel','brewer','ale'),
     ('winery','Winery','Presses fruit into wine.',2,'game:wine-bottle','vintner','wine'),
@@ -996,7 +996,7 @@ begin
     ('pottery','Pottery','Fires clay into pots and bricks.',3,'game:amphora','potter','pottery'),
     ('glassworks','Glassworks','Blows sand into glass.',2,'game:round-bottom-flask','glassblower','glass'),
     ('carpenters-shop','Carpenter''s Shop','Saws logs into planks and beams.',3,'game:hand-saw','carpenter','planks'),
-    ('charcoal-kiln','Charcoal Kiln','Chars softwood into charcoal.',2,'game:charcoal','charcoal-burner','charcoal'),
+    ('charcoal-kiln','Charcoal Kiln','Chars softwood into charcoal.',2,'game:thrown-charcoal','charcoal-burner','charcoal'),
     ('masons-yard','Mason''s Yard','Cuts raw stone into blocks.',3,'game:stone-crafting','stonecutter','stone-block'),
     ('fishery','Fishery','A wharf that widens the fisher rota.',4,'game:fishing-net','fisher','fish'),
     ('hunting-lodge','Hunting Lodge','A lodge for hunters and their game.',3,'game:high-shot','hunter','hides'),
@@ -1006,7 +1006,7 @@ begin
     ('cow-barn','Cow Barn','Shelters and grows the cow herd.',3,'game:cow','cowherd','milk'),
     ('henhouse','Henhouse','Shelters and grows the chicken flock.',3,'game:chicken','poultry-keeper','eggs'),
     ('apiary','Apiary','Tends and grows the bee colonies.',3,'game:beehive','beekeeper','honey'),
-    ('market','Market','Widens the caravan-trader rota.',2,'game:market','caravan-trader','spices'),
+    ('market','Market','Widens the caravan-trader rota.',2,'game:shop','caravan-trader','spices'),
     ('warehouse','Warehouse','Extra bulk storage for trade goods.',6,'warehouse','stonecutter','cut-stone')
   ) as t(slug, name, descr, cap_max, icon, job_slug, out_slug);
 
@@ -1042,7 +1042,7 @@ begin
     ('library','Library','A hall of records and learning.',1,'game:book-cover'),
     ('temple','Temple','A great house of worship.',1,'game:greek-temple'),
     ('shrine','Shrine','A small sacred site.',3,'game:temple-gate'),
-    ('town-hall','Town Hall','The seat of local governance.',1,'game:town-hall'),
+    ('town-hall','Town Hall','The seat of local governance.',1,'game:capitol'),
     ('courthouse','Courthouse','Where the law is heard.',1,'game:scales'),
     ('mint','Mint','Strikes and stores the nation''s coin.',1,'game:cash'),
     ('bank','Bank','Vaults for the nation''s reserves.',1,'game:bank'),
