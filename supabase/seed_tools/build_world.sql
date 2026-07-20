@@ -1034,6 +1034,32 @@ begin
     ('warehouse','stonecutter','cut-stone')
   ) as t(slug, job_slug, out_slug);
 
+  -- Tier 2 for the same producer buildings: costs more, takes longer, and
+  -- widens the rota / storage further than tier 1.
+  insert into public.building_blueprint_tiers (id, building_blueprint_id, tier_number, worker_turns_required, construction_costs_json, upkeep_costs_json, effects_json)
+  select pg_temp.seed_uuid('tier:' || slug || ':2'), pg_temp.seed_uuid('bp:' || slug), 2, 9,
+    jsonb_build_array(jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:hardwood-logs')::text,'amount',14),
+                      jsonb_build_object('resource_id', pg_temp.seed_uuid('resource:stone-block')::text,'amount',10)),
+    '[]'::jsonb,
+    jsonb_build_array(
+      jsonb_build_object('type','job_capacity_increase','job_id', pg_temp.seed_uuid('job:' || job_slug)::text,'amount',6),
+      jsonb_build_object('type','resource_storage_increase','resource_id', pg_temp.seed_uuid('resource:' || out_slug)::text,'amount',650))
+  from (values
+    ('watermill','miller','flour'),('bakery','baker','bread'),('brewery','brewer','ale'),
+    ('winery','vintner','wine'),('dairy','cheesemaker','cheese'),('smokehouse','fisher','dried-fish'),
+    ('weavers-workshop','cloth-weaver','wool-cloth'),('linen-workshop','linen-weaver','linen-cloth'),
+    ('silk-workshop','silk-weaver','silk-cloth'),('tannery','tanner','leather'),('ropewalk','ropemaker','rope'),
+    ('smelter','iron-smelter','iron-ingot'),('copper-smeltery','copper-smelter','copper-ingot'),
+    ('tin-smeltery','tin-smelter','tin-ingot'),('bronze-foundry','bronzesmith','bronze'),
+    ('steelworks','steelworker','steel'),('armory','weaponsmith','weapons'),('goldsmithy','jeweler','jewelry'),
+    ('pottery','potter','pottery'),('glassworks','glassblower','glass'),('carpenters-shop','carpenter','planks'),
+    ('charcoal-kiln','charcoal-burner','charcoal'),('masons-yard','stonecutter','stone-block'),
+    ('fishery','fisher','fish'),('hunting-lodge','hunter','hides'),('foragers-hut','forager','fruit'),
+    ('sheepfold','shepherd','wool'),('pigpen','swineherd','pork'),('cow-barn','cowherd','milk'),
+    ('henhouse','poultry-keeper','eggs'),('apiary','beekeeper','honey'),('market','caravan-trader','spices'),
+    ('warehouse','stonecutter','cut-stone')
+  ) as t(slug, job_slug, out_slug);
+
   -- Purely civic / cultural / military buildings (flavour + pop cap / storage;
   -- no new sim mechanics), authored via a second driver.
   insert into public.building_blueprints (id, world_id, name, slug, description, grace_period_turns, max_instances_per_settlement, icon)
