@@ -78,7 +78,7 @@ function TurnTransitionOutcomeSkeleton(): JSX.Element {
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-4 w-48" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {SKELETON_METRIC_LABELS.map((label) => (
           <div
             key={label}
@@ -216,7 +216,7 @@ export function TurnTransitionOutcomeContent({
           </p>
         </div>
 
-        <dl className="grid gap-3 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <MetricTile label="Births" value={deltas.births} />
           <MetricTile label="Deaths" value={deltas.deaths} />
           <MetricTile
@@ -248,7 +248,7 @@ export function TurnTransitionOutcomeContent({
                 type="multiple"
                 value={selectedCategories}
                 onValueChange={setSelectedCategories}
-                className="justify-start"
+                className="flex-wrap justify-start"
               >
                 {allCategories.map((category) => (
                   <ToggleGroupItem
