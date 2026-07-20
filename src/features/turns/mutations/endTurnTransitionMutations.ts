@@ -150,6 +150,12 @@ export function endTurnTransitionMutationOptions({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: turnQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
+        }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.list(input.worldId),
