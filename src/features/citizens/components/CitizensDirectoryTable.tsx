@@ -368,9 +368,66 @@ export function CitizensDirectoryTable({
                 {children}
               </Link>
             )}
+            renderMobileCard={(row) => (
+              <CitizenCard citizen={row} worldId={worldId} />
+            )}
           />
         </>
       )}
     </div>
+  );
+}
+
+function CitizenCard({
+  citizen,
+  worldId,
+}: {
+  readonly citizen: CitizenDirectoryRow;
+  readonly worldId: string;
+}): JSX.Element {
+  const isPlayerCharacter = citizen.citizenType === "player_character";
+  const isDeceased = citizen.status === "dead";
+  const officeTypes = citizen.officeTypes;
+
+  return (
+    <Link
+      to="/worlds/$worldId/citizens/$citizenId"
+      params={{ citizenId: citizen.id, worldId }}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border p-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        isDeceased && "opacity-70",
+      )}
+    >
+      <CitizenAvatar
+        id={citizen.id}
+        name={citizen.name ?? "—"}
+        size="sm"
+        className={
+          isPlayerCharacter ? "ring-2 ring-primary ring-offset-1" : undefined
+        }
+      />
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5">
+          <span className="truncate font-medium">{citizen.name ?? "—"}</span>
+          {isPlayerCharacter ? <Badge variant="default">Player</Badge> : null}
+          {isDeceased ? <Badge variant="destructive">Deceased</Badge> : null}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {citizen.settlementName ?? "—"} · {citizen.nationName ?? "—"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Age {citizen.ageTurns ?? "—"} · {citizen.sex ?? "—"}
+        </p>
+        {officeTypes !== null ? (
+          <Badge variant="outline" className="mt-1 cursor-default">
+            In office: {formatOfficeTypesLabel(officeTypes)}
+          </Badge>
+        ) : (
+          <p className="truncate text-xs text-muted-foreground">
+            {citizen.assignmentLabel ?? "Unassigned"}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }

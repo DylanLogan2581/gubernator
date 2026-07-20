@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DataTable } from "./DataTable";
 
@@ -19,7 +19,19 @@ const COLUMNS: ColumnDef<Row, unknown>[] = [
   { id: "status", enableSorting: false, header: "Status", cell: () => "ok" },
 ];
 
+function setViewportWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
 describe("DataTable", () => {
+  afterEach(() => {
+    setViewportWidth(1024);
+  });
+
   it("renders column headers and row data", () => {
     render(
       <DataTable
@@ -205,5 +217,45 @@ describe("DataTable", () => {
     await user.click(screen.getByRole("button", { name: /Go to last page/ }));
 
     expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it("renders mobile cards instead of the table on narrow viewports", () => {
+    setViewportWidth(500);
+
+    render(
+      <DataTable
+        columns={COLUMNS}
+        data={ROWS}
+        getRowId={(row) => row.id}
+        sorting={[]}
+        onSortingChange={vi.fn()}
+        pageIndex={0}
+        pageCount={1}
+        onPageChange={vi.fn()}
+        renderMobileCard={(row) => <div>Card: {row.name}</div>}
+      />,
+    );
+
+    expect(screen.getByText("Card: Ada")).toBeDefined();
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  it("still renders the table on narrow viewports when no mobile card is provided", () => {
+    setViewportWidth(500);
+
+    render(
+      <DataTable
+        columns={COLUMNS}
+        data={ROWS}
+        getRowId={(row) => row.id}
+        sorting={[]}
+        onSortingChange={vi.fn()}
+        pageIndex={0}
+        pageCount={1}
+        onPageChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("table")).toBeDefined();
   });
 });

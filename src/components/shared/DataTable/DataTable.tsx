@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 declare module "@tanstack/react-table" {
@@ -74,6 +75,12 @@ export type DataTableProps<TData> = {
   readonly onToggleRowExpand?: (row: TData) => void;
   /** Accessible name for a row's expand toggle button, e.g. "Farmhouse tiers". */
   readonly expandToggleLabel?: (row: TData) => string;
+  /**
+   * Renders a row as a card for narrow viewports. When provided, a stacked
+   * card list replaces the table on mobile so columns and actions stay
+   * reachable without horizontal scrolling.
+   */
+  readonly renderMobileCard?: (row: TData) => ReactNode;
 };
 
 function SortIndicator({
@@ -125,8 +132,10 @@ export function DataTable<TData>({
   isRowExpanded,
   onToggleRowExpand,
   expandToggleLabel,
+  renderMobileCard,
 }: DataTableProps<TData>): JSX.Element {
   const canExpand = renderExpandedContent !== undefined;
+  const isMobile = useIsMobile();
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable is a TanStack Table hook, not a React hook
   const table = useReactTable({
@@ -147,6 +156,28 @@ export function DataTable<TData>({
 
   const rows = table.getRowModel().rows;
   const columnCount = columns.length + (canExpand ? 1 : 0);
+
+  if (isMobile && renderMobileCard !== undefined) {
+    return (
+      <div className="min-w-0 space-y-2">
+        {rows.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {emptyMessage}
+          </p>
+        ) : (
+          rows.map((row) => (
+            <div key={row.id}>{renderMobileCard(row.original)}</div>
+          ))
+        )}
+        <TablePagination
+          page={pageIndex}
+          pageCount={pageCount}
+          onPageChange={onPageChange}
+          isDisabled={isPaginationDisabled}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 space-y-2">

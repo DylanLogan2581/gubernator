@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -102,6 +102,14 @@ function buildClient({
   return { from };
 }
 
+function setViewportWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
 function renderTable(worldId = "world-1"): ReturnType<typeof render> {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -118,6 +126,10 @@ function renderTable(worldId = "world-1"): ReturnType<typeof render> {
 describe("CitizensDirectoryTable", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+  });
+
+  afterEach(() => {
+    setViewportWidth(1024);
   });
 
   it("renders directory rows with the required columns", async () => {
@@ -253,6 +265,39 @@ describe("CitizensDirectoryTable", () => {
     expect(rowLink.getAttribute("href")).toBe(
       "/worlds/world-1/citizens/citizen-2",
     );
+  });
+
+  it("renders a linked card instead of the table on narrow viewports", async () => {
+    setViewportWidth(500);
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [
+          {
+            age_turns: null,
+            assignment_label: null,
+            citizen_type: "player_character",
+            id: "citizen-2",
+            name: "Bram",
+            nation_id: null,
+            nation_name: null,
+            office_types: null,
+            settlement_id: null,
+            settlement_name: null,
+            sex: null,
+            status: "alive",
+          },
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderTable();
+
+    const rowLink = await screen.findByRole("link", { name: /Bram/ });
+    expect(rowLink.getAttribute("href")).toBe(
+      "/worlds/world-1/citizens/citizen-2",
+    );
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
   it("re-fetches with server-side order when a sortable column header is clicked", async () => {

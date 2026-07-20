@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 
@@ -126,6 +127,7 @@ export function EventsList({
   search,
 }: EventsListProps): JSX.Element {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -357,6 +359,35 @@ export function EventsList({
                 title="No events match your filters"
                 description="Try adjusting the status, scope, or search filters."
               />
+            ) : isMobile ? (
+              <div className="space-y-2">
+                {paginatedItems.map((item) =>
+                  item.type === "single" ? (
+                    <EventCard
+                      key={item.event.id}
+                      event={item.event}
+                      isSelected={item.event.id === selectedEventId}
+                      onSelect={() => {
+                        setSelectedEventId(item.event.id);
+                      }}
+                    />
+                  ) : (
+                    <GroupedEventCard
+                      key={item.groupId}
+                      events={item.events}
+                      isSelected={item.events.some(
+                        (e) => e.id === selectedEventId,
+                      )}
+                      onSelect={() => {
+                        const firstEvent = item.events[0];
+                        if (firstEvent !== undefined) {
+                          setSelectedEventId(firstEvent.id);
+                        }
+                      }}
+                    />
+                  ),
+                )}
+              </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border">
                 <Table>
@@ -449,6 +480,107 @@ export function EventsList({
   );
 }
 
+function eventDurationLabel(event: EventWithGroup): string {
+  return event.duration_type === "sustained"
+    ? `${event.remaining_transitions}/${event.duration_transitions} turns`
+    : "Instant";
+}
+
+function groupScopeLabel(
+  scopeType: EventScopeType,
+  targetCount: number,
+): string {
+  const noun =
+    scopeType === "settlement"
+      ? "settlement"
+      : scopeType === "nation"
+        ? "nation"
+        : "world";
+  return `${targetCount} ${noun}${targetCount > 1 ? "s" : ""}`;
+}
+
+function EventCard({
+  event,
+  isSelected,
+  onSelect,
+}: {
+  readonly event: EventWithGroup;
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
+}): JSX.Element {
+  const displayName = event.group?.name ?? event.name;
+
+  return (
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      data-state={isSelected ? "selected" : undefined}
+      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=selected]:border-primary"
+      onClick={onSelect}
+    >
+      <IconChip
+        icon={DOMAIN_ICON_CHIPS.events.icon}
+        tone={DOMAIN_ICON_CHIPS.events.tone}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{displayName}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <EventStatusBadge status={event.status} />
+          <EventScopeBadge scopeType={event.scope_type} />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {eventDurationLabel(event)}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function GroupedEventCard({
+  events,
+  isSelected,
+  onSelect,
+}: {
+  readonly events: readonly EventWithGroup[];
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
+}): JSX.Element | null {
+  const firstEvent = events[0];
+
+  if (firstEvent === undefined) {
+    return null;
+  }
+
+  const displayName = firstEvent.group?.name ?? firstEvent.name;
+  const scopeLabel = groupScopeLabel(firstEvent.scope_type, events.length);
+
+  return (
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      data-state={isSelected ? "selected" : undefined}
+      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=selected]:border-primary"
+      onClick={onSelect}
+    >
+      <IconChip
+        icon={DOMAIN_ICON_CHIPS.events.icon}
+        tone={DOMAIN_ICON_CHIPS.events.tone}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{displayName}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <EventStatusBadge status={firstEvent.status} />
+          <EventScopeBadge scopeType={firstEvent.scope_type} />
+          <span className="text-xs text-muted-foreground">{scopeLabel}</span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {eventDurationLabel(firstEvent)}
+        </p>
+      </div>
+    </button>
+  );
+}
+
 function EventRow({
   event,
   isSelected,
@@ -489,11 +621,7 @@ function EventRow({
       <TableCell>
         <EventScopeBadge scopeType={event.scope_type} />
       </TableCell>
-      <TableCell>
-        {event.duration_type === "sustained"
-          ? `${event.remaining_transitions}/${event.duration_transitions} turns`
-          : "Instant"}
-      </TableCell>
+      <TableCell>{eventDurationLabel(event)}</TableCell>
     </TableRow>
   );
 }
@@ -520,13 +648,7 @@ function GroupedEventRow({
   }
 
   const displayName = firstEvent.group?.name ?? firstEvent.name;
-  const targetCount = events.length;
-  const scopeLabel =
-    firstEvent.scope_type === "settlement"
-      ? `${targetCount} settlement${targetCount > 1 ? "s" : ""}`
-      : firstEvent.scope_type === "nation"
-        ? `${targetCount} nation${targetCount > 1 ? "s" : ""}`
-        : `${targetCount} world${targetCount > 1 ? "s" : ""}`;
+  const scopeLabel = groupScopeLabel(firstEvent.scope_type, events.length);
 
   return (
     <TableRow
@@ -560,11 +682,7 @@ function GroupedEventRow({
           <span className="text-xs text-muted-foreground">{scopeLabel}</span>
         </div>
       </TableCell>
-      <TableCell>
-        {firstEvent.duration_type === "sustained"
-          ? `${firstEvent.remaining_transitions}/${firstEvent.duration_transitions} turns`
-          : "Instant"}
-      </TableCell>
+      <TableCell>{eventDurationLabel(firstEvent)}</TableCell>
     </TableRow>
   );
 }
