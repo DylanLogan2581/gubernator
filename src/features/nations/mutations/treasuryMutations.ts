@@ -7,31 +7,32 @@ import {
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { buildingsQueryKeys } from "@/features/buildings";
 import { resourcesQueryKeys } from "@/features/resources";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
+import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
 import { nationsQueryKeys } from "../queries/nationsQueryKeys";
+import {
+  grantNationResourcesInputSchema,
+  setNationTaxRateInputSchema,
+  subsidizeConstructionProjectInputSchema,
+  type GrantNationResourcesInput,
+  type SetNationTaxRateInput,
+  type SubsidizeConstructionProjectInput,
+} from "../schemas/treasurySchemas";
 
-export type GrantNationResourcesInput = {
-  readonly nationId: string;
-  readonly quantity: number;
-  readonly resourceId: string;
-  readonly settlementId: string;
-  readonly worldId: string;
-};
+import type { z } from "zod";
+
+export type { GrantNationResourcesInput };
+export type { SetNationTaxRateInput };
+export type { SubsidizeConstructionProjectInput };
 
 export type GrantNationResourcesResult = {
   readonly clamped: boolean;
   readonly grantedQuantity: number;
-};
-
-export type SubsidizeConstructionProjectInput = {
-  readonly nationId: string;
-  readonly projectId: string;
-  readonly settlementId: string;
-  readonly worldId: string;
 };
 
 export type SubsidizeConstructionProjectLineResult = {
@@ -40,25 +41,29 @@ export type SubsidizeConstructionProjectLineResult = {
   readonly resourceId: string;
 };
 
-export type SetNationTaxRateInput = {
-  readonly nationId: string;
-  readonly rate: number;
-  readonly worldId: string;
-};
+type TreasuryMutationErrorCode = "treasury_input_invalid";
+
+export type TreasuryMutationIssue = MutationIssue;
+
+export const {
+  ErrorClass: TreasuryMutationError,
+  isError: isTreasuryMutationError,
+} = createMutationError<TreasuryMutationErrorCode>("TreasuryMutationError");
+export type TreasuryMutationError = InstanceType<typeof TreasuryMutationError>;
 
 export type GrantNationResourcesMutationOptions = UseMutationOptions<
   GrantNationResourcesResult,
-  AuthUiError,
+  AuthUiError | TreasuryMutationError,
   GrantNationResourcesInput
 >;
 export type SubsidizeConstructionProjectMutationOptions = UseMutationOptions<
   readonly SubsidizeConstructionProjectLineResult[],
-  AuthUiError,
+  AuthUiError | TreasuryMutationError,
   SubsidizeConstructionProjectInput
 >;
 export type SetNationTaxRateMutationOptions = UseMutationOptions<
   void,
-  AuthUiError,
+  AuthUiError | TreasuryMutationError,
   SetNationTaxRateInput
 >;
 
@@ -163,6 +168,8 @@ async function grantNationResources(
   // precisely — it falls back to Record<string, unknown>, so the RPC call is
   // cast the same way setNationCapitalAndFoundedTurn casts
   // set_nation_capital_and_founded_turn in nationsMutations.ts.
+  const values = parseInput(grantNationResourcesInputSchema, input);
+
   const clientAsRpcCapable = client as unknown as {
     rpc(
       name: string,
@@ -174,10 +181,10 @@ async function grantNationResources(
 
   const { data, error } = await clientAsRpcCapable
     .rpc("grant_nation_resources", {
-      p_nation_id: input.nationId,
-      p_quantity: input.quantity,
-      p_resource_id: input.resourceId,
-      p_settlement_id: input.settlementId,
+      p_nation_id: values.nationId,
+      p_quantity: values.quantity,
+      p_resource_id: values.resourceId,
+      p_settlement_id: values.settlementId,
     })
     .single();
 
@@ -195,9 +202,11 @@ async function subsidizeConstructionProject(
   client: GubernatorSupabaseClient,
   input: SubsidizeConstructionProjectInput,
 ): Promise<readonly SubsidizeConstructionProjectLineResult[]> {
+  const values = parseInput(subsidizeConstructionProjectInputSchema, input);
+
   const { data, error } = await client.rpc("subsidize_construction_project", {
-    p_nation_id: input.nationId,
-    p_project_id: input.projectId,
+    p_nation_id: values.nationId,
+    p_project_id: values.projectId,
   });
 
   if (error !== null) {
@@ -215,14 +224,32 @@ async function setNationTaxRate(
   client: GubernatorSupabaseClient,
   input: SetNationTaxRateInput,
 ): Promise<void> {
+  const values = parseInput(setNationTaxRateInputSchema, input);
+
   const { error } = await client
     .rpc("set_nation_tax_rate", {
-      p_nation_id: input.nationId,
-      p_rate: input.rate,
+      p_nation_id: values.nationId,
+      p_rate: values.rate,
     })
     .single();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
+}
+
+function parseInput<TSchema extends z.ZodTypeAny>(
+  schema: TSchema,
+  input: unknown,
+): z.output<TSchema> {
+  return parseMutationInput(
+    schema,
+    input,
+    (issues) =>
+      new TreasuryMutationError({
+        code: "treasury_input_invalid",
+        issues,
+        message: "Treasury input is invalid.",
+      }),
+  );
 }

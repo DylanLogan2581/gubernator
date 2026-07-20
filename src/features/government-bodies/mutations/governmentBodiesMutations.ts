@@ -16,6 +16,7 @@ import { toDbComposition } from "../lib/governmentBodyCompositionMapper";
 import { governmentBodiesQueryKeys } from "../queries/governmentBodiesQueryKeys";
 import {
   createGovernmentBodyInputSchema,
+  deleteGovernmentBodyInputSchema,
   updateGovernmentBodyInputSchema,
   type CreateGovernmentBodyInput,
   type UpdateGovernmentBodyInput as UpdateGovernmentBodyValuesInput,
@@ -236,10 +237,12 @@ async function deleteGovernmentBody(
   client: GubernatorSupabaseClient,
   input: DeleteGovernmentBodyInput,
 ): Promise<void> {
+  const values = parseInput(deleteGovernmentBodyInputSchema, input);
+
   const { data, error } = await client
     .from("government_bodies")
     .delete()
-    .eq("id", input.id)
+    .eq("id", values.id)
     .select("id")
     .maybeSingle();
 
