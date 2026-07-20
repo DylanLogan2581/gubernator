@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (20);
+  plan (21);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -846,6 +846,115 @@ set
   trade_policy = 'free'
 where
   id = 'dd300000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- FOREIGN CITIZEN (#1293): origin manager has legitimate authority to
+-- replace, but the proposing citizen belongs to neither of the NEW route's
+-- endpoints. Uses a dedicated route so the earlier replace tests are
+-- untouched.
+-- ===========================================================================
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    'dd300000-0000-0000-0000-000000000003',
+    'dd200000-0000-0000-0000-000000000001',
+    'DD Foreign Nation'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'dd400000-0000-0000-0000-000000000004',
+    'dd300000-0000-0000-0000-000000000003',
+    'DD Foreign Settlement'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id,
+    settlement_id
+  )
+values
+  (
+    'dd600000-0000-0000-0000-000000000005',
+    'dd200000-0000-0000-0000-000000000001',
+    'npc',
+    'DD NPC Foreign',
+    'alive',
+    null,
+    'none',
+    null,
+    null,
+    'dd400000-0000-0000-0000-000000000004'
+  );
+
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'dd700000-0000-0000-0000-000000000010',
+    'dd400000-0000-0000-0000-000000000001',
+    'dd400000-0000-0000-0000-000000000002',
+    'active',
+    'dd600000-0000-0000-0000-000000000003',
+    'approved',
+    'approved'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'dd700000-0000-0000-0000-000000000010',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    4
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.replace_trade_route(
+      'dd700000-0000-0000-0000-000000000010',
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":4}]}'::jsonb,
+      'dd600000-0000-0000-0000-000000000005'
+    )
+    $test$,
+    'P0001',
+    'p_proposing_citizen_id must be alive and belong to one of the new trade route endpoints',
+    'proposing citizen belonging to neither new endpoint nation is rejected'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- SECURITY DEFINER check

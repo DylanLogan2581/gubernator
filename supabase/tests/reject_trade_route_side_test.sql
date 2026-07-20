@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (10);
+  plan (11);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -82,6 +82,11 @@ values
     'b1300000-0000-0000-0000-000000000002',
     'b1200000-0000-0000-0000-000000000001',
     'B1 Destination Nation'
+  ),
+  (
+    'b1300000-0000-0000-0000-000000000003',
+    'b1200000-0000-0000-0000-000000000001',
+    'B1 Foreign Nation'
   );
 
 insert into
@@ -96,6 +101,11 @@ values
     'b1400000-0000-0000-0000-000000000002',
     'b1300000-0000-0000-0000-000000000002',
     'B1 Destination Settlement'
+  ),
+  (
+    'b1400000-0000-0000-0000-000000000004',
+    'b1300000-0000-0000-0000-000000000003',
+    'B1 Foreign Settlement'
   );
 
 insert into
@@ -175,6 +185,18 @@ values
     null,
     null,
     'b1400000-0000-0000-0000-000000000002'
+  ),
+  (
+    'b1600000-0000-0000-0000-000000000008',
+    'b1200000-0000-0000-0000-000000000001',
+    'npc',
+    'B1 NPC Foreign',
+    'alive',
+    null,
+    'none',
+    null,
+    null,
+    'b1400000-0000-0000-0000-000000000004'
   );
 
 -- Main route used for rejection tests
@@ -319,6 +341,70 @@ select
     'P0001',
     null,
     'rejecting a cancelled route raises P0001'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- FOREIGN CITIZEN (#1293): origin manager has legitimate authority, but the
+-- rejector citizen belongs to neither the origin nor destination nation of
+-- this route. Uses a dedicated route so the main route's rejection sequence
+-- is untouched.
+-- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'b1700000-0000-0000-0000-000000000003',
+    'b1400000-0000-0000-0000-000000000001',
+    'b1400000-0000-0000-0000-000000000002',
+    'proposed',
+    'b1600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'b1700000-0000-0000-0000-000000000003',
+    'send',
+    'b1500000-0000-0000-0000-000000000001',
+    6
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.reject_trade_route_side(
+      'b1700000-0000-0000-0000-000000000003',
+      'origin',
+      'b1600000-0000-0000-0000-000000000008'
+    )
+    $test$,
+    'P0001',
+    'p_rejector_citizen_id must be alive and belong to one of the trade route endpoints',
+    'rejector citizen belonging to neither endpoint nation is rejected'
   );
 
 reset role;
