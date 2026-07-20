@@ -17,6 +17,7 @@ import {
   getDeepLink,
   markNotificationReadMutationOptions,
   NotificationPreferencesSheet,
+  unreadNotificationsCountQueryOptions,
   useMarkAllNotificationsRead,
   useNotificationsRealtime,
 } from "@/features/notifications";
@@ -36,10 +37,14 @@ export function NotificationsPopover({
 
   useNotificationsRealtime(userId);
 
+  const unreadCountQuery = useQuery(
+    unreadNotificationsCountQueryOptions(userId),
+  );
+  const unreadCount = unreadCountQuery.data ?? 0;
+
   const notificationsQuery = useQuery(
     allNotificationsQueryOptions(userId, { isRead: false }),
   );
-  const unreadCount = notificationsQuery.data?.total ?? 0;
   const notifications = notificationsQuery.data?.notifications ?? [];
 
   const markReadMutation = useMutation(
