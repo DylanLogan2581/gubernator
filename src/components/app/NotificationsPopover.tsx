@@ -43,7 +43,10 @@ export function NotificationsPopover({
   const unreadCount = unreadCountQuery.data ?? 0;
 
   const notificationsQuery = useQuery(
-    allNotificationsQueryOptions(userId, { isRead: false }),
+    allNotificationsQueryOptions(userId, {
+      isRead: false,
+      includeTotal: false,
+    }),
   );
   const notifications = notificationsQuery.data?.notifications ?? [];
 

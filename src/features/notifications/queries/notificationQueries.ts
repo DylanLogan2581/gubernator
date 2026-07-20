@@ -47,6 +47,7 @@ export type TurnCompletedNotificationsFilters = {
   readonly worldId?: string | null;
 };
 export type AllNotificationsFilters = {
+  readonly includeTotal?: boolean;
   readonly isRead?: boolean | null;
   readonly limit?: number;
   readonly nationId?: string | null;
@@ -148,6 +149,8 @@ export type AllNotification = {
 
 type AllNotificationsResponse = {
   readonly notifications: readonly AllNotification[];
+  // 0 when the caller passed includeTotal: false — the count query is
+  // skipped, so this isn't a real "zero results" signal.
   readonly total: number;
 };
 
@@ -209,6 +212,7 @@ export function allNotificationsQueryOptions(
   const worldId = filters.worldId ?? null;
   const nationId = filters.nationId ?? null;
   const settlementId = filters.settlementId ?? null;
+  const includeTotal = filters.includeTotal ?? true;
 
   // The client is the configured Supabase singleton in app code; tests inject a fake.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
@@ -226,6 +230,7 @@ export function allNotificationsQueryOptions(
         worldId,
         nationId,
         settlementId,
+        includeTotal,
       ),
     queryKey: notificationQueryKeys.allNotifications(
       userId,
@@ -237,6 +242,7 @@ export function allNotificationsQueryOptions(
       worldId,
       nationId,
       settlementId,
+      includeTotal,
     ),
   });
 }
@@ -337,6 +343,7 @@ async function getAllNotifications(
   worldId: string | null,
   nationId: string | null,
   settlementId: string | null,
+  includeTotal: boolean,
 ): Promise<AllNotificationsResponse> {
   if (userId === null) {
     return { notifications: [], total: 0 };
@@ -344,53 +351,59 @@ async function getAllNotifications(
 
   const disabledTypes = await getDisabledNotificationTypes(client, userId);
 
-  let countQuery = client
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("recipient_user_id", userId);
+  let count = 0;
 
-  if (disabledTypes.length > 0) {
-    countQuery = countQuery.not(
-      "notification_type",
-      "in",
-      `(${disabledTypes.join(",")})`,
-    );
-  }
+  if (includeTotal) {
+    let countQuery = client
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("recipient_user_id", userId);
 
-  if (isRead !== null) {
-    countQuery = countQuery.eq("is_read", isRead);
-  }
+    if (disabledTypes.length > 0) {
+      countQuery = countQuery.not(
+        "notification_type",
+        "in",
+        `(${disabledTypes.join(",")})`,
+      );
+    }
 
-  if (type !== null) {
-    countQuery = countQuery.eq(
-      "notification_type",
-      type as Database["public"]["Enums"]["notification_type"],
-    );
-  }
+    if (isRead !== null) {
+      countQuery = countQuery.eq("is_read", isRead);
+    }
 
-  if (severity !== null) {
-    countQuery = countQuery.eq(
-      "severity",
-      severity as Database["public"]["Enums"]["notification_severity"],
-    );
-  }
+    if (type !== null) {
+      countQuery = countQuery.eq(
+        "notification_type",
+        type as Database["public"]["Enums"]["notification_type"],
+      );
+    }
 
-  if (worldId !== null) {
-    countQuery = countQuery.eq("world_id", worldId);
-  }
+    if (severity !== null) {
+      countQuery = countQuery.eq(
+        "severity",
+        severity as Database["public"]["Enums"]["notification_severity"],
+      );
+    }
 
-  if (nationId !== null) {
-    countQuery = countQuery.eq("nation_id", nationId);
-  }
+    if (worldId !== null) {
+      countQuery = countQuery.eq("world_id", worldId);
+    }
 
-  if (settlementId !== null) {
-    countQuery = countQuery.eq("settlement_id", settlementId);
-  }
+    if (nationId !== null) {
+      countQuery = countQuery.eq("nation_id", nationId);
+    }
 
-  const { count, error: countError } = await countQuery;
+    if (settlementId !== null) {
+      countQuery = countQuery.eq("settlement_id", settlementId);
+    }
 
-  if (countError !== null) {
-    throw normalizeSupabaseError(countError);
+    const { count: exactCount, error: countError } = await countQuery;
+
+    if (countError !== null) {
+      throw normalizeSupabaseError(countError);
+    }
+
+    count = exactCount ?? 0;
   }
 
   let dataQuery = client
@@ -447,7 +460,7 @@ async function getAllNotifications(
 
   return {
     notifications: data.map(toAllNotification),
-    total: count ?? 0,
+    total: count,
   };
 }
 

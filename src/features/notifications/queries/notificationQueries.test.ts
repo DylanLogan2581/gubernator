@@ -314,6 +314,54 @@ describe("allNotificationsQueryOptions", () => {
     });
   });
 
+  it("skips the count query when includeTotal is false", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-6",
+      is_read: false,
+      message_text: "Turn 2 is complete.",
+      nation_id: null,
+      nation: null,
+      notification_type: "turn.completed",
+      settlement_id: null,
+      settlement: null,
+      severity: "info" as const,
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+
+    const rangeEq = vi.fn().mockResolvedValue({ data: [row], error: null });
+    const range = vi.fn(() => ({ eq: rangeEq }));
+    const secondOrder = vi.fn(() => ({ range }));
+    const order = vi.fn(() => ({ order: secondOrder }));
+    const dataRecipientEq = vi.fn(() => ({ order }));
+    const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
+
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({ select: createDisabledTypesSelect([]) })
+      .mockReturnValueOnce({ select: dataSelect });
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions(
+        "user-1",
+        { isRead: false, includeTotal: false },
+        client,
+      ),
+    );
+
+    expect(result.total).toBe(0);
+    expect(result.notifications).toHaveLength(1);
+    // Only the disabled-types lookup and the data query — no count query.
+    expect(from).toHaveBeenCalledTimes(2);
+  });
+
   it("returns empty list when userId is null", async () => {
     const from = vi.fn();
     const client = { from } as unknown as GubernatorSupabaseClient;
