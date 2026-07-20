@@ -12,6 +12,7 @@ import type { JSX } from "react";
 // nationSectionItem) — one value per sidebar NATION item.
 export type NationSection =
   | "bank"
+  | "charter"
   | "government"
   | "military"
   | "overview"
@@ -30,6 +31,7 @@ export type NationScopeSwitcherProps = {
 type NationSectionRouteId =
   | "/worlds/$worldId/nations/$nationId"
   | "/worlds/$worldId/nations/$nationId/bank"
+  | "/worlds/$worldId/nations/$nationId/charter"
   | "/worlds/$worldId/nations/$nationId/government"
   | "/worlds/$worldId/nations/$nationId/military"
   | "/worlds/$worldId/nations/$nationId/relationships"
@@ -42,6 +44,8 @@ function sectionRouteId(section: NationSection | null): NationSectionRouteId {
   switch (section) {
     case "bank":
       return "/worlds/$worldId/nations/$nationId/bank";
+    case "charter":
+      return "/worlds/$worldId/nations/$nationId/charter";
     case "government":
       return "/worlds/$worldId/nations/$nationId/government";
     case "military":

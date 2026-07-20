@@ -21,6 +21,7 @@ import {
   MapPin,
   Package,
   PawPrint,
+  ScrollText,
   Settings,
   ShieldCheck,
   Swords,
@@ -492,6 +493,12 @@ export function AppSidebar(): JSX.Element | null {
             nationId,
             worldId,
           }),
+          nationSectionItem("charter", {
+            isActive: currentNationSection === "charter",
+            label: "Charter",
+            nationId,
+            worldId,
+          }),
           nationSectionItem("military", {
             isActive: currentNationSection === "military",
             label: "Military",
@@ -913,6 +920,7 @@ const NATION_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
   Exclude<NationSection, "overview">
 >([
   "bank",
+  "charter",
   "government",
   "military",
   "relationships",
@@ -967,6 +975,7 @@ function nationSectionItem(
 ): NavGroupItem {
   const icons: Record<NationSection, JSX.Element> = {
     bank: <Banknote aria-hidden="true" />,
+    charter: <ScrollText aria-hidden="true" />,
     government: <ShieldCheck aria-hidden="true" />,
     military: <Swords aria-hidden="true" />,
     overview: <LayoutDashboard aria-hidden="true" />,
@@ -1107,6 +1116,21 @@ function nationSectionItem(
         link: (
           <Link
             to="/worlds/$worldId/nations/$nationId/bank"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "charter":
+      return {
+        key: "nation-charter",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/charter"
             params={{ nationId, worldId }}
           >
             {icons[section]}
