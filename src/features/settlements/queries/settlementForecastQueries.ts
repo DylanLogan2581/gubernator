@@ -1,3 +1,4 @@
+import { FunctionsFetchError } from "@supabase/supabase-js";
 import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
@@ -53,6 +54,11 @@ export function settlementForecastQueryOptions(
 
 // -- Fetchers --
 
+// The preview replays the full turn engine, which can run long on large
+// worlds. Bound it so the query fails fast with a visible error instead of
+// leaving consumers in an indefinite loading state (#1284).
+const FORECAST_PREVIEW_TIMEOUT_MS = 60_000;
+
 // Runs the turn engine as a read-only dry-run and returns the forecast it
 // would produce if the turn were ended right now — so it reflects current
 // events, assignments, trade routes, and stockpiles. Nothing is persisted.
@@ -66,10 +72,16 @@ async function getLiveWorldForecast(
       // expectedTurnNumber is unused on the preview path (no stale-turn gate);
       // preview tells the function to dry-run instead of advancing the turn.
       body: { expectedTurnNumber: 0, preview: true, worldId },
+      timeout: FORECAST_PREVIEW_TIMEOUT_MS,
     },
   );
 
   if (response.error !== null) {
+    if (response.error instanceof FunctionsFetchError) {
+      throw new Error(
+        "The forecast preview took too long to complete. Try again in a moment.",
+      );
+    }
     throw normalizeSupabaseError(response.error);
   }
 

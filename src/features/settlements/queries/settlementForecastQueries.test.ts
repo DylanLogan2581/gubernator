@@ -1,3 +1,4 @@
+import { FunctionsFetchError } from "@supabase/supabase-js";
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
@@ -66,6 +67,44 @@ describe("settlementForecastQueryOptions", () => {
     );
 
     expect(result).toBeNull();
+  });
+
+  it("passes a bounded timeout to the edge function invocation", async () => {
+    const invoke = vi
+      .fn<
+        (
+          name: string,
+          options: Record<string, unknown>,
+        ) => Promise<{ data: null; error: null }>
+      >()
+      .mockResolvedValue({ data: null, error: null });
+    const client = {
+      functions: { invoke },
+    } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    await queryClient.fetchQuery(
+      settlementForecastQueryOptions("world-1", client),
+    );
+
+    expect(invoke.mock.calls[0]?.[0]).toBe("end-turn-simulation");
+    expect(typeof invoke.mock.calls[0]?.[1].timeout).toBe("number");
+  });
+
+  it("surfaces a clear timeout message when the preview fetch aborts", async () => {
+    const queryClient = createQueryClient();
+    const client = {
+      functions: {
+        invoke: vi.fn().mockResolvedValue({
+          data: null,
+          error: new FunctionsFetchError(new Error("aborted")),
+        }),
+      },
+    } as unknown as GubernatorSupabaseClient;
+
+    await expect(
+      queryClient.fetchQuery(settlementForecastQueryOptions("world-1", client)),
+    ).rejects.toThrow(/took too long/i);
   });
 });
 
