@@ -26,6 +26,8 @@ const outputUnitsPerWorkerSchema = z
   .int()
   .min(1, "Output units per worker must be at least 1.");
 
+const tierNumberSchema = z.int().min(1, "Tier number must be at least 1.");
+
 export const workerInputEntrySchema = z.strictObject({
   amountPerWorker: z.number().min(0, "Amount per worker must be non-negative."),
   resourceId: z.guid("Select a resource."),
@@ -35,6 +37,7 @@ const workerInputArraySchema = z.array(workerInputEntrySchema);
 
 export const depositTypeJobSchema = z.strictObject({
   jobId: jobIdSchema,
+  tierNumber: tierNumberSchema,
   outputUnitsPerWorker: outputUnitsPerWorkerSchema,
   workerInputsJson: workerInputArraySchema,
 });
@@ -45,6 +48,10 @@ const depositTypeJobsArraySchema = z
   .refine(
     (jobs) => new Set(jobs.map((j) => j.jobId)).size === jobs.length,
     "Each job may only be linked once per deposit type.",
+  )
+  .refine(
+    (jobs) => new Set(jobs.map((j) => j.tierNumber)).size === jobs.length,
+    "Each tier number may only be used once per deposit type.",
   );
 
 const depositTypeIconSchema = z

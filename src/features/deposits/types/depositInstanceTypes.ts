@@ -1,5 +1,13 @@
 export type DepositInstanceStatus = "active" | "depleted" | "removed";
 
+export type DepositInstanceTier = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly jobName: string;
+  readonly outputUnitsPerWorker: number;
+  readonly tierNumber: number;
+};
+
 export type DepositInstanceResource = {
   readonly createdAt: string;
   readonly depositInstanceId: string;
@@ -24,6 +32,7 @@ export type DepositInstance = {
   readonly resources: readonly DepositInstanceResource[];
   readonly settlementId: string;
   readonly status: DepositInstanceStatus;
+  readonly tiers: readonly DepositInstanceTier[];
   readonly updatedAt: string;
 };
 

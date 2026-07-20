@@ -103,7 +103,11 @@ describe("DepositsConfigPanel", () => {
             name: "Iron Ore",
             deposit_type_jobs: [
               createDepositTypeJobRow({ id: "row-1", job_id: JOB_ID }),
-              createDepositTypeJobRow({ id: "row-2", job_id: JOB_ID_2 }),
+              createDepositTypeJobRow({
+                id: "row-2",
+                job_id: JOB_ID_2,
+                tier_number: 2,
+              }),
             ],
           }),
         ],
@@ -120,7 +124,7 @@ describe("DepositsConfigPanel", () => {
     await screen.findByText("Iron Ore");
     const row = screen.getByText("Iron Ore").closest("tr");
     expect(row).toHaveTextContent("2 jobs");
-    expect(row).toHaveTextContent("Iron Mining, Skilled Iron Mining");
+    expect(row).toHaveTextContent("T1: Iron Mining, T2: Skilled Iron Mining");
   });
 
   it("shows empty state with create link when no deposit jobs exist in create form", async () => {
@@ -606,6 +610,7 @@ function createQueryClient(): QueryClient {
 type TestDepositTypeJobRow = {
   readonly id: string;
   readonly job_id: string;
+  readonly tier_number: number;
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: readonly unknown[];
 };
@@ -663,6 +668,7 @@ function createDepositTypeJobRow(
   return {
     id: "00000000-0000-0000-0000-0000000000a1",
     job_id: JOB_ID,
+    tier_number: 1,
     output_units_per_worker: 1,
     worker_inputs_json: [],
     ...overrides,

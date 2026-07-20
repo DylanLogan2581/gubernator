@@ -105,7 +105,7 @@ const DEFAULT_OFFICE_TYPE_IDS: Readonly<Record<string, string>> = {
 function defaultOfficeTypeRows(): readonly Record<string, unknown>[] {
   return Object.entries(DEFAULT_OFFICE_TYPE_IDS).map(([name, id]) => ({
     id,
-    world_id: "world-1",
+    world_id: "22222222-2222-2222-2222-222222222222",
     nation_id: null,
     name,
     description: null,
@@ -147,8 +147,8 @@ describe("NationOfficesSection", () => {
         offices: [
           {
             id: "office-1",
-            world_id: "world-1",
-            nation_id: "nation-1",
+            world_id: "22222222-2222-2222-2222-222222222222",
+            nation_id: "11111111-1111-1111-1111-111111111111",
             office_type: "senator",
             citizen_id: "citizen-1",
             appointed_turn_number: 3,
@@ -182,8 +182,8 @@ describe("NationOfficesSection", () => {
         offices: [
           {
             id: "office-1",
-            world_id: "world-1",
-            nation_id: "nation-1",
+            world_id: "22222222-2222-2222-2222-222222222222",
+            nation_id: "11111111-1111-1111-1111-111111111111",
             office_type: "senator",
             citizen_id: "citizen-1",
             appointed_turn_number: 3,
@@ -224,8 +224,8 @@ describe("NationOfficesSection", () => {
       offices: [
         {
           id: "office-1",
-          world_id: "world-1",
-          nation_id: "nation-1",
+          world_id: "22222222-2222-2222-2222-222222222222",
+          nation_id: "11111111-1111-1111-1111-111111111111",
           office_type: "senator",
           citizen_id: "citizen-1",
           appointed_turn_number: 3,
@@ -259,7 +259,7 @@ describe("NationOfficesSection", () => {
     await waitFor(() => {
       expect(clientFixture.rpc).toHaveBeenCalledWith("appoint_nation_office", {
         p_citizen_id: "citizen-2",
-        p_nation_id: "nation-1",
+        p_nation_id: "11111111-1111-1111-1111-111111111111",
         p_office_type: "senator",
         p_term_turns: undefined,
       });
@@ -280,8 +280,8 @@ describe("NationOfficesSection", () => {
       offices: [
         {
           id: "office-1",
-          world_id: "world-1",
-          nation_id: "nation-1",
+          world_id: "22222222-2222-2222-2222-222222222222",
+          nation_id: "11111111-1111-1111-1111-111111111111",
           office_type: "senator",
           citizen_id: "citizen-1",
           appointed_turn_number: 3,
@@ -323,9 +323,9 @@ describe("NationOfficesSection", () => {
       citizens: [],
       customOfficeTypes: [
         {
-          id: "office-type-custom-1",
-          world_id: "world-1",
-          nation_id: "nation-1",
+          id: "33333333-3333-3333-3333-333333333333",
+          world_id: "22222222-2222-2222-2222-222222222222",
+          nation_id: "11111111-1111-1111-1111-111111111111",
           name: "Lord Commander",
           description: null,
           scope: "nation",
@@ -371,9 +371,9 @@ describe("NationOfficesSection", () => {
       citizens: [],
       customOfficeTypes: [
         {
-          id: "office-type-custom-1",
-          world_id: "world-1",
-          nation_id: "nation-1",
+          id: "33333333-3333-3333-3333-333333333333",
+          world_id: "22222222-2222-2222-2222-222222222222",
+          nation_id: "11111111-1111-1111-1111-111111111111",
           name: "Lord Commander",
           description: null,
           scope: "nation",
@@ -424,9 +424,9 @@ describe("NationOfficesSection", () => {
       citizens: [],
       customOfficeTypes: [
         {
-          id: "office-type-custom-1",
-          world_id: "world-1",
-          nation_id: "nation-1",
+          id: "33333333-3333-3333-3333-333333333333",
+          world_id: "22222222-2222-2222-2222-222222222222",
+          nation_id: "11111111-1111-1111-1111-111111111111",
           name: "Lord Commander",
           description: null,
           scope: "nation",
@@ -460,7 +460,7 @@ describe("NationOfficesSection", () => {
 
     await waitFor(() => {
       expect(clientFixture.deleteOfficeType).toHaveBeenCalledWith(
-        "office-type-custom-1",
+        "33333333-3333-3333-3333-333333333333",
       );
     });
   });
@@ -565,7 +565,7 @@ function makeNationManager(): Citizen {
     parentBCitizenId: null,
     profilePhotoUrl: null,
     religionId: null,
-    roleNationId: "nation-1",
+    roleNationId: "11111111-1111-1111-1111-111111111111",
     roleSettlementId: null,
     roleType: "nation_manager",
     settlementId: null,
@@ -574,7 +574,7 @@ function makeNationManager(): Citizen {
     surname: null,
     updatedAt: "2026-01-01T00:00:00.000Z",
     userId: "user-manager-1",
-    worldId: "world-1",
+    worldId: "22222222-2222-2222-2222-222222222222",
   };
 }
 
@@ -586,7 +586,7 @@ function createNation(governmentType: NationGovernmentType): Nation {
     flagPath: null,
     foundedTurnNumber: null,
     governmentType,
-    id: "nation-1",
+    id: "11111111-1111-1111-1111-111111111111",
     name: "Ironhaven",
     namesetId: null,
     primaryCultureId: null,
@@ -594,7 +594,7 @@ function createNation(governmentType: NationGovernmentType): Nation {
     taxRate: 0,
     tradePolicy: "free",
     updatedAt: "2026-01-01T00:00:00.000Z",
-    worldId: "world-1",
+    worldId: "22222222-2222-2222-2222-222222222222",
   };
 }
 
@@ -687,7 +687,7 @@ function createClientFixture({
               select: () => ({
                 maybeSingle: () =>
                   Promise.resolve({
-                    data: { id: "office-type-custom-1" },
+                    data: { id: "33333333-3333-3333-3333-333333333333" },
                     error: null,
                   }),
               }),
@@ -775,7 +775,7 @@ function withReturns<T>(result: T): Promise<T> & { returns: () => Promise<T> } {
 function toCitizenRow(citizen: CitizenRow): Record<string, unknown> {
   return {
     id: citizen.id,
-    world_id: "world-1",
+    world_id: "22222222-2222-2222-2222-222222222222",
     settlement_id: "settlement-1",
     citizen_type: citizen.citizen_type,
     given_name: citizen.name,

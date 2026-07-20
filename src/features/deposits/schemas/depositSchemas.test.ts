@@ -73,6 +73,7 @@ describe("depositTypeJobSchema", () => {
   it("accepts a valid job entry", () => {
     const result = depositTypeJobSchema.safeParse({
       jobId: JOB_ID,
+      tierNumber: 1,
       outputUnitsPerWorker: 3,
       workerInputsJson: [],
     });
@@ -83,6 +84,7 @@ describe("depositTypeJobSchema", () => {
   it("rejects outputUnitsPerWorker of zero", () => {
     const result = depositTypeJobSchema.safeParse({
       jobId: JOB_ID,
+      tierNumber: 1,
       outputUnitsPerWorker: 0,
       workerInputsJson: [],
     });
@@ -93,6 +95,7 @@ describe("depositTypeJobSchema", () => {
   it("rejects a non-integer outputUnitsPerWorker", () => {
     const result = depositTypeJobSchema.safeParse({
       jobId: JOB_ID,
+      tierNumber: 1,
       outputUnitsPerWorker: 2.5,
       workerInputsJson: [],
     });
@@ -103,6 +106,18 @@ describe("depositTypeJobSchema", () => {
   it("rejects an invalid jobId", () => {
     const result = depositTypeJobSchema.safeParse({
       jobId: "not-a-uuid",
+      tierNumber: 1,
+      outputUnitsPerWorker: 3,
+      workerInputsJson: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a tierNumber below 1", () => {
+    const result = depositTypeJobSchema.safeParse({
+      jobId: JOB_ID,
+      tierNumber: 0,
       outputUnitsPerWorker: 3,
       workerInputsJson: [],
     });
@@ -115,16 +130,19 @@ describe("createDepositTypeInputSchema", () => {
   function validJob(
     overrides: Partial<{
       jobId: string;
+      tierNumber: number;
       outputUnitsPerWorker: number;
       workerInputsJson: { amountPerWorker: number; resourceId: string }[];
     }> = {},
   ): {
     jobId: string;
+    tierNumber: number;
     outputUnitsPerWorker: number;
     workerInputsJson: { amountPerWorker: number; resourceId: string }[];
   } {
     return {
       jobId: JOB_ID,
+      tierNumber: 1,
       outputUnitsPerWorker: 3,
       workerInputsJson: [],
       ...overrides,
@@ -148,6 +166,7 @@ describe("createDepositTypeInputSchema", () => {
         validJob({ jobId: JOB_ID }),
         validJob({
           jobId: JOB_ID_2,
+          tierNumber: 2,
           outputUnitsPerWorker: 5,
           workerInputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
         }),
@@ -173,7 +192,24 @@ describe("createDepositTypeInputSchema", () => {
 
   it("rejects duplicate jobIds within the jobs array", () => {
     const result = createDepositTypeInputSchema.safeParse({
-      jobs: [validJob({ jobId: JOB_ID }), validJob({ jobId: JOB_ID })],
+      jobs: [
+        validJob({ jobId: JOB_ID, tierNumber: 1 }),
+        validJob({ jobId: JOB_ID, tierNumber: 2 }),
+      ],
+      name: "Iron Ore Deposit",
+      slug: "iron-ore-deposit",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate tierNumbers within the jobs array", () => {
+    const result = createDepositTypeInputSchema.safeParse({
+      jobs: [
+        validJob({ jobId: JOB_ID, tierNumber: 1 }),
+        validJob({ jobId: JOB_ID_2, tierNumber: 1 }),
+      ],
       name: "Iron Ore Deposit",
       slug: "iron-ore-deposit",
       worldId: WORLD_ID,
@@ -278,7 +314,14 @@ describe("updateDepositTypeInputSchema", () => {
   it("accepts a partial update with only jobs", () => {
     const result = updateDepositTypeInputSchema.safeParse({
       depositTypeId: DEPOSIT_TYPE_ID,
-      jobs: [{ jobId: JOB_ID, outputUnitsPerWorker: 5, workerInputsJson: [] }],
+      jobs: [
+        {
+          jobId: JOB_ID,
+          tierNumber: 1,
+          outputUnitsPerWorker: 5,
+          workerInputsJson: [],
+        },
+      ],
       worldId: WORLD_ID,
     });
 

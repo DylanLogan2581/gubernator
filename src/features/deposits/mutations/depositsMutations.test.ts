@@ -16,6 +16,7 @@ const WORLD_ID = "44444444-4444-4444-4444-444444444444";
 type DepositTypeJobRow = {
   readonly id: string;
   readonly job_id: string;
+  readonly tier_number: number;
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: readonly unknown[];
 };
@@ -41,6 +42,7 @@ function createDepositTypeRow(
       {
         id: "job-row-1",
         job_id: JOB_ID,
+        tier_number: 1,
         output_units_per_worker: 10,
         worker_inputs_json: [],
       },
@@ -64,7 +66,14 @@ describe("createDepositTypeMutationOptions — hasActiveReferences", () => {
     const options = createDepositTypeMutationOptions({ client, queryClient });
 
     const result = await executeMutation(queryClient, options, {
-      jobs: [{ jobId: JOB_ID, outputUnitsPerWorker: 10, workerInputsJson: [] }],
+      jobs: [
+        {
+          jobId: JOB_ID,
+          tierNumber: 1,
+          outputUnitsPerWorker: 10,
+          workerInputsJson: [],
+        },
+      ],
       name: "Iron Deposit",
       slug: "iron-deposit",
       worldId: WORLD_ID,
@@ -82,7 +91,14 @@ describe("createDepositTypeMutationOptions — hasActiveReferences", () => {
     const options = createDepositTypeMutationOptions({ client, queryClient });
 
     const result = await executeMutation(queryClient, options, {
-      jobs: [{ jobId: JOB_ID, outputUnitsPerWorker: 10, workerInputsJson: [] }],
+      jobs: [
+        {
+          jobId: JOB_ID,
+          tierNumber: 1,
+          outputUnitsPerWorker: 10,
+          workerInputsJson: [],
+        },
+      ],
       name: "Iron Deposit",
       slug: "iron-deposit",
       worldId: WORLD_ID,
@@ -97,12 +113,14 @@ describe("createDepositTypeMutationOptions — hasActiveReferences", () => {
         {
           id: "job-row-1",
           job_id: JOB_ID,
+          tier_number: 1,
           output_units_per_worker: 10,
           worker_inputs_json: [],
         },
         {
           id: "job-row-2",
           job_id: REFERENCING_JOB_ID,
+          tier_number: 2,
           output_units_per_worker: 20,
           worker_inputs_json: [],
         },
@@ -114,9 +132,15 @@ describe("createDepositTypeMutationOptions — hasActiveReferences", () => {
 
     const result = await executeMutation(queryClient, options, {
       jobs: [
-        { jobId: JOB_ID, outputUnitsPerWorker: 10, workerInputsJson: [] },
+        {
+          jobId: JOB_ID,
+          tierNumber: 1,
+          outputUnitsPerWorker: 10,
+          workerInputsJson: [],
+        },
         {
           jobId: REFERENCING_JOB_ID,
+          tierNumber: 2,
           outputUnitsPerWorker: 20,
           workerInputsJson: [],
         },

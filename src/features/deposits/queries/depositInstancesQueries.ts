@@ -13,6 +13,7 @@ import type {
   DepositInstance,
   DepositInstanceResource,
   DepositInstanceStatus,
+  DepositInstanceTier,
 } from "../types/depositInstanceTypes";
 
 type DepositInstanceResourceRow = {
@@ -26,6 +27,14 @@ type DepositInstanceResourceRow = {
   readonly updated_at: string;
 };
 
+type DepositTypeJobTierRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly output_units_per_worker: number;
+  readonly tier_number: number;
+  readonly job: { readonly name: string };
+};
+
 type DepositInstanceRow = {
   readonly created_at: string;
   readonly deposit_instance_resources: readonly DepositInstanceResourceRow[];
@@ -34,6 +43,7 @@ type DepositInstanceRow = {
     readonly icon: string | null;
     readonly icon_color: number | null;
     readonly name: string;
+    readonly deposit_type_jobs: readonly DepositTypeJobTierRow[];
   };
   readonly discovered_by_event_id: string | null;
   readonly id: string;
@@ -52,6 +62,7 @@ type DepositInstanceWithLocationRow = {
     readonly icon: string | null;
     readonly icon_color: number | null;
     readonly name: string;
+    readonly deposit_type_jobs: readonly DepositTypeJobTierRow[];
   };
   readonly discovered_by_event_id: string | null;
   readonly id: string;
@@ -72,15 +83,18 @@ export type DepositInstanceWithLocation = DepositInstance & {
   readonly nationName: string;
 };
 
+const DEPOSIT_TYPE_JOBS_TIER_SELECT =
+  "deposit_type_jobs(id,job_id,tier_number,output_units_per_worker,job:job_definitions(name))";
+
 const DEPOSIT_INSTANCE_SELECT = [
   "id,settlement_id,deposit_type_id,name,status,max_workers,discovered_by_event_id,created_at,updated_at",
-  "deposit_types(name,icon,icon_color)",
+  `deposit_types(name,icon,icon_color,${DEPOSIT_TYPE_JOBS_TIER_SELECT})`,
   "deposit_instance_resources(id,deposit_instance_id,resource_id,initial_quantity,remaining_quantity,created_at,updated_at,resources(name))",
 ].join(",");
 
 const DEPOSIT_INSTANCE_WITH_LOCATION_SELECT = [
   "id,settlement_id,deposit_type_id,name,status,max_workers,discovered_by_event_id,created_at,updated_at",
-  "deposit_types(name,icon,icon_color)",
+  `deposit_types(name,icon,icon_color,${DEPOSIT_TYPE_JOBS_TIER_SELECT})`,
   "deposit_instance_resources(id,deposit_instance_id,resource_id,initial_quantity,remaining_quantity,created_at,updated_at,resources(name))",
   "settlements(id,name,nations!settlements_nation_id_fkey!inner(name))",
 ].join(",");
@@ -263,6 +277,9 @@ function toDepositInstance(row: DepositInstanceRow): DepositInstance {
     resources: row.deposit_instance_resources.map(toDepositInstanceResource),
     settlementId: row.settlement_id,
     status: row.status,
+    tiers: (row.deposit_types.deposit_type_jobs ?? []).map(
+      toDepositInstanceTier,
+    ),
     updatedAt: row.updated_at,
   };
 }
@@ -285,7 +302,22 @@ function toDepositInstanceWithLocation(
     settlementName: row.settlements.name,
     nationName: row.settlements.nations.name,
     status: row.status,
+    tiers: (row.deposit_types.deposit_type_jobs ?? []).map(
+      toDepositInstanceTier,
+    ),
     updatedAt: row.updated_at,
+  };
+}
+
+function toDepositInstanceTier(
+  row: DepositTypeJobTierRow,
+): DepositInstanceTier {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    jobName: row.job.name,
+    outputUnitsPerWorker: row.output_units_per_worker,
+    tierNumber: row.tier_number,
   };
 }
 

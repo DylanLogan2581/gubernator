@@ -235,6 +235,9 @@ const workerInputEntryTemplateSchema = z.object({
 
 const depositTypeJobTemplateSchema = z.object({
   job_slug: z.string(),
+  // Optional/absent in legacy templates that predate deposit tiers (#1308);
+  // defaults to 1 on import.
+  tier_number: z.number().int().min(1).optional(),
   output_units_per_worker: z.number(),
   worker_inputs: z.array(workerInputEntryTemplateSchema),
 });

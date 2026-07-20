@@ -162,7 +162,7 @@ export async function fetchWorldConfigData(
       order: "slug.asc,id.asc",
       select: [
         "id,name,slug,icon,icon_color,is_trashed",
-        "deposit_type_jobs(id,deposit_type_id,job_id,output_units_per_worker,worker_inputs_json)",
+        "deposit_type_jobs(id,deposit_type_id,job_id,tier_number,output_units_per_worker,worker_inputs_json)",
       ].join(","),
     }),
     fetchRows<RawManagedPopulationTypeRow>(ctx, "managed_population_types", {

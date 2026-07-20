@@ -21,13 +21,16 @@ export function DepositTypeJobRow({
   depositJobs,
   index,
   isDuplicate,
+  isDuplicateTier,
   jobId,
   onJobIdChange,
   onOutputUnitsPerWorkerChange,
   onRemove,
+  onTierNumberChange,
   onWorkerInputsChange,
   outputUnitsPerWorker,
   resources,
+  tierNumber,
   workerInputs,
 }: {
   readonly canRemove: boolean;
@@ -35,13 +38,16 @@ export function DepositTypeJobRow({
   readonly depositJobs: readonly JobDefinition[];
   readonly index: number;
   readonly isDuplicate: boolean;
+  readonly isDuplicateTier: boolean;
   readonly jobId: string;
   readonly onJobIdChange: (jobId: string) => void;
   readonly onOutputUnitsPerWorkerChange: (value: string) => void;
   readonly onRemove: () => void;
+  readonly onTierNumberChange: (value: string) => void;
   readonly onWorkerInputsChange: (entries: ResourceAmountEntry[]) => void;
   readonly outputUnitsPerWorker: string;
   readonly resources: readonly Resource[];
+  readonly tierNumber: string;
   readonly workerInputs: readonly ResourceAmountEntry[];
 }): JSX.Element {
   const rowLabel = `Job ${String(index + 1)}`;
@@ -88,6 +94,29 @@ export function DepositTypeJobRow({
         {isDuplicate ? (
           <p className="text-xs text-destructive">
             This job is already selected in another row above.
+          </p>
+        ) : null}
+      </Label>
+      <Label
+        htmlFor={`deposit-job-${String(index)}-tier`}
+        className="grid gap-1 text-sm"
+      >
+        <span className="text-muted-foreground">Tier number</span>
+        <Input
+          id={`deposit-job-${String(index)}-tier`}
+          aria-invalid={isDuplicateTier}
+          aria-label={`${rowLabel} tier number`}
+          disabled={disabled}
+          inputMode="numeric"
+          placeholder="1"
+          value={tierNumber}
+          onChange={(e) => {
+            onTierNumberChange(e.currentTarget.value);
+          }}
+        />
+        {isDuplicateTier ? (
+          <p className="text-xs text-destructive">
+            This tier number is already used in another row above.
           </p>
         ) : null}
       </Label>

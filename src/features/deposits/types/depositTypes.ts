@@ -6,6 +6,7 @@ export type WorkerInputEntry = {
 export type DepositTypeJob = {
   readonly id: string;
   readonly jobId: string;
+  readonly tierNumber: number;
   readonly outputUnitsPerWorker: number;
   readonly workerInputsJson: readonly WorkerInputEntry[];
 };
