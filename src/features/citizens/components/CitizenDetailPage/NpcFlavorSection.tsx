@@ -157,17 +157,19 @@ export function CitizenNpcFlavorSection({
       ) : (
         <NpcFlavorLine citizenId={citizen.id} flavor={currentFlavor} />
       )}
-      <dl className="flex flex-col gap-2">
-        <Readout label="Trait 1" value={adminDetails?.npcTrait1 ?? null} />
-        <Readout label="Trait 2" value={adminDetails?.npcTrait2 ?? null} />
-        <Readout label="Goal" value={adminDetails?.npcGoal ?? null} block />
-        <Readout label="Flaw" value={adminDetails?.npcFlaw ?? null} block />
-        <Readout
-          label="Secret / contradiction"
-          value={adminDetails?.npcSecretContradiction ?? null}
-          block
-        />
-      </dl>
+      {isChild ? null : (
+        <dl className="flex flex-col gap-2">
+          <Readout label="Trait 1" value={adminDetails?.npcTrait1 ?? null} />
+          <Readout label="Trait 2" value={adminDetails?.npcTrait2 ?? null} />
+          <Readout label="Goal" value={adminDetails?.npcGoal ?? null} block />
+          <Readout label="Flaw" value={adminDetails?.npcFlaw ?? null} block />
+          <Readout
+            label="Secret / contradiction"
+            value={adminDetails?.npcSecretContradiction ?? null}
+            block
+          />
+        </dl>
+      )}
     </Card>
   );
 }
