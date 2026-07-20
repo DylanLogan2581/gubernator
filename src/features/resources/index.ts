@@ -30,14 +30,11 @@ export {
 } from "./schemas/resourceSchemas";
 export { updateSettlementStockpileInputSchema } from "./schemas/settlementStockpileSchemas";
 
-export { validateResourceReferencesAgainstWorld } from "./utils/validateResourceReferences";
-
 export type { ResourceMutationIssue } from "./mutations/resourcesMutations";
 export type {
   SettlementStockpileResult,
   StockpileMutationIssue,
 } from "./mutations/settlementStockpilesMutations";
-export type { ResourceReferenceIssue } from "./utils/validateResourceReferences";
 export type {
   CreateResourceInput,
   CreateResourceValues,

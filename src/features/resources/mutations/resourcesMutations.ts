@@ -28,7 +28,6 @@ import {
   type SoftDeleteResourceInput,
   type UpdateResourceInput,
 } from "../schemas/resourceSchemas";
-import { validateResourceReferencesAgainstWorld } from "../utils/validateResourceReferences";
 
 import type {
   HardDeleteResourceResult,
@@ -165,14 +164,6 @@ async function createResource(
 ): Promise<Resource> {
   const values = parseInput(createResourceInputSchema, input);
 
-  const refIssues = validateResourceReferencesAgainstWorld({});
-  if (refIssues.length > 0) {
-    throw new ResourceMutationError({
-      code: "resource_input_invalid",
-      message: "Resource references are invalid.",
-    });
-  }
-
   const { data, error } = await client
     .from("resources")
     .insert({
@@ -208,14 +199,6 @@ async function updateResource(
   input: UpdateResourceInput,
 ): Promise<Resource> {
   const values = parseInput(updateResourceInputSchema, input);
-
-  const refIssues = validateResourceReferencesAgainstWorld({});
-  if (refIssues.length > 0) {
-    throw new ResourceMutationError({
-      code: "resource_input_invalid",
-      message: "Resource references are invalid.",
-    });
-  }
 
   const updatePayload: {
     base_stockpile_cap?: number;
