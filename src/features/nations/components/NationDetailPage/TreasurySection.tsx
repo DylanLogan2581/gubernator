@@ -356,7 +356,7 @@ function TaxRateControl({
         {snapshotIsPending
           ? "…"
           : snapshot === null
-            ? "No tax data yet — no turn has been processed"
+            ? "No tax snapshot since the current rate was set"
             : snapshot.totalTaxCollected.toLocaleString()}
       </p>
     </div>

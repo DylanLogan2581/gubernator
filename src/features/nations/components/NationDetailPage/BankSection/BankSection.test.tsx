@@ -167,6 +167,37 @@ describe("NationBankSection", () => {
     expect(screen.queryByRole("button", { name: "Mint" })).toBeNull();
   });
 
+  it("shows an in-default confidence tile for an under-reserved resource-backed currency", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        currency: {
+          backingRatio: 1,
+          confidence: 0,
+          currency_type: "resource_backed",
+          money_supply: 50000,
+          reserveQuantity: 8000,
+        },
+      }).client,
+    );
+
+    render(
+      <TestHarness>
+        <NationBankSection
+          canAdminWorld={false}
+          isArchived={false}
+          nation={createNation()}
+        />
+      </TestHarness>,
+    );
+
+    expect(await screen.findByText("In default")).toBeDefined();
+    expect(
+      await screen.findByText(
+        "Reserves cover only 16% of money supply — under-reserved",
+      ),
+    ).toBeDefined();
+  });
+
   it("mints currency for a nation manager and shows the confidence preview", async () => {
     const user = userEvent.setup();
     useActivePlayerCharacterMock.mockReturnValue({
@@ -315,9 +346,11 @@ function createClientFixture({
   ledger = [],
 }: {
   readonly currency: {
+    readonly backingRatio?: number;
     readonly confidence: number;
     readonly currency_type: string;
     readonly money_supply: number;
+    readonly reserveQuantity?: number;
   } | null;
   readonly ledger?: readonly {
     readonly action: string;
@@ -331,7 +364,7 @@ function createClientFixture({
     currency === null
       ? null
       : {
-          backing_ratio: null,
+          backing_ratio: currency.backingRatio ?? null,
           backing_resource_id: null,
           confidence: currency.confidence,
           created_at: "2026-01-01T00:00:00.000Z",
@@ -341,7 +374,7 @@ function createClientFixture({
           money_supply: currency.money_supply,
           name: "Ironhaven Crown",
           nation_id: "nation-1",
-          reserve_quantity: 0,
+          reserve_quantity: currency.reserveQuantity ?? 0,
           symbol: "IHC",
           updated_at: "2026-01-01T00:00:00.000Z",
           world_id: "world-1",

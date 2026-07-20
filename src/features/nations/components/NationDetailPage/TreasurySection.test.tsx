@@ -96,7 +96,7 @@ describe("NationTreasurySection", () => {
         (_, element) =>
           element?.tagName === "P" &&
           (element.textContent ?? "").includes(
-            "Estimated next-turn intake: No tax data yet — no turn has been processed",
+            "Estimated next-turn intake: No tax snapshot since the current rate was set",
           ),
       ),
     ).toBeDefined();

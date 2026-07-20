@@ -6,7 +6,11 @@ import {
   ForecastResourceSparkline,
   type ForecastSparklinePoint,
 } from "@/features/settlements";
-import { FIAT_CONFIDENCE_COLLAPSE_WARNING_THRESHOLD } from "@/shared/economy";
+import {
+  computeResourceBackedHealth,
+  FIAT_CONFIDENCE_COLLAPSE_WARNING_THRESHOLD,
+  isResourceBackedInDefault,
+} from "@/shared/economy";
 
 import type {
   NationCurrency,
@@ -51,6 +55,23 @@ export function CurrencyStatTiles({
       ? currency.reserveQuantity * (currency.backingRatio ?? 0)
       : null;
 
+  const isInDefault =
+    currency.currencyType === "resource_backed" &&
+    isResourceBackedInDefault({
+      backingRatio: currency.backingRatio ?? 0,
+      moneySupply: currency.moneySupply,
+      reserveQuantity: currency.reserveQuantity,
+    });
+  const backingHealthPercent = isInDefault
+    ? Math.round(
+        computeResourceBackedHealth({
+          backingRatio: currency.backingRatio ?? 0,
+          moneySupply: currency.moneySupply,
+          reserveQuantity: currency.reserveQuantity,
+        }) * 100,
+      )
+    : null;
+
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
       <StatTile
@@ -93,8 +114,16 @@ export function CurrencyStatTiles({
       <StatTile
         icon={ShieldCheck}
         label="Confidence"
-        value={`${Math.round(currency.confidence * 100)}%`}
-        context="Trust in this currency"
+        value={
+          isInDefault
+            ? "In default"
+            : `${Math.round(currency.confidence * 100)}%`
+        }
+        context={
+          isInDefault
+            ? `Reserves cover only ${backingHealthPercent}% of money supply — under-reserved`
+            : "Trust in this currency"
+        }
         tone={confidenceTone(currency.confidence)}
       >
         {isSnapshotsPending ? null : (
