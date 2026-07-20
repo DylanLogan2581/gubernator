@@ -1,4 +1,5 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import { z } from "zod";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
@@ -15,6 +16,19 @@ import type {
   EventWithGroup,
   EventWithGroupAndEffects,
 } from "../types/eventTypes";
+
+const uuidSchema = z.guid();
+
+/**
+ * PostgREST's .or() builds a raw filter string, so any id interpolated into
+ * it must be confirmed to be a UUID first -- otherwise a `,`/`)` in the id
+ * could restructure the filter clause.
+ */
+function assertUuid(id: string, label: string): void {
+  if (!uuidSchema.safeParse(id).success) {
+    throw new Error(`Invalid ${label}: expected a UUID`);
+  }
+}
 
 type EventsListQueryKey = ReturnType<typeof eventQueryKeys.list>;
 type EventsDetailQueryKey = ReturnType<typeof eventQueryKeys.detail>;
@@ -43,6 +57,10 @@ export function eventsListQueryOptions(
   return queryOptions({
     queryKey: eventQueryKeys.list(worldId, filters),
     queryFn: async (): Promise<readonly EventWithGroup[]> => {
+      if (filters?.scopeEntityFilter !== undefined) {
+        assertUuid(filters.scopeEntityFilter.id, "scopeEntityFilter.id");
+      }
+
       let query = client
         .from("events")
         .select<
@@ -206,6 +224,8 @@ export function activeSettlementEventsQueryOptions(
   return queryOptions({
     queryKey: eventQueryKeys.bySettlement(worldId, settlementId),
     queryFn: async (): Promise<readonly EventWithGroup[]> => {
+      assertUuid(settlementId, "settlementId");
+
       // PostgREST or() does not support subqueries, so resolve nation_id first.
       const { data: settlement, error: settlementError } = await client
         .from("settlements")
@@ -301,6 +321,8 @@ export function expiredSettlementEventsQueryOptions(
   return queryOptions({
     queryKey: eventQueryKeys.expiredBySettlement(worldId, settlementId),
     queryFn: async (): Promise<readonly EventWithGroup[]> => {
+      assertUuid(settlementId, "settlementId");
+
       // PostgREST or() does not support subqueries, so resolve nation_id first.
       const { data: settlement, error: settlementError } = await client
         .from("settlements")
