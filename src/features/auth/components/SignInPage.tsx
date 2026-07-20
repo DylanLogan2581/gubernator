@@ -208,6 +208,9 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
               )}
               Sign in
             </Button>
+            <p aria-live="polite" className="sr-only">
+              {isSubmitting ? "Signing in…" : ""}
+            </p>
           </form>
         </section>
       </div>

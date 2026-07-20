@@ -7,16 +7,25 @@ import { Label } from "@/components/ui/label";
 import { updatePasswordMutationOptions } from "@/features/auth";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
+import type { AuthUiError } from "../utils/authErrors";
+
 type SetPasswordPageProps = {
   readonly onPasswordSetSuccess: () => Promise<void>;
+  readonly onSessionExpired: () => Promise<void>;
 };
+
+function isExpiredSessionError(error: AuthUiError): boolean {
+  return error.message === "Auth session missing!";
+}
 
 export function SetPasswordPage({
   onPasswordSetSuccess,
+  onSessionExpired,
 }: SetPasswordPageProps): JSX.Element {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const { mutate, isPending } = useMutation(updatePasswordMutationOptions());
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -37,6 +46,12 @@ export function SetPasswordPage({
       { password },
       {
         onError: (err) => {
+          if (isExpiredSessionError(err)) {
+            setSessionExpired(true);
+            notifyMutationError(err, "Your sign-up link has expired");
+            return;
+          }
+
           const message =
             err.message !== undefined && err.message.length > 0
               ? err.message
@@ -60,47 +75,63 @@ export function SetPasswordPage({
           Create a password to complete your account setup.
         </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
-              placeholder="Minimum 8 characters"
-              minLength={8}
-              required
-              autoComplete="new-password"
-            />
+        {sessionExpired ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-destructive">
+              Your sign-up link has expired. Request a new one to finish setting
+              your password.
+            </p>
+            <Button
+              onClick={() => void onSessionExpired()}
+              variant="link"
+              className="h-auto self-start p-0 text-sm"
+            >
+              Return to sign in
+            </Button>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                }}
+                placeholder="Minimum 8 characters"
+                minLength={8}
+                required
+                autoComplete="new-password"
+              />
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="confirm-password">Confirm Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-              }}
-              placeholder="Re-enter your password"
-              minLength={8}
-              required
-              autoComplete="new-password"
-            />
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                }}
+                placeholder="Re-enter your password"
+                minLength={8}
+                required
+                autoComplete="new-password"
+              />
+            </div>
 
-          {error !== undefined && error.length > 0 && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+            {error !== undefined && error.length > 0 && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
 
-          <Button type="submit" disabled={isPending} className="w-full">
-            {isPending ? "Setting password…" : "Set Password"}
-          </Button>
-        </form>
+            <Button type="submit" disabled={isPending} className="w-full">
+              {isPending ? "Setting password…" : "Set Password"}
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );

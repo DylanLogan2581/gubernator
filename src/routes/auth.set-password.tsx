@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { type JSX } from "react";
 
 import { LoadingState } from "@/components/shared/LoadingState";
-import { SetPasswordPage } from "@/features/auth";
+import { SetPasswordPage, SIGN_IN_DEFAULT_RETURN_PATH } from "@/features/auth";
 
 function SetPasswordRoute(): JSX.Element {
   const router = useRouter();
@@ -11,6 +11,12 @@ function SetPasswordRoute(): JSX.Element {
     <SetPasswordPage
       onPasswordSetSuccess={async () => {
         await router.navigate({ to: "/" });
+      }}
+      onSessionExpired={async () => {
+        await router.navigate({
+          to: "/sign-in",
+          search: { returnTo: SIGN_IN_DEFAULT_RETURN_PATH },
+        });
       }}
     />
   );

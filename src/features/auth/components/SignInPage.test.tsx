@@ -55,6 +55,36 @@ describe("SignInPage", () => {
     expect(screen.queryByText("Database host details leaked.")).toBeNull();
   });
 
+  it("announces submit progress for assistive technology", async () => {
+    const user = userEvent.setup();
+    let resolveSignIn: (() => void) | undefined;
+    const signInWithPassword = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSignIn = () => {
+            resolve({ data: { session: null, user: null }, error: null });
+          };
+        }),
+    );
+    requireSupabaseClient.mockReturnValue(createClient({ signInWithPassword }));
+
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email"), "player@example.com");
+    await user.type(
+      screen.getByLabelText("Password"),
+      "correct-horse-battery-staple",
+    );
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const status = await screen.findByText("Signing in…");
+    expect(status).toHaveAttribute("aria-live", "polite");
+
+    resolveSignIn?.();
+    await waitFor(() => {
+      expect(screen.queryByText("Signing in…")).toBeNull();
+    });
+  });
+
   it("calls the success handler after successful sign-in", async () => {
     const user = userEvent.setup();
     const onSignInSuccess = vi.fn<() => Promise<void>>().mockResolvedValue();
