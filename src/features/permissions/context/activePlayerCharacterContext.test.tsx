@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useActivePlayerCharacter } from "./activePlayerCharacterContext";
@@ -93,6 +93,40 @@ describe("useActivePlayerCharacter", () => {
     expect(screen.getByTestId("pending")).toHaveTextContent("no");
     expect(from).not.toHaveBeenCalled();
   });
+
+  it("defers a clear() clicked before userId resolves instead of dropping it", async () => {
+    const client = createClient({ activeRow: null, selectableRows: [] });
+    requireSupabaseClient.mockReturnValue(client);
+    const queryClient = createQueryClient();
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <ActivePlayerCharacterProvider userId={null} worldId="world-1">
+          <ContextProbe />
+        </ActivePlayerCharacterProvider>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("clear"));
+
+    // The deferred request shows a pending state instead of silently no-op.
+    expect(screen.getByTestId("pending")).toHaveTextContent("yes");
+    expect(client.from).not.toHaveBeenCalledWith(
+      "user_active_player_characters",
+    );
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <ActivePlayerCharacterProvider userId="user-1" worldId="world-1">
+          <ContextProbe />
+        </ActivePlayerCharacterProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(client.from).toHaveBeenCalledWith("user_active_player_characters");
+    });
+  });
 });
 
 function ContextProbe(): JSX.Element {
@@ -106,6 +140,9 @@ function ContextProbe(): JSX.Element {
         {value.selectableCharacters.length}
       </li>
       <li data-testid="pending">{value.isPending ? "yes" : "no"}</li>
+      <button data-testid="clear" onClick={value.clear} type="button">
+        Clear
+      </button>
     </ul>
   );
 }
@@ -148,7 +185,7 @@ function createClient({
 }: {
   readonly activeRow: ActiveRowFixture | null;
   readonly selectableRows: readonly Record<string, unknown>[];
-}): unknown {
+}): { readonly from: ReturnType<typeof vi.fn> } {
   return {
     from: vi.fn((table: string) => {
       if (table === "citizens") {
