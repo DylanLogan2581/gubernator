@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { TriangleAlert } from "lucide-react";
 import { type JSX } from "react";
 
+import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/native-select";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -190,6 +193,10 @@ function NamesetCardContent({
   readonly onSelect: (id: string) => void;
 }): JSX.Element {
   const defaultNameset = namesets.find((ns) => ns.isDefault);
+  const hasNoActiveNamesets = namesets.length === 0;
+  const assignedNamesetRemoved =
+    currentNamesetId !== null &&
+    !namesets.some((ns) => ns.id === currentNamesetId);
 
   return (
     <Card aria-labelledby={headingId} className="p-4">
@@ -204,33 +211,51 @@ function NamesetCardContent({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect
-            aria-label="Nameset override"
-            disabled={disabled || namesets.length === 0}
-            value={currentNamesetId ?? ""}
-            onChange={(e) => {
-              const val = e.currentTarget.value;
-              if (val === "") {
-                onClear();
-              } else {
-                onSelect(val);
-              }
-            }}
-          >
-            <option value="">
-              {defaultNameset !== undefined
-                ? `Use parent default (${defaultNameset.name})`
-                : "Use parent default"}
-            </option>
-            {namesets.map((ns) => (
-              <option key={ns.id} value={ns.id}>
-                {ns.name}
-                {ns.isDefault ? " (world default)" : ""}
+        {assignedNamesetRemoved ? (
+          <Alert variant="warning">
+            <TriangleAlert />
+            <AlertTitle>Assigned nameset was removed</AlertTitle>
+            <AlertDescription>
+              The nameset previously assigned here was moved to trash. Naming
+              falls back to the world default until you choose another.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {hasNoActiveNamesets ? (
+          <EmptyState
+            title="No namesets available"
+            description="This world has no active namesets to choose from. Add one in world naming settings to enable an override here."
+          />
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <NativeSelect
+              aria-label="Nameset override"
+              disabled={disabled}
+              value={assignedNamesetRemoved ? "" : (currentNamesetId ?? "")}
+              onChange={(e) => {
+                const val = e.currentTarget.value;
+                if (val === "") {
+                  onClear();
+                } else {
+                  onSelect(val);
+                }
+              }}
+            >
+              <option value="">
+                {defaultNameset !== undefined
+                  ? `Use parent default (${defaultNameset.name})`
+                  : "Use parent default"}
               </option>
-            ))}
-          </NativeSelect>
-        </div>
+              {namesets.map((ns) => (
+                <option key={ns.id} value={ns.id}>
+                  {ns.name}
+                  {ns.isDefault ? " (world default)" : ""}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+        )}
 
         <p className="text-xs text-muted-foreground">
           Using{" "}
