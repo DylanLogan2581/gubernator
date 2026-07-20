@@ -7,6 +7,7 @@ import {
 
 const CITIZEN_A_ID = "11111111-1111-1111-1111-111111111111";
 const CITIZEN_B_ID = "22222222-2222-2222-2222-222222222222";
+const CITIZEN_C_ID = "55555555-5555-5555-5555-555555555555";
 const PARTNERSHIP_ID = "33333333-3333-3333-3333-333333333333";
 const TURN_TRANSITION_ID = "44444444-4444-4444-4444-444444444444";
 
@@ -117,6 +118,7 @@ describe("reassignPartnerInputSchema", () => {
       formedOnTurnNumber: 9,
       newPartnerCitizenId: CITIZEN_B_ID,
       oldPartnershipId: PARTNERSHIP_ID,
+      previousPartnerCitizenId: CITIZEN_C_ID,
       retainedCitizenId: CITIZEN_A_ID,
       turnTransitionId: TURN_TRANSITION_ID,
     });
@@ -131,6 +133,7 @@ describe("reassignPartnerInputSchema", () => {
       formedOnTurnNumber: 9,
       newPartnerCitizenId: CITIZEN_A_ID,
       oldPartnershipId: PARTNERSHIP_ID,
+      previousPartnerCitizenId: CITIZEN_C_ID,
       retainedCitizenId: CITIZEN_A_ID,
       turnTransitionId: TURN_TRANSITION_ID,
     });

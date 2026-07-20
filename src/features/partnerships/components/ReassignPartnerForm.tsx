@@ -85,6 +85,11 @@ export function ReassignPartnerForm({
       return;
     }
 
+    const previousPartnerCitizenId =
+      partnership.citizenAId === retainedCitizenId
+        ? partnership.citizenBId
+        : partnership.citizenAId;
+
     mutation.mutate(
       {
         changeReason,
@@ -92,6 +97,7 @@ export function ReassignPartnerForm({
         formedOnTurnNumber: parsedFormed,
         newPartnerCitizenId: newPartnerId,
         oldPartnershipId: partnership.id,
+        previousPartnerCitizenId,
         retainedCitizenId,
         turnTransitionId,
       },

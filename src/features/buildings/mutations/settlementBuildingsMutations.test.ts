@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
+import { settlementsQueryKeys } from "@/features/settlements";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import { buildingsQueryKeys } from "../queries/buildingsQueryKeys";
@@ -103,6 +104,11 @@ describe("manualDeconstructBuildingMutationOptions", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: buildingsQueryKeys.settlementPopulationCap(SETTLEMENT_ID),
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: settlementsQueryKeys.populationCap(SETTLEMENT_ID),
       }),
     );
   });

@@ -282,6 +282,7 @@ describe("reassignPartnerMutationOptions", () => {
         formedOnTurnNumber: 9,
         newPartnerCitizenId: CITIZEN_A_ID,
         oldPartnershipId: PARTNERSHIP_ID,
+        previousPartnerCitizenId: CITIZEN_B_ID,
         retainedCitizenId: CITIZEN_A_ID,
         turnTransitionId: TURN_TRANSITION_ID,
       }),
@@ -308,6 +309,7 @@ describe("reassignPartnerMutationOptions", () => {
       formedOnTurnNumber: 9,
       newPartnerCitizenId: CITIZEN_C_ID,
       oldPartnershipId: PARTNERSHIP_ID,
+      previousPartnerCitizenId: CITIZEN_B_ID,
       retainedCitizenId: CITIZEN_A_ID,
       turnTransitionId: TURN_TRANSITION_ID,
     });
@@ -320,6 +322,41 @@ describe("reassignPartnerMutationOptions", () => {
       p_old_partnership_id: PARTNERSHIP_ID,
       p_retained_citizen_id: CITIZEN_A_ID,
       p_turn_transition_id: TURN_TRANSITION_ID,
+    });
+  });
+
+  it("invalidates the displaced previous partner's partnership caches", async () => {
+    const partnershipRow = createPartnershipRow({
+      citizen_a_id: CITIZEN_A_ID,
+      citizen_b_id: CITIZEN_C_ID,
+      formed_on_turn_number: 9,
+    });
+    const { client } = createRpcClient({
+      data: partnershipRow,
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = reassignPartnerMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      changeReason: "Moved on.",
+      endedOnTurnNumber: 8,
+      formedOnTurnNumber: 9,
+      newPartnerCitizenId: CITIZEN_C_ID,
+      oldPartnershipId: PARTNERSHIP_ID,
+      previousPartnerCitizenId: CITIZEN_B_ID,
+      retainedCitizenId: CITIZEN_A_ID,
+      turnTransitionId: TURN_TRANSITION_ID,
+    });
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens", "partnerships-for-citizen", CITIZEN_B_ID],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens", "active-partnership-for-citizen", CITIZEN_B_ID],
     });
   });
 });

@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { settlementsQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -110,6 +111,9 @@ export function manualDeconstructBuildingMutationOptions({
         queryClient.invalidateQueries({
           queryKey: buildingsQueryKeys.settlementPopulationCap(settlementId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.populationCap(settlementId),
+        }),
       ]);
     },
   });
@@ -185,6 +189,9 @@ export function restoreSettlementBuildingMutationOptions({
         queryClient.invalidateQueries({
           queryKey: buildingsQueryKeys.settlementPopulationCap(settlementId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.populationCap(settlementId),
+        }),
       ]);
     },
   });
@@ -254,6 +261,9 @@ export function hardDeleteSettlementBuildingMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: buildingsQueryKeys.settlementPopulationCap(settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.populationCap(settlementId),
         }),
       ]);
     },

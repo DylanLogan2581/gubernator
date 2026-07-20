@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { settlementsQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -66,6 +67,9 @@ export function addSettlementBuildingMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: buildingsQueryKeys.settlementPopulationCap(settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.populationCap(settlementId),
         }),
       ]);
     },

@@ -126,9 +126,30 @@ export function reassignPartnerMutationOptions({
   return mutationOptions({
     mutationFn: (input: ReassignPartnerInput) => reassignPartner(client, input),
     mutationKey: [...citizensQueryKeys.all, "reassign-partner"],
-    onSuccess: (partnership) =>
-      invalidatePartnershipCaches(queryClient, partnership),
+    onSuccess: async (partnership, variables): Promise<void> => {
+      await Promise.all([
+        invalidatePartnershipCaches(queryClient, partnership),
+        invalidatePartnershipCachesForCitizen(
+          queryClient,
+          variables.previousPartnerCitizenId,
+        ),
+      ]);
+    },
   });
+}
+
+async function invalidatePartnershipCachesForCitizen(
+  queryClient: QueryClient,
+  citizenId: string,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: citizensQueryKeys.partnershipsForCitizen(citizenId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: citizensQueryKeys.activePartnershipForCitizen(citizenId),
+    }),
+  ]);
 }
 
 async function invalidatePartnershipCaches(
@@ -136,26 +157,8 @@ async function invalidatePartnershipCaches(
   partnership: Partnership,
 ): Promise<void> {
   await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: citizensQueryKeys.partnershipsForCitizen(
-        partnership.citizenAId,
-      ),
-    }),
-    queryClient.invalidateQueries({
-      queryKey: citizensQueryKeys.partnershipsForCitizen(
-        partnership.citizenBId,
-      ),
-    }),
-    queryClient.invalidateQueries({
-      queryKey: citizensQueryKeys.activePartnershipForCitizen(
-        partnership.citizenAId,
-      ),
-    }),
-    queryClient.invalidateQueries({
-      queryKey: citizensQueryKeys.activePartnershipForCitizen(
-        partnership.citizenBId,
-      ),
-    }),
+    invalidatePartnershipCachesForCitizen(queryClient, partnership.citizenAId),
+    invalidatePartnershipCachesForCitizen(queryClient, partnership.citizenBId),
   ]);
 }
 

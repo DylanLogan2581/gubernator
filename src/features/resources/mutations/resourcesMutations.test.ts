@@ -2,6 +2,10 @@ import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
 import { AuthUiError } from "@/features/auth";
+import { buildingsQueryKeys } from "@/features/buildings";
+import { depositsQueryKeys } from "@/features/deposits";
+import { jobsQueryKeys } from "@/features/jobs";
+import { managedPopulationsQueryKeys } from "@/features/managed-populations";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import type { Json } from "@/types/database";
 
@@ -448,6 +452,80 @@ describe("softDeleteResourceMutationOptions", () => {
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "resource_not_found" });
+  });
+
+  it("invalidates jobs, buildings, deposits, and managed-population caches when cleanup cascaded", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: {
+        building_tier_construction_costs_cleaned: 0,
+        building_tier_effects_cleaned: 1,
+        building_tier_upkeep_costs_cleaned: 0,
+        cleaned_at: "2026-05-30T00:00:00.000Z",
+        deposit_types_worker_inputs_cleaned: 2,
+        job_definitions_inputs_cleaned: 3,
+        job_definitions_outputs_cleaned: 0,
+        managed_population_culling_outputs_cleaned: 0,
+        managed_population_maintenance_cleaned: 1,
+      },
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: jobsQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: buildingsQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: depositsQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: managedPopulationsQueryKeys.all,
+    });
+  });
+
+  it("does not invalidate cascade caches when nothing was cleaned up", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: null,
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: jobsQueryKeys.all,
+    });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: buildingsQueryKeys.all,
+    });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: depositsQueryKeys.all,
+    });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: managedPopulationsQueryKeys.all,
+    });
   });
 
   it("maps 42501 to resource_not_authorized", async () => {
