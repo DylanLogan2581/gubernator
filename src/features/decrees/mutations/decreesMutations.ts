@@ -38,13 +38,15 @@ export type IssueDecreeMutationOptions = UseMutationOptions<
   IssueDecreeInput
 >;
 
+type RevokeDecreeResult = {
+  readonly nationId: string | null;
+  readonly settlementId: string | null;
+};
+
 export type RevokeDecreeMutationOptions = UseMutationOptions<
-  void,
+  RevokeDecreeResult,
   AuthUiError | DecreeMutationError,
-  RevokeDecreeInput & {
-    readonly nationId: string | null;
-    readonly settlementId: string | null;
-  }
+  RevokeDecreeInput
 >;
 
 function invalidateDecreeQueries(
@@ -131,32 +133,30 @@ export function revokeDecreeMutationOptions({
   readonly queryClient: QueryClient;
 }): RevokeDecreeMutationOptions {
   return mutationOptions({
-    mutationFn: (
-      input: RevokeDecreeInput & {
-        readonly nationId: string | null;
-        readonly settlementId: string | null;
-      },
-    ) => revokeDecree(client, input),
+    mutationFn: (input: RevokeDecreeInput) => revokeDecree(client, input),
     mutationKey: [...decreesQueryKeys.all, "revoke-decree"],
-    onSuccess: (_result, input) =>
-      invalidateDecreeQueries(queryClient, {
-        nationId: input.nationId,
-        settlementId: input.settlementId,
-      }),
+    onSuccess: (result) => invalidateDecreeQueries(queryClient, result),
   });
 }
 
 async function revokeDecree(
   client: GubernatorSupabaseClient,
   input: RevokeDecreeInput,
-): Promise<void> {
+): Promise<RevokeDecreeResult> {
   const values = parseInput(revokeDecreeInputSchema, input);
 
-  const { error } = await client.rpc("revoke_decree", {
-    p_decree_id: values.id,
-  });
+  const { data, error } = await client
+    .rpc("revoke_decree", {
+      p_decree_id: values.id,
+    })
+    .single<{
+      readonly nation_id: string | null;
+      readonly settlement_id: string | null;
+    }>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
+
+  return { nationId: data.nation_id, settlementId: data.settlement_id };
 }

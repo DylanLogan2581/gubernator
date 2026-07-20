@@ -19,7 +19,7 @@ export function CharterDecreesSection({
   readonly nationId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const decreesQuery = useQuery(nationDecreesQueryOptions(nationId));
+  const decreesQuery = useQuery(nationDecreesQueryOptions(nationId, 0));
 
   return (
     <section
@@ -55,27 +55,29 @@ export function CharterDecreesSection({
           title="Decrees could not be loaded"
           description={getErrorDescription(decreesQuery.error)}
         />
-      ) : decreesQuery.data.length === 0 ? (
+      ) : decreesQuery.data.decrees.length === 0 ? (
         <EmptyState
           title="No decrees"
           description="This nation has not issued any proclamations."
         />
       ) : (
         <div className="grid gap-2">
-          {decreesQuery.data.slice(0, DECREE_EXCERPT_COUNT).map((decree) => (
-            <Card key={decree.id} className="grid gap-1 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">{decree.title}</h3>
-                <span className="text-xs text-muted-foreground">
-                  Turn {decree.issuedTurnNumber}
-                  {decree.revokedTurnNumber !== null ? " · Revoked" : ""}
-                </span>
-              </div>
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {decree.bodyMarkdown}
-              </p>
-            </Card>
-          ))}
+          {decreesQuery.data.decrees
+            .slice(0, DECREE_EXCERPT_COUNT)
+            .map((decree) => (
+              <Card key={decree.id} className="grid gap-1 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">{decree.title}</h3>
+                  <span className="text-xs text-muted-foreground">
+                    Turn {decree.issuedTurnNumber}
+                    {decree.revokedTurnNumber !== null ? " · Revoked" : ""}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                  {decree.bodyMarkdown}
+                </p>
+              </Card>
+            ))}
         </div>
       )}
     </section>

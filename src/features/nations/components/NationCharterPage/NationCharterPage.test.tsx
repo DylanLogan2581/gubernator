@@ -178,7 +178,7 @@ describe("NationCharterPage", () => {
     mockOfficeTypesQuery.mockResolvedValue([]);
     mockLawDocumentsQuery.mockResolvedValue([]);
     mockLawArticlesQuery.mockResolvedValue([]);
-    mockDecreesQuery.mockResolvedValue([]);
+    mockDecreesQuery.mockResolvedValue({ decrees: [], totalCount: 0 });
 
     renderCharterPage();
 

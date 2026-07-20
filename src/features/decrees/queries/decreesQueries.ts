@@ -41,10 +41,17 @@ function toDecree(row: DecreeRow): Decree {
   };
 }
 
+export const DECREES_PAGE_SIZE = 20;
+
+export type DecreePage = {
+  readonly decrees: readonly Decree[];
+  readonly totalCount: number;
+};
+
 type DecreeListQueryOptions<TKey extends readonly unknown[]> = UseQueryOptions<
-  readonly Decree[],
+  DecreePage,
   AuthUiError,
-  readonly Decree[],
+  DecreePage,
   TKey
 >;
 
@@ -52,60 +59,74 @@ type DecreeListQueryOptions<TKey extends readonly unknown[]> = UseQueryOptions<
 // log's display order.
 export function nationDecreesQueryOptions(
   nationId: string,
+  page = 0,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
-): DecreeListQueryOptions<ReturnType<typeof decreesQueryKeys.nationList>> {
+): DecreeListQueryOptions<ReturnType<typeof decreesQueryKeys.nationListPage>> {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
-    queryFn: () => getNationDecrees(client, nationId),
-    queryKey: decreesQueryKeys.nationList(nationId),
+    queryFn: () => getNationDecrees(client, nationId, page),
+    queryKey: decreesQueryKeys.nationListPage(nationId, page),
   });
 }
 
 async function getNationDecrees(
   client: GubernatorSupabaseClient,
   nationId: string,
-): Promise<readonly Decree[]> {
-  const { data, error } = await client
+  page: number,
+): Promise<DecreePage> {
+  const from = page * DECREES_PAGE_SIZE;
+  const to = from + DECREES_PAGE_SIZE - 1;
+
+  const { data, error, count } = await client
     .from("decrees")
-    .select(DECREE_SELECT)
+    .select(DECREE_SELECT, { count: "exact" })
     .eq("nation_id", nationId)
     .order("issued_turn_number", { ascending: false })
     .order("created_at", { ascending: false })
+    .range(from, to)
     .returns<DecreeRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
 
-  return data.map(toDecree);
+  return { decrees: data.map(toDecree), totalCount: count ?? 0 };
 }
 
 export function settlementDecreesQueryOptions(
   settlementId: string,
+  page = 0,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
-): DecreeListQueryOptions<ReturnType<typeof decreesQueryKeys.settlementList>> {
+): DecreeListQueryOptions<
+  ReturnType<typeof decreesQueryKeys.settlementListPage>
+> {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
-    queryFn: () => getSettlementDecrees(client, settlementId),
-    queryKey: decreesQueryKeys.settlementList(settlementId),
+    queryFn: () => getSettlementDecrees(client, settlementId, page),
+    queryKey: decreesQueryKeys.settlementListPage(settlementId, page),
   });
 }
 
 async function getSettlementDecrees(
   client: GubernatorSupabaseClient,
   settlementId: string,
-): Promise<readonly Decree[]> {
-  const { data, error } = await client
+  page: number,
+): Promise<DecreePage> {
+  const from = page * DECREES_PAGE_SIZE;
+  const to = from + DECREES_PAGE_SIZE - 1;
+
+  const { data, error, count } = await client
     .from("decrees")
-    .select(DECREE_SELECT)
+    .select(DECREE_SELECT, { count: "exact" })
     .eq("settlement_id", settlementId)
     .order("issued_turn_number", { ascending: false })
     .order("created_at", { ascending: false })
+    .range(from, to)
     .returns<DecreeRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
 
-  return data.map(toDecree);
+  return { decrees: data.map(toDecree), totalCount: count ?? 0 };
 }

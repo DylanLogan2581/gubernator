@@ -25,12 +25,13 @@ vi.mock("../mutations/decreesMutations", () => ({
 }));
 
 vi.mock("../queries/decreesQueries", () => ({
+  DECREES_PAGE_SIZE: 20,
   nationDecreesQueryOptions: () => ({
-    queryFn: () => Promise.resolve([]),
+    queryFn: () => Promise.resolve({ decrees: [], totalCount: 0 }),
     queryKey: ["nation-decrees"],
   }),
   settlementDecreesQueryOptions: () => ({
-    queryFn: () => Promise.resolve([]),
+    queryFn: () => Promise.resolve({ decrees: [], totalCount: 0 }),
     queryKey: ["settlement-decrees"],
   }),
 }));

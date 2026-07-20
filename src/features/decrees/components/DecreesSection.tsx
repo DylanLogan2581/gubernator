@@ -4,6 +4,7 @@ import { useState, type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { TablePagination } from "@/components/shared/TablePagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +53,7 @@ import {
   revokeDecreeMutationOptions,
 } from "../mutations/decreesMutations";
 import {
+  DECREES_PAGE_SIZE,
   nationDecreesQueryOptions,
   settlementDecreesQueryOptions,
 } from "../queries/decreesQueries";
@@ -109,12 +111,14 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
   const isNationScope = props.scope === "nation";
   const settlementId = props.scope === "settlement" ? props.settlementId : "";
 
+  const [page, setPage] = useState(0);
+
   const nationDecreesQuery = useQuery({
-    ...nationDecreesQueryOptions(props.nationId),
+    ...nationDecreesQueryOptions(props.nationId, page),
     enabled: isNationScope,
   });
   const settlementDecreesQuery = useQuery({
-    ...settlementDecreesQueryOptions(settlementId),
+    ...settlementDecreesQueryOptions(settlementId, page),
     enabled: !isNationScope,
   });
   const decreesQuery = isNationScope
@@ -174,17 +178,15 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
   const [issuing, setIssuing] = useState(false);
   const [revoking, setRevoking] = useState<Decree | null>(null);
 
-  const decrees = decreesQuery.data ?? [];
+  const decrees = decreesQuery.data?.decrees ?? [];
+  const totalCount = decreesQuery.data?.totalCount ?? 0;
+  const pageCount = Math.ceil(totalCount / DECREES_PAGE_SIZE);
   const calendarConfig = calendarConfigQuery.data ?? null;
 
   function handleRevokeConfirm(): void {
     if (revoking === null) return;
     revokeMutation.mutate(
-      {
-        id: revoking.id,
-        nationId: revoking.nationId,
-        settlementId: revoking.settlementId,
-      },
+      { id: revoking.id },
       {
         onError: (error) => {
           notifyMutationError(error, "Failed to revoke decree.");
@@ -297,6 +299,13 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
             ))}
           </ul>
         )}
+
+        <TablePagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={setPage}
+          isDisabled={decreesQuery.isFetching}
+        />
       </Card>
 
       {canManage && issuing && (issuedByCitizenId !== null || canPickIssuer) ? (
