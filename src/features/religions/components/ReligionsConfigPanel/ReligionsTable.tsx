@@ -63,7 +63,10 @@ export function ReligionsTable({
                     {religion.name}
                   </Link>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell
+                  className="max-w-xs truncate text-sm text-muted-foreground"
+                  title={religion.description ?? undefined}
+                >
                   {religion.description ?? ""}
                 </TableCell>
                 {canEdit ? (

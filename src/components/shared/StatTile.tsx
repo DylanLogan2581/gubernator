@@ -39,7 +39,9 @@ export function StatTile({
           {isLoading ? (
             <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl leading-none font-semibold">{value}</p>
+            <p className="text-base leading-tight font-semibold break-words sm:text-xl md:text-2xl">
+              {value}
+            </p>
           )}
         </div>
       </div>

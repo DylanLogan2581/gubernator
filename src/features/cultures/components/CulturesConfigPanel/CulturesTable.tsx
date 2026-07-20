@@ -63,7 +63,10 @@ export function CulturesTable({
                     {culture.name}
                   </Link>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell
+                  className="max-w-xs truncate text-sm text-muted-foreground"
+                  title={culture.description ?? undefined}
+                >
                   {culture.description ?? ""}
                 </TableCell>
                 {canEdit ? (

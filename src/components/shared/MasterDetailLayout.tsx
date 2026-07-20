@@ -54,9 +54,13 @@ export function MasterDetailLayout({
     );
   }
 
+  const showsDetailColumn = detail !== null || emptyState !== undefined;
+
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <div className="lg:col-span-2">{list}</div>
+      <div className={showsDetailColumn ? "lg:col-span-2" : "lg:col-span-3"}>
+        {list}
+      </div>
       {detail !== null ? (
         <Card className="self-start lg:col-span-1">
           <CardHeader>
