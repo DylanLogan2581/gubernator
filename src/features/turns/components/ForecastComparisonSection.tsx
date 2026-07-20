@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
 import type {
   TurnTransitionOutcome,
   TurnTransitionResourceSnapshot,
@@ -106,6 +108,22 @@ export function ForecastComparisonSection({
 
     return { settlementForecast: forecast, settlementIds: ids };
   }, [outcome.forecastSnapshot, outcome.settlementSnapshots]);
+
+  const settlementId =
+    settlementIds.length === 1 ? settlementIds[0] : undefined;
+
+  const stockpilesQuery = useQuery({
+    ...settlementStockpilesByIdQueryOptions(settlementId ?? ""),
+    enabled: settlementId !== undefined,
+  });
+
+  const resourceNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const stockpile of stockpilesQuery.data ?? []) {
+      map.set(stockpile.resourceId, stockpile.resourceName);
+    }
+    return map;
+  }, [stockpilesQuery.data]);
 
   const resourceComparisons = useMemo(() => {
     if (
@@ -256,7 +274,8 @@ export function ForecastComparisonSection({
                         Diverged
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {comp.resourceId}
+                        {resourceNameById.get(comp.resourceId) ??
+                          comp.resourceId}
                       </span>
                     </div>
                     <div className="text-xs">
