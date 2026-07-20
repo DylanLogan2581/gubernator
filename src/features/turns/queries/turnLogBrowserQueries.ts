@@ -60,6 +60,11 @@ type TurnLogEntryRow = {
   readonly citizen_id: string | null;
   // Embedded via turn_log_entries_citizen_id_fkey. Null when citizen_id is null.
   readonly citizens: { readonly name: string } | null;
+  // Denormalized from turn_transitions at insert time (issue #1283) so the
+  // browser can order/filter/count without joining turn_transitions. Null
+  // only for the rare turn_transition_id = null rows (manual actions outside
+  // any transition), which the query below excludes.
+  readonly from_turn_number: number | null;
   readonly id: string;
   readonly log_category: string;
   readonly nation_id: string | null;
@@ -73,13 +78,8 @@ type TurnLogEntryRow = {
     readonly name: string;
     readonly nation_id: string;
   } | null;
-  readonly turn_transition_id: string;
-  // Embedded via turn_log_entries_transition_world_fkey (composite FK).
-  // null only if the join fails (data integrity issue); treated as turn 0.
-  readonly turn_transitions: {
-    readonly from_turn_number: number;
-    readonly to_turn_number: number;
-  } | null;
+  readonly to_turn_number: number | null;
+  readonly turn_transition_id: string | null;
   readonly world_id: string;
 };
 
@@ -91,13 +91,14 @@ const TURN_LOG_SELECT = [
   "id",
   "turn_transition_id",
   "world_id",
+  "from_turn_number",
+  "to_turn_number",
   "nation_id",
   "settlement_id",
   "citizen_id",
   "resource_id",
   "log_category",
   "payload_jsonb",
-  "turn_transitions!turn_log_entries_transition_world_fkey!inner(from_turn_number,to_turn_number)",
   "citizens!turn_log_entries_citizen_id_fkey(name)",
   "settlements!turn_log_entries_settlement_id_fkey(name,nation_id)",
   "nations!turn_log_entries_nation_id_fkey(name)",
@@ -107,7 +108,7 @@ function toEntry(row: TurnLogEntryRow): TurnLogBrowserEntry {
   return {
     citizenId: row.citizen_id,
     citizenName: row.citizens?.name ?? null,
-    fromTurnNumber: row.turn_transitions?.from_turn_number ?? 0,
+    fromTurnNumber: row.from_turn_number ?? 0,
     id: row.id,
     logCategory: row.log_category,
     nationId: row.nation_id,
@@ -117,8 +118,8 @@ function toEntry(row: TurnLogEntryRow): TurnLogBrowserEntry {
     settlementId: row.settlement_id,
     settlementName: row.settlements?.name ?? null,
     settlementNationId: row.settlements?.nation_id ?? null,
-    toTurnNumber: row.turn_transitions?.to_turn_number ?? 0,
-    turnTransitionId: row.turn_transition_id,
+    toTurnNumber: row.to_turn_number ?? 0,
+    turnTransitionId: row.turn_transition_id ?? "",
     worldId: row.world_id,
   };
 }
@@ -132,17 +133,28 @@ async function getTurnLogPage(
   const from = page * TURN_LOG_PAGE_SIZE;
   const to = from + TURN_LOG_PAGE_SIZE - 1;
 
-  // The referencedTable order option (?order=turn_transitions.col.desc) only
-  // sorts rows inside the embedded array, not the parent turn_log_entries
-  // result set. Ordering the parent by an embedded column requires the
-  // `resource(column)` syntax below, which PostgREST supports because the
-  // embed in TURN_LOG_SELECT uses `!inner`. `id` is a stable tiebreaker so
-  // pagination doesn't repeat/skip rows that share a turn number.
+  // to_turn_number/from_turn_number are denormalized onto turn_log_entries at
+  // insert time (issue #1283) so ordering/filtering hits the row's own
+  // indexed columns instead of joining+sorting on turn_transitions, which
+  // exceeded the statement timeout on a partitioned world. `id` is a stable
+  // tiebreaker so pagination doesn't repeat/skip rows that share a turn
+  // number. turn_transition_id is only null for manual actions taken outside
+  // any turn transition (which never carry a turn number to display);
+  // excluding them here reproduces the old `!inner` embed's exclusion
+  // behavior.
+  //
+  // count: "estimated" (not "exact") because the RLS SELECT policy calls
+  // current_user_has_world_access(world_id) per row; an exact count has no
+  // LIMIT to bound that, so on a many-turn world it re-triggers the same
+  // statement timeout the ordering fix above solves for the paginated fetch.
+  // "estimated" uses the planner's row estimate instead of scanning every
+  // matching row, so the page total becomes approximate rather than exact.
   let query = client
     .from("turn_log_entries")
-    .select(TURN_LOG_SELECT, { count: "exact" })
+    .select(TURN_LOG_SELECT, { count: "estimated" })
     .eq("world_id", worldId)
-    .order("turn_transitions(to_turn_number)", { ascending: false })
+    .not("turn_transition_id", "is", null)
+    .order("to_turn_number", { ascending: false })
     .order("id", { ascending: false });
 
   if (filter.logCategory !== undefined) {
@@ -160,31 +172,14 @@ async function getTurnLogPage(
   if (filter.resourceId !== undefined) {
     query = query.eq("resource_id", filter.resourceId);
   }
-  // Turn range filters operate on the embedded turn_transitions resource.
-  // PostgREST translates ?turn_transitions.from_turn_number=gte.N into a
-  // WHERE clause on the joined turn_transitions rows; since the embed in
-  // TURN_LOG_SELECT uses `!inner`, that WHERE clause restricts the parent
-  // turn_log_entries rows too, not just the nested embed.
   if (filter.turnFrom !== undefined) {
-    query = query.filter(
-      "turn_transitions.from_turn_number",
-      "gte",
-      filter.turnFrom,
-    );
+    query = query.gte("from_turn_number", filter.turnFrom);
   }
   if (filter.turnTo !== undefined) {
-    query = query.filter(
-      "turn_transitions.to_turn_number",
-      "lte",
-      filter.turnTo,
-    );
+    query = query.lte("to_turn_number", filter.turnTo);
   }
   if (filter.turnNumber !== undefined) {
-    query = query.filter(
-      "turn_transitions.to_turn_number",
-      "eq",
-      filter.turnNumber,
-    );
+    query = query.eq("to_turn_number", filter.turnNumber);
   }
 
   query = query.range(from, to);

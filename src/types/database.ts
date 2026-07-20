@@ -7,31 +7,6 @@ export type Json =
   | Json[];
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never;
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
   public: {
     Tables: {
       admin_create_user_idempotency_keys: {
@@ -4460,34 +4435,40 @@ export type Database = {
       turn_log_entries: {
         Row: {
           citizen_id: string | null;
+          from_turn_number: number | null;
           id: string;
           log_category: string;
           nation_id: string | null;
           payload_jsonb: Json;
           resource_id: string | null;
           settlement_id: string | null;
+          to_turn_number: number | null;
           turn_transition_id: string | null;
           world_id: string;
         };
         Insert: {
           citizen_id?: string | null;
+          from_turn_number?: number | null;
           id?: string;
           log_category: string;
           nation_id?: string | null;
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
+          to_turn_number?: number | null;
           turn_transition_id?: string | null;
           world_id: string;
         };
         Update: {
           citizen_id?: string | null;
+          from_turn_number?: number | null;
           id?: string;
           log_category?: string;
           nation_id?: string | null;
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
+          to_turn_number?: number | null;
           turn_transition_id?: string | null;
           world_id?: string;
         };
@@ -4539,34 +4520,40 @@ export type Database = {
       turn_log_entries_p_default: {
         Row: {
           citizen_id: string | null;
+          from_turn_number: number | null;
           id: string;
           log_category: string;
           nation_id: string | null;
           payload_jsonb: Json;
           resource_id: string | null;
           settlement_id: string | null;
+          to_turn_number: number | null;
           turn_transition_id: string | null;
           world_id: string;
         };
         Insert: {
           citizen_id?: string | null;
+          from_turn_number?: number | null;
           id?: string;
           log_category: string;
           nation_id?: string | null;
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
+          to_turn_number?: number | null;
           turn_transition_id?: string | null;
           world_id: string;
         };
         Update: {
           citizen_id?: string | null;
+          from_turn_number?: number | null;
           id?: string;
           log_category?: string;
           nation_id?: string | null;
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
+          to_turn_number?: number | null;
           turn_transition_id?: string | null;
           world_id?: string;
         };
@@ -8959,9 +8946,6 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       death_cause_category: [

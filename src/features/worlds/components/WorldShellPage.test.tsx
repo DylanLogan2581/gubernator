@@ -502,6 +502,7 @@ type TestTurnLogRow = {
   readonly log_category: string;
   readonly citizen_id: string | null;
   readonly citizens: { readonly name: string } | null;
+  readonly from_turn_number: number | null;
   readonly nation_id: string | null;
   readonly nations: { readonly name: string } | null;
   readonly payload_jsonb: unknown;
@@ -511,11 +512,8 @@ type TestTurnLogRow = {
     readonly name: string;
     readonly nation_id: string;
   } | null;
+  readonly to_turn_number: number | null;
   readonly turn_transition_id: string;
-  readonly turn_transitions: {
-    readonly from_turn_number: number;
-    readonly to_turn_number: number;
-  } | null;
   readonly world_id: string;
 };
 
@@ -614,6 +612,7 @@ function createTurnLogRow(
   return {
     citizen_id: null,
     citizens: null,
+    from_turn_number: 4,
     id: "log-1",
     log_category: "basic_turn_advancement",
     nation_id: null,
@@ -622,8 +621,8 @@ function createTurnLogRow(
     resource_id: null,
     settlement_id: null,
     settlements: null,
+    to_turn_number: 5,
     turn_transition_id: "transition-1",
-    turn_transitions: { from_turn_number: 4, to_turn_number: 5 },
     world_id: "world-1",
     ...overrides,
   };
@@ -740,7 +739,9 @@ function createTurnLogEntriesQueryBuilder(
   const result = { count: rows.length, data: rows, error: null };
   const builder = {
     eq: vi.fn(() => builder),
-    filter: vi.fn(() => builder),
+    gte: vi.fn(() => builder),
+    lte: vi.fn(() => builder),
+    not: vi.fn(() => builder),
     order: vi.fn(() => builder),
     range: vi.fn(() => builder),
     returns: vi.fn().mockResolvedValue(result),

@@ -153,7 +153,7 @@ describe("turnLogBrowserQueryOptions", () => {
     expect(page.entries).toHaveLength(1);
   });
 
-  it("orders the parent rows by the embedded turn number with a stable id tiebreaker", async () => {
+  it("orders the parent rows by its own denormalized turn number with a stable id tiebreaker", async () => {
     const queryClient = createQueryClient();
     const client = createClient({
       rows: [createRow({ id: "entry-5" })],
@@ -166,23 +166,31 @@ describe("turnLogBrowserQueryOptions", () => {
     );
 
     const builder = client.from("turn_log_entries") as unknown as MockBuilder;
-    expect(builder.order).toHaveBeenNthCalledWith(
-      1,
-      "turn_transitions(to_turn_number)",
-      {
-        ascending: false,
-      },
-    );
+    expect(builder.order).toHaveBeenNthCalledWith(1, "to_turn_number", {
+      ascending: false,
+    });
     expect(builder.order).toHaveBeenNthCalledWith(2, "id", {
       ascending: false,
     });
-    expect(builder.order).not.toHaveBeenCalledWith(
-      "to_turn_number",
-      expect.objectContaining({ referencedTable: "turn_transitions" }),
-    );
   });
 
-  it("filters turn-range bounds on the parent-restricting embedded resource", async () => {
+  it("excludes rows without a turn transition", async () => {
+    const queryClient = createQueryClient();
+    const client = createClient({
+      rows: [createRow({ id: "entry-8" })],
+      count: 1,
+    });
+    requireSupabaseClient.mockReturnValue(client);
+
+    await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({ filter: {}, page: 0, worldId: "world-1" }),
+    );
+
+    const builder = client.from("turn_log_entries") as unknown as MockBuilder;
+    expect(builder.not).toHaveBeenCalledWith("turn_transition_id", "is", null);
+  });
+
+  it("filters turn-range bounds on the parent's own denormalized columns", async () => {
     const queryClient = createQueryClient();
     const client = createClient({
       rows: [createRow({ id: "entry-6" })],
@@ -199,16 +207,8 @@ describe("turnLogBrowserQueryOptions", () => {
     );
 
     const builder = client.from("turn_log_entries") as unknown as MockBuilder;
-    expect(builder.filter).toHaveBeenCalledWith(
-      "turn_transitions.from_turn_number",
-      "gte",
-      5,
-    );
-    expect(builder.filter).toHaveBeenCalledWith(
-      "turn_transitions.to_turn_number",
-      "lte",
-      10,
-    );
+    expect(builder.gte).toHaveBeenCalledWith("from_turn_number", 5);
+    expect(builder.lte).toHaveBeenCalledWith("to_turn_number", 10);
   });
 
   it("filters to an exact completed turn via turnNumber, independent of the range filters", async () => {
@@ -228,16 +228,8 @@ describe("turnLogBrowserQueryOptions", () => {
     );
 
     const builder = client.from("turn_log_entries") as unknown as MockBuilder;
-    expect(builder.filter).toHaveBeenCalledWith(
-      "turn_transitions.to_turn_number",
-      "eq",
-      32,
-    );
-    expect(builder.filter).not.toHaveBeenCalledWith(
-      "turn_transitions.from_turn_number",
-      "gte",
-      expect.anything(),
-    );
+    expect(builder.eq).toHaveBeenCalledWith("to_turn_number", 32);
+    expect(builder.gte).not.toHaveBeenCalled();
   });
 });
 
@@ -248,6 +240,7 @@ describe("turnLogBrowserQueryOptions", () => {
 type TestRow = {
   readonly citizen_id: string | null;
   readonly citizens: { readonly name: string } | null;
+  readonly from_turn_number: number | null;
   readonly id: string;
   readonly log_category: string;
   readonly nation_id: string | null;
@@ -259,11 +252,8 @@ type TestRow = {
     readonly name: string;
     readonly nation_id: string;
   } | null;
+  readonly to_turn_number: number | null;
   readonly turn_transition_id: string;
-  readonly turn_transitions: {
-    readonly from_turn_number: number;
-    readonly to_turn_number: number;
-  } | null;
   readonly world_id: string;
 };
 
@@ -271,6 +261,7 @@ function createRow(overrides: Partial<TestRow> = {}): TestRow {
   return {
     citizen_id: null,
     citizens: null,
+    from_turn_number: 1,
     id: "entry-default",
     log_category: "test_event",
     nation_id: null,
@@ -279,8 +270,8 @@ function createRow(overrides: Partial<TestRow> = {}): TestRow {
     resource_id: null,
     settlement_id: null,
     settlements: null,
+    to_turn_number: 2,
     turn_transition_id: "tt-1",
-    turn_transitions: { from_turn_number: 1, to_turn_number: 2 },
     world_id: "world-1",
     ...overrides,
   };
@@ -288,7 +279,9 @@ function createRow(overrides: Partial<TestRow> = {}): TestRow {
 
 type MockBuilder = {
   readonly eq: ReturnType<typeof vi.fn>;
-  readonly filter: ReturnType<typeof vi.fn>;
+  readonly gte: ReturnType<typeof vi.fn>;
+  readonly lte: ReturnType<typeof vi.fn>;
+  readonly not: ReturnType<typeof vi.fn>;
   readonly order: ReturnType<typeof vi.fn>;
   readonly range: ReturnType<typeof vi.fn>;
   readonly returns: ReturnType<typeof vi.fn>;
@@ -306,7 +299,9 @@ function createClient({
 }): GubernatorSupabaseClient {
   const builder = {
     eq: vi.fn(),
-    filter: vi.fn(),
+    gte: vi.fn(),
+    lte: vi.fn(),
+    not: vi.fn(),
     order: vi.fn(),
     range: vi.fn(),
     returns: vi.fn(),
@@ -314,7 +309,9 @@ function createClient({
   };
   builder.select.mockReturnValue(builder);
   builder.eq.mockReturnValue(builder);
-  builder.filter.mockReturnValue(builder);
+  builder.gte.mockReturnValue(builder);
+  builder.lte.mockReturnValue(builder);
+  builder.not.mockReturnValue(builder);
   builder.order.mockReturnValue(builder);
   builder.range.mockReturnValue(builder);
   builder.returns.mockResolvedValue({ data: rows, error, count });
