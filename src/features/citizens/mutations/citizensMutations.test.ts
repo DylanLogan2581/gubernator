@@ -5,12 +5,14 @@ import { AuthUiError } from "@/features/auth";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
+  bulkSetCitizenCultureReligionMutationOptions,
   CitizenMutationError,
   createNpcMutationOptions,
   createPlayerCharacterMutationOptions,
   isCitizenMutationError,
   markCitizenDeadMutationOptions,
   reviveCitizenMutationOptions,
+  setCitizenCultureReligionMutationOptions,
   updateCitizenCoreMutationOptions,
   updateCitizenNpcFieldsMutationOptions,
 } from "./citizensMutations";
@@ -300,6 +302,12 @@ describe("updateCitizenCoreMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["citizens", "settlement-aggregate-stats", SETTLEMENT_ID],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens", "directory", WORLD_ID],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens", "unpaired-alive-in-world", WORLD_ID],
+    });
   });
 
   it("raises a not-found error when the update returns no row", async () => {
@@ -408,6 +416,70 @@ describe("markCitizenDeadMutationOptions and reviveCitizenMutationOptions", () =
       death_cause: null,
       status: "alive",
     });
+  });
+});
+
+describe("setCitizenCultureReligionMutationOptions", () => {
+  it("invalidates citizen, culture usage, and religion usage caches", async () => {
+    const citizenRow = createCitizenRow();
+    const { client } = createRpcClient({ data: citizenRow, error: null });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = setCitizenCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      citizenId: CITIZEN_ID,
+      cultureId: null,
+      religionId: null,
+    });
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens", "detail", citizenRow.id],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["cultures", "usage"] }),
+    );
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["religions", "usage"] }),
+    );
+  });
+});
+
+describe("bulkSetCitizenCultureReligionMutationOptions", () => {
+  it("invalidates the settlement roster, culture usage, and religion usage caches", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [], error: null });
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = bulkSetCitizenCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      cultureId: null,
+      religionId: null,
+      settlementId: SETTLEMENT_ID,
+    });
+
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["citizens", "settlement-list", SETTLEMENT_ID],
+      }),
+    );
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["cultures", "usage"] }),
+    );
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["religions", "usage"] }),
+    );
   });
 });
 

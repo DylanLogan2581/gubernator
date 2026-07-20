@@ -149,9 +149,7 @@ export function endTurnTransitionMutationOptions({
     onSuccess: async (_result, input): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.currentTurnState(input.worldId),
-        }),
+        queryClient.invalidateQueries({ queryKey: turnQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.list(input.worldId),
@@ -161,15 +159,6 @@ export function endTurnTransitionMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: nationReadinessQueryKeys.list(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestTransitionStatus(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
         }),
         queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: resourcesQueryKeys.all }),

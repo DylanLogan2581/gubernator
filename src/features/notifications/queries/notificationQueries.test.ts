@@ -5,9 +5,11 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
   allNotificationsQueryOptions,
+  markNotificationReadMutationOptions,
   turnCompletedNotificationsQueryOptions,
   unreadNotificationsCountQueryOptions,
 } from "./notificationQueries";
+import { notificationQueryKeys } from "./notificationQueryKeys";
 
 const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
@@ -604,7 +606,41 @@ function createTurnCompletedQueryChain({
 function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
+      mutations: { retry: false },
       queries: { retry: false, retryDelay: 0 },
     },
   });
 }
+
+function executeMutation<TOptions extends { mutationFn?: unknown }>(
+  queryClient: QueryClient,
+  options: TOptions,
+  variables: unknown,
+): Promise<unknown> {
+  return queryClient
+    .getMutationCache()
+    .build(queryClient, options as never)
+    .execute(variables);
+}
+
+describe("markNotificationReadMutationOptions", () => {
+  it("marks the notification read and invalidates the notifications cache", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = markNotificationReadMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, "notification-1");
+
+    expect(rpc).toHaveBeenCalledWith("mark_notification_read", {
+      notification_id: "notification-1",
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: notificationQueryKeys.all,
+    });
+  });
+});

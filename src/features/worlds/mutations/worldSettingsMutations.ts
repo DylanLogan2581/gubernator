@@ -1,10 +1,10 @@
 import {
   mutationOptions,
-  type QueryClient,
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { turnQueryKeys } from "@/features/turns";
 import { createMutationError } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
@@ -19,6 +19,12 @@ import {
   type SetWorldCurrentTurnNumberInput,
 } from "../schemas/worldSettingsSchemas";
 
+import {
+  makeOpts,
+  type MutationFactoryOpts,
+  type WorldRow,
+} from "./worldMutationShared";
+
 type WorldSettingsErrorCode =
   | "world_settings_input_invalid"
   | "world_settings_not_authorized"
@@ -28,34 +34,6 @@ type WorldSettingsErrorCode =
 export const { ErrorClass: WorldSettingsError, isError: isWorldSettingsError } =
   createMutationError<WorldSettingsErrorCode>("WorldSettingsError");
 export type WorldSettingsError = InstanceType<typeof WorldSettingsError>;
-
-type WorldRow = {
-  readonly archived_at: string | null;
-  readonly calendar_config_json: unknown;
-  readonly created_at: string;
-  readonly current_turn_number: number;
-  readonly id: string;
-  readonly incest_prevention_depth: number;
-  readonly is_trashed: boolean;
-  readonly name: string;
-  readonly status: string;
-  readonly updated_at: string;
-};
-
-type MutationFactoryOpts = {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-};
-
-function makeOpts(queryClient: QueryClient): {
-  onSuccess: () => Promise<void>;
-} {
-  return {
-    onSuccess: async (): Promise<void> => {
-      await queryClient.invalidateQueries({ queryKey: worldQueryKeys.all });
-    },
-  };
-}
 
 export function renameWorldMutationOptions({
   client = requireSupabaseClient(),
@@ -80,7 +58,14 @@ export function setWorldCurrentTurnNumberMutationOptions({
     mutationFn: (input: SetWorldCurrentTurnNumberInput) =>
       setWorldCurrentTurnNumber(client, input),
     mutationKey: [...worldQueryKeys.all, "set-world-current-turn-number"],
-    ...makeOpts(queryClient),
+    onSuccess: async (world): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.currentTurnState(world.id),
+        }),
+      ]);
+    },
   });
 }
 

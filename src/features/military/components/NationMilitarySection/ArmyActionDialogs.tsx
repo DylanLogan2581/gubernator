@@ -119,9 +119,7 @@ export function MoveArmyDialog({
   const selectId = useId();
   const [settlementId, setSettlementId] = useState(currentSettlementId);
   const settlementsQuery = useQuery(nationSettlementsQueryOptions(nationId));
-  const moveMutation = useMutation(
-    moveArmyMutationOptions({ nationId, queryClient }),
-  );
+  const moveMutation = useMutation(moveArmyMutationOptions({ queryClient }));
 
   async function handleConfirm(): Promise<void> {
     try {

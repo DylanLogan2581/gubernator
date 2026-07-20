@@ -1,6 +1,5 @@
 import {
   mutationOptions,
-  type QueryClient,
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
@@ -23,6 +22,12 @@ import {
   type TrashWorldInput,
 } from "../schemas/worldAdminSchemas";
 
+import {
+  makeOpts,
+  type MutationFactoryOpts,
+  type WorldRow,
+} from "./worldMutationShared";
+
 type WorldAdminErrorCode =
   | "world_admin_input_invalid"
   | "world_admin_not_authorized"
@@ -31,34 +36,6 @@ type WorldAdminErrorCode =
 export const { ErrorClass: WorldAdminError, isError: isWorldAdminError } =
   createMutationError<WorldAdminErrorCode>("WorldAdminError");
 export type WorldAdminError = InstanceType<typeof WorldAdminError>;
-
-type WorldRow = {
-  readonly archived_at: string | null;
-  readonly calendar_config_json: unknown;
-  readonly created_at: string;
-  readonly current_turn_number: number;
-  readonly id: string;
-  readonly incest_prevention_depth: number;
-  readonly is_trashed: boolean;
-  readonly name: string;
-  readonly status: string;
-  readonly updated_at: string;
-};
-
-type MutationFactoryOpts = {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-};
-
-function makeOpts(queryClient: QueryClient): {
-  onSuccess: () => Promise<void>;
-} {
-  return {
-    onSuccess: async (): Promise<void> => {
-      await queryClient.invalidateQueries({ queryKey: worldQueryKeys.all });
-    },
-  };
-}
 
 export function createWorldMutationOptions({
   client = requireSupabaseClient(),

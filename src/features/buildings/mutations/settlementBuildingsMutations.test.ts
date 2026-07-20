@@ -7,12 +7,15 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import { buildingsQueryKeys } from "../queries/buildingsQueryKeys";
 
 import {
+  hardDeleteSettlementBuildingMutationOptions,
   isManualDeconstructBuildingMutationError,
   manualDeconstructBuildingMutationOptions,
+  restoreSettlementBuildingMutationOptions,
 } from "./settlementBuildingsMutations";
 
 const SETTLEMENT_ID = "11111111-1111-1111-1111-111111111111";
 const SETTLEMENT_BUILDING_ID = "22222222-2222-2222-2222-222222222222";
+const WORLD_ID = "33333333-3333-3333-3333-333333333333";
 
 const VALID_INPUT = { settlementBuildingId: SETTLEMENT_BUILDING_ID };
 
@@ -111,6 +114,16 @@ describe("manualDeconstructBuildingMutationOptions", () => {
         queryKey: settlementsQueryKeys.populationCap(SETTLEMENT_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-world"],
+      }),
+    );
   });
 
   it("raises manual_deconstruct_building_not_found when RPC returns no row", async () => {
@@ -180,6 +193,70 @@ describe("manualDeconstructBuildingMutationOptions", () => {
     ).rejects.toMatchObject({
       code: "manual_deconstruct_building_wrong_state",
     });
+  });
+});
+
+describe("restoreSettlementBuildingMutationOptions", () => {
+  it("invalidates by-nations and by-world scope-picker caches", async () => {
+    const { client } = createRpcClient({
+      data: { settlement_building_id: SETTLEMENT_BUILDING_ID },
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = restoreSettlementBuildingMutationOptions({
+      client,
+      queryClient,
+      settlementId: SETTLEMENT_ID,
+    });
+
+    await executeMutation(queryClient, options, {
+      settlementBuildingId: SETTLEMENT_BUILDING_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-world"],
+      }),
+    );
+  });
+});
+
+describe("hardDeleteSettlementBuildingMutationOptions", () => {
+  it("invalidates by-nations and by-world scope-picker caches", async () => {
+    const { client } = createRpcClient({
+      data: { settlement_building_id: SETTLEMENT_BUILDING_ID },
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = hardDeleteSettlementBuildingMutationOptions({
+      client,
+      queryClient,
+      settlementId: SETTLEMENT_ID,
+    });
+
+    await executeMutation(queryClient, options, {
+      settlementBuildingId: SETTLEMENT_BUILDING_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-world"],
+      }),
+    );
   });
 });
 

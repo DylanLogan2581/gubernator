@@ -75,7 +75,7 @@ export function ArmyCard({
   });
 
   const deleteMutation = useMutation(
-    deleteArmyMutationOptions({ nationId, queryClient }),
+    deleteArmyMutationOptions({ queryClient }),
   );
   const createGroupMutation = useMutation(
     createArmyGroupMutationOptions({ armyId: army.id, queryClient }),

@@ -76,9 +76,9 @@ export function createArmyMutationOptions({
   return mutationOptions({
     mutationFn: (input: CreateArmyInput) => createArmy(client, input),
     mutationKey: [...armiesQueryKeys.all, "create-army"],
-    onSuccess: async (army): Promise<void> => {
+    onSuccess: async (): Promise<void> => {
       await queryClient.invalidateQueries({
-        queryKey: armiesQueryKeys.byNation(army.nationId),
+        queryKey: armiesQueryKeys.all,
       });
     },
   });
@@ -106,11 +106,9 @@ export function renameArmyMutationOptions({
 
 export function moveArmyMutationOptions({
   client = requireSupabaseClient(),
-  nationId,
   queryClient,
 }: {
   readonly client?: GubernatorSupabaseClient;
-  readonly nationId: string;
   readonly queryClient: QueryClient;
 }): MoveArmyMutationOptions {
   return mutationOptions({
@@ -118,7 +116,7 @@ export function moveArmyMutationOptions({
     mutationKey: [...armiesQueryKeys.all, "move-army"],
     onSuccess: async (): Promise<void> => {
       await queryClient.invalidateQueries({
-        queryKey: armiesQueryKeys.byNation(nationId),
+        queryKey: armiesQueryKeys.all,
       });
     },
   });
@@ -126,11 +124,9 @@ export function moveArmyMutationOptions({
 
 export function deleteArmyMutationOptions({
   client = requireSupabaseClient(),
-  nationId,
   queryClient,
 }: {
   readonly client?: GubernatorSupabaseClient;
-  readonly nationId: string;
   readonly queryClient: QueryClient;
 }): DeleteArmyMutationOptions {
   return mutationOptions({
@@ -138,7 +134,7 @@ export function deleteArmyMutationOptions({
     mutationKey: [...armiesQueryKeys.all, "delete-army"],
     onSuccess: async (): Promise<void> => {
       await queryClient.invalidateQueries({
-        queryKey: armiesQueryKeys.byNation(nationId),
+        queryKey: armiesQueryKeys.all,
       });
     },
   });

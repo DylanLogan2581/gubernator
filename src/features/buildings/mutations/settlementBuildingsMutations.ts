@@ -114,6 +114,18 @@ export function manualDeconstructBuildingMutationOptions({
         queryClient.invalidateQueries({
           queryKey: settlementsQueryKeys.populationCap(settlementId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...buildingsQueryKeys.all,
+            "settlement-buildings-by-nations",
+          ],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...buildingsQueryKeys.all,
+            "settlement-buildings-by-world",
+          ],
+        }),
       ]);
     },
   });
@@ -192,6 +204,18 @@ export function restoreSettlementBuildingMutationOptions({
         queryClient.invalidateQueries({
           queryKey: settlementsQueryKeys.populationCap(settlementId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...buildingsQueryKeys.all,
+            "settlement-buildings-by-nations",
+          ],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...buildingsQueryKeys.all,
+            "settlement-buildings-by-world",
+          ],
+        }),
       ]);
     },
   });
@@ -258,6 +282,18 @@ export function hardDeleteSettlementBuildingMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: settlementsQueryKeys.populationCap(settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...buildingsQueryKeys.all,
+            "settlement-buildings-by-nations",
+          ],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...buildingsQueryKeys.all,
+            "settlement-buildings-by-world",
+          ],
         }),
       ]);
     },

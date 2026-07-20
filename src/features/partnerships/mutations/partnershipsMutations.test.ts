@@ -125,6 +125,9 @@ describe("createPartnershipMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["citizens", "active-partnership-for-citizen", CITIZEN_B_ID],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens", "unpaired-alive-in-world"],
+    });
   });
 
   it("raises an unauthorized error when the RPC returns no row", async () => {

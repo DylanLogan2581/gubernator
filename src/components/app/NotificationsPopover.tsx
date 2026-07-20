@@ -16,7 +16,6 @@ import {
   formatUnreadBadgeCount,
   getDeepLink,
   markNotificationReadMutationOptions,
-  notificationQueryKeys,
   NotificationPreferencesSheet,
   useMarkAllNotificationsRead,
   useNotificationsRealtime,
@@ -43,19 +42,15 @@ export function NotificationsPopover({
   const unreadCount = notificationsQuery.data?.total ?? 0;
   const notifications = notificationsQuery.data?.notifications ?? [];
 
-  const markReadMutation = useMutation(markNotificationReadMutationOptions());
+  const markReadMutation = useMutation(
+    markNotificationReadMutationOptions({ queryClient }),
+  );
 
   const { handleMarkAllRead, isPending: isMarkingAllRead } =
     useMarkAllNotificationsRead();
 
   const handleMarkRead = (notificationId: string): void => {
-    markReadMutation.mutate(notificationId, {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: notificationQueryKeys.all,
-        });
-      },
-    });
+    markReadMutation.mutate(notificationId);
   };
 
   const badgeText = formatUnreadBadgeCount(unreadCount);

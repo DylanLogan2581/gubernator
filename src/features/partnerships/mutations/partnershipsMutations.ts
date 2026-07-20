@@ -159,6 +159,9 @@ async function invalidatePartnershipCaches(
   await Promise.all([
     invalidatePartnershipCachesForCitizen(queryClient, partnership.citizenAId),
     invalidatePartnershipCachesForCitizen(queryClient, partnership.citizenBId),
+    queryClient.invalidateQueries({
+      queryKey: [...citizensQueryKeys.all, "unpaired-alive-in-world"],
+    }),
   ]);
 }
 

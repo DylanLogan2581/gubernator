@@ -5,6 +5,8 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { culturesQueryKeys } from "@/features/cultures";
+import { religionsQueryKeys } from "@/features/religions";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -214,7 +216,17 @@ export function setCitizenCultureReligionMutationOptions({
     mutationFn: (input: SetCitizenCultureReligionInput) =>
       setCitizenCultureReligion(client, input),
     mutationKey: [...citizensQueryKeys.all, "set-citizen-culture-religion"],
-    onSuccess: (citizen) => invalidateAfterCitizenChange(queryClient, citizen),
+    onSuccess: async (citizen): Promise<void> => {
+      await Promise.all([
+        invalidateAfterCitizenChange(queryClient, citizen),
+        queryClient.invalidateQueries({
+          queryKey: [...culturesQueryKeys.all, "usage"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...religionsQueryKeys.all, "usage"],
+        }),
+      ]);
+    },
   });
 }
 
@@ -241,6 +253,12 @@ export function bulkSetCitizenCultureReligionMutationOptions({
           queryKey: citizensQueryKeys.settlementAggregateStats(
             input.settlementId,
           ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...culturesQueryKeys.all, "usage"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...religionsQueryKeys.all, "usage"],
         }),
       ]);
     },
@@ -295,6 +313,12 @@ async function invalidateAfterCitizenChange(
   const invalidations = [
     queryClient.invalidateQueries({
       queryKey: citizensQueryKeys.detail(citizen.id),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: [...citizensQueryKeys.all, "directory", citizen.worldId],
+    }),
+    queryClient.invalidateQueries({
+      queryKey: citizensQueryKeys.unpairedAliveInWorld(citizen.worldId),
     }),
   ];
 

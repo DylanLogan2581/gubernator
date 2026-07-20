@@ -455,6 +455,15 @@ describe("hardDeleteNamesetMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["namesets", "active-by-world", WORLD_ID],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlements"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["citizens"],
+    });
   });
 
   it("maps 42501 to a not-authorized error", async () => {

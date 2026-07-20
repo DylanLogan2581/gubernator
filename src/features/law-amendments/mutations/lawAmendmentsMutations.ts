@@ -86,6 +86,13 @@ function invalidateAmendmentAndDocumentQueries(
     queryClient.invalidateQueries({
       queryKey: lawDocumentsQueryKeys.versions(documentId),
     }),
+    queryClient.invalidateQueries({
+      queryKey: [
+        ...lawAmendmentsQueryKeys.all,
+        "law-amendments",
+        "awaiting-my-vote",
+      ],
+    }),
   ]).then(() => undefined);
 }
 

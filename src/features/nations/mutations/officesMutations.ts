@@ -95,6 +95,9 @@ export function dismissNationOfficeMutationOptions({
           queryKey: nationOfficesQueryKeys.roster(input.nationId),
         }),
         queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.history(input.nationId),
+        }),
+        queryClient.invalidateQueries({
           queryKey: nationReadinessQueryKeys.list(input.worldId),
         }),
       ]);
@@ -117,6 +120,9 @@ export function renewNationOfficeMutationOptions({
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: nationOfficesQueryKeys.roster(input.nationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.history(input.nationId),
         }),
         queryClient.invalidateQueries({
           queryKey: nationReadinessQueryKeys.list(input.worldId),
@@ -240,9 +246,16 @@ export function dismissSettlementOfficeMutationOptions({
       dismissSettlementOffice(client, input),
     mutationKey: [...nationOfficesQueryKeys.all, "dismiss-settlement-office"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: nationOfficesQueryKeys.settlementRoster(input.settlementId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.settlementRoster(input.settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.settlementHistory(
+            input.settlementId,
+          ),
+        }),
+      ]);
     },
   });
 }
@@ -259,9 +272,16 @@ export function renewSettlementOfficeMutationOptions({
       renewSettlementOffice(client, input),
     mutationKey: [...nationOfficesQueryKeys.all, "renew-settlement-office"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: nationOfficesQueryKeys.settlementRoster(input.settlementId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.settlementRoster(input.settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.settlementHistory(
+            input.settlementId,
+          ),
+        }),
+      ]);
     },
   });
 }

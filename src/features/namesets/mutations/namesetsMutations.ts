@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { citizensQueryKeys } from "@/features/citizens";
 import { nationsQueryKeys } from "@/features/nations";
 import { settlementsQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
@@ -363,6 +364,13 @@ export function hardDeleteNamesetMutationOptions({
         queryClient.invalidateQueries({
           queryKey: namesetsQueryKeys.activeByWorld(result.worldId),
         }),
+        // Hard delete nulls nation/settlement/citizen nameset_id server side
+        // (see hard_delete_nameset RPC), so every world-scoped view of those
+        // entities' name data can go stale -- invalidate broadly since we
+        // don't know which specific entities referenced this nameset.
+        queryClient.invalidateQueries({ queryKey: nationsQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: settlementsQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: citizensQueryKeys.all }),
       ]);
     },
   });

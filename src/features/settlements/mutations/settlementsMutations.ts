@@ -95,10 +95,16 @@ export function createSettlementMutationOptions({
     mutationFn: (input: CreateSettlementInput) =>
       createSettlement(client, input),
     mutationKey: [...settlementsQueryKeys.all, "create-settlement"],
-    onSuccess: async (settlement): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: nationsQueryKeys.settlements(settlement.nationId),
-      });
+    onSuccess: async (settlement, input): Promise<void> => {
+      const values = parseInput(createSettlementInputSchema, input);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.settlements(settlement.nationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.byWorld(values.worldId),
+        }),
+      ]);
     },
   });
 }
@@ -157,13 +163,19 @@ export function deleteSettlementMutationOptions({
     mutationFn: (input: DeleteSettlementInput) =>
       deleteSettlement(client, input),
     mutationKey: [...settlementsQueryKeys.all, "delete-settlement"],
-    onSuccess: async (result): Promise<void> => {
+    onSuccess: async (result, input): Promise<void> => {
+      const values = parseInput(deleteSettlementInputSchema, input);
       queryClient.removeQueries({
         queryKey: settlementsQueryKeys.detail(result.settlementId),
       });
-      await queryClient.invalidateQueries({
-        queryKey: nationsQueryKeys.settlements(result.nationId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.settlements(result.nationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.byWorld(values.worldId),
+        }),
+      ]);
     },
   });
 }

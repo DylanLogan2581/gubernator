@@ -532,6 +532,30 @@ describe("setNationCultureReligionMutationOptions", () => {
     ]);
   });
 
+  it("invalidates culture usage and religion usage caches", async () => {
+    const row = createNationRow();
+    const { client } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      primaryCultureId: null,
+      stateReligionId: null,
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["cultures", "usage"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["religions", "usage"] }),
+    );
+  });
+
   it("accepts null culture and religion ids to clear both fields", async () => {
     const row = createNationRow({
       primary_culture_id: null,

@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
+import { armiesQueryKeys } from "../queries/armiesQueryKeys";
+
 import {
   createArmyMutationOptions,
   deleteArmyMutationOptions,
@@ -168,11 +170,7 @@ describe("moveArmyMutationOptions", () => {
       error: null,
     });
     const queryClient = createQueryClient();
-    const options = moveArmyMutationOptions({
-      client,
-      nationId: NATION_ID,
-      queryClient,
-    });
+    const options = moveArmyMutationOptions({ client, queryClient });
 
     await executeMutation(queryClient, options, {
       armyId: ARMY_ID,
@@ -183,6 +181,25 @@ describe("moveArmyMutationOptions", () => {
       p_army_id: ARMY_ID,
       p_settlement_id: SETTLEMENT_ID,
     });
+  });
+
+  it("invalidates all army queries, covering origin and destination garrisons", async () => {
+    const { client } = createRpcClient({
+      data: createArmyRow({ stationed_settlement_id: SETTLEMENT_ID }),
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = moveArmyMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      armyId: ARMY_ID,
+      settlementId: SETTLEMENT_ID,
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: armiesQueryKeys.all }),
+    );
   });
 });
 
@@ -197,11 +214,7 @@ describe("deleteArmyMutationOptions", () => {
       },
     });
     const queryClient = createQueryClient();
-    const options = deleteArmyMutationOptions({
-      client,
-      nationId: NATION_ID,
-      queryClient,
-    });
+    const options = deleteArmyMutationOptions({ client, queryClient });
 
     await expect(
       executeMutation(queryClient, options, { armyId: ARMY_ID }),
@@ -214,16 +227,25 @@ describe("deleteArmyMutationOptions", () => {
   it("resolves with the deleted army id", async () => {
     const { client } = createRpcClient({ data: undefined, error: null });
     const queryClient = createQueryClient();
-    const options = deleteArmyMutationOptions({
-      client,
-      nationId: NATION_ID,
-      queryClient,
-    });
+    const options = deleteArmyMutationOptions({ client, queryClient });
 
     const result = await executeMutation(queryClient, options, {
       armyId: ARMY_ID,
     });
 
     expect(result).toEqual({ armyId: ARMY_ID });
+  });
+
+  it("invalidates all army queries after deletion", async () => {
+    const { client } = createRpcClient({ data: undefined, error: null });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = deleteArmyMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, { armyId: ARMY_ID });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: armiesQueryKeys.all }),
+    );
   });
 });

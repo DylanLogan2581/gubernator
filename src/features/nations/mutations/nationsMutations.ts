@@ -5,6 +5,8 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { culturesQueryKeys } from "@/features/cultures";
+import { religionsQueryKeys } from "@/features/religions";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -216,6 +218,12 @@ export function setNationCultureReligionMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: nationsQueryKeys.detail(nation.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...culturesQueryKeys.all, "usage"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...religionsQueryKeys.all, "usage"],
         }),
       ]);
     },

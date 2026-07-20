@@ -1,6 +1,7 @@
 import {
   mutationOptions,
   queryOptions,
+  type QueryClient,
   type UseMutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
@@ -505,12 +506,21 @@ function toAllNotification(row: AllNotificationRow): AllNotification {
   };
 }
 
-export function markNotificationReadMutationOptions(
-  client: GubernatorSupabaseClient = requireSupabaseClient(),
-): MarkNotificationReadMutationOptions {
+export function markNotificationReadMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): MarkNotificationReadMutationOptions {
   return mutationOptions({
     mutationFn: (notificationId: string) =>
       markNotificationRead(client, notificationId),
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: notificationQueryKeys.all,
+      });
+    },
   });
 }
 

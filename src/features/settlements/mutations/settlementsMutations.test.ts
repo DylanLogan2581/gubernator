@@ -186,6 +186,9 @@ describe("createSettlementMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["nations", "settlements", NATION_ID],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlements", "by-world", WORLD_ID],
+    });
   });
 
   it("raises a not-found error when the insert returns null", async () => {
@@ -368,12 +371,10 @@ describe("updateSettlementCoordinatesMutationOptions", () => {
 
   it("updates coordinates scoped by id and nation", async () => {
     const settlementRow = createSettlementRow({ coord_x: 42, coord_z: -7 });
-    const maybeSingle = vi
-      .fn()
-      .mockResolvedValue({
-        data: { id: SETTLEMENT_ID, coord_x: 42, coord_z: -7 },
-        error: null,
-      });
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { id: SETTLEMENT_ID, coord_x: 42, coord_z: -7 },
+      error: null,
+    });
     const rpc = vi.fn(() => ({ maybeSingle }));
 
     const single = vi
@@ -514,6 +515,9 @@ describe("deleteSettlementMutationOptions", () => {
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["nations", "settlements", NATION_ID],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlements", "by-world", WORLD_ID],
     });
   });
 

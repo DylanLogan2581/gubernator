@@ -57,9 +57,19 @@ export function restoreDepositInstanceMutationOptions({
       restoreDepositInstance(client, input),
     mutationKey: [...depositsQueryKeys.all, "restore-deposit-instance"],
     onSuccess: async (result): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: depositsQueryKeys.instancesBySettlement(result.settlementId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.instancesBySettlement(
+            result.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...depositsQueryKeys.all, "instances-by-nations"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...depositsQueryKeys.all, "instances-by-world"],
+        }),
+      ]);
     },
   });
 }

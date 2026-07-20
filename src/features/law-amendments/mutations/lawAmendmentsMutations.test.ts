@@ -91,6 +91,9 @@ describe("proposeLawAmendmentMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["nations", "law-documents", "versions", DOCUMENT_ID],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["nations", "law-amendments", "awaiting-my-vote"],
+    });
   });
 
   it("throws a normalized error when the proposal is rejected", async () => {

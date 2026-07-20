@@ -119,6 +119,16 @@ describe("addSettlementBuildingMutationOptions", () => {
         queryKey: settlementsQueryKeys.populationCap(SETTLEMENT_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-world"],
+      }),
+    );
   });
 
   it("passes name to RPC when provided", async () => {

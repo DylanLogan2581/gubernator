@@ -149,6 +149,9 @@ describe("setWorldCurrentTurnNumberMutationOptions", () => {
       "set-world-current-turn-number",
     ]);
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["worlds"] });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["turns", "current-turn-state", WORLD_ID],
+    });
   });
 
   it("rejects a negative turn number before touching the DB", async () => {
