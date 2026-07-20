@@ -494,8 +494,14 @@ function createClient({
       if (fn === "current_user_player_character_world_ids") {
         return Promise.resolve({ data: pcWorldIds, error: null });
       }
-      if (fn === "settlement_alive_citizen_count") {
-        return Promise.resolve({ data: 10, error: null });
+      if (fn === "settlement_alive_citizen_counts_batch") {
+        return Promise.resolve({
+          data: settlementRows.map((settlement) => ({
+            alive_citizen_count: 10,
+            settlement_id: settlement.id,
+          })),
+          error: null,
+        });
       }
       throw new Error(`Unexpected RPC call: ${fn}`);
     }),

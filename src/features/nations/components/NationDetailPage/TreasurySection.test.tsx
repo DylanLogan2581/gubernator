@@ -75,7 +75,13 @@ describe("NationTreasurySection", () => {
   it("renders the stockpile table and a placeholder estimate before any snapshot exists", async () => {
     requireSupabaseClient.mockReturnValue(
       createClientFixture({
-        stockpile: [{ resource_id: "resource-1", quantity: 40, name: "Grain" }],
+        stockpile: [
+          {
+            resource_id: "44444444-4444-4444-4444-444444444444",
+            quantity: 40,
+            name: "Grain",
+          },
+        ],
       }).client,
     );
 
@@ -130,8 +136,16 @@ describe("NationTreasurySection", () => {
   it("grants resources to a settlement and reports the result", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
-      settlements: [{ id: "settlement-1", name: "Ironhaven Keep" }],
-      stockpile: [{ resource_id: "resource-1", quantity: 40, name: "Grain" }],
+      settlements: [
+        { id: "33333333-3333-3333-3333-333333333333", name: "Ironhaven Keep" },
+      ],
+      stockpile: [
+        {
+          resource_id: "44444444-4444-4444-4444-444444444444",
+          quantity: 40,
+          name: "Grain",
+        },
+      ],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -162,10 +176,10 @@ describe("NationTreasurySection", () => {
 
     await waitFor(() => {
       expect(clientFixture.rpc).toHaveBeenCalledWith("grant_nation_resources", {
-        p_nation_id: "nation-1",
+        p_nation_id: "11111111-1111-1111-1111-111111111111",
         p_quantity: 10,
-        p_resource_id: "resource-1",
-        p_settlement_id: "settlement-1",
+        p_resource_id: "44444444-4444-4444-4444-444444444444",
+        p_settlement_id: "33333333-3333-3333-3333-333333333333",
       });
     });
     await waitFor(() => {
@@ -194,7 +208,7 @@ describe("NationTreasurySection", () => {
 
     await waitFor(() => {
       expect(clientFixture.rpc).toHaveBeenCalledWith("set_nation_tax_rate", {
-        p_nation_id: "nation-1",
+        p_nation_id: "11111111-1111-1111-1111-111111111111",
         p_rate: 0.11,
       });
     });
@@ -205,16 +219,26 @@ describe("NationTreasurySection", () => {
     const clientFixture = createClientFixture({
       projects: [
         {
-          id: "project-1",
-          settlement_id: "settlement-1",
+          id: "55555555-5555-5555-5555-555555555555",
+          settlement_id: "33333333-3333-3333-3333-333333333333",
           settlement_name: "Ironhaven Keep",
           blueprint_name: "Granary",
           tier_number: 1,
-          costs: [{ resource_id: "resource-1", amount: 20 }],
+          costs: [
+            { resource_id: "44444444-4444-4444-4444-444444444444", amount: 20 },
+          ],
         },
       ],
-      resources: [{ id: "resource-1", name: "Grain" }],
-      stockpile: [{ resource_id: "resource-1", quantity: 20, name: "Grain" }],
+      resources: [
+        { id: "44444444-4444-4444-4444-444444444444", name: "Grain" },
+      ],
+      stockpile: [
+        {
+          resource_id: "44444444-4444-4444-4444-444444444444",
+          quantity: 20,
+          name: "Grain",
+        },
+      ],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -244,7 +268,10 @@ describe("NationTreasurySection", () => {
     await waitFor(() => {
       expect(clientFixture.rpc).toHaveBeenCalledWith(
         "subsidize_construction_project",
-        { p_nation_id: "nation-1", p_project_id: "project-1" },
+        {
+          p_nation_id: "11111111-1111-1111-1111-111111111111",
+          p_project_id: "55555555-5555-5555-5555-555555555555",
+        },
       );
     });
   });
@@ -254,16 +281,26 @@ describe("NationTreasurySection", () => {
     const clientFixture = createClientFixture({
       projects: [
         {
-          id: "project-1",
-          settlement_id: "settlement-1",
+          id: "55555555-5555-5555-5555-555555555555",
+          settlement_id: "33333333-3333-3333-3333-333333333333",
           settlement_name: "Ironhaven Keep",
           blueprint_name: "Granary",
           tier_number: 1,
-          costs: [{ resource_id: "resource-1", amount: 20 }],
+          costs: [
+            { resource_id: "44444444-4444-4444-4444-444444444444", amount: 20 },
+          ],
         },
       ],
-      resources: [{ id: "resource-1", name: "Grain" }],
-      stockpile: [{ resource_id: "resource-1", quantity: 5, name: "Grain" }],
+      resources: [
+        { id: "44444444-4444-4444-4444-444444444444", name: "Grain" },
+      ],
+      stockpile: [
+        {
+          resource_id: "44444444-4444-4444-4444-444444444444",
+          quantity: 5,
+          name: "Grain",
+        },
+      ],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -298,15 +335,19 @@ describe("NationTreasurySection", () => {
     const clientFixture = createClientFixture({
       projects: [
         {
-          id: "project-1",
-          settlement_id: "settlement-1",
+          id: "55555555-5555-5555-5555-555555555555",
+          settlement_id: "33333333-3333-3333-3333-333333333333",
           settlement_name: "Ironhaven Keep",
           blueprint_name: "Granary",
           tier_number: 1,
-          costs: [{ resource_id: "resource-1", amount: 20 }],
+          costs: [
+            { resource_id: "44444444-4444-4444-4444-444444444444", amount: 20 },
+          ],
         },
       ],
-      resources: [{ id: "resource-1", name: "Grain" }],
+      resources: [
+        { id: "44444444-4444-4444-4444-444444444444", name: "Grain" },
+      ],
       stockpile: [],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
@@ -339,7 +380,9 @@ describe("NationTreasurySection", () => {
   it("hides the quantity field in the grant dialog when the nation holds no resources", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
-      settlements: [{ id: "settlement-1", name: "Ironhaven Keep" }],
+      settlements: [
+        { id: "33333333-3333-3333-3333-333333333333", name: "Ironhaven Keep" },
+      ],
       stockpile: [],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
@@ -364,18 +407,22 @@ describe("NationTreasurySection", () => {
 
   it("lists active subsidies with committed vs required amounts and progress", async () => {
     const clientFixture = createClientFixture({
-      resources: [{ id: "resource-1", name: "Grain" }],
+      resources: [
+        { id: "44444444-4444-4444-4444-444444444444", name: "Grain" },
+      ],
       stockpile: [],
       subsidies: [
         {
-          project_id: "project-1",
-          settlement_id: "settlement-1",
+          project_id: "55555555-5555-5555-5555-555555555555",
+          settlement_id: "33333333-3333-3333-3333-333333333333",
           settlement_name: "Ironhaven Keep",
           blueprint_name: "Granary",
           tier_number: 1,
-          resource_id: "resource-1",
+          resource_id: "44444444-4444-4444-4444-444444444444",
           granted_quantity: 10,
-          costs: [{ resource_id: "resource-1", amount: 20 }],
+          costs: [
+            { resource_id: "44444444-4444-4444-4444-444444444444", amount: 20 },
+          ],
         },
       ],
     });
@@ -427,7 +474,7 @@ function createNation(): Nation {
     flagPath: null,
     foundedTurnNumber: null,
     governmentType: "monarchy",
-    id: "nation-1",
+    id: "11111111-1111-1111-1111-111111111111",
     name: "Ironhaven",
     namesetId: null,
     primaryCultureId: null,
@@ -435,7 +482,7 @@ function createNation(): Nation {
     taxRate: 0.1,
     tradePolicy: "free",
     updatedAt: "2026-01-01T00:00:00.000Z",
-    worldId: "world-1",
+    worldId: "22222222-2222-2222-2222-222222222222",
   };
 }
 
@@ -535,7 +582,11 @@ function createClientFixture({
     if (name === "subsidize_construction_project") {
       return rpcChain({
         data: [
-          { clamped: false, granted_quantity: 20, resource_id: "resource-1" },
+          {
+            clamped: false,
+            granted_quantity: 20,
+            resource_id: "44444444-4444-4444-4444-444444444444",
+          },
         ],
         error: null,
       });
@@ -543,8 +594,14 @@ function createClientFixture({
     if (name === "set_nation_tax_rate") {
       return rpcChain({ data: null, error: null });
     }
-    if (name === "settlement_alive_citizen_count") {
-      return Promise.resolve({ data: 0, error: null });
+    if (name === "settlement_alive_citizen_counts_batch") {
+      return Promise.resolve({
+        data: settlements.map((settlement) => ({
+          alive_citizen_count: 0,
+          settlement_id: settlement.id,
+        })),
+        error: null,
+      });
     }
     throw new Error(`Unexpected rpc ${name}`);
   });
@@ -571,7 +628,7 @@ function createClientFixture({
           is_ready_current_turn: false,
           last_ready_at: null,
           name: settlement.name,
-          nation_id: "nation-1",
+          nation_id: "11111111-1111-1111-1111-111111111111",
           nations: { name: "Ironhaven" },
           ready_set_at: null,
         })),
@@ -590,7 +647,7 @@ function createClientFixture({
           settlement_id: project.settlement_id,
           settlements: {
             name: project.settlement_name,
-            nation_id: "nation-1",
+            nation_id: "11111111-1111-1111-1111-111111111111",
           },
         })),
         error: null,
@@ -611,7 +668,7 @@ function createClientFixture({
             settlement_id: subsidy.settlement_id,
             settlements: {
               name: subsidy.settlement_name,
-              nation_id: "nation-1",
+              nation_id: "11111111-1111-1111-1111-111111111111",
             },
           },
           granted_quantity: subsidy.granted_quantity,

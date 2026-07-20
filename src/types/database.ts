@@ -8389,6 +8389,13 @@ export type Database = {
         Args: { p_settlement_id: string };
         Returns: number;
       };
+      settlement_alive_citizen_counts_batch: {
+        Args: { p_settlement_ids: string[] };
+        Returns: {
+          alive_citizen_count: number;
+          settlement_id: string;
+        }[];
+      };
       settlement_effective_storage_cap: {
         Args: { p_resource_id: string; p_settlement_id: string };
         Returns: number;

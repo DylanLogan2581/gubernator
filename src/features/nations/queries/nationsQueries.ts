@@ -161,24 +161,25 @@ async function getNationSettlements(
     throw normalizeSupabaseError(error);
   }
 
-  // Fetch population counts via RPC for each settlement
-  const populationCounts = await Promise.all(
-    data.map(async (settlement) => {
-      const { data: count, error: rpcError } = await client.rpc(
-        "settlement_alive_citizen_count",
-        { p_settlement_id: settlement.id },
-      );
+  if (data.length === 0) {
+    return [];
+  }
 
-      if (rpcError !== null) {
-        throw normalizeSupabaseError(rpcError);
-      }
-
-      return count;
-    }),
+  const { data: populationCounts, error: rpcError } = await client.rpc(
+    "settlement_alive_citizen_counts_batch",
+    { p_settlement_ids: data.map((settlement) => settlement.id) },
   );
 
-  return data.map((row, index) =>
-    toNationSettlement(row, populationCounts[index]),
+  if (rpcError !== null) {
+    throw normalizeSupabaseError(rpcError);
+  }
+
+  const populationBySettlementId = new Map(
+    populationCounts.map((row) => [row.settlement_id, row.alive_citizen_count]),
+  );
+
+  return data.map((row) =>
+    toNationSettlement(row, populationBySettlementId.get(row.id) ?? 0),
   );
 }
 
