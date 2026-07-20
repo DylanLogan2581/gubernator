@@ -80,7 +80,13 @@ export function NationSettlementPopulationChart({
           />
           <Bar dataKey="population" radius={4}>
             {data.map((entry) => (
-              <Cell key={entry.settlementId} fill={entry.fill} />
+              // fill attr alone won't paint var(--...) colors in Chromium; the
+              // style prop resolves through CSSOM so it does.
+              <Cell
+                key={entry.settlementId}
+                fill={entry.fill}
+                style={{ fill: entry.fill }}
+              />
             ))}
           </Bar>
         </BarChart>

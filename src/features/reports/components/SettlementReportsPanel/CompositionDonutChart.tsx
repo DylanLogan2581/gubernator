@@ -62,7 +62,13 @@ export function CompositionDonutChart({
             strokeWidth={0}
           >
             {nonZero.map((slice) => (
-              <Cell key={slice.id} fill={slice.color} />
+              // fill attr alone won't paint var(--...) colors in Chromium; the
+              // style prop resolves through CSSOM so it does.
+              <Cell
+                key={slice.id}
+                fill={slice.color}
+                style={{ fill: slice.color }}
+              />
             ))}
           </Pie>
         </PieChart>
