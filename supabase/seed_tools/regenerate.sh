@@ -11,7 +11,8 @@
 #   1. build_world.sql  — wipe + author the turn-0 world: an Akaviri setting of
 #                         4 nations and 36 settlements (the neutral human Free
 #                         City of Bovold plus the Tsaesci, Tang Mo and Ka'Po'Tun),
-#                         ~2,830 NPCs named from 4 culture namesets, full culture/
+#                         ~3,900 NPCs named from 4 culture namesets, spanning
+#                         2-4 generations of family ties, full culture/
 #                         religion/government/law/military/education/event data,
 #                         a self-sufficient economy, deposits, managed populations
 #                         and citizen assignments.
@@ -134,7 +135,7 @@ for line in open(os.environ['DATA']):
         if table in groups:
             groups[table].append(line.rstrip('\n'))
 hdr = ['', '-- ' + '=' * 73, '-- Bovold Seed World.', '--',
- '-- A single, richly populated Akaviri world (4 nations, 36 settlements, ~2,830',
+ '-- A single, richly populated Akaviri world (4 nations, 36 settlements, ~3,900',
  '-- citizens named from 4 culture namesets, with full culture/religion/government/',
  '-- law/military/education/event data and a self-sufficient economy) that was',
  '-- advanced 32 turns through the real end-turn simulation, then tidied into a',

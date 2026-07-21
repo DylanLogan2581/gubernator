@@ -1199,7 +1199,7 @@ begin
     update public.settlement_resource_stockpiles s set quantity = v.qty
     from public.resources res,
       (values
-        ('food', v_pop * 3), ('fresh-water', v_pop * 3), ('grain', v_pop * 2), ('rice', v_pop),
+        ('food', v_pop * 4), ('fresh-water', v_pop * 4), ('grain', v_pop * 2), ('rice', v_pop),
         ('hardwood-logs', 500), ('stone-block', 500), ('softwood-logs', 200), ('stone', 200),
         ('iron-ore', 150), ('copper-ore', 150), ('tin-ore', 150), ('coal', 200), ('clay', 200), ('sand', 200),
         ('iron-ingot', 80), ('copper-ingot', 80), ('tin-ingot', 80), ('bronze', 40), ('steel', 40),
@@ -1294,8 +1294,11 @@ declare
   c int;
   v_surname text; v_conv text;
   v_male_id uuid; v_female_id uuid; v_child_id uuid;
-  v_mborn int; v_fborn int;
+  v_gp_male_id uuid; v_gp_female_id uuid;
+  v_spouse_id uuid; v_gc_id uuid;
+  v_mborn int; v_fborn int; v_child_born int;
   v_edu uuid;
+  v_extends boolean;
 begin
   v_nt := array_length(v_traits,1); v_nc := array_length(v_contra,1);
   v_ng := array_length(v_goals,1);  v_nl := array_length(v_flaws,1);
@@ -1320,10 +1323,34 @@ begin
         when v_seq % 3 = 0 then pg_temp.seed_uuid('edu:lettered')
         else null end;
 
+      -- Grandparents: 1/3 of founding couples get a traced paternal side,
+      -- born well before the couple so the couple's own children inherit a
+      -- grandparent link. Deterministic on c, no RNG.
+      v_gp_male_id := null; v_gp_female_id := null;
+      if c % 3 = 0 then
+        v_seq := v_seq + 1;
+        v_gp_male_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
+        insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, npc_trait_1, npc_goal)
+        values (v_gp_male_id, v_world, pg_temp.seed_uuid('settlement:' || r.key), 'npc', v_male[1 + ((v_seq+6) % v_nm)], v_surname, 'male', 'alive',
+                v_mborn - (30 + (v_seq % 20)), v_nameset, v_culture, v_religion,
+                v_traits[1+(v_seq % v_nt)], v_goals[1+(v_seq % v_ng)]);
+
+        v_seq := v_seq + 1;
+        v_gp_female_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
+        insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, npc_trait_1, npc_goal)
+        values (v_gp_female_id, v_world, pg_temp.seed_uuid('settlement:' || r.key), 'npc', v_female[1 + ((v_seq*3) % v_nf)], v_surname, 'female', 'alive',
+                v_fborn - (28 + (v_seq % 20)), v_nameset, v_culture, v_religion,
+                v_traits[1+(v_seq % v_nt)], v_goals[1+(v_seq % v_ng)]);
+
+        insert into public.partnerships (citizen_a_id, citizen_b_id, status, formed_on_turn_number)
+        values (v_gp_male_id, v_gp_female_id, 'active', least(v_mborn, v_fborn) - 26);
+      end if;
+
       v_seq := v_seq + 1;
       v_male_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
-      insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, education_level_id, npc_trait_1, npc_trait_2, npc_secret_contradiction, npc_goal, npc_flaw)
+      insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, education_level_id, parent_a_citizen_id, parent_b_citizen_id, npc_trait_1, npc_trait_2, npc_secret_contradiction, npc_goal, npc_flaw)
       values (v_male_id, v_world, pg_temp.seed_uuid('settlement:' || r.key), 'npc', v_male[1 + (v_seq % v_nm)], v_surname, 'male', 'alive', v_mborn, v_nameset, v_culture, v_religion, v_edu,
+              v_gp_male_id, v_gp_female_id,
               v_traits[1+(v_seq % v_nt)], v_traits[1+((v_seq+5) % v_nt)], v_contra[1+(v_seq % v_nc)], v_goals[1+(v_seq % v_ng)], v_flaws[1+(v_seq % v_nl)]);
 
       v_seq := v_seq + 1;
@@ -1336,6 +1363,13 @@ begin
       values (v_male_id, v_female_id, 'active', greatest(v_mborn, v_fborn) + 18);
 
       if c <= r.children then
+        -- Every 6th child-bearing couple extends a 3rd generation: their
+        -- child is grown (an adult, not an infant) and partners to have a
+        -- grandchild of the founding couple. Otherwise the child is young,
+        -- as before.
+        v_extends := (c % 6 = 0);
+        v_child_born := case when v_extends then -(18 + (v_seq % 20)) else -(1 + (c % 12)) end;
+
         v_seq := v_seq + 1;
         v_child_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
         insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, parent_a_citizen_id, parent_b_citizen_id, npc_trait_1, npc_goal)
@@ -1343,8 +1377,45 @@ begin
                 case when c % 2 = 0 then v_male[1 + ((v_seq+4) % v_nm)] else v_female[1 + ((v_seq+2) % v_nf)] end,
                 v_surname,
                 case when c % 2 = 0 then 'male' else 'female' end,
-                'alive', -(1 + (c % 12)), v_nameset, v_culture, v_religion, v_male_id, v_female_id,
+                'alive', v_child_born, v_nameset, v_culture, v_religion, v_male_id, v_female_id,
                 v_traits[1+(v_seq % v_nt)], v_goals[1+(v_seq % v_ng)]);
+
+        if v_extends then
+          v_seq := v_seq + 1;
+          v_spouse_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
+          insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, npc_trait_1, npc_goal)
+          values (v_spouse_id, v_world, pg_temp.seed_uuid('settlement:' || r.key), 'npc',
+                  case when c % 2 = 0 then v_female[1 + ((v_seq*3) % v_nf)] else v_male[1 + ((v_seq+8) % v_nm)] end,
+                  v_surn[1 + ((v_seq+1) % v_ns)],
+                  case when c % 2 = 0 then 'female' else 'male' end,
+                  'alive', v_child_born - 2, v_nameset, v_culture, v_religion,
+                  v_traits[1+(v_seq % v_nt)], v_goals[1+(v_seq % v_ng)]);
+
+          insert into public.partnerships (citizen_a_id, citizen_b_id, status, formed_on_turn_number)
+          values (v_child_id, v_spouse_id, 'active', greatest(v_child_born, v_child_born - 2) + 18);
+
+          v_seq := v_seq + 1;
+          v_gc_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
+          insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, parent_a_citizen_id, parent_b_citizen_id, npc_trait_1, npc_goal)
+          values (v_gc_id, v_world, pg_temp.seed_uuid('settlement:' || r.key), 'npc',
+                  case when c % 2 = 0 then v_male[1 + ((v_seq+9) % v_nm)] else v_female[1 + ((v_seq+11) % v_nf)] end,
+                  v_surname,
+                  case when c % 2 = 0 then 'male' else 'female' end,
+                  'alive', -(1 + (v_seq % 12)), v_nameset, v_culture, v_religion, v_child_id, v_spouse_id,
+                  v_traits[1+(v_seq % v_nt)], v_goals[1+(v_seq % v_ng)]);
+        elsif c % 4 = 1 then
+          -- A second, younger child for couples not chosen to extend a 3rd
+          -- generation, so litter size isn't capped at one.
+          v_seq := v_seq + 1;
+          v_child_id := pg_temp.seed_uuid('citizen:bulk:' || v_seq);
+          insert into public.citizens (id, world_id, settlement_id, citizen_type, given_name, surname, sex, status, born_on_turn_number, nameset_id, culture_id, religion_id, parent_a_citizen_id, parent_b_citizen_id, npc_trait_1, npc_goal)
+          values (v_child_id, v_world, pg_temp.seed_uuid('settlement:' || r.key), 'npc',
+                  case when c % 2 = 0 then v_female[1 + ((v_seq+2) % v_nf)] else v_male[1 + ((v_seq+4) % v_nm)] end,
+                  v_surname,
+                  case when c % 2 = 0 then 'female' else 'male' end,
+                  'alive', -(1 + ((c + v_seq) % 12)), v_nameset, v_culture, v_religion, v_male_id, v_female_id,
+                  v_traits[1+(v_seq % v_nt)], v_goals[1+(v_seq % v_ng)]);
+        end if;
       end if;
     end loop;
   end loop;
