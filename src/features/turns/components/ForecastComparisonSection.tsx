@@ -8,6 +8,8 @@ import type {
   TurnTransitionResourceSnapshot,
 } from "@/features/turns";
 
+import { compareResourceDelta } from "../utils/compareResourceDelta";
+
 import type { JSX } from "react";
 
 type SettlementForecast = {
@@ -67,24 +69,8 @@ function getSettlementForecast(
   return null;
 }
 
-function compareResourceDelta(
-  forecastDelta: SettlementForecast["resourceDeltas"][0],
-  actual: TurnTransitionResourceSnapshot,
-): {
-  readonly diverged: boolean;
-  readonly forecastValue: number;
-  readonly actualValue: number;
-  readonly reason?: string;
-} {
-  const forecastNetDelta = forecastDelta.netDelta;
-  const actualNetDelta = actual.quantityAfter - actual.quantityBefore;
-
-  return {
-    actualValue: actualNetDelta,
-    diverged: forecastNetDelta !== actualNetDelta,
-    forecastValue: forecastNetDelta,
-  };
-}
+// Deaths are integer counts; this only guards against float artifacts.
+const DEATH_COUNT_EPSILON = 0.5;
 
 export function ForecastComparisonSection({
   outcome,
@@ -192,7 +178,8 @@ export function ForecastComparisonSection({
     return {
       actualTotalDeaths,
       forecastTotalDeaths,
-      diverged: forecastTotalDeaths !== actualTotalDeaths,
+      diverged:
+        Math.abs(forecastTotalDeaths - actualTotalDeaths) > DEATH_COUNT_EPSILON,
       forecastBreakdown: settlementForecast.deathsBy,
     };
   }, [settlementForecast, settlementIds, outcome.settlementSnapshots]);
