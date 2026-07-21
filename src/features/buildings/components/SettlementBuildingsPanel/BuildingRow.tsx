@@ -119,7 +119,7 @@ export function BuildingRow({
   const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
   const showStateBadge = building.state !== "active";
   const isSchool = building.educationConfig !== null;
-  const columnCount = 2 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
+  const columnCount = 3 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
 
   return (
     <>
@@ -134,7 +134,7 @@ export function BuildingRow({
                     ? "Hide education section"
                     : "Show education section"
                 }
-                className="h-6 w-6 p-0 -ml-1"
+                className="h-6 w-6 shrink-0 p-0"
                 size="icon-sm"
                 type="button"
                 variant="ghost"
@@ -147,7 +147,9 @@ export function BuildingRow({
                   className={educationOpen ? "h-4 w-4" : "h-4 w-4 -rotate-90"}
                 />
               </Button>
-            ) : null}
+            ) : (
+              <span aria-hidden="true" className="h-6 w-6 shrink-0" />
+            )}
             <IconChip
               icon={resolveEntityIcon(building.blueprintIcon)}
               tone={resolveIconTone(
@@ -157,6 +159,9 @@ export function BuildingRow({
             />
             {building.name ?? building.blueprintName}
           </span>
+        </TableCell>
+        <TableCell className="w-12 py-2 pr-4 text-muted-foreground">
+          1
         </TableCell>
         {showTierColumn ? (
           <TableCell className="py-2 pr-4">

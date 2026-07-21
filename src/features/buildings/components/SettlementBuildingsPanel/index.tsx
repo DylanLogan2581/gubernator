@@ -128,7 +128,7 @@ export function SettlementBuildingsPanel({
 
       <CardContent>
         {buildingsQuery.isPending ? (
-          <TableSkeleton columnCount={5} rowCount={5} />
+          <TableSkeleton columnCount={6} rowCount={5} />
         ) : buildingsQuery.isError ? (
           <ErrorState
             title="Buildings could not be loaded"
@@ -320,6 +320,9 @@ function BuildingStateGroup({
           <TableHeader>
             <TableRow className="text-muted-foreground">
               <TableHead scope="col">Building</TableHead>
+              <TableHead className="w-12" scope="col">
+                Count
+              </TableHead>
               {showTierColumn ? <TableHead scope="col">Tier</TableHead> : null}
               <TableHead scope="col">Effects</TableHead>
               <TableHead className="w-16" scope="col" aria-label="State" />
@@ -401,7 +404,7 @@ function DuplicateBuildingGroupRows({
   const [expanded, setExpanded] = useState(false);
   const first = buildings[0];
   const name = first.name ?? first.blueprintName;
-  const columnCount = 2 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
+  const columnCount = 3 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
 
   if (expanded) {
     return (
@@ -413,12 +416,14 @@ function DuplicateBuildingGroupRows({
               size="sm"
               type="button"
               variant="ghost"
-              className="h-6 gap-1 px-1 text-muted-foreground"
+              className="h-6 gap-2 px-0 text-muted-foreground"
               onClick={() => {
                 setExpanded(false);
               }}
             >
-              <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              </span>
               <IconChip
                 icon={resolveEntityIcon(first.blueprintIcon)}
                 tone={resolveIconTone(
@@ -426,7 +431,7 @@ function DuplicateBuildingGroupRows({
                   first.buildingBlueprintId,
                 )}
               />
-              {name} ×{buildings.length}
+              {name}
             </Button>
           </TableCell>
         </TableRow>
@@ -462,12 +467,14 @@ function DuplicateBuildingGroupRows({
           size="sm"
           type="button"
           variant="ghost"
-          className="h-6 gap-1 px-1 -ml-1"
+          className="h-6 gap-2 px-0"
           onClick={() => {
             setExpanded(true);
           }}
         >
-          <ChevronDown aria-hidden="true" className="h-4 w-4 -rotate-90" />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+            <ChevronDown aria-hidden="true" className="h-4 w-4 -rotate-90" />
+          </span>
           <IconChip
             icon={resolveEntityIcon(first.blueprintIcon)}
             tone={resolveIconTone(
@@ -475,8 +482,11 @@ function DuplicateBuildingGroupRows({
               first.buildingBlueprintId,
             )}
           />
-          {name} ×{buildings.length}
+          {name}
         </Button>
+      </TableCell>
+      <TableCell className="w-12 py-2 pr-4 text-muted-foreground">
+        {buildings.length}
       </TableCell>
       {showTierColumn ? (
         <TableCell className="py-2 pr-4">Tier {first.tierNumber}</TableCell>

@@ -496,12 +496,12 @@ describe("SettlementBuildingsPanel", () => {
 
     renderPanel({ canAdmin: false, isArchived: false });
 
-    expect(await screen.findByText("Longhouse ×4")).toBeDefined();
-    expect(screen.queryAllByText("Longhouse")).toHaveLength(0);
+    expect(await screen.findByText("Longhouse")).toBeDefined();
+    expect(screen.getByText("4")).toBeDefined();
 
-    await user.click(screen.getByText("Longhouse ×4"));
+    await user.click(screen.getByText("Longhouse"));
 
-    expect(await screen.findAllByText("Longhouse")).toHaveLength(4);
+    expect(await screen.findAllByText("Longhouse")).toHaveLength(5);
   });
 
   it("renders amber Suspended badge for suspended buildings", async () => {
