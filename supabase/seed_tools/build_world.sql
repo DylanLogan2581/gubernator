@@ -801,7 +801,7 @@ begin
   insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, icon) values
     (pg_temp.seed_uuid('job:stone-mason'), v_world, 'Stone Mason', 'stone-mason', 'construction', 8, 'game:trowel');
   insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker, required_education_level_id, icon) values
-    (pg_temp.seed_uuid('job:caravan-trader'), v_world, 'Caravan Trader', 'caravan-trader', 'trader', 3, pg_temp.seed_uuid('edu:lettered'), 'game:caravan');
+    (pg_temp.seed_uuid('job:caravan-trader'), v_world, 'Caravan Trader', 'caravan-trader', 'trader', 25, pg_temp.seed_uuid('edu:lettered'), 'game:caravan');
 
   -- Deposit types (12) + their miner jobs.
   insert into public.deposit_types (id, world_id, name, slug, icon)
@@ -1835,8 +1835,8 @@ begin
         and id not in (select citizen_id from public.unit_soldiers)
       order by born_on_turn_number, id limit 1;
     if v_cid is not null then
-      insert into public.citizen_assignments (citizen_id, assignment_type, trade_route_id, trade_route_end, assigned_on_turn_number)
-      values (v_cid, 'trade_route', pg_temp.seed_uuid(r.route), r.e, 0);
+      insert into public.citizen_assignments (citizen_id, assignment_type, job_id, trade_route_id, trade_route_end, assigned_on_turn_number)
+      values (v_cid, 'trade_route', pg_temp.seed_uuid('job:caravan-trader'), pg_temp.seed_uuid(r.route), r.e, 0);
     end if;
   end loop;
 end$$;

@@ -12,6 +12,7 @@ declare
   r record; v_ids uuid[]; v_n int; v_idx int; j int; k int; v_pop int;
   v_gran int; v_cist int; v_field_cap int; v_water_cap int;
   v_jobs uuid[]; v_cnts int[]; dep record; pop record; v_cid uuid; v_has_school boolean;
+  v_trader uuid;
 begin
   select id into v_world from public.worlds where name = 'Bovold Seed World';
   select id into v_field   from public.job_definitions where world_id = v_world and slug = 'field-hand';
@@ -20,6 +21,7 @@ begin
   select id into v_brewer  from public.job_definitions where world_id = v_world and slug = 'brewer';
   select id into v_weaver  from public.job_definitions where world_id = v_world and slug = 'cloth-weaver';
   select id into v_teacher from public.job_definitions where world_id = v_world and slug = 'teacher';
+  select id into v_trader  from public.job_definitions where world_id = v_world and slug = 'caravan-trader';
 
   -- Fresh staffing: wipe all assignments (soldiers are tracked in unit_soldiers,
   -- not citizen_assignments, so they stay out of the pool automatically).
@@ -65,8 +67,8 @@ begin
         and id not in (select citizen_id from public.unit_soldiers)
       order by born_on_turn_number, id limit 1;
     if v_cid is not null then
-      insert into public.citizen_assignments (citizen_id, assignment_type, trade_route_id, trade_route_end, assigned_on_turn_number)
-      values (v_cid, 'trade_route', r.rid, 'origin', 32);
+      insert into public.citizen_assignments (citizen_id, assignment_type, job_id, trade_route_id, trade_route_end, assigned_on_turn_number)
+      values (v_cid, 'trade_route', v_trader, r.rid, 'origin', 32);
     end if;
     select id into v_cid from public.citizens
       where settlement_id = r.dsid and citizen_type = 'npc' and status = 'alive'
@@ -74,8 +76,8 @@ begin
         and id not in (select citizen_id from public.unit_soldiers)
       order by born_on_turn_number, id limit 1;
     if v_cid is not null then
-      insert into public.citizen_assignments (citizen_id, assignment_type, trade_route_id, trade_route_end, assigned_on_turn_number)
-      values (v_cid, 'trade_route', r.rid, 'destination', 32);
+      insert into public.citizen_assignments (citizen_id, assignment_type, job_id, trade_route_id, trade_route_end, assigned_on_turn_number)
+      values (v_cid, 'trade_route', v_trader, r.rid, 'destination', 32);
     end if;
   end loop;
 
