@@ -397,34 +397,34 @@ from tmp_pools p;
 -- ---------------------------------------------------------------------------
 -- flag_path points at the nation-images objects the config.toml storage bucket
 -- seeds on reset (<nation_id>/flag.webp).
-insert into public.nations (id, world_id, name, description, nameset_id, primary_culture_id, state_religion_id, government_type, flag_path) values
+insert into public.nations (id, world_id, name, description, nameset_id, primary_culture_id, state_religion_id, government_type, flag_path, tax_rate, treasury_currency) values
   (
     pg_temp.seed_uuid('nation:bovold'), pg_temp.seed_uuid('world:bovold'),
     'Free City of Bovold',
     'The one human city of Akavir — a chartered neutral free port that trades with every beast-nation and bows to none.',
     pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), 'republic',
-    pg_temp.seed_uuid('nation:bovold')::text || '/flag.webp'
+    pg_temp.seed_uuid('nation:bovold')::text || '/flag.webp', 0.08, 4200
   ),
   (
     pg_temp.seed_uuid('nation:tsaesci'), pg_temp.seed_uuid('world:bovold'),
     'Tsaesciland Empire',
     'The immortal cannibal serpent-folk empire, ruled from the coiling palaces of Coil-of-Gold by an ageless Potentate.',
     pg_temp.seed_uuid('nameset:2'), pg_temp.seed_uuid('culture:tsaesci'), pg_temp.seed_uuid('religion:tsaesci'), 'despotism',
-    pg_temp.seed_uuid('nation:tsaesci')::text || '/flag.webp'
+    pg_temp.seed_uuid('nation:tsaesci')::text || '/flag.webp', 0, 0
   ),
   (
     pg_temp.seed_uuid('nation:tangmo'), pg_temp.seed_uuid('world:bovold'),
     'Thousand Monkey Islands',
     'A free confederation of many-breed monkey-folk across a thousand isles — kind, unconquered, and fiercely opposed to all slavery.',
     pg_temp.seed_uuid('nameset:3'), pg_temp.seed_uuid('culture:tangmo'), pg_temp.seed_uuid('religion:tangmo'), 'confederation',
-    pg_temp.seed_uuid('nation:tangmo')::text || '/flag.webp'
+    pg_temp.seed_uuid('nation:tangmo')::text || '/flag.webp', 0, 0
   ),
   (
     pg_temp.seed_uuid('nation:kapotun'), pg_temp.seed_uuid('world:bovold'),
     'Ka''Po''Tun Confederacy',
     'The mountain empire of tiger-folk striving to become dragons, led by the god-emperor Tosh Raka from the cloister-city of Po''Tun.',
     pg_temp.seed_uuid('nameset:4'), pg_temp.seed_uuid('culture:kapotun'), pg_temp.seed_uuid('religion:kapotun'), 'theocracy',
-    pg_temp.seed_uuid('nation:kapotun')::text || '/flag.webp'
+    pg_temp.seed_uuid('nation:kapotun')::text || '/flag.webp', 0, 0
   );
 
 -- All four nations already know each other at turn 0.
@@ -1260,6 +1260,9 @@ insert into public.citizens (
   (pg_temp.seed_uuid('citizen:notable:bovold-council1'),pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'),  'npc', 'Elsbeth', 'Weaverson','female', 'alive', -48, pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), pg_temp.seed_uuid('edu:scholar'), 'wary','generous','keeps a portrait they never named','to restore the family name','envy'),
   (pg_temp.seed_uuid('citizen:notable:bovold-council2'),pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'),  'npc', 'Cedric', 'Pennington','male',  'alive', -45, pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), pg_temp.seed_uuid('edu:scholar'), 'boisterous','shrewd','loves their rival','to outlive every captain','a need to be the cleverest voice'),
   (pg_temp.seed_uuid('citizen:notable:bovold-warden'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'),  'npc', 'Merek', 'Redfern',  'male',   'alive', -40, pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), pg_temp.seed_uuid('edu:lettered'),'stoic','watchful','hides a wound that should have killed them','to die at home and not on the road','miserliness at home'),
+  (pg_temp.seed_uuid('citizen:notable:bovold-treasurer'),      pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'),  'npc', 'Osmund', 'Coinwright', 'male',   'alive', -50, pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), pg_temp.seed_uuid('edu:scholar'), 'meticulous','wary','skims a hair off every tally and calls it his fee','to balance the Great Counting-Hall''s books to the last coin','miserliness at home'),
+  (pg_temp.seed_uuid('citizen:notable:bovold-bank-governor'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'),  'npc', 'Ysolde', 'Marchbanks', 'female', 'alive', -46, pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), pg_temp.seed_uuid('edu:sage'),    'shrewd','patient','trusts the Drake''s gold backing more than she trusts the Council','to see the Bovold Drake outlast every fiat coin in Akavir','pride'),
+  (pg_temp.seed_uuid('citizen:notable:bovold-senator'),        pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'),  'npc', 'Tamsin', 'Rookwood',   'female', 'alive', -42, pg_temp.seed_uuid('nameset:1'), pg_temp.seed_uuid('culture:bovold'), pg_temp.seed_uuid('religion:bovold'), pg_temp.seed_uuid('edu:lettered'),'boisterous','generous','owes her council seat to a debt she never repaid','a seat on the council','envy'),
   (pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:coilgold'), 'npc', 'Versidue', 'Shaie',   'male',   'alive', -220, pg_temp.seed_uuid('nameset:2'), pg_temp.seed_uuid('culture:tsaesci'), pg_temp.seed_uuid('religion:tsaesci'), pg_temp.seed_uuid('edu:sage'), 'cunning','patient','mourns a rival they devoured','to outlive every emperor','certainty they alone hold the line'),
   (pg_temp.seed_uuid('citizen:notable:tsaesci-vizier'),    pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:coilgold'), 'npc', 'Savirien', 'Chorak', 'female', 'alive', -140, pg_temp.seed_uuid('nameset:2'), pg_temp.seed_uuid('culture:tsaesci'), pg_temp.seed_uuid('religion:tsaesci'), pg_temp.seed_uuid('edu:scholar'), 'shrewd','venomous','serves a god they doubt','a seat on the council','envy'),
   (pg_temp.seed_uuid('citizen:notable:tangmo-speaker'),    pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:motang'),   'npc', 'Ubu', 'Mo',        'male',   'alive', -44, pg_temp.seed_uuid('nameset:3'), pg_temp.seed_uuid('culture:tangmo'), pg_temp.seed_uuid('religion:tangmo'), pg_temp.seed_uuid('edu:lettered'), 'generous','boisterous','shelters an enemy of the state','to see the long thaw end','a temper that surfaces in ritual'),
@@ -1441,6 +1444,17 @@ insert into public.nation_offices (id, world_id, nation_id, settlement_id, offic
   (pg_temp.seed_uuid('appt:bovold:council1'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'),  null, pg_temp.seed_uuid('office:bovold:council'),    pg_temp.seed_uuid('citizen:notable:bovold-council1'), 0),
   (pg_temp.seed_uuid('appt:bovold:council2'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'),  null, pg_temp.seed_uuid('office:bovold:council'),    pg_temp.seed_uuid('citizen:notable:bovold-council2'), 0),
   (pg_temp.seed_uuid('appt:bovold:warden'),   pg_temp.seed_uuid('world:bovold'), null, pg_temp.seed_uuid('settlement:bovold'), pg_temp.seed_uuid('office:bovold:warden'),     pg_temp.seed_uuid('citizen:notable:bovold-warden'),   0),
+  -- World-default office types (senator/treasurer/bank_governor) have no stable seed_uuid
+  -- (they are created by the worlds_seed_default_office_types trigger), so look them up by name.
+  (pg_temp.seed_uuid('appt:bovold:treasurer'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'), null,
+   (select id from public.office_types where world_id = pg_temp.seed_uuid('world:bovold') and nation_id is null and name = 'treasurer'),
+   pg_temp.seed_uuid('citizen:notable:bovold-treasurer'), 0),
+  (pg_temp.seed_uuid('appt:bovold:bank-governor'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'), null,
+   (select id from public.office_types where world_id = pg_temp.seed_uuid('world:bovold') and nation_id is null and name = 'bank_governor'),
+   pg_temp.seed_uuid('citizen:notable:bovold-bank-governor'), 0),
+  (pg_temp.seed_uuid('appt:bovold:senator'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'), null,
+   (select id from public.office_types where world_id = pg_temp.seed_uuid('world:bovold') and nation_id is null and name = 'senator'),
+   pg_temp.seed_uuid('citizen:notable:bovold-senator'), 0),
   (pg_temp.seed_uuid('appt:tsaesci:potentate'),pg_temp.seed_uuid('world:bovold'),pg_temp.seed_uuid('nation:tsaesci'), null, pg_temp.seed_uuid('office:tsaesci:potentate'), pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'),0),
   (pg_temp.seed_uuid('appt:tsaesci:vizier'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tsaesci'), null, pg_temp.seed_uuid('office:tsaesci:vizier'),    pg_temp.seed_uuid('citizen:notable:tsaesci-vizier'),  0),
   (pg_temp.seed_uuid('appt:tangmo:speaker'),  pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tangmo'),  null, pg_temp.seed_uuid('office:tangmo:speaker'),    pg_temp.seed_uuid('citizen:notable:tangmo-speaker'),  0),
