@@ -32,11 +32,14 @@ const GENERATION_LABELS: Readonly<Record<number, string>> = {
   3: "Great-grandchildren",
 };
 
-const COLUMN_WIDTH = 176;
-const ROW_HEIGHT = 110;
-const CARD_WIDTH = 160;
-const HORIZONTAL_PADDING = 150;
-const VERTICAL_PADDING = 40;
+const COLUMN_WIDTH = 210;
+const ROW_HEIGHT = 130;
+const CARD_WIDTH = 150;
+const CARD_HALF_WIDTH = CARD_WIDTH / 2;
+const CARD_HALF_HEIGHT = 32;
+const HORIZONTAL_PADDING = 240;
+const VERTICAL_PADDING = 48;
+const LABEL_GUTTER_WIDTH = HORIZONTAL_PADDING - CARD_HALF_WIDTH - 16;
 const DRAG_THRESHOLD_PX = 4;
 
 export function CitizenFamilyTreeSection({
@@ -220,7 +223,7 @@ function FamilyTreeCanvas({
       >
         <svg
           aria-hidden="true"
-          className="absolute inset-0"
+          className="absolute inset-0 z-0"
           height={contentHeight}
           width={contentWidth}
         >
@@ -236,8 +239,12 @@ function FamilyTreeCanvas({
         {generations.map((generation) => (
           <div
             key={generation}
-            className="absolute text-xs font-medium text-muted-foreground"
-            style={{ left: 8, top: toPixelY(generation) - 8 }}
+            className="absolute z-0 -translate-y-1/2 text-xs font-medium text-muted-foreground"
+            style={{
+              left: 8,
+              top: toPixelY(generation),
+              width: LABEL_GUTTER_WIDTH,
+            }}
           >
             {GENERATION_LABELS[generation] ?? `Generation ${generation}`}
           </div>
@@ -269,18 +276,37 @@ function FamilyTreeEdgePath({
   const y1 = toPixelY(edge.from.y);
   const x2 = toPixelX(edge.to.x);
   const y2 = toPixelY(edge.to.y);
-  const midY = (y1 + y2) / 2;
+
+  const strokeClassName = "text-muted-foreground";
+
+  if (edge.kind === "partner") {
+    const left = Math.min(x1, x2) + CARD_HALF_WIDTH;
+    const right = Math.max(x1, x2) - CARD_HALF_WIDTH;
+    return (
+      <path
+        className={strokeClassName}
+        d={`M ${left} ${y1} L ${right} ${y1}`}
+        fill="none"
+        stroke="currentColor"
+        strokeDasharray={edge.dashed ? "4 3" : undefined}
+        strokeWidth={2}
+      />
+    );
+  }
+
+  const goingDown = y2 >= y1;
+  const startY = goingDown ? y1 + CARD_HALF_HEIGHT : y1 - CARD_HALF_HEIGHT;
+  const endY = goingDown ? y2 - CARD_HALF_HEIGHT : y2 + CARD_HALF_HEIGHT;
+  const midY = (startY + endY) / 2;
 
   return (
     <path
-      className={
-        edge.kind === "partner" ? "text-muted-foreground/70" : "text-border"
-      }
-      d={`M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`}
+      className={strokeClassName}
+      d={`M ${x1} ${startY} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${endY}`}
       fill="none"
       stroke="currentColor"
       strokeDasharray={edge.dashed ? "4 3" : undefined}
-      strokeWidth={1.5}
+      strokeWidth={2}
     />
   );
 }
@@ -302,7 +328,7 @@ function FamilyTreeNodeCard({
   if (node.citizenId === null || node.name === null || node.status === null) {
     return (
       <div
-        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-md border border-dashed border-border bg-background px-3 py-2 text-center"
+        className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-md border border-dashed border-border bg-background px-3 py-2 text-center"
         style={style}
       >
         <span className="text-sm italic text-muted-foreground">Unknown</span>
@@ -320,7 +346,7 @@ function FamilyTreeNodeCard({
   return (
     <div
       className={cn(
-        "absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-start gap-1 rounded-md border bg-background px-3 py-2",
+        "absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-start gap-1 rounded-md border bg-background px-3 py-2",
         isCurrentCitizen
           ? "border-primary bg-primary/5 ring-1 ring-primary"
           : "border-border",
