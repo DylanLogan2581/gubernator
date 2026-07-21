@@ -1,3 +1,5 @@
+import { PAUSE_REASON_LABELS } from "@/features/trade";
+
 import type { SettlementForecastData } from "../schemas/forecastSchemas";
 
 export type SettlementForecastWarning = {
@@ -49,7 +51,9 @@ export function deriveSettlementForecastWarnings(
   for (const trade of forecast.tradeChanges) {
     if (!trade.delivered) {
       const reason =
-        trade.pauseReason !== null ? ` — ${trade.pauseReason}` : "";
+        trade.pauseReason !== null
+          ? ` — ${PAUSE_REASON_LABELS[trade.pauseReason] ?? trade.pauseReason}`
+          : "";
       warnings.push({
         key: `trade-${trade.tradeRouteId}`,
         label: `Trade route paused${reason}`,

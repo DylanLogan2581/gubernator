@@ -28,6 +28,7 @@ export const PAUSE_REASON_LABELS: Record<string, string> = {
   insufficient_trader_destination: "Insufficient traders at destination",
   insufficient_trader_origin: "Insufficient traders at origin",
   nations_at_war: "Nations at war",
+  trade_policy_closed: "Trade policy closed",
 };
 
 // Only the recipient side requires approval (the proposer's side is auto-approved
