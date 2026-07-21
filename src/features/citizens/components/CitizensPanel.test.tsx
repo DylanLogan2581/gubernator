@@ -60,7 +60,7 @@ type DirectoryRowFixture = {
 };
 
 type AggregateRowFixture = {
-  readonly citizen_assignments: ReadonlyArray<{
+  readonly citizen_assignments: {
     readonly assignment_type:
       | "construction_project"
       | "culling"
@@ -68,7 +68,7 @@ type AggregateRowFixture = {
       | "husbandry"
       | "standard_job"
       | "trade_route";
-  }> | null;
+  } | null;
   readonly citizen_type: "npc" | "player_character";
   readonly id: string;
   readonly status: "alive" | "dead";
@@ -217,13 +217,13 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            citizen_assignments: { assignment_type: "standard_job" },
             citizen_type: "player_character",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "husbandry" }],
+            citizen_assignments: { assignment_type: "husbandry" },
             citizen_type: "player_character",
             id: "c-2",
             status: "alive",
@@ -268,7 +268,7 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            citizen_assignments: { assignment_type: "standard_job" },
             id: "c-1",
             status: "alive",
           }),
@@ -292,7 +292,7 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            citizen_assignments: { assignment_type: "standard_job" },
             id: "c-1",
             status: "alive",
           }),
@@ -323,12 +323,12 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            citizen_assignments: { assignment_type: "standard_job" },
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "husbandry" }],
+            citizen_assignments: { assignment_type: "husbandry" },
             id: "c-2",
             status: "alive",
           }),

@@ -162,9 +162,11 @@ type CitizenAggregateRow = {
 };
 
 type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
-  readonly citizen_assignments: ReadonlyArray<{
+  // citizen_id is the primary key of citizen_assignments, so PostgREST embeds
+  // this as a single object (not an array) for the 1:1 relationship.
+  readonly citizen_assignments: {
     readonly assignment_type: CitizenAssignmentType;
-  }> | null;
+  } | null;
 };
 
 const CITIZEN_SELECT =
@@ -704,7 +706,7 @@ function computeAggregate(
   for (const row of rows) {
     typeBreakdown[row.citizen_type] += 1;
     statusBreakdown[row.status] += 1;
-    const assignment = row.citizen_assignments?.[0]?.assignment_type ?? null;
+    const assignment = row.citizen_assignments?.assignment_type ?? null;
     if (assignment === null) {
       if (row.status === "alive") {
         assignmentTypeBreakdown.unassigned += 1;

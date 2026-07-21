@@ -23,6 +23,7 @@ import type {
   BulkStandardJobAssignmentResult,
   SettlementJobCount,
 } from "../types/bulkAssignmentTypes";
+import type { CitizenAggregateStats } from "../types/citizenTypes";
 import type { z } from "zod";
 
 type BulkStandardJobAssignmentMutationErrorCode =
@@ -69,6 +70,7 @@ export function setBulkStandardJobAssignmentMutationOptions({
     mutationKey: [...citizensQueryKeys.all, "set-bulk-standard-job-assignment"],
     onSuccess: async (result, input): Promise<void> => {
       const values = setBulkStandardJobAssignmentInputSchema.parse(input);
+      const delta = result.after - result.before;
 
       // Optimistically update job counts cache so all rows see the change immediately
       queryClient.setQueryData(
@@ -83,11 +85,22 @@ export function setBulkStandardJobAssignmentMutationOptions({
         },
       );
 
-      // Invalidate queries to ensure consistency on background refresh. The
-      // aggregate unassigned-npc-count is not optimistically patched here —
-      // the RPC may pull citizens from other jobs, not just the unassigned
-      // pool, so an after-before delta would be wrong; invalidation refetches
-      // the true value instead.
+      // Optimistically update aggregate stats cache so unassigned count
+      // reflects immediately. Raises pull exclusively from the unassigned
+      // pool and lowers return exclusively to it, so the after/before delta
+      // on this job is always the inverse of the unassigned-count change.
+      queryClient.setQueryData(
+        citizensQueryKeys.settlementAggregateStats(values.settlementId),
+        (prev: CitizenAggregateStats | undefined) => {
+          if (prev === null || prev === undefined) return prev;
+          return {
+            ...prev,
+            unassignedNpcCount: Math.max(0, prev.unassignedNpcCount - delta),
+          };
+        },
+      );
+
+      // Invalidate queries to ensure consistency on background refresh.
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: citizensQueryKeys.assignmentsInSettlement(

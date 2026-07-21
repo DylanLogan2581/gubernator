@@ -56,7 +56,7 @@ vi.mock("sonner", () => ({
 // ---------------------------------------------------------------------------
 
 type AggregateRowFixture = {
-  readonly citizen_assignments: ReadonlyArray<{
+  readonly citizen_assignments: {
     readonly assignment_type:
       | "construction_project"
       | "culling"
@@ -64,7 +64,7 @@ type AggregateRowFixture = {
       | "husbandry"
       | "standard_job"
       | "trade_route";
-  }> | null;
+  } | null;
   readonly citizen_type: "npc" | "player_character";
   readonly id: string;
   readonly status: "alive" | "dead";
@@ -651,7 +651,7 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-3",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            citizen_assignments: { assignment_type: "standard_job" },
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
@@ -796,7 +796,7 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-2",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: [{ assignment_type: "construction_project" }],
+            citizen_assignments: { assignment_type: "construction_project" },
           }),
         ],
         jobCounts: [

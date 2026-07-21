@@ -131,6 +131,34 @@ describe("citizenAggregateStatsForSettlementQueryOptions", () => {
     expect(stats.unassignedNpcCount).toBe(1);
     expect(stats.unassignedPcCount).toBe(0);
   });
+
+  it("counts an assigned citizen under its job's assignment type, not unassigned", async () => {
+    // citizen_id is the primary key of citizen_assignments, so PostgREST
+    // embeds this relationship as a single object, not an array.
+    const { client } = createClient([
+      {
+        id: "citizen-1",
+        citizen_type: "npc",
+        status: "alive",
+        citizen_assignments: { assignment_type: "standard_job" },
+      },
+      {
+        id: "citizen-2",
+        citizen_type: "npc",
+        status: "alive",
+        citizen_assignments: null,
+      },
+    ]);
+
+    const queryClient = createQueryClient();
+    const stats = await queryClient.fetchQuery(
+      citizenAggregateStatsForSettlementQueryOptions("settlement-1", client),
+    );
+
+    expect(stats.assignmentTypeBreakdown.standard_job).toBe(1);
+    expect(stats.assignmentTypeBreakdown.unassigned).toBe(1);
+    expect(stats.unassignedNpcCount).toBe(1);
+  });
 });
 
 describe("cultureReligionCompositionForSettlementQueryOptions", () => {
