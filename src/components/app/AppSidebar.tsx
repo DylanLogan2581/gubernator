@@ -34,6 +34,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarHeader,
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
@@ -578,7 +579,11 @@ export function AppSidebar(): JSX.Element | null {
         worldId={worldId}
         worldName={worldName}
       />
-      <CharacterCard canAdmin={canAdmin} worldId={worldId} />
+      {activeCharacter !== null || canAdmin ? (
+        <SidebarHeader>
+          <CharacterCard canAdmin={canAdmin} worldId={worldId} />
+        </SidebarHeader>
+      ) : null}
       <SidebarContent>
         <NavGroup label="PLAY" items={playItems} />
         <SidebarSeparator />
