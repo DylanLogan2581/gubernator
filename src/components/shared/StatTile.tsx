@@ -31,7 +31,7 @@ export function StatTile({
   children,
 }: StatTileProps): JSX.Element {
   return (
-    <Card className="gap-2 p-4">
+    <Card className="h-full gap-2 p-4">
       <div className="flex items-center gap-3">
         <IconChip icon={icon} tone={tone} />
         <div className="min-w-0 flex-1">

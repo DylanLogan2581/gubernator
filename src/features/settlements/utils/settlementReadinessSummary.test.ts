@@ -22,7 +22,7 @@ describe("computeSettlementReadinessSummary", () => {
     });
   });
 
-  it("counts auto-ready settlements enabled mid-turn as not ready until the next turn advance", () => {
+  it("counts auto-ready settlements enabled mid-turn as ready", () => {
     expect(
       computeSettlementReadinessSummary([
         {
@@ -31,9 +31,9 @@ describe("computeSettlementReadinessSummary", () => {
         },
       ]),
     ).toEqual({
-      notReadySettlementCount: 1,
-      readyPercentage: 0,
-      readySettlementCount: 0,
+      notReadySettlementCount: 0,
+      readyPercentage: 100,
+      readySettlementCount: 1,
       totalSettlementCount: 1,
     });
   });

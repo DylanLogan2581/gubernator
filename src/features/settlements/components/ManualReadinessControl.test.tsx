@@ -107,6 +107,28 @@ describe("ManualReadinessControl", () => {
     expect(label.className).toContain("min-w-[8rem]");
     expect(label.className).toContain("tabular-nums");
   });
+
+  it("renders an on, disabled switch when auto-ready is enabled mid-turn", () => {
+    const settlement = createTestSettlement({
+      autoReadyEnabled: true,
+      isReadyCurrentTurn: false,
+    });
+
+    render(
+      <TooltipProvider>
+        <ManualReadinessControl
+          isArchived={false}
+          isPending={false}
+          item={settlement}
+          setReadiness={() => {}}
+        />
+      </TooltipProvider>,
+    );
+
+    const toggle = screen.getByRole("switch");
+    expect(toggle).toBeChecked();
+    expect(toggle).toBeDisabled();
+  });
 });
 
 describe("AutoReadyControl", () => {

@@ -47,7 +47,7 @@ describe("settlementReadinessListQueryOptions", () => {
         autoReadyEnabled: true,
         id: "settlement-1",
         isReadyCurrentTurn: false,
-        isReadyForCurrentTurn: false,
+        isReadyForCurrentTurn: true,
         lastReadyAt: null,
         name: "Amberhold",
         nationId: "nation-1",
@@ -83,7 +83,7 @@ describe("settlementReadinessListQueryOptions", () => {
     ]);
   });
 
-  it("does not count auto-ready settlements enabled mid-turn as ready yet", async () => {
+  it("counts auto-ready settlements enabled mid-turn as ready", async () => {
     const queryClient = createQueryClient();
 
     const summary = await queryClient.fetchQuery(
@@ -112,9 +112,9 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(summary).toEqual({
-      notReadySettlementCount: 2,
-      readyPercentage: 33.33333333333333,
-      readySettlementCount: 1,
+      notReadySettlementCount: 1,
+      readyPercentage: 66.66666666666666,
+      readySettlementCount: 2,
       totalSettlementCount: 3,
     });
   });

@@ -141,8 +141,8 @@ function WorldShellContent({
         <div className="flex flex-col gap-4">
           <SettlementReadinessListPanel
             accessContext={accessContext}
-            canAdmin={effectiveCanAdmin}
-            canManage={effectiveCanAdmin}
+            canAdmin={worldQuery.data.canAdmin}
+            canManage={worldQuery.data.canAdmin}
             isArchived={worldQuery.data.header.isArchived}
             worldId={worldId}
           />

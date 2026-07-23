@@ -315,7 +315,7 @@ describe("SettlementReadinessListPanel", () => {
     expect(clientFixture.update).not.toHaveBeenCalled();
   });
 
-  it("disables manual readiness for auto-ready settlements enabled mid-turn without showing them as ready yet", async () => {
+  it("disables manual readiness for auto-ready settlements enabled mid-turn and shows them as ready", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       settlementRows: [
@@ -337,7 +337,7 @@ describe("SettlementReadinessListPanel", () => {
     });
 
     expect(switchControl).toBeDisabled();
-    expect(switchControl).not.toBeChecked();
+    expect(switchControl).toBeChecked();
     expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
 
     await user.click(switchControl);
