@@ -1,5 +1,11 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
-import { Pencil, TrendingDown, TrendingUp, X } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Pencil,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 
 import { IconChip } from "@/components/shared/IconChip";
@@ -19,6 +25,7 @@ import { setConfiguredCullQuantityMutationOptions } from "../../mutations/setCon
 import { calculateNeededWorkers } from "../../utils/calculateNeededWorkers";
 
 import { MarkExtinctConfirmDialog } from "./MarkExtinctConfirmDialog";
+import { TransferManagedPopulationCountDialog } from "./TransferManagedPopulationCountDialog";
 
 import type { ManagedPopSnapshotCounts } from "../../queries/managedPopulationSnapshotsQueries";
 import type { ManagedPopulationInstance } from "../../types/managedPopulationInstanceTypes";
@@ -160,6 +167,7 @@ type ManagedPopulationInstanceRowProps = {
   readonly resourceById: ReadonlyMap<string, Resource>;
   readonly snapshotCounts: ManagedPopSnapshotCounts;
   readonly stockpileByResourceId: ReadonlyMap<string, SettlementStockpile>;
+  readonly transferTargets: readonly ManagedPopulationInstance[];
   readonly type: ManagedPopulationType | undefined;
 };
 
@@ -173,10 +181,12 @@ export function ManagedPopulationInstanceRow({
   resourceById,
   snapshotCounts,
   stockpileByResourceId,
+  transferTargets,
   type,
 }: ManagedPopulationInstanceRowProps): JSX.Element {
   const [editingCull, setEditingCull] = useState(false);
   const [showExtinctConfirm, setShowExtinctConfirm] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
 
   const requiredWorkers = calculateNeededWorkers(
     instance.currentCount,
@@ -329,33 +339,51 @@ export function ManagedPopulationInstanceRow({
             </div>
           )}
         </TableCell>
-        {canAdmin ? (
-          <TableCell className="w-32 py-2 text-right">
-            {husbandryCount > 0 ? (
-              <span title="Cannot mark extinct: active worker assignments exist.">
+        {canAdmin || (canManage && transferTargets.length > 0) ? (
+          <TableCell className="w-48 py-2 text-right">
+            <span className="flex items-center justify-end gap-1">
+              {canManage && transferTargets.length > 0 ? (
                 <Button
-                  aria-label={`Mark ${instance.name} extinct`}
-                  disabled
+                  aria-label={`Transfer headcount from ${instance.name}`}
                   size="sm"
                   type="button"
-                  variant="destructive"
+                  variant="outline"
+                  onClick={() => {
+                    setShowTransfer(true);
+                  }}
                 >
-                  Mark extinct
+                  <ArrowLeftRight aria-hidden="true" className="h-3 w-3" />
+                  Transfer
                 </Button>
-              </span>
-            ) : (
-              <Button
-                aria-label={`Mark ${instance.name} extinct`}
-                size="sm"
-                type="button"
-                variant="destructive"
-                onClick={() => {
-                  setShowExtinctConfirm(true);
-                }}
-              >
-                Mark extinct
-              </Button>
-            )}
+              ) : null}
+              {canAdmin ? (
+                husbandryCount > 0 ? (
+                  <span title="Cannot mark extinct: active worker assignments exist.">
+                    <Button
+                      aria-label={`Mark ${instance.name} extinct`}
+                      disabled
+                      size="sm"
+                      type="button"
+                      variant="destructive"
+                    >
+                      Mark extinct
+                    </Button>
+                  </span>
+                ) : (
+                  <Button
+                    aria-label={`Mark ${instance.name} extinct`}
+                    size="sm"
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      setShowExtinctConfirm(true);
+                    }}
+                  >
+                    Mark extinct
+                  </Button>
+                )
+              ) : null}
+            </span>
           </TableCell>
         ) : null}
       </TableRow>
@@ -365,6 +393,16 @@ export function ManagedPopulationInstanceRow({
           queryClient={queryClient}
           onClose={() => {
             setShowExtinctConfirm(false);
+          }}
+        />
+      ) : null}
+      {showTransfer ? (
+        <TransferManagedPopulationCountDialog
+          instance={instance}
+          queryClient={queryClient}
+          targets={transferTargets}
+          onClose={() => {
+            setShowTransfer(false);
           }}
         />
       ) : null}

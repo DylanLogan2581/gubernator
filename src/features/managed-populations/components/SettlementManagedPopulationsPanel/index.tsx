@@ -163,6 +163,7 @@ export function SettlementManagedPopulationsPanel({
           />
         ) : (
           <ManagedPopulationsTable
+            activeInstances={activeInstances}
             canAdmin={canAdmin && !isArchived && !showExtinct}
             canManage={(canManage || canAdmin) && !isArchived && !showExtinct}
             husbandryCountByInstance={husbandryCountByInstance}
@@ -257,6 +258,7 @@ function ManagedPopulationsPanelHeader({
 }
 
 function ManagedPopulationsTable({
+  activeInstances,
   canAdmin,
   canManage,
   husbandryCountByInstance,
@@ -268,6 +270,7 @@ function ManagedPopulationsTable({
   stockpileByResourceId,
   typeById,
 }: {
+  readonly activeInstances: readonly ManagedPopulationInstance[];
   readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly husbandryCountByInstance: ReadonlyMap<string, number>;
@@ -289,8 +292,8 @@ function ManagedPopulationsTable({
           <TableHead scope="col">Cull qty</TableHead>
           <TableHead scope="col">Husbandry / workers</TableHead>
           <TableHead scope="col">Maintenance/turn</TableHead>
-          {canAdmin ? (
-            <TableHead aria-label="Actions" className="w-32" scope="col" />
+          {canAdmin || canManage ? (
+            <TableHead aria-label="Actions" className="w-48" scope="col" />
           ) : null}
         </TableRow>
       </TableHeader>
@@ -307,6 +310,12 @@ function ManagedPopulationsTable({
             resourceById={resourceById}
             snapshotCounts={snapshotCounts}
             stockpileByResourceId={stockpileByResourceId}
+            transferTargets={activeInstances.filter(
+              (other) =>
+                other.id !== instance.id &&
+                other.managedPopulationTypeId ===
+                  instance.managedPopulationTypeId,
+            )}
             type={typeById.get(instance.managedPopulationTypeId)}
           />
         ))}

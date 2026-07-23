@@ -8576,6 +8576,18 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] };
+      transfer_managed_population_count: {
+        Args: {
+          p_count: number;
+          p_from_instance_id: string;
+          p_to_instance_id: string;
+        };
+        Returns: {
+          from_instance_id: string;
+          settlement_id: string;
+          to_instance_id: string;
+        }[];
+      };
       trash_world: {
         Args: { p_world_id: string };
         Returns: {

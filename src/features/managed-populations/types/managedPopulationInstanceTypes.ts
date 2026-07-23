@@ -27,3 +27,9 @@ export type RemoveManagedPopulationInstanceResult = {
   readonly managedPopulationInstanceId: string;
   readonly settlementId: string;
 };
+
+export type TransferManagedPopulationCountResult = {
+  readonly fromManagedPopulationInstanceId: string;
+  readonly settlementId: string;
+  readonly toManagedPopulationInstanceId: string;
+};
