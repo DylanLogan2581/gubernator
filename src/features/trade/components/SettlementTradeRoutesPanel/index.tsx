@@ -142,7 +142,7 @@ export function SettlementTradeRoutesPanel({
       {showProposeDialog ? (
         <div className="px-4">
           <ProposeTradeRouteDialog
-            activeCharacterId={activeCharacter?.id ?? ""}
+            activeCharacterId={activeCharacter?.id ?? null}
             canManageNation={canManageNation}
             queryClient={queryClient}
             settlementId={settlementId}

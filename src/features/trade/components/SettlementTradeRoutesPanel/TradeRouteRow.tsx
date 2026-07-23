@@ -236,7 +236,7 @@ export function TradeRouteRow({
           }}
         />
       ) : null}
-      {showReplaceDialog && activeCharacterId !== null ? (
+      {showReplaceDialog ? (
         <ReplaceTradeRouteDialog
           activeCharacterId={activeCharacterId}
           counterpart={counterpart}

@@ -93,7 +93,11 @@ async function replaceTradeRoute(
       p_new_payload: {
         destination_settlement_id:
           values.newRoutePayload.destinationSettlementId,
-        legs: values.newRoutePayload.legs,
+        legs: values.newRoutePayload.legs.map((leg) => ({
+          direction: leg.direction,
+          quantity: leg.quantity,
+          resource_id: leg.resourceId,
+        })),
         origin_settlement_id: values.newRoutePayload.originSettlementId,
       },
       p_old_id: values.oldRouteId,

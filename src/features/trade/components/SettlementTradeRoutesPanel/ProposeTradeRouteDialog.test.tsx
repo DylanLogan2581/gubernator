@@ -26,12 +26,48 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("@/features/citizens/queries/citizensQueries", async () => {
+  const actual = await vi.importActual(
+    "@/features/citizens/queries/citizensQueries",
+  );
+  return {
+    ...actual,
+    citizenByIdQueryOptions: (citizenId: string) => ({
+      queryFn: () =>
+        Promise.resolve(
+          citizenId === PICKED_CITIZEN_ID
+            ? { id: citizenId, name: "Carol" }
+            : null,
+        ),
+      queryKey: ["citizen-by-id", citizenId],
+    }),
+  };
+});
+
+vi.mock("@/features/citizens/queries/citizenDirectoryQueries", async () => {
+  const actual = await vi.importActual(
+    "@/features/citizens/queries/citizenDirectoryQueries",
+  );
+  return {
+    ...actual,
+    citizensDirectoryQueryOptions: () => ({
+      queryFn: () =>
+        Promise.resolve({
+          rows: [{ id: PICKED_CITIZEN_ID, name: "Carol" }],
+          totalCount: 1,
+        }),
+      queryKey: ["citizens-directory"],
+    }),
+  };
+});
+
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000001";
 const DEST_SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
 const WORLD_ID = "00000000-0000-0000-0000-000000000003";
 const ROUTE_ID = "00000000-0000-0000-0000-000000000010";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000030";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000040";
+const PICKED_CITIZEN_ID = "00000000-0000-0000-0000-000000000050";
 
 const OWN_NATION_ID = "00000000-0000-0000-0000-000000000098";
 const FAR_NATION_ID = "00000000-0000-0000-0000-000000000099";
@@ -132,10 +168,12 @@ function createClient({
 }
 
 function renderDialog({
+  activeCharacterId = CITIZEN_ID,
   canManageNation = false,
   onClose = vi.fn<() => void>(),
   client = createClient(),
 }: {
+  readonly activeCharacterId?: string | null;
   readonly canManageNation?: boolean;
   readonly onClose?: () => void;
   readonly client?: unknown;
@@ -147,7 +185,7 @@ function renderDialog({
   render(
     <QueryClientProvider client={queryClient}>
       <ProposeTradeRouteDialog
-        activeCharacterId={CITIZEN_ID}
+        activeCharacterId={activeCharacterId}
         canManageNation={canManageNation}
         onClose={onClose}
         queryClient={queryClient}
@@ -460,5 +498,93 @@ describe("ProposeTradeRouteDialog", () => {
     expect(
       within(dialog).getByRole("button", { name: "Propose" }),
     ).toBeDisabled();
+  });
+
+  it("admin (#1323) — shows a citizen picker and blocks submit until a citizen is chosen", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      activeCharacterId: null,
+      client: createClient({
+        settlementRows: [FAR_SETTLEMENT_ROW],
+        resourceRows: [GRAIN_RESOURCE_ROW],
+      }),
+    });
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Propose trade route",
+    });
+    expect(within(dialog).getByLabelText("Proposing citizen")).toBeDefined();
+
+    await user.click(within(dialog).getByRole("button", { name: "Propose" }));
+
+    expect(screen.getByText("Select a proposing citizen.")).toBeDefined();
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("admin (#1323) — proposes on behalf of a picked citizen", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "propose_trade_route") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              id: ROUTE_ID,
+              origin_settlement_id: SETTLEMENT_ID,
+              destination_settlement_id: DEST_SETTLEMENT_ID,
+            },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+    renderDialog({
+      activeCharacterId: null,
+      client: createClient({
+        settlementRows: [FAR_SETTLEMENT_ROW],
+        resourceRows: [GRAIN_RESOURCE_ROW],
+        rpcMock,
+      }),
+    });
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Propose trade route",
+    });
+
+    await user.click(
+      within(dialog).getByRole("combobox", { name: "Proposing citizen" }),
+    );
+    await user.click(await screen.findByText("Carol"));
+
+    const destSelect = await within(dialog).findByRole("combobox", {
+      name: "Destination settlement",
+    });
+    await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
+
+    const resourceSelect = await within(dialog).findByRole("combobox", {
+      name: "Leg 1 resource",
+    });
+    await user.selectOptions(resourceSelect, RESOURCE_ID);
+
+    const qtyInput = within(dialog).getByRole("textbox", {
+      name: "Leg 1 quantity per turn",
+    });
+    await user.clear(qtyInput);
+    await user.type(qtyInput, "25");
+
+    await user.click(within(dialog).getByRole("button", { name: "Propose" }));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith(
+        "propose_trade_route",
+        expect.objectContaining({
+          p_proposed_by_citizen_id: PICKED_CITIZEN_ID,
+        }),
+      );
+    });
+    expect(toastSuccess).toHaveBeenCalledWith(
+      "Trade route proposed.",
+      undefined,
+    );
   });
 });
