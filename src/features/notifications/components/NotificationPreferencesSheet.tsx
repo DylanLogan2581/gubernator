@@ -170,7 +170,7 @@ function NotificationPreferencesList({
                   : `Toggle all ${category.label} notifications`
               }
               checked={category.allEnabled}
-              data-mixed={category.isMixed}
+              data-mixed={category.isMixed ? "" : undefined}
               className="data-mixed:!bg-primary/40"
               onCheckedChange={(enabled) => {
                 handleToggleCategory(category, enabled);

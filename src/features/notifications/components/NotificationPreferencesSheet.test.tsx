@@ -15,6 +15,7 @@ vi.mock("../queries/notificationPreferencesQueries", () => ({
       Promise.resolve([
         { enabled: true, notificationType: "turn.completed" },
         { enabled: false, notificationType: "citizen.born" },
+        { enabled: true, notificationType: "citizen.died" },
       ]),
     queryKey: ["notifications", "preferences", userId],
   }),
@@ -45,8 +46,27 @@ describe("NotificationPreferencesSheet", () => {
       await screen.findByRole("button", { name: /turns/i }),
     ).toHaveTextContent("1/1 on");
     expect(screen.getByRole("button", { name: /citizens/i })).toHaveTextContent(
-      "0/1 on",
+      "1/2 on",
     );
+  });
+
+  it("only marks the category switch as mixed when the category is genuinely mixed", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.click(
+      screen.getByRole("button", { name: "Notification preferences" }),
+    );
+
+    const turnsToggleAll = await screen.findByRole("switch", {
+      name: "Toggle all Turns notifications",
+    });
+    const citizensToggleAll = screen.getByRole("switch", {
+      name: /Toggle all Citizens notifications/,
+    });
+
+    expect(turnsToggleAll).not.toHaveAttribute("data-mixed");
+    expect(citizensToggleAll).toHaveAttribute("data-mixed", "");
   });
 
   it("opens a category and lists its notification types with their current state", async () => {
@@ -57,7 +77,6 @@ describe("NotificationPreferencesSheet", () => {
       screen.getByRole("button", { name: "Notification preferences" }),
     );
     await user.click(await screen.findByRole("button", { name: /turns/i }));
-    await user.click(screen.getByRole("button", { name: /citizens/i }));
 
     expect(
       await screen.findByRole("switch", { name: /turn completed/i }),
@@ -97,7 +116,7 @@ describe("NotificationPreferencesSheet", () => {
       screen.getByRole("button", { name: "Notification preferences" }),
     );
     const citizensToggleAll = await screen.findByRole("switch", {
-      name: "Toggle all Citizens notifications",
+      name: /Toggle all Citizens notifications/,
     });
     await user.click(citizensToggleAll);
 
