@@ -2,6 +2,7 @@
 // Implemented in Epic 3.
 export { CitizenAvatar } from "./components/CitizenAvatar";
 export { CitizenPicker } from "./components/CitizenPicker";
+export { CitizenMultiPicker } from "./components/CitizenMultiPicker";
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensDirectoryPage } from "./components/CitizensDirectoryPage";
 export { CitizensPanel } from "./components/CitizensPanel";

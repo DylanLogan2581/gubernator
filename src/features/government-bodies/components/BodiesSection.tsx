@@ -35,18 +35,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   citizensByIdsQueryOptions,
-  citizensInSettlementQueryOptions,
-  playerCharactersInNationQueryOptions,
+  CitizenMultiPicker,
 } from "@/features/citizens";
-import type { Citizen } from "@/features/citizens";
 import {
   formatNationOfficeType,
   nationOfficeTypesQueryOptions,
   settlementOfficeTypesQueryOptions,
 } from "@/features/nations";
 import type { OfficeType } from "@/features/nations";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import type { SettlementSummary } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import {
@@ -139,18 +140,6 @@ export function GovernmentBodiesSection(
     ? nationOfficeTypesQuery
     : settlementOfficeTypesQuery;
 
-  const playerCharactersQuery = useQuery({
-    ...playerCharactersInNationQueryOptions(props.nationId),
-    enabled: isNationScope,
-  });
-  const settlementCitizensQuery = useQuery({
-    ...citizensInSettlementQueryOptions(settlementId),
-    enabled: !isNationScope,
-  });
-  const candidatesQuery = isNationScope
-    ? playerCharactersQuery
-    : settlementCitizensQuery;
-
   const deleteMutation = useMutation(
     deleteGovernmentBodyMutationOptions({ queryClient }),
   );
@@ -180,7 +169,6 @@ export function GovernmentBodiesSection(
     bodiesQuery.isPending ||
     resolverContextQuery.isPending ||
     officeTypesQuery.isPending ||
-    candidatesQuery.isPending ||
     (listCitizensQuery.isPending && explicitCitizenIds.length > 0)
   ) {
     return (
@@ -194,7 +182,6 @@ export function GovernmentBodiesSection(
     bodiesQuery.isError ||
     resolverContextQuery.isError ||
     officeTypesQuery.isError ||
-    candidatesQuery.isError ||
     (listCitizensQuery.isError && explicitCitizenIds.length > 0)
   ) {
     return (
@@ -205,7 +192,6 @@ export function GovernmentBodiesSection(
             bodiesQuery.error ??
               resolverContextQuery.error ??
               officeTypesQuery.error ??
-              candidatesQuery.error ??
               listCitizensQuery.error,
           )}
         />
@@ -221,7 +207,7 @@ export function GovernmentBodiesSection(
     ...(resolverContext.rulerCitizenId !== null
       ? [resolverContext.rulerCitizenId]
       : []),
-    ...resolverContext.settlementManagerCitizenIds,
+    ...resolverContext.settlementManagers.map((manager) => manager.citizenId),
     ...resolverContext.officeHolders.map((holder) => holder.citizenId),
     ...aliveExplicitCitizenIds,
   ]);
@@ -313,7 +299,6 @@ export function GovernmentBodiesSection(
       {canManage && editing !== null ? (
         <BodyEditDialog
           body={editing === "new" ? null : editing}
-          candidates={candidatesQuery.data}
           officeTypes={officeTypesQuery.data}
           onClose={() => setEditing(null)}
           queryClient={queryClient}
@@ -381,7 +366,6 @@ function defaultRuleForKind(
 
 function BodyEditDialog({
   body,
-  candidates,
   officeTypes,
   onClose,
   queryClient,
@@ -389,7 +373,6 @@ function BodyEditDialog({
   scopeContext,
 }: {
   readonly body: GovernmentBody | null;
-  readonly candidates: readonly Citizen[];
   readonly officeTypes: readonly OfficeType[];
   readonly onClose: () => void;
   readonly queryClient: ReturnType<typeof useQueryClient>;
@@ -415,6 +398,13 @@ function BodyEditDialog({
   );
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  const settlementsQuery = useQuery(
+    settlementsByWorldQueryOptions(scopeContext.worldId),
+  );
+  const nationSettlements = (settlementsQuery.data ?? []).filter(
+    (settlement) => settlement.nationId === scopeContext.nationId,
+  );
+
   const explicitCitizenIds = [
     ...new Set(
       rules.flatMap(({ rule }) =>
@@ -426,14 +416,6 @@ function BodyEditDialog({
     citizensByIdsQueryOptions(explicitCitizenIds),
   );
 
-  const nameById = new Map<string, string>();
-  for (const citizen of candidates) {
-    nameById.set(citizen.id, citizen.name);
-  }
-  for (const citizen of explicitCitizensQuery.data ?? []) {
-    nameById.set(citizen.id, citizen.name);
-  }
-
   const explicitAliveIds = (explicitCitizensQuery.data ?? [])
     .filter((c) => c.status === "alive")
     .map((c) => c.id);
@@ -441,7 +423,7 @@ function BodyEditDialog({
     ...(resolverContext.rulerCitizenId !== null
       ? [resolverContext.rulerCitizenId]
       : []),
-    ...resolverContext.settlementManagerCitizenIds,
+    ...resolverContext.settlementManagers.map((manager) => manager.citizenId),
     ...resolverContext.officeHolders.map((h) => h.citizenId),
     ...explicitAliveIds,
   ]);
@@ -452,8 +434,23 @@ function BodyEditDialog({
           { composition: rules.map(({ rule }) => rule) },
           { ...resolverContext, aliveCitizenIds },
         );
+  const previewMembersQuery = useQuery(
+    citizensByIdsQueryOptions(previewMemberIds),
+  );
+  const nameById = new Map(
+    (previewMembersQuery.data ?? []).map((citizen) => [
+      citizen.id,
+      citizen.name,
+    ]),
+  );
   const hasEmptyCitizensRule = rules.some(
     ({ rule }) => rule.kind === "citizens" && rule.citizenIds.length === 0,
+  );
+  const hasEmptySettlementIdsRule = rules.some(
+    ({ rule }) =>
+      rule.kind === "settlement_managers" &&
+      rule.settlementIds !== undefined &&
+      rule.settlementIds.length === 0,
   );
 
   function updateRule(key: string, rule: BodyCompositionRule): void {
@@ -476,16 +473,31 @@ function BodyEditDialog({
 
   function handleSubmit(): void {
     const trimmedName = name.trim();
-    if (trimmedName === "" || rules.length === 0 || hasEmptyCitizensRule)
+    if (
+      trimmedName === "" ||
+      rules.length === 0 ||
+      hasEmptyCitizensRule ||
+      hasEmptySettlementIdsRule
+    )
       return;
 
     // Deep-copy to mutable arrays: the zod input schema infers a mutable
     // array shape, but `rules` state is readonly.
-    const composition = rules.map(({ rule }) =>
-      rule.kind === "citizens"
-        ? { citizenIds: [...rule.citizenIds], kind: rule.kind }
-        : rule,
-    );
+    const composition = rules.map(({ rule }) => {
+      if (rule.kind === "citizens") {
+        return { citizenIds: [...rule.citizenIds], kind: rule.kind };
+      }
+      if (rule.kind === "settlement_managers") {
+        return {
+          kind: rule.kind,
+          settlementIds:
+            rule.settlementIds === undefined
+              ? undefined
+              : [...rule.settlementIds],
+        };
+      }
+      return rule;
+    });
 
     if (body === null) {
       createMutation.mutate(
@@ -585,12 +597,18 @@ function BodyEditDialog({
                 {rules.map(({ key, rule }) => (
                   <RuleRow
                     key={key}
-                    candidates={candidates}
-                    nameById={nameById}
+                    nationId={scopeContext.nationId}
                     officeTypes={officeTypes}
                     onChange={(next) => updateRule(key, next)}
                     onRemove={() => removeRule(key)}
                     rule={rule}
+                    settlementId={
+                      scopeContext.scope === "settlement"
+                        ? scopeContext.settlementId
+                        : undefined
+                    }
+                    settlements={nationSettlements}
+                    worldId={scopeContext.worldId}
                   />
                 ))}
               </ul>
@@ -626,7 +644,8 @@ function BodyEditDialog({
               isPending ||
               name.trim() === "" ||
               rules.length === 0 ||
-              hasEmptyCitizensRule
+              hasEmptyCitizensRule ||
+              hasEmptySettlementIdsRule
             }
           >
             {isPending ? "Saving…" : body === null ? "Create body" : "Save"}
@@ -638,19 +657,23 @@ function BodyEditDialog({
 }
 
 function RuleRow({
-  candidates,
-  nameById,
+  nationId,
   officeTypes,
   onChange,
   onRemove,
   rule,
+  settlementId,
+  settlements,
+  worldId,
 }: {
-  readonly candidates: readonly Citizen[];
-  readonly nameById: ReadonlyMap<string, string>;
+  readonly nationId: string;
   readonly officeTypes: readonly OfficeType[];
   readonly onChange: (rule: BodyCompositionRule) => void;
   readonly onRemove: () => void;
   readonly rule: BodyCompositionRule;
+  readonly settlementId: string | undefined;
+  readonly settlements: readonly SettlementSummary[];
+  readonly worldId: string;
 }): JSX.Element {
   return (
     <li className="grid gap-2 rounded-md border border-border p-2">
@@ -703,36 +726,16 @@ function RuleRow({
       ) : null}
 
       {rule.kind === "citizens" ? (
-        <div className="grid max-h-40 gap-1 overflow-y-auto">
-          {candidates.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No eligible citizens.
-            </p>
-          ) : (
-            candidates.map((citizen) => {
-              const checked = rule.citizenIds.includes(citizen.id);
-              return (
-                <label
-                  key={citizen.id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(next) =>
-                      onChange({
-                        kind: "citizens",
-                        citizenIds:
-                          next === true
-                            ? [...rule.citizenIds, citizen.id]
-                            : rule.citizenIds.filter((id) => id !== citizen.id),
-                      })
-                    }
-                  />
-                  {nameById.get(citizen.id) ?? citizen.name}
-                </label>
-              );
-            })
-          )}
+        <div className="grid gap-1">
+          <CitizenMultiPicker
+            citizenIds={rule.citizenIds}
+            nationId={settlementId === undefined ? nationId : undefined}
+            onChange={(citizenIds) =>
+              onChange({ kind: "citizens", citizenIds: [...citizenIds] })
+            }
+            settlementId={settlementId}
+            worldId={worldId}
+          />
           {rule.citizenIds.length === 0 ? (
             <p className="text-xs text-destructive">
               Select at least one citizen.
@@ -748,9 +751,82 @@ function RuleRow({
       ) : null}
 
       {rule.kind === "settlement_managers" ? (
-        <p className="text-xs text-muted-foreground">
-          Every settlement manager citizen of the nation.
-        </p>
+        <div className="grid gap-2">
+          <ToggleGroup
+            type="single"
+            value={rule.settlementIds === undefined ? "all" : "specific"}
+            onValueChange={(value) => {
+              if (value === "all") {
+                onChange({ kind: "settlement_managers" });
+              } else if (value === "specific") {
+                onChange({
+                  kind: "settlement_managers",
+                  settlementIds:
+                    rule.settlementIds ?? settlements.map((s) => s.id),
+                });
+              }
+            }}
+            className="justify-start"
+          >
+            <ToggleGroupItem
+              value="all"
+              className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              All settlements
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="specific"
+              className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              Specific settlements
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {rule.settlementIds === undefined ? (
+            <p className="text-xs text-muted-foreground">
+              Every settlement manager citizen of the nation.
+            </p>
+          ) : (
+            <div className="grid max-h-40 gap-1 overflow-y-auto">
+              {settlements.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No settlements in this nation.
+                </p>
+              ) : (
+                settlements.map((settlement) => {
+                  const settlementIds = rule.settlementIds ?? [];
+                  const checked = settlementIds.includes(settlement.id);
+                  return (
+                    <label
+                      key={settlement.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(next) =>
+                          onChange({
+                            kind: "settlement_managers",
+                            settlementIds:
+                              next === true
+                                ? [...settlementIds, settlement.id]
+                                : settlementIds.filter(
+                                    (id) => id !== settlement.id,
+                                  ),
+                          })
+                        }
+                      />
+                      {settlement.name}
+                    </label>
+                  );
+                })
+              )}
+              {(rule.settlementIds ?? []).length === 0 ? (
+                <p className="text-xs text-destructive">
+                  Select at least one settlement.
+                </p>
+              ) : null}
+            </div>
+          )}
+        </div>
       ) : null}
     </li>
   );

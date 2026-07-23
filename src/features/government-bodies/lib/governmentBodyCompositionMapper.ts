@@ -22,7 +22,9 @@ function toDbCompositionRule(rule: BodyCompositionRule): DbBodyCompositionRule {
     case "ruler":
       return { kind: rule.kind };
     case "settlement_managers":
-      return { kind: rule.kind };
+      return rule.settlementIds === undefined
+        ? { kind: rule.kind }
+        : { kind: rule.kind, settlement_ids: [...rule.settlementIds] };
   }
 }
 
@@ -37,7 +39,9 @@ function fromDbCompositionRule(
     case "ruler":
       return { kind: row.kind };
     case "settlement_managers":
-      return { kind: row.kind };
+      return row.settlement_ids === undefined
+        ? { kind: row.kind }
+        : { kind: row.kind, settlementIds: row.settlement_ids };
   }
 }
 

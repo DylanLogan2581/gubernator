@@ -172,7 +172,7 @@ describe("NationCharterPage", () => {
     mockBodyResolverContextQuery.mockResolvedValue({
       officeHolders: [],
       rulerCitizenId: null,
-      settlementManagerCitizenIds: [],
+      settlementManagers: [],
     });
     mockOfficesRosterQuery.mockResolvedValue([]);
     mockOfficeTypesQuery.mockResolvedValue([]);

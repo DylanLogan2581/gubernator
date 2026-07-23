@@ -148,7 +148,10 @@ async function getScopeResolverContext(
     readonly officeTypeId: string;
   }[];
   readonly rulerCitizenId: string | null;
-  readonly settlementManagerCitizenIds: readonly string[];
+  readonly settlementManagers: readonly {
+    readonly citizenId: string;
+    readonly settlementId: string;
+  }[];
 }> {
   const officeHoldersQuery = client
     .from("nation_offices")
@@ -181,7 +184,10 @@ async function getScopeResolverContext(
     throw normalizeSupabaseError(rulerResult.error);
   }
 
-  let settlementManagerCitizenIds: readonly string[] = [];
+  let settlementManagers: readonly {
+    citizenId: string;
+    settlementId: string;
+  }[] = [];
   if (nationId !== null) {
     const settlementsResult = await client
       .from("settlements")
@@ -195,22 +201,25 @@ async function getScopeResolverContext(
     if (settlementIds.length > 0) {
       const managersResult = await client
         .from("citizens")
-        .select("id")
+        .select("id,role_settlement_id")
         .eq("role_type", "settlement_manager")
         .eq("status", "alive")
         .in("role_settlement_id", settlementIds)
-        .returns<{ id: string }[]>();
+        .returns<{ id: string; role_settlement_id: string }[]>();
       if (managersResult.error !== null) {
         throw normalizeSupabaseError(managersResult.error);
       }
-      settlementManagerCitizenIds = managersResult.data.map((row) => row.id);
+      settlementManagers = managersResult.data.map((row) => ({
+        citizenId: row.id,
+        settlementId: row.role_settlement_id,
+      }));
     }
   }
 
   return {
     officeHolders,
     rulerCitizenId: rulerResult.data?.id ?? null,
-    settlementManagerCitizenIds,
+    settlementManagers,
   };
 }
 

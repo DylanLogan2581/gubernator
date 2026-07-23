@@ -79,7 +79,7 @@ export function OpenAmendmentCard({
     ...(resolverContext.rulerCitizenId !== null
       ? [resolverContext.rulerCitizenId]
       : []),
-    ...resolverContext.settlementManagerCitizenIds,
+    ...resolverContext.settlementManagers.map((manager) => manager.citizenId),
     ...resolverContext.officeHolders.map((holder) => holder.citizenId),
     ...aliveExplicitCitizenIds,
   ]);

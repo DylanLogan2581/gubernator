@@ -20,7 +20,10 @@ const BASE_DATA: ResolveBodyMembersData = {
     { citizenId: "clergy-1", officeTypeId: "clergy-seat" },
   ],
   rulerCitizenId: "ruler-1",
-  settlementManagerCitizenIds: ["manager-1", "manager-2"],
+  settlementManagers: [
+    { citizenId: "manager-1", settlementId: "settlement-1" },
+    { citizenId: "manager-2", settlementId: "settlement-2" },
+  ],
 };
 
 describe("resolveBodyMembers", () => {
@@ -76,6 +79,38 @@ describe("resolveBodyMembers", () => {
         BASE_DATA,
       ),
     ).toEqual(expect.arrayContaining(["manager-1", "manager-2"]));
+  });
+
+  it("resolves settlement_managers with settlementIds to only those settlements' managers", () => {
+    expect(
+      resolveBodyMembers(
+        {
+          composition: [
+            {
+              kind: "settlement_managers",
+              settlementIds: ["settlement-1"],
+            },
+          ],
+        },
+        BASE_DATA,
+      ),
+    ).toEqual(["manager-1"]);
+  });
+
+  it("resolves settlement_managers with settlementIds matching no settlement to empty", () => {
+    expect(
+      resolveBodyMembers(
+        {
+          composition: [
+            {
+              kind: "settlement_managers",
+              settlementIds: ["settlement-unknown"],
+            },
+          ],
+        },
+        BASE_DATA,
+      ),
+    ).toEqual([]);
   });
 
   it("dedupes citizens matched by multiple rules", () => {

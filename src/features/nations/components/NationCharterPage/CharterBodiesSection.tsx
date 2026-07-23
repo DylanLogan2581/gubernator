@@ -96,7 +96,7 @@ export function CharterBodiesSection({
     ...(resolverContext.rulerCitizenId !== null
       ? [resolverContext.rulerCitizenId]
       : []),
-    ...resolverContext.settlementManagerCitizenIds,
+    ...resolverContext.settlementManagers.map((manager) => manager.citizenId),
     ...resolverContext.officeHolders.map((holder) => holder.citizenId),
     ...aliveExplicitCitizenIds,
   ]);
@@ -123,8 +123,7 @@ export function CharterBodiesSection({
             aliveCitizenIds,
             officeHolders: resolverContext.officeHolders,
             rulerCitizenId: resolverContext.rulerCitizenId,
-            settlementManagerCitizenIds:
-              resolverContext.settlementManagerCitizenIds,
+            settlementManagers: resolverContext.settlementManagers,
           });
 
           return (

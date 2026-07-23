@@ -18,6 +18,7 @@ const rulerRuleSchema = z.strictObject({
 
 const settlementManagersRuleSchema = z.strictObject({
   kind: z.literal("settlement_managers"),
+  settlementIds: z.array(z.guid()).min(1).optional(),
 });
 
 export const bodyCompositionRuleSchema = z.discriminatedUnion("kind", [
@@ -52,6 +53,7 @@ const dbRulerRuleSchema = z.strictObject({
 
 const dbSettlementManagersRuleSchema = z.strictObject({
   kind: z.literal("settlement_managers"),
+  settlement_ids: z.array(z.guid()).min(1).optional(),
 });
 
 export const dbBodyCompositionRuleSchema = z.discriminatedUnion("kind", [

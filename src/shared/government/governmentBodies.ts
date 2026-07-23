@@ -14,7 +14,12 @@ export type BodyCompositionRule =
   | { readonly kind: "office_type"; readonly officeTypeId: string }
   | { readonly kind: "citizens"; readonly citizenIds: readonly string[] }
   | { readonly kind: "ruler" }
-  | { readonly kind: "settlement_managers" };
+  | {
+      readonly kind: "settlement_managers";
+      /** Absent -> every settlement manager of the nation (legacy shape).
+       * Present -> only managers of these settlements. */
+      readonly settlementIds?: readonly string[];
+    };
 
 export type GovernmentBodyComposition = {
   readonly composition: readonly BodyCompositionRule[];
@@ -25,6 +30,11 @@ export type BodyOfficeHolder = {
   readonly officeTypeId: string;
 };
 
+export type BodySettlementManager = {
+  readonly citizenId: string;
+  readonly settlementId: string;
+};
+
 export type ResolveBodyMembersData = {
   /** Citizen ids already known to be alive; every other id is dropped. */
   readonly aliveCitizenIds: ReadonlySet<string> | readonly string[];
@@ -32,9 +42,10 @@ export type ResolveBodyMembersData = {
   /** The nation manager citizen (nation body) or settlement manager citizen
    * (settlement body), or null when the role is currently unfilled. */
   readonly rulerCitizenId: string | null;
-  /** Settlement manager citizen ids of the nation's settlements. Only
-   * meaningful for nation-scoped bodies; pass [] for settlement bodies. */
-  readonly settlementManagerCitizenIds: readonly string[];
+  /** Settlement managers of the nation's settlements, one entry per managed
+   * settlement. Only meaningful for nation-scoped bodies; pass [] for
+   * settlement bodies. */
+  readonly settlementManagers: readonly BodySettlementManager[];
 };
 
 /**
@@ -77,8 +88,13 @@ export function resolveBodyMembers(
         break;
       }
       case "settlement_managers": {
-        for (const citizenId of data.settlementManagerCitizenIds) {
-          members.add(citizenId);
+        for (const manager of data.settlementManagers) {
+          if (
+            rule.settlementIds === undefined ||
+            rule.settlementIds.includes(manager.settlementId)
+          ) {
+            members.add(manager.citizenId);
+          }
         }
         break;
       }

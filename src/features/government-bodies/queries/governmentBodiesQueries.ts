@@ -169,20 +169,26 @@ async function getNationBodyResolverContext(
     settlementsResult.data as readonly { id: string }[]
   ).map((row) => row.id);
 
-  let settlementManagerCitizenIds: readonly string[] = [];
+  let settlementManagers: readonly {
+    citizenId: string;
+    settlementId: string;
+  }[] = [];
   if (settlementIds.length > 0) {
     const { data, error } = await client
       .from("citizens")
-      .select("id")
+      .select("id,role_settlement_id")
       .eq("role_type", "settlement_manager")
       .eq("status", "alive")
       .in("role_settlement_id", settlementIds)
-      .returns<{ id: string }[]>();
+      .returns<{ id: string; role_settlement_id: string }[]>();
 
     if (error !== null) {
       throw normalizeSupabaseError(error);
     }
-    settlementManagerCitizenIds = data.map((row) => row.id);
+    settlementManagers = data.map((row) => ({
+      citizenId: row.id,
+      settlementId: row.role_settlement_id,
+    }));
   }
 
   return {
@@ -191,7 +197,7 @@ async function getNationBodyResolverContext(
       officeTypeId: row.office_type_id,
     })),
     rulerCitizenId: rulerResult.data?.id ?? null,
-    settlementManagerCitizenIds,
+    settlementManagers,
   };
 }
 
@@ -244,6 +250,6 @@ async function getSettlementBodyResolverContext(
       officeTypeId: row.office_type_id,
     })),
     rulerCitizenId: rulerResult.data?.id ?? null,
-    settlementManagerCitizenIds: [],
+    settlementManagers: [],
   };
 }

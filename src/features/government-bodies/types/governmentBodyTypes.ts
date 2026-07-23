@@ -1,4 +1,7 @@
-import type { BodyCompositionRule } from "@/shared/government";
+import type {
+  BodyCompositionRule,
+  BodySettlementManager,
+} from "@/shared/government";
 
 export type BodyScope = "nation" | "settlement";
 
@@ -25,5 +28,5 @@ export type BodyResolverContext = {
     readonly officeTypeId: string;
   }[];
   readonly rulerCitizenId: string | null;
-  readonly settlementManagerCitizenIds: readonly string[];
+  readonly settlementManagers: readonly BodySettlementManager[];
 };

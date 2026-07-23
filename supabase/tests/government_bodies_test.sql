@@ -5,7 +5,7 @@
 begin;
 
 select
-  plan (13);
+  plan (17);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -197,6 +197,82 @@ select
     '23514',
     null,
     'setting both nation_id and settlement_id is rejected'
+  );
+
+-- ===========================================================================
+-- composition_json validation: settlement_managers accepts the bare
+-- (all-managers) shape and a settlement_ids-scoped shape; rejects an empty or
+-- malformed settlement_ids array (#1334).
+-- ===========================================================================
+select
+  lives_ok (
+    $test$
+    insert into public.government_bodies (world_id, nation_id, name, composition_json)
+    values (
+      'fb000000-0000-0000-0000-000000000001',
+      'fc000000-0000-0000-0000-000000000001',
+      'All Managers Body',
+      '[{"kind":"settlement_managers"}]'::jsonb
+    )
+  $test$,
+    'settlement_managers with no settlement_ids (all managers) is accepted'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.government_bodies (world_id, nation_id, name, composition_json)
+    values (
+      'fb000000-0000-0000-0000-000000000001',
+      'fc000000-0000-0000-0000-000000000001',
+      'Scoped Managers Body',
+      '[{"kind":"settlement_managers","settlement_ids":["fd000000-0000-0000-0000-000000000001"]}]'::jsonb
+    )
+  $test$,
+    'settlement_managers with a valid settlement_ids array is accepted'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.government_bodies (world_id, nation_id, name, composition_json)
+    values (
+      'fb000000-0000-0000-0000-000000000001',
+      'fc000000-0000-0000-0000-000000000001',
+      'Empty Scoped Managers Body',
+      '[{"kind":"settlement_managers","settlement_ids":[]}]'::jsonb
+    )
+  $test$,
+    '23514',
+    null,
+    'settlement_managers with an empty settlement_ids array is rejected'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.government_bodies (world_id, nation_id, name, composition_json)
+    values (
+      'fb000000-0000-0000-0000-000000000001',
+      'fc000000-0000-0000-0000-000000000001',
+      'Malformed Scoped Managers Body',
+      '[{"kind":"settlement_managers","settlement_ids":["not-a-uuid"]}]'::jsonb
+    )
+  $test$,
+    '23514',
+    null,
+    'settlement_managers with a non-uuid settlement_ids entry is rejected'
+  );
+
+-- Clean up test data from the validation tests above.
+delete from public.government_bodies
+where
+  world_id = 'fb000000-0000-0000-0000-000000000001'
+  and name in (
+    'All Managers Body',
+    'Scoped Managers Body',
+    'Empty Scoped Managers Body',
+    'Malformed Scoped Managers Body'
   );
 
 -- ===========================================================================

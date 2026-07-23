@@ -33,6 +33,7 @@ export { resolveBodyMembers } from "./governmentBodies.ts";
 export type {
   BodyCompositionRule,
   BodyOfficeHolder,
+  BodySettlementManager,
   GovernmentBodyComposition,
   ResolveBodyMembersData,
 } from "./governmentBodies.ts";
