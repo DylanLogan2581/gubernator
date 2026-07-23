@@ -543,6 +543,66 @@ describe("SettlementConstructionPanel", () => {
     expect(screen.getByText("Lumber: 6")).toBeDefined();
   });
 
+  it("shows the unallocated construction worker pool count", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [
+          {
+            assignment_type: "construction_project",
+            citizen_type: "npc",
+            id: "c1",
+            is_enrolled_in_education: false,
+            is_labor_excluded_officeholder: false,
+            is_soldier: false,
+            status: "alive",
+          },
+          {
+            assignment_type: "construction_project",
+            citizen_type: "npc",
+            id: "c2",
+            is_enrolled_in_education: false,
+            is_labor_excluded_officeholder: false,
+            is_soldier: false,
+            status: "alive",
+          },
+        ],
+        projectRows: [createProjectRow({ status: "queued" })],
+        rpcMock: vi.fn((fn: string) => {
+          if (fn === "get_settlement_construction_project_counts") {
+            return {
+              returns: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    construction_project_id: PROJECT_ID_1,
+                    status: "queued",
+                    queue_position: 1,
+                    current_count: 1,
+                    building_blueprint_id: BLUEPRINT_ID,
+                    target_tier_id: TIER_ID,
+                  },
+                ],
+                error: null,
+              }),
+            };
+          }
+          throw new Error(`Unexpected RPC: ${fn}`);
+        }),
+      }),
+    );
+
+    renderPanel({ canManageSettlement: true, isArchived: false });
+
+    await screen.findByText("Barracks");
+    // 2 total construction workers - 1 explicitly assigned to the project = 1 pool worker
+    expect(
+      await screen.findByText(/unassigned construction worker/),
+    ).toBeDefined();
+    const banner = screen
+      .getByText(/unassigned construction worker/)
+      .closest("div");
+    expect(banner).toHaveTextContent("1");
+  });
+
   it("hides Start construction button from non-managers", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ projectRows: [] }));
 

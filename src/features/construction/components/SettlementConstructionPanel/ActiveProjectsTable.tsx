@@ -80,49 +80,71 @@ export function ActiveProjectsTable({
     ]),
   );
   const unassignedNpcCount = aggregateQuery.data?.unassignedNpcCount ?? 0;
+  const totalConstructionWorkers =
+    aggregateQuery.data?.assignmentTypeBreakdown.construction_project ?? 0;
+  const allocatedWorkerCount = (projectCountsQuery.data ?? []).reduce(
+    (sum, c) => sum + c.currentCount,
+    0,
+  );
+  const unallocatedPoolCount = Math.max(
+    0,
+    totalConstructionWorkers - allocatedWorkerCount,
+  );
   const resourceNames = new Map(
     (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
   );
 
   return (
-    <Table className="w-full text-sm">
-      <TableHeader>
-        <TableRow className="text-muted-foreground">
-          <TableHead scope="col">Blueprint</TableHead>
-          <TableHead scope="col">Tier</TableHead>
-          <TableHead scope="col">Status</TableHead>
-          <TableHead scope="col">Workers (this turn)</TableHead>
-          <TableHead scope="col">Assigned</TableHead>
-          <TableHead scope="col">Progress</TableHead>
-          <TableHead scope="col">Resources required</TableHead>
-          <TableHead scope="col">Per-turn consumption</TableHead>
-          {canAct ? (
-            <>
-              <TableHead scope="col">Set workers</TableHead>
-              <TableHead className="w-36" scope="col" aria-label="Actions" />
-            </>
-          ) : null}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {activeProjects.map((project, index) => (
-          <ProjectRow
-            key={project.id}
-            assignedWorkerCount={assignedByProject.get(project.id) ?? 0}
-            canAct={canAct}
-            isFirst={index === 0}
-            isLast={index === activeProjects.length - 1}
-            logEntries={logEntries}
-            project={project}
-            projects={activeProjects}
-            queryClient={queryClient}
-            resourceNames={resourceNames}
-            settlementId={settlementId}
-            unassignedNpcCount={unassignedNpcCount}
-            worldId={worldId}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <>
+      <div className="mb-3 flex items-baseline gap-2 rounded-md border border-border bg-muted/30 px-4 py-3">
+        <span className="text-2xl font-semibold tabular-nums">
+          {unallocatedPoolCount}
+        </span>
+        <span className="text-sm text-muted-foreground">
+          unassigned construction worker
+          {unallocatedPoolCount === 1 ? "" : "s"} — fills projects in queue
+          order
+        </span>
+      </div>
+      <Table className="w-full text-sm">
+        <TableHeader>
+          <TableRow className="text-muted-foreground">
+            <TableHead scope="col">Blueprint</TableHead>
+            <TableHead scope="col">Tier</TableHead>
+            <TableHead scope="col">Status</TableHead>
+            <TableHead scope="col">Workers (this turn)</TableHead>
+            <TableHead scope="col">Assigned</TableHead>
+            <TableHead scope="col">Progress</TableHead>
+            <TableHead scope="col">Resources required</TableHead>
+            <TableHead scope="col">Per-turn consumption</TableHead>
+            {canAct ? (
+              <>
+                <TableHead scope="col">Set workers</TableHead>
+                <TableHead className="w-36" scope="col" aria-label="Actions" />
+              </>
+            ) : null}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {activeProjects.map((project, index) => (
+            <ProjectRow
+              key={project.id}
+              assignedWorkerCount={assignedByProject.get(project.id) ?? 0}
+              canAct={canAct}
+              isFirst={index === 0}
+              isLast={index === activeProjects.length - 1}
+              logEntries={logEntries}
+              project={project}
+              projects={activeProjects}
+              queryClient={queryClient}
+              resourceNames={resourceNames}
+              settlementId={settlementId}
+              unassignedNpcCount={unassignedNpcCount}
+              worldId={worldId}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </>
   );
 }

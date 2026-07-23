@@ -34,6 +34,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 
+import { setBulkConstructionPoolMutationOptions } from "../../mutations/bulkConstructionPoolMutations";
 import { setBulkStandardJobAssignmentMutationOptions } from "../../mutations/bulkStandardJobAssignmentMutations";
 import { setPerTargetBulkAssignmentMutationOptions } from "../../mutations/perTargetBulkAssignmentMutations";
 import { settlementOfficeholderCountQueryOptions } from "../../queries/citizenDirectoryQueries";
@@ -52,6 +53,11 @@ type JobAssignmentsTableProps = {
 type BulkJobRow = {
   readonly kind: "bulk";
   readonly job: SettlementJobCount;
+};
+
+type ConstructionPoolRow = {
+  readonly kind: "construction";
+  readonly currentCount: number;
 };
 
 type DepositRow = {
@@ -101,6 +107,7 @@ type TradeRouteDestinationRow = {
 
 type Row =
   | BulkJobRow
+  | ConstructionPoolRow
   | DepositRow
   | HusbandryRow
   | CullingRow
@@ -250,6 +257,12 @@ export function JobAssignmentsTable({
       job,
     });
   }
+
+  // Construction (settlement-wide pool)
+  rows.push({
+    kind: "construction",
+    currentCount: stats.assignmentTypeBreakdown.construction_project,
+  });
 
   // Deposits
   for (const deposit of deposits) {
@@ -422,6 +435,7 @@ export function JobAssignmentsTable({
 
 function getRowJobName(row: Row): string {
   if (row.kind === "bulk") return row.job.jobName;
+  if (row.kind === "construction") return "Construction";
   if (row.kind === "deposit") return row.jobName;
   if (row.kind === "husbandry") return row.jobName;
   if (row.kind === "culling") return row.jobName;
@@ -437,6 +451,7 @@ function getRowJobName(row: Row): string {
 
 function getRowTargetName(row: Row): string {
   if (row.kind === "bulk") return "";
+  if (row.kind === "construction") return "";
   if (row.kind === "deposit") return row.targetName;
   if (row.kind === "husbandry") return row.targetName;
   if (row.kind === "culling") return row.targetName;
@@ -452,6 +467,7 @@ function getRowTargetName(row: Row): string {
 
 function getRowKey(row: Row, idx: number): string {
   if (row.kind === "bulk") return `bulk-${row.job.jobId}`;
+  if (row.kind === "construction") return "construction-pool";
   if (row.kind === "deposit") return `deposit-${row.targetId}`;
   if (row.kind === "husbandry") return `husbandry-${row.targetId}`;
   if (row.kind === "culling") return `culling-${row.targetId}`;
@@ -496,6 +512,19 @@ function RowRenderer({
       <BulkJobRow
         canEdit={canEdit}
         job={row.job}
+        settlementId={settlementId}
+        unassignedNpcCount={unassignedNpcCount}
+        worldId={worldId}
+        onDirtyChange={onDirtyChange}
+      />
+    );
+  }
+
+  if (row.kind === "construction") {
+    return (
+      <ConstructionPoolRow
+        canEdit={canEdit}
+        currentCount={row.currentCount}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
         worldId={worldId}
@@ -754,6 +783,96 @@ function BulkJobRow({
                 const parsed = parseInt(value, 10);
                 const valid = !Number.isNaN(parsed) && parsed >= 0;
                 onDirtyChange(dirtyKey, valid ? parsed - job.currentCount : 0);
+              }}
+            />
+            <span title={applyTooltip}>
+              <Button
+                disabled={applyDisabled}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  void handleApply();
+                }}
+              >
+                Apply
+              </Button>
+            </span>
+          </div>
+        </TableCell>
+      ) : null}
+    </TableRow>
+  );
+}
+
+function ConstructionPoolRow({
+  canEdit,
+  currentCount,
+  settlementId,
+  unassignedNpcCount,
+  worldId,
+  onDirtyChange,
+}: {
+  readonly canEdit: boolean;
+  readonly currentCount: number;
+  readonly settlementId: string;
+  readonly unassignedNpcCount: number;
+  readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
+}): JSX.Element {
+  const queryClient = useQueryClient();
+  const [localCount, setLocalCount] = useState(String(currentCount));
+  const mutation = useMutation(
+    setBulkConstructionPoolMutationOptions({ queryClient, worldId }),
+  );
+
+  const dirtyKey = "construction-pool";
+
+  const parsedCount = parseInt(localCount, 10);
+  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
+  const isDirty = isValid && parsedCount !== currentCount;
+  const isRaising = isValid && parsedCount > currentCount;
+  const noNpcs = isRaising && unassignedNpcCount === 0;
+  const applyDisabled = mutation.isPending || !isDirty || noNpcs;
+  const applyTooltip = noNpcs ? "No unassigned NPCs available" : undefined;
+
+  async function handleApply(): Promise<void> {
+    if (!isValid) return;
+    try {
+      const result = await mutation.mutateAsync({
+        settlementId,
+        targetCount: parsedCount,
+      });
+      setLocalCount(String(result.after));
+      onDirtyChange(dirtyKey, 0);
+      notifyMutationSuccess("Construction worker pool updated.");
+    } catch (error) {
+      notifyMutationError(error, "Failed to update construction worker pool.");
+    }
+  }
+
+  return (
+    <TableRow className="border-b border-border last:border-0">
+      <TableCell className="py-2 pr-4 font-medium">Construction</TableCell>
+      <TableCell className="py-2 pr-4 text-muted-foreground">
+        <CapacityDisplay capacity={null} current={currentCount} />
+      </TableCell>
+      {canEdit ? (
+        <TableCell className="py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              aria-label="Target count for Construction"
+              className="w-20"
+              disabled={mutation.isPending}
+              inputMode="numeric"
+              min="0"
+              type="number"
+              value={localCount}
+              onChange={(e) => {
+                const value = e.currentTarget.value;
+                setLocalCount(value);
+                const parsed = parseInt(value, 10);
+                const valid = !Number.isNaN(parsed) && parsed >= 0;
+                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
               }}
             />
             <span title={applyTooltip}>

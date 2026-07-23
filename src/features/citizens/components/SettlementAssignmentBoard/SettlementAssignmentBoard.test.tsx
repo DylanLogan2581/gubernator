@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -451,6 +451,7 @@ function createClient(config: {
   readonly aggregates?: readonly AggregateRowFixture[];
   readonly jobCounts?: readonly JobCountRowFixture[];
   readonly jobMutationResult?: MutationResultFixture;
+  readonly constructionPoolMutationResult?: MutationResultFixture;
   // Per-target config
   readonly citizenAssignmentRows?: readonly CitizenAssignmentRowFixture[];
   readonly depositInstanceRows?: readonly DepositInstanceRowFixture[];
@@ -511,6 +512,11 @@ function createClient(config: {
       if (name === "set_per_target_bulk_assignment") {
         return createMaybeSingleBuilder(
           config.perTargetMutationResult ?? defaultPerTargetResult,
+        );
+      }
+      if (name === "set_bulk_construction_pool") {
+        return createMaybeSingleBuilder(
+          config.constructionPoolMutationResult ?? defaultMutationResult,
         );
       }
       throw new Error(`Unexpected RPC: ${name}`);
@@ -662,7 +668,10 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("Farmer");
-    expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
+    const farmerRow = screen.getByText("Farmer").closest("tr");
+    expect(
+      within(farmerRow as HTMLElement).getByRole("button", { name: "Apply" }),
+    ).toBeDefined();
   });
 
   it("hides the editor when isArchived is true", async () => {
@@ -725,9 +734,11 @@ describe("SettlementAssignmentBoard", () => {
     await screen.findByText("Farmer");
     expect(screen.getByText("2")).toBeDefined();
     expect(screen.getByText("unassigned")).toBeDefined();
-    // rows[0] is the header; rows[1] is the first data row (no separate Unassigned row)
+    // rows[0] is the header; rows[1] is the first data row (no separate Unassigned
+    // row). "Construction" sorts alphabetically before "Farmer".
     const rows = screen.getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("Farmer");
+    expect(rows[1]).toHaveTextContent("Construction");
+    expect(rows[2]).toHaveTextContent("Farmer");
   });
 
   it("shows an officeholder banner when the settlement has citizens holding a nation office", async () => {
@@ -905,7 +916,10 @@ describe("SettlementAssignmentBoard", () => {
     await user.clear(input);
     await user.type(input, "5");
 
-    const applyButton = screen.getByRole("button", { name: "Apply" });
+    const farmerRow = input.closest("tr") as HTMLElement;
+    const applyButton = within(farmerRow).getByRole("button", {
+      name: "Apply",
+    });
     expect(applyButton).toBeDisabled();
   });
 
@@ -941,7 +955,10 @@ describe("SettlementAssignmentBoard", () => {
     await user.clear(input);
     await user.type(input, "5");
 
-    const applyButton = screen.getByRole("button", { name: "Apply" });
+    const farmerRow = input.closest("tr") as HTMLElement;
+    const applyButton = within(farmerRow).getByRole("button", {
+      name: "Apply",
+    });
     expect(applyButton).not.toBeDisabled();
   });
 
@@ -970,8 +987,92 @@ describe("SettlementAssignmentBoard", () => {
     await user.clear(input);
     await user.type(input, "1");
 
-    const applyButton = screen.getByRole("button", { name: "Apply" });
+    const farmerRow = input.closest("tr") as HTMLElement;
+    const applyButton = within(farmerRow).getByRole("button", {
+      name: "Apply",
+    });
     expect(applyButton).not.toBeDisabled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Construction pool row tests
+  // -------------------------------------------------------------------------
+
+  it("shows a Construction pool row with unlimited capacity", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            id: "c-1",
+            citizen_type: "npc",
+            status: "alive",
+            assignment_type: "construction_project",
+          }),
+        ],
+        jobCounts: [],
+      }),
+    );
+
+    renderBoard();
+
+    const constructionRow = (await screen.findByText("Construction")).closest(
+      "tr",
+    ) as HTMLElement;
+    expect(
+      within(constructionRow).getByText(
+        (_, el) => el?.textContent === "1 / unlimited",
+      ),
+    ).toBeDefined();
+  });
+
+  it("clicking Apply on the Construction row calls the bulk construction pool RPC and shows success toast", async () => {
+    const CITIZEN_UUID = "11111111-1111-1111-1111-111111111111";
+    const SETTLEMENT_UUID = "22222222-2222-2222-2222-222222222222";
+
+    const user = userEvent.setup();
+    vi.mocked(toast.success).mockClear();
+    const client = createClient({
+      aggregates: [
+        createAggregateRow({
+          id: CITIZEN_UUID,
+          citizen_type: "npc",
+          status: "alive",
+          assignment_type: null,
+        }),
+      ],
+      jobCounts: [],
+      constructionPoolMutationResult: {
+        after: 1,
+        added_citizen_ids: [CITIZEN_UUID],
+        before: 0,
+        removed_citizen_ids: [],
+      },
+    }) as { readonly rpc: ReturnType<typeof vi.fn> };
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderBoard({
+      canManageSettlement: true,
+      settlementId: SETTLEMENT_UUID,
+    });
+
+    const input = await screen.findByRole("spinbutton", {
+      name: "Target count for Construction",
+    });
+    await user.clear(input);
+    await user.type(input, "1");
+    const constructionRow = input.closest("tr") as HTMLElement;
+    await user.click(
+      within(constructionRow).getByRole("button", { name: "Apply" }),
+    );
+
+    await waitFor(() => {
+      expect(vi.mocked(toast.success)).toHaveBeenCalled();
+    });
+
+    expect(client.rpc).toHaveBeenCalledWith("set_bulk_construction_pool", {
+      p_settlement_id: SETTLEMENT_UUID,
+      p_target_count: 1,
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -1182,7 +1283,12 @@ describe("SettlementAssignmentBoard", () => {
     });
 
     await screen.findByText("Iron Vein — Iron");
-    expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
+    const depositRow = screen.getByText("Iron Vein — Iron").closest("tr");
+    expect(
+      within(depositRow as HTMLElement).getByRole("button", {
+        name: "Apply",
+      }),
+    ).toBeDefined();
   });
 
   it("hides Apply button when canManageSettlement is false", async () => {
@@ -1301,7 +1407,8 @@ describe("SettlementAssignmentBoard", () => {
     });
     await user.clear(input);
     await user.type(input, "1");
-    await user.click(screen.getByRole("button", { name: "Apply" }));
+    const depositRow = input.closest("tr") as HTMLElement;
+    await user.click(within(depositRow).getByRole("button", { name: "Apply" }));
 
     await waitFor(() => {
       expect(vi.mocked(toast.success)).toHaveBeenCalled();
@@ -1360,7 +1467,10 @@ describe("SettlementAssignmentBoard", () => {
     });
     await user.clear(input);
     await user.type(input, "1");
-    await user.click(screen.getByRole("button", { name: "Apply" }));
+    const stoneMasonRow = input.closest("tr") as HTMLElement;
+    await user.click(
+      within(stoneMasonRow).getByRole("button", { name: "Apply" }),
+    );
 
     await waitFor(() => {
       expect(vi.mocked(toast.success)).toHaveBeenCalled();
@@ -1405,7 +1515,10 @@ describe("SettlementAssignmentBoard", () => {
     await user.clear(input);
     await user.type(input, "1");
 
-    const applyButton = screen.getByRole("button", { name: "Apply" });
+    const depositRow = input.closest("tr") as HTMLElement;
+    const applyButton = within(depositRow).getByRole("button", {
+      name: "Apply",
+    });
     expect(applyButton).toBeDisabled();
     expect(applyButton.closest("span[title]")).toHaveAttribute(
       "title",
