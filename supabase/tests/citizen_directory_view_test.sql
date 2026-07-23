@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (10);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -177,6 +177,45 @@ values
     null,
     'unknown causes',
     'unknown'
+  ),
+  (
+    'e5000000-0000-0000-0000-000000000004',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-000000000001',
+    'npc',
+    'Directory NPC Student',
+    'alive',
+    'female',
+    1,
+    null,
+    null,
+    null
+  ),
+  (
+    'e5000000-0000-0000-0000-000000000005',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-000000000001',
+    'npc',
+    'Directory NPC Soldier',
+    'alive',
+    'male',
+    1,
+    null,
+    null,
+    null
+  ),
+  (
+    'e5000000-0000-0000-0000-000000000006',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-000000000001',
+    'npc',
+    'Directory NPC Labor Officeholder',
+    'alive',
+    'male',
+    1,
+    null,
+    null,
+    null
   );
 
 insert into
@@ -217,6 +256,188 @@ values
         and name = 'treasurer'
     ),
     'e5000000-0000-0000-0000-000000000002',
+    1
+  );
+
+-- ---------------------------------------------------------------------------
+-- #1322 labor-eligibility fixtures: an education enrollment, a soldier, and
+-- a custom office type that does NOT exclude from labor (to distinguish
+-- is_labor_excluded_officeholder from merely holding office_types).
+-- ---------------------------------------------------------------------------
+insert into
+  public.building_blueprints (id, world_id, name, slug)
+values
+  (
+    'e7000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    'Directory Schoolhouse',
+    'directory-schoolhouse'
+  );
+
+insert into
+  public.building_blueprint_tiers (
+    id,
+    building_blueprint_id,
+    tier_number,
+    effects_json
+  )
+values
+  (
+    'e7100000-0000-0000-0000-000000000001',
+    'e7000000-0000-0000-0000-000000000001',
+    1,
+    '[]'::jsonb
+  );
+
+insert into
+  public.settlement_buildings (
+    id,
+    settlement_id,
+    building_blueprint_id,
+    current_tier_id,
+    state,
+    activated_on_turn_number
+  )
+values
+  (
+    'e7200000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-000000000001',
+    'e7000000-0000-0000-0000-000000000001',
+    'e7100000-0000-0000-0000-000000000001',
+    'active',
+    1
+  );
+
+insert into
+  public.education_levels (id, world_id, name, rank)
+values
+  (
+    'e8000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    'Directory Basic',
+    1
+  );
+
+insert into
+  public.education_enrollments (
+    world_id,
+    settlement_building_id,
+    citizen_id,
+    target_level_id,
+    enrolled_turn_number
+  )
+values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e7200000-0000-0000-0000-000000000001',
+    'e5000000-0000-0000-0000-000000000004',
+    'e8000000-0000-0000-0000-000000000001',
+    1
+  );
+
+insert into
+  public.unit_types (
+    id,
+    world_id,
+    name,
+    soldiers_per_unit,
+    desertion_rate
+  )
+values
+  (
+    'e9000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    'Directory Militia',
+    10,
+    0.05
+  );
+
+insert into
+  public.armies (
+    id,
+    world_id,
+    nation_id,
+    name,
+    funding_source,
+    stationed_settlement_id,
+    created_turn_number
+  )
+values
+  (
+    'e9100000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    'e3000000-0000-0000-0000-000000000001',
+    'Directory Army',
+    'nation',
+    'e4000000-0000-0000-0000-000000000001',
+    1
+  );
+
+insert into
+  public.army_units (
+    id,
+    army_id,
+    unit_type_id,
+    name,
+    created_turn_number
+  )
+values
+  (
+    'e9200000-0000-0000-0000-000000000001',
+    'e9100000-0000-0000-0000-000000000001',
+    'e9000000-0000-0000-0000-000000000001',
+    'Directory Unit',
+    1
+  );
+
+insert into
+  public.unit_soldiers (
+    world_id,
+    unit_id,
+    citizen_id,
+    recruited_turn_number
+  )
+values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e9200000-0000-0000-0000-000000000001',
+    'e5000000-0000-0000-0000-000000000005',
+    1
+  );
+
+insert into
+  public.office_types (
+    id,
+    world_id,
+    nation_id,
+    name,
+    scope,
+    excludes_from_labor
+  )
+values
+  (
+    'ea000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    null,
+    'directory_labor_neutral_office',
+    'nation',
+    false
+  );
+
+insert into
+  public.nation_offices (
+    world_id,
+    nation_id,
+    office_type_id,
+    citizen_id,
+    appointed_turn_number
+  )
+values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e3000000-0000-0000-0000-000000000001',
+    'ea000000-0000-0000-0000-000000000001',
+    'e5000000-0000-0000-0000-000000000006',
     1
   );
 
@@ -289,7 +510,7 @@ select
       where
         world_id = 'e2000000-0000-0000-0000-000000000001'
     ),
-    3,
+    6,
     'world admin can read every citizen row in the directory view'
   );
 
@@ -388,6 +609,123 @@ select
     ),
     null,
     'directory view leaves office_types null for a citizen holding no office'
+  );
+
+-- ---------------------------------------------------------------------------
+-- #1322: is_labor_excluded_officeholder / is_enrolled_in_education /
+-- is_soldier -- the labor-eligibility flags used to correct the settlement
+-- assignment board's unassigned count.
+-- ---------------------------------------------------------------------------
+select
+  is (
+    (
+      select
+        is_labor_excluded_officeholder
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000002'
+    ),
+    true,
+    'directory view marks a treasurer (excludes_from_labor office) as a labor-excluded officeholder'
+  );
+
+select
+  is (
+    (
+      select
+        office_types
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000006'
+    ),
+    'directory_labor_neutral_office',
+    'directory view still resolves office_types for a non-labor-excluding office'
+  );
+
+select
+  is (
+    (
+      select
+        is_labor_excluded_officeholder
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000006'
+    ),
+    false,
+    'directory view leaves is_labor_excluded_officeholder false for an office that does not exclude from labor'
+  );
+
+select
+  is (
+    (
+      select
+        is_enrolled_in_education
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000004'
+    ),
+    true,
+    'directory view marks an education enrollee as is_enrolled_in_education'
+  );
+
+select
+  is (
+    (
+      select
+        is_soldier
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000005'
+    ),
+    true,
+    'directory view marks a unit_soldiers citizen as is_soldier'
+  );
+
+select
+  is (
+    (
+      select
+        is_labor_excluded_officeholder
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000001'
+    ),
+    false,
+    'directory view leaves is_labor_excluded_officeholder false for a citizen with no office'
+  );
+
+select
+  is (
+    (
+      select
+        is_enrolled_in_education
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000001'
+    ),
+    false,
+    'directory view leaves is_enrolled_in_education false for a citizen with no enrollment'
+  );
+
+select
+  is (
+    (
+      select
+        is_soldier
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000001'
+    ),
+    false,
+    'directory view leaves is_soldier false for a citizen with no unit_soldiers row'
   );
 
 reset role;

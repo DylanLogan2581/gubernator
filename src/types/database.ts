@@ -5005,6 +5005,9 @@ export type Database = {
           citizen_type: string | null;
           education_level_name: string | null;
           id: string | null;
+          is_enrolled_in_education: boolean | null;
+          is_labor_excluded_officeholder: boolean | null;
+          is_soldier: boolean | null;
           name: string | null;
           nation_id: string | null;
           nation_name: string | null;

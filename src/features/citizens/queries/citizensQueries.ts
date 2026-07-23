@@ -155,18 +155,18 @@ type CitizenAdminDetailsRow = {
   readonly skills_text: string | null;
 };
 
+// Sourced from citizen_directory_view (not the raw citizens table) so the
+// labor-eligibility flags -- which mirror phaseStandardJobs.ts's
+// officeholderCitizenIds/enrolledCitizenIds/soldierCitizenIds sets -- are
+// available to computeAggregate without a second round trip (#1322).
 type CitizenAggregateRow = {
+  readonly assignment_type: CitizenAssignmentType | null;
   readonly citizen_type: CitizenType;
   readonly id: string;
+  readonly is_enrolled_in_education: boolean;
+  readonly is_labor_excluded_officeholder: boolean;
+  readonly is_soldier: boolean;
   readonly status: CitizenStatus;
-};
-
-type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
-  // citizen_id is the primary key of citizen_assignments, so PostgREST embeds
-  // this as a single object (not an array) for the 1:1 relationship.
-  readonly citizen_assignments: {
-    readonly assignment_type: CitizenAssignmentType;
-  } | null;
 };
 
 const CITIZEN_SELECT =
@@ -180,7 +180,7 @@ type CitizenCultureReligionRow = {
 const CITIZEN_CULTURE_RELIGION_SELECT = "culture_id,religion_id";
 
 const CITIZEN_AGGREGATE_SELECT =
-  "id,citizen_type,status,citizen_assignments(assignment_type)";
+  "id,citizen_type,status,assignment_type,is_labor_excluded_officeholder,is_enrolled_in_education,is_soldier";
 
 export function citizensInSettlementQueryOptions(
   settlementId: string,
@@ -560,10 +560,10 @@ async function getCitizenAggregateStatsForSettlement(
   settlementId: string,
 ): Promise<CitizenAggregateStats> {
   const { data, error } = await client
-    .from("citizens")
+    .from("citizen_directory_view")
     .select(CITIZEN_AGGREGATE_SELECT)
     .eq("settlement_id", settlementId)
-    .returns<CitizenAggregateWithAssignmentRow[]>();
+    .returns<CitizenAggregateRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -595,10 +595,10 @@ async function getCitizenAggregateStatsForNation(
   }
 
   const { data, error } = await client
-    .from("citizens")
+    .from("citizen_directory_view")
     .select(CITIZEN_AGGREGATE_SELECT)
     .in("settlement_id", settlementIds)
-    .returns<CitizenAggregateWithAssignmentRow[]>();
+    .returns<CitizenAggregateRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -678,7 +678,7 @@ function computeCultureReligionComposition(
 }
 
 function computeAggregate(
-  rows: readonly CitizenAggregateWithAssignmentRow[],
+  rows: readonly CitizenAggregateRow[],
 ): CitizenAggregateStats {
   const typeBreakdown: Record<CitizenType, number> = {
     npc: 0,
@@ -702,18 +702,32 @@ function computeAggregate(
   };
   let unassignedNpcCount = 0;
   let unassignedPcCount = 0;
+  let ineligibleIdleNpcCount = 0;
+  let ineligibleIdlePcCount = 0;
 
   for (const row of rows) {
     typeBreakdown[row.citizen_type] += 1;
     statusBreakdown[row.status] += 1;
-    const assignment = row.citizen_assignments?.assignment_type ?? null;
+    const assignment = row.assignment_type;
     if (assignment === null) {
       if (row.status === "alive") {
-        assignmentTypeBreakdown.unassigned += 1;
-        if (row.citizen_type === "npc") {
-          unassignedNpcCount += 1;
+        const isLaborIneligible =
+          row.is_labor_excluded_officeholder ||
+          row.is_enrolled_in_education ||
+          row.is_soldier;
+        if (isLaborIneligible) {
+          if (row.citizen_type === "npc") {
+            ineligibleIdleNpcCount += 1;
+          } else {
+            ineligibleIdlePcCount += 1;
+          }
         } else {
-          unassignedPcCount += 1;
+          assignmentTypeBreakdown.unassigned += 1;
+          if (row.citizen_type === "npc") {
+            unassignedNpcCount += 1;
+          } else {
+            unassignedPcCount += 1;
+          }
         }
       }
     } else {
@@ -723,6 +737,8 @@ function computeAggregate(
 
   return {
     assignmentTypeBreakdown,
+    ineligibleIdleNpcCount,
+    ineligibleIdlePcCount,
     statusBreakdown,
     total: rows.length,
     typeBreakdown,
@@ -742,6 +758,8 @@ function emptyAggregateStats(): CitizenAggregateStats {
       trade_route: 0,
       unassigned: 0,
     },
+    ineligibleIdleNpcCount: 0,
+    ineligibleIdlePcCount: 0,
     statusBreakdown: { alive: 0, dead: 0 },
     total: 0,
     typeBreakdown: { npc: 0, player_character: 0 },

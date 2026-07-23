@@ -161,6 +161,8 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
         trade_route: 0,
         unassigned: 9,
       },
+      ineligibleIdleNpcCount: 0,
+      ineligibleIdlePcCount: 0,
       statusBreakdown: { alive: 10, dead: 0 },
       total: 10,
       typeBreakdown: { npc: 10, player_character: 0 },

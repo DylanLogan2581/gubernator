@@ -60,15 +60,17 @@ type DirectoryRowFixture = {
 };
 
 type AggregateRowFixture = {
-  readonly citizen_assignments: {
-    readonly assignment_type:
-      | "construction_project"
-      | "culling"
-      | "deposit"
-      | "husbandry"
-      | "standard_job"
-      | "trade_route";
-  } | null;
+  readonly assignment_type:
+    | "construction_project"
+    | "culling"
+    | "deposit"
+    | "husbandry"
+    | "standard_job"
+    | "trade_route"
+    | null;
+  readonly is_labor_excluded_officeholder?: boolean;
+  readonly is_enrolled_in_education?: boolean;
+  readonly is_soldier?: boolean;
   readonly citizen_type: "npc" | "player_character";
   readonly id: string;
   readonly status: "alive" | "dead";
@@ -217,25 +219,25 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: { assignment_type: "standard_job" },
+            assignment_type: "standard_job",
             citizen_type: "player_character",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: { assignment_type: "husbandry" },
+            assignment_type: "husbandry",
             citizen_type: "player_character",
             id: "c-2",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: null,
+            assignment_type: null,
             citizen_type: "player_character",
             id: "c-3",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: null,
+            assignment_type: null,
             citizen_type: "player_character",
             id: "c-4",
             status: "dead",
@@ -268,7 +270,7 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: { assignment_type: "standard_job" },
+            assignment_type: "standard_job",
             id: "c-1",
             status: "alive",
           }),
@@ -292,13 +294,13 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: { assignment_type: "standard_job" },
+            assignment_type: "standard_job",
             id: "c-1",
             status: "alive",
           }),
           ...Array.from({ length: 3 }, (_unused, index) =>
             createAggregateRow({
-              citizen_assignments: null,
+              assignment_type: null,
               id: `unassigned-${String(index)}`,
               status: "alive",
             }),
@@ -323,17 +325,17 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: { assignment_type: "standard_job" },
+            assignment_type: "standard_job",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: { assignment_type: "husbandry" },
+            assignment_type: "husbandry",
             id: "c-2",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: null,
+            assignment_type: null,
             id: "c-3",
             status: "alive",
           }),
@@ -500,7 +502,7 @@ function createAggregateRow(
   overrides: Partial<AggregateRowFixture> = {},
 ): AggregateRowFixture {
   return {
-    citizen_assignments: null,
+    assignment_type: null,
     citizen_type: "npc",
     id: "c-1",
     status: "alive",
@@ -525,18 +527,28 @@ function createClient({
     from: vi.fn((table: string) => {
       if (table === "citizen_directory_view") {
         return {
-          select: vi.fn(() =>
-            chainable({
-              count: totalCount,
-              data: directoryRows,
-              error: directoryError,
-            }),
+          // citizen_directory_view backs the paginated directory query
+          // ({ count: "exact" }), the aggregate stats query (no count
+          // option), and the officeholder count query ({ head: true }) --
+          // dispatch on the select options to route each to its fixture.
+          select: vi.fn(
+            (
+              _columns?: string,
+              opts?: { readonly count?: string; readonly head?: boolean },
+            ) => {
+              if (opts?.head === true) {
+                return chainable({ count: 0, data: [], error: null });
+              }
+              if (opts?.count === "exact") {
+                return chainable({
+                  count: totalCount,
+                  data: directoryRows,
+                  error: directoryError,
+                });
+              }
+              return chainable({ data: aggregates, error: null });
+            },
           ),
-        };
-      }
-      if (table === "citizens") {
-        return {
-          select: vi.fn(() => chainable({ data: aggregates, error: null })),
         };
       }
       throw new Error(`Unexpected table ${table}`);

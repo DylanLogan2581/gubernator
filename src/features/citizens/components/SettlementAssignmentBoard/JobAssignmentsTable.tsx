@@ -319,6 +319,7 @@ export function JobAssignmentsTable({
   const liveUnassignedCount = stats.unassignedNpcCount - pendingDeltaSum;
   const pendingChangeCount = Object.keys(pendingDeltas).length;
   const officeholderCount = officeholderCountQuery.data ?? 0;
+  const ineligibleIdleCount = stats.ineligibleIdleNpcCount;
 
   return (
     <div>
@@ -342,6 +343,14 @@ export function JobAssignmentsTable({
           this settlement hold{officeholderCount === 1 ? "s" : ""} nation office
           and produce{officeholderCount === 1 ? "s" : ""} no job output this
           turn — their assignment is kept but inactive while in office.
+        </p>
+      ) : null}
+      {ineligibleIdleCount > 0 ? (
+        <p className="mb-3 text-sm text-muted-foreground">
+          {ineligibleIdleCount} idle citizen
+          {ineligibleIdleCount === 1 ? "" : "s"} cannot be assigned right now
+          (in office, studying, or serving as a soldier) and{" "}
+          {ineligibleIdleCount === 1 ? "is" : "are"} not counted as unassigned.
         </p>
       ) : null}
       {hasBulkOrPerTarget ? (

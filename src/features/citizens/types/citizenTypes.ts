@@ -63,6 +63,13 @@ export type CitizenAssignmentTypeBreakdown = Readonly<
 
 export type CitizenAggregateStats = {
   readonly assignmentTypeBreakdown: CitizenAssignmentTypeBreakdown;
+  // Alive, unassigned citizens who can never be given a job because they're
+  // a labor-excluded nation office-holder, an education enrollee, or a
+  // soldier (mirrors phaseStandardJobs.ts's eligibility exclusions, #1322).
+  // Counted separately from unassignedNpcCount/unassignedPcCount so the
+  // "unassigned" figure only reflects citizens an admin can actually assign.
+  readonly ineligibleIdleNpcCount: number;
+  readonly ineligibleIdlePcCount: number;
   readonly statusBreakdown: CitizenStatusBreakdown;
   readonly total: number;
   readonly typeBreakdown: CitizenTypeBreakdown;

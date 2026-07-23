@@ -56,15 +56,17 @@ vi.mock("sonner", () => ({
 // ---------------------------------------------------------------------------
 
 type AggregateRowFixture = {
-  readonly citizen_assignments: {
-    readonly assignment_type:
-      | "construction_project"
-      | "culling"
-      | "deposit"
-      | "husbandry"
-      | "standard_job"
-      | "trade_route";
-  } | null;
+  readonly assignment_type:
+    | "construction_project"
+    | "culling"
+    | "deposit"
+    | "husbandry"
+    | "standard_job"
+    | "trade_route"
+    | null;
+  readonly is_labor_excluded_officeholder?: boolean;
+  readonly is_enrolled_in_education?: boolean;
+  readonly is_soldier?: boolean;
   readonly citizen_type: "npc" | "player_character";
   readonly id: string;
   readonly status: "alive" | "dead";
@@ -202,7 +204,7 @@ function createAggregateRow(
   overrides: Partial<AggregateRowFixture> = {},
 ): AggregateRowFixture {
   return {
-    citizen_assignments: null,
+    assignment_type: null,
     citizen_type: "npc",
     id: "c-1",
     status: "alive",
@@ -336,19 +338,6 @@ function createTradeRouteRow(
 // Mock client builders
 // ---------------------------------------------------------------------------
 
-function createAggregateBuilder(rows: readonly AggregateRowFixture[]): unknown {
-  const builder = {
-    eq: vi.fn(() => builder),
-    in: vi.fn(() => builder),
-    or: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
-  return {
-    select: vi.fn(() => builder),
-  };
-}
-
 function createTableBuilder(rows: readonly unknown[]): unknown {
   const builder = {
     eq: vi.fn(() => builder),
@@ -374,13 +363,31 @@ function createMaybeSingleBuilder(result: unknown): unknown {
   };
 }
 
-function createOfficeholderCountBuilder(count: number): unknown {
-  const builder = {
-    eq: vi.fn(() => builder),
-    not: vi.fn(() => Promise.resolve({ count, error: null })),
+// citizen_directory_view backs both the aggregate stats query (plain
+// column select + .returns()) and the officeholder count query
+// ({ count: "exact", head: true } + .not()) -- dispatch on the select
+// options to route each call to the right chain.
+function createCitizenDirectoryViewBuilder(
+  aggregateRows: readonly AggregateRowFixture[],
+  officeholderCount: number,
+): unknown {
+  const aggregateBuilder = {
+    eq: vi.fn(() => aggregateBuilder),
+    in: vi.fn(() => aggregateBuilder),
+    or: vi.fn(() => aggregateBuilder),
+    order: vi.fn(() => aggregateBuilder),
+    returns: vi.fn().mockResolvedValue({ data: aggregateRows, error: null }),
+  };
+  const officeholderBuilder = {
+    eq: vi.fn(() => officeholderBuilder),
+    not: vi.fn(() =>
+      Promise.resolve({ count: officeholderCount, error: null }),
+    ),
   };
   return {
-    select: vi.fn(() => builder),
+    select: vi.fn((_columns?: string, opts?: { readonly head?: boolean }) =>
+      opts?.head === true ? officeholderBuilder : aggregateBuilder,
+    ),
   };
 }
 
@@ -417,9 +424,6 @@ function createClient(config: {
 
   return {
     from: vi.fn((table: string) => {
-      if (table === "citizens") {
-        return createAggregateBuilder(config.aggregates ?? []);
-      }
       if (table === "citizen_assignments") {
         return createTableBuilder(config.citizenAssignmentRows ?? []);
       }
@@ -433,7 +437,10 @@ function createClient(config: {
         return createTableBuilder(config.tradeRouteRows ?? []);
       }
       if (table === "citizen_directory_view") {
-        return createOfficeholderCountBuilder(config.officeholderCount ?? 0);
+        return createCitizenDirectoryViewBuilder(
+          config.aggregates ?? [],
+          config.officeholderCount ?? 0,
+        );
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -639,19 +646,19 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-1",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
           createAggregateRow({
             id: "c-2",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
           createAggregateRow({
             id: "c-3",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: { assignment_type: "standard_job" },
+            assignment_type: "standard_job",
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
@@ -676,7 +683,7 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-1",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
@@ -699,7 +706,7 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-1",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
@@ -756,19 +763,19 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-1",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
           createAggregateRow({
             id: "c-2",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
           createAggregateRow({
             id: "c-3",
             citizen_type: "player_character",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
@@ -790,13 +797,13 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-1",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
           createAggregateRow({
             id: "c-2",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: { assignment_type: "construction_project" },
+            assignment_type: "construction_project",
           }),
         ],
         jobCounts: [
@@ -856,7 +863,7 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-1",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
         ],
         jobCounts: [
@@ -1157,7 +1164,7 @@ describe("SettlementAssignmentBoard", () => {
             id: NPC_UUID,
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
         ],
         citizenAssignmentRows: [],
@@ -1215,7 +1222,7 @@ describe("SettlementAssignmentBoard", () => {
             id: CITIZEN_UUID,
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
+            assignment_type: null,
           }),
         ],
         jobCounts: [
