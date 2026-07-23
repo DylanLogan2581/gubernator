@@ -4,14 +4,17 @@ import { Zap } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { IconChip } from "@/components/shared/IconChip";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   eventsListQueryOptions,
+  resolveEventIcon,
   type EventListFilters,
 } from "@/features/events";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import type { JSX } from "react";
@@ -62,13 +65,20 @@ export function WorldActiveEventsFeed({
                 key={event.id}
                 className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{event.name}</p>
-                  {event.duration_type === "sustained" ? (
-                    <p className="text-xs text-muted-foreground">
-                      {event.remaining_transitions ?? 0} turn(s) remaining
-                    </p>
-                  ) : null}
+                <div className="flex min-w-0 items-center gap-2">
+                  <IconChip
+                    icon={resolveEventIcon(event.icon)}
+                    tone={DOMAIN_ICON_CHIPS.events.tone}
+                    size="sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{event.name}</p>
+                    {event.duration_type === "sustained" ? (
+                      <p className="text-xs text-muted-foreground">
+                        {event.remaining_transitions ?? 0} turn(s) remaining
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
                 <Badge variant="outline" className="shrink-0 capitalize">
                   {event.scope_type}

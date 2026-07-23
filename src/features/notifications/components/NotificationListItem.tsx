@@ -4,12 +4,15 @@ import { type JSX } from "react";
 
 import { IconChip, type IconChipTone } from "@/components/shared/IconChip";
 import { Button } from "@/components/ui/button";
+import { resolveEventIcon } from "@/features/events";
 import { type AllNotification } from "@/features/notifications";
 import { formatDate } from "@/lib/formatDate";
 import { cn } from "@/lib/utils";
 
 import { getNotificationEntityLinks } from "../utils/notificationEntityLinks";
 import { getNotificationTypeIcon } from "../utils/notificationTypeIcons";
+
+import type { LucideIcon } from "lucide-react";
 
 type NotificationListItemProps = {
   readonly notification: AllNotification;
@@ -21,6 +24,18 @@ function severityIconTone(severity: AllNotification["severity"]): IconChipTone {
   if (severity === "critical") return "destructive";
   if (severity === "warning") return "warning";
   return "default";
+}
+
+/** For event-sourced notifications, prefer the event's own icon over the generic type icon. */
+function notificationIcon(notification: AllNotification): LucideIcon {
+  if (
+    (notification.notificationType === "event.activated" ||
+      notification.notificationType === "event.expired") &&
+    notification.eventId !== null
+  ) {
+    return resolveEventIcon(notification.eventIcon);
+  }
+  return getNotificationTypeIcon(notification.notificationType);
 }
 
 export function NotificationListItem({
@@ -38,7 +53,7 @@ export function NotificationListItem({
       )}
     >
       <IconChip
-        icon={getNotificationTypeIcon(notification.notificationType)}
+        icon={notificationIcon(notification)}
         tone={severityIconTone(notification.severity)}
       />
 

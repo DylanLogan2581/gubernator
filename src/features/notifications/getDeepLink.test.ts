@@ -8,6 +8,7 @@ const base: AllNotification = {
   citizenName: null,
   eventId: null,
   eventName: null,
+  eventIcon: null,
   generatedAt: "2026-01-01T00:00:00Z",
   generatedInTransitionId: null,
   id: "notif-1",

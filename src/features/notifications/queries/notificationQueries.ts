@@ -93,7 +93,10 @@ type AllNotificationRow = {
   readonly citizen_id: string | null;
   readonly citizen: { readonly name: string | null } | null;
   readonly event_id: string | null;
-  readonly event: { readonly name: string } | null;
+  readonly event: {
+    readonly name: string;
+    readonly icon: string | null;
+  } | null;
   readonly generated_at: string;
   readonly generated_in_transition_id: string | null;
   readonly id: string;
@@ -129,6 +132,7 @@ export type AllNotification = {
   readonly citizenName: string | null;
   readonly eventId: string | null;
   readonly eventName: string | null;
+  readonly eventIcon: string | null;
   readonly generatedAt: string;
   readonly generatedInTransitionId: string | null;
   readonly id: string;
@@ -168,7 +172,7 @@ const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
 const TURN_COMPLETED_NOTIFICATION_TYPE = "turn.completed";
 const ALL_NOTIFICATIONS_SELECT =
-  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,severity,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name),citizen:citizens(name),event:events(name),transition:turn_transitions!notifications_transition_world_fkey(to_turn_number,finished_at,started_at),trade_route:trade_routes(origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(id,name,nation_id))";
+  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,severity,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name),citizen:citizens(name),event:events(name,icon),transition:turn_transitions!notifications_transition_world_fkey(to_turn_number,finished_at,started_at),trade_route:trade_routes(origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(id,name,nation_id))";
 
 export function unreadNotificationsCountQueryOptions(
   userId: string | null,
@@ -486,6 +490,7 @@ function toAllNotification(row: AllNotificationRow): AllNotification {
     citizenName: row.citizen?.name ?? null,
     eventId: row.event_id,
     eventName: row.event?.name ?? null,
+    eventIcon: row.event?.icon ?? null,
     generatedAt: row.generated_at,
     generatedInTransitionId: row.generated_in_transition_id,
     id: row.id,

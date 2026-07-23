@@ -6,6 +6,11 @@ import { eventInputLimits } from "@/lib/inputLimits";
 const worldIdSchema = z.guid("Select a world.");
 const eventIdSchema = z.guid("Event ID is invalid.");
 const groupIdSchema = z.guid("Group ID is invalid.");
+const eventIconSchema = z
+  .string()
+  .max(64, "Icon name is too long.")
+  .optional()
+  .nullable();
 
 // Target object in create wizard
 export const eventTargetSchema = z.strictObject({
@@ -201,6 +206,7 @@ export const createEventGroupInputSchema = z
       )
       .optional()
       .nullable(),
+    icon: eventIconSchema,
     effects: z.array(eventEffectSchema),
     scopeType: z.enum(["world", "nation", "settlement"]),
     targets: z
@@ -285,6 +291,7 @@ export const editEventGroupInputSchema = z
       )
       .optional()
       .nullable(),
+    icon: eventIconSchema,
     effects: z.array(eventEffectSchema),
     durationType: z.enum(["instant", "sustained"]),
     durationTransitions: z

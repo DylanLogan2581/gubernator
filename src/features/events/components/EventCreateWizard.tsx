@@ -64,6 +64,7 @@ type EditEventData = {
   readonly groupId: string;
   readonly groupName: string;
   readonly groupDescription: string | null;
+  readonly icon: string | null;
   readonly scopeType: string;
   readonly scopeNationId: string | null;
   readonly scopeSettlementId: string | null;
@@ -246,6 +247,7 @@ export function EventCreateWizard({
   const [groupDescription, setGroupDescription] = useState(
     editEventData?.groupDescription ?? "",
   );
+  const [icon, setIcon] = useState<string | null>(editEventData?.icon ?? null);
 
   // Update activation turn when world data changes and state hasn't been customized
   useEffect(() => {
@@ -480,6 +482,7 @@ export function EventCreateWizard({
           worldId,
           groupName,
           groupDescription,
+          icon,
           effects: baseEffects,
           durationType: state.durationType,
           durationTransitions:
@@ -544,6 +547,7 @@ export function EventCreateWizard({
           worldId,
           groupName,
           groupDescription,
+          icon,
           effects: baseEffects,
           scopeType: state.scopeType,
           targets,
@@ -562,6 +566,7 @@ export function EventCreateWizard({
         setState(createInitialState(nextTurnNumber));
         setGroupName("");
         setGroupDescription("");
+        setIcon(null);
         await queryClient.invalidateQueries({
           queryKey: eventQueryKeys.byWorld(worldId),
         });
@@ -599,12 +604,17 @@ export function EventCreateWizard({
               <EventCreateNameDescriptionStep
                 groupName={groupName}
                 groupDescription={groupDescription}
+                icon={icon}
                 onGroupNameChange={(val) => {
                   setGroupName(val);
                   markDirty();
                 }}
                 onGroupDescriptionChange={(val) => {
                   setGroupDescription(val);
+                  markDirty();
+                }}
+                onIconChange={(val) => {
+                  setIcon(val);
                   markDirty();
                 }}
               />

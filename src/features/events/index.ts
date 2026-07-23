@@ -52,3 +52,5 @@ export type {
   EventStatus,
   EventWithGroup,
 } from "./types/eventTypes";
+
+export { resolveEventIcon } from "./utils/eventIcon";

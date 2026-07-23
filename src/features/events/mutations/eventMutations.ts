@@ -158,6 +158,7 @@ export function createEventGroupMutationOptions({
             memory_text: m.memoryText,
             turn_offset: m.turnOffset,
           })),
+          p_icon: (values.icon ?? null) as string,
         },
       );
 
@@ -364,6 +365,7 @@ export function editEventGroupMutationOptions({
             memory_text: m.memoryText,
             turn_offset: m.turnOffset,
           })),
+          p_icon: (values.icon ?? null) as string,
         },
       );
 

@@ -37,6 +37,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 
 import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
+import { resolveEventIcon } from "../utils/eventIcon";
 
 import { EventScopeBadge, EventStatusBadge } from "./EventBadges";
 import { EventDetail } from "./EventDetail";
@@ -519,7 +520,7 @@ function EventCard({
       onClick={onSelect}
     >
       <IconChip
-        icon={DOMAIN_ICON_CHIPS.events.icon}
+        icon={resolveEventIcon(event.icon)}
         tone={DOMAIN_ICON_CHIPS.events.tone}
       />
       <div className="min-w-0 flex-1">
@@ -563,7 +564,7 @@ function GroupedEventCard({
       onClick={onSelect}
     >
       <IconChip
-        icon={DOMAIN_ICON_CHIPS.events.icon}
+        icon={resolveEventIcon(firstEvent.icon)}
         tone={DOMAIN_ICON_CHIPS.events.tone}
       />
       <div className="min-w-0 flex-1">
@@ -609,7 +610,7 @@ function EventRow({
       <TableCell className="font-medium">
         <span className="flex items-center gap-2">
           <IconChip
-            icon={DOMAIN_ICON_CHIPS.events.icon}
+            icon={resolveEventIcon(event.icon)}
             tone={DOMAIN_ICON_CHIPS.events.tone}
           />
           {displayName}
@@ -667,7 +668,7 @@ function GroupedEventRow({
       <TableCell className="font-medium">
         <span className="flex items-center gap-2">
           <IconChip
-            icon={DOMAIN_ICON_CHIPS.events.icon}
+            icon={resolveEventIcon(firstEvent.icon)}
             tone={DOMAIN_ICON_CHIPS.events.tone}
           />
           {displayName}

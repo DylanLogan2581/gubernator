@@ -10,6 +10,7 @@ function notification(overrides: Partial<AllNotification>): AllNotification {
     citizenName: null,
     eventId: null,
     eventName: null,
+    eventIcon: null,
     generatedAt: "2026-05-03T10:00:00.000Z",
     generatedInTransitionId: null,
     id: "notif",

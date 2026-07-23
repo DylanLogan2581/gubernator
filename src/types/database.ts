@@ -1670,6 +1670,7 @@ export type Database = {
           effect_type: string | null;
           event_group_id: string | null;
           extra_data_jsonb: Json;
+          icon: string | null;
           id: string;
           job_id: number | null;
           managed_population_type_id: string | null;
@@ -1695,6 +1696,7 @@ export type Database = {
           effect_type?: string | null;
           event_group_id?: string | null;
           extra_data_jsonb?: Json;
+          icon?: string | null;
           id?: string;
           job_id?: number | null;
           managed_population_type_id?: string | null;
@@ -1720,6 +1722,7 @@ export type Database = {
           effect_type?: string | null;
           event_group_id?: string | null;
           extra_data_jsonb?: Json;
+          icon?: string | null;
           id?: string;
           job_id?: number | null;
           managed_population_type_id?: string | null;
@@ -5982,6 +5985,7 @@ export type Database = {
           p_effects: Json;
           p_group_description: string;
           p_group_name: string;
+          p_icon?: string;
           p_memories?: Json;
           p_memory_text: string;
           p_scope_type: string;
@@ -8691,6 +8695,7 @@ export type Database = {
           p_group_description: string;
           p_group_id: string;
           p_group_name: string;
+          p_icon?: string;
           p_memories?: Json;
           p_memory_text: string;
         };

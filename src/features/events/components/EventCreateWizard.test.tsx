@@ -607,6 +607,7 @@ describe("EventCreateWizard", () => {
               groupId: "group-1",
               groupName: "Original Name",
               groupDescription: "Original description",
+              icon: null,
               scopeType: "world",
               scopeNationId: null,
               scopeSettlementId: null,
