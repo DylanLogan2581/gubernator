@@ -1427,6 +1427,8 @@ end$$;
 -- ---------------------------------------------------------------------------
 -- 12. Government: office types, appointed offices, government bodies; law
 --     documents with articles / versions / a passed amendment + votes; decrees.
+--     Mostly nation-scoped, plus a settlement-scoped body/document/decrees
+--     for the City of Bovold (#1326).
 -- ---------------------------------------------------------------------------
 insert into public.office_types (id, world_id, nation_id, name, description, scope, max_holders, excludes_from_labor) values
   (pg_temp.seed_uuid('office:bovold:mayor'),      pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:bovold'),  'Lord-Mayor',    'Elected head of the Free City and its Council.', 'nation',     1,    true),
@@ -1561,6 +1563,37 @@ insert into public.decrees (id, world_id, nation_id, title, body_markdown, issue
   (pg_temp.seed_uuid('decree:tsaesci:feast'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tsaesci'), 'Edict of the Long Feast', 'The Potentate ordains a Long Feast at the turning of the sun, that the worthy dead endure in the living.', pg_temp.seed_uuid('citizen:notable:tsaesci-potentate'), 0),
   (pg_temp.seed_uuid('decree:tangmo:defense'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:tangmo'), 'The Lantern-Watch', 'Each isle shall keep a lantern lit against the summer thaw, and raise the drum if the snow-demons come.', pg_temp.seed_uuid('citizen:notable:tangmo-speaker'), 0),
   (pg_temp.seed_uuid('decree:kapotun:rite'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('nation:kapotun'), 'The Rite of Ascension', 'Every cloister shall keep the Nine Roars and the dawn-salute, that the climb toward the Dragon never falter.', pg_temp.seed_uuid('citizen:notable:kapotun-emperor'), 0);
+
+-- Settlement-scoped government data for the City of Bovold: a harbor body,
+-- a settlement law book with articles + version, and two decrees, so the
+-- settlement Government page has real data alongside the nation-scoped rows
+-- above (#1326).
+insert into public.government_bodies (id, world_id, settlement_id, name, description, composition_json) values
+  (pg_temp.seed_uuid('body:bovold-settlement'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'), 'Harbor Wardens'' Watch',
+    'The settlement-level council that keeps the harbor, the sea-wall, and the city''s day-to-day peace.',
+    jsonb_build_array(
+      jsonb_build_object('kind','ruler'),
+      jsonb_build_object('kind','office_type','office_type_id', pg_temp.seed_uuid('office:bovold:warden')::text)));
+
+insert into public.law_documents (id, world_id, settlement_id, title, preamble_markdown, status, amendment_procedure_json, current_version, created_turn_number) values
+  (pg_temp.seed_uuid('law:bovold-settlement'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'), 'The Harbor Bylaws of Bovold',
+    'That the quay stay orderly and the sea-wall stand, the Steward and the Harbor-Warden set down these bylaws for the city alone.', 'active',
+    jsonb_build_object('kind','decree','authority','ruler'), 1, 0);
+
+insert into public.law_articles (id, document_id, article_number, heading, body_markdown, status, sort_order) values
+  (pg_temp.seed_uuid('article:bovold-settlement:1'), pg_temp.seed_uuid('law:bovold-settlement'), 1, 'Of the Quay', 'No vessel may moor at the quay past curfew bell without the Harbor-Warden''s leave.', 'active', 1),
+  (pg_temp.seed_uuid('article:bovold-settlement:2'), pg_temp.seed_uuid('law:bovold-settlement'), 2, 'Of the Sea-Wall Levy', 'Every household within the walls owes a day''s labor each season toward the sea-wall''s upkeep.', 'active', 2);
+
+insert into public.law_document_versions (id, document_id, version, articles_snapshot_json, amendment_title, enacted_turn_number) values
+  (pg_temp.seed_uuid('lawver:bovold-settlement:1'), pg_temp.seed_uuid('law:bovold-settlement'), 1,
+    jsonb_build_array(
+      jsonb_build_object('article_number',1,'heading','Of the Quay','body_markdown','No vessel may moor at the quay past curfew bell without the Harbor-Warden''s leave.'),
+      jsonb_build_object('article_number',2,'heading','Of the Sea-Wall Levy','body_markdown','Every household within the walls owes a day''s labor each season toward the sea-wall''s upkeep.')),
+    'Bylaws enacted at the founding', 0);
+
+insert into public.decrees (id, world_id, settlement_id, title, body_markdown, issued_by_citizen_id, issued_turn_number) values
+  (pg_temp.seed_uuid('decree:bovold-settlement:curfew'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'), 'The Curfew Bell', 'From the ringing of the curfew bell until dawn, the quay gates are barred to all but the Watch.', pg_temp.seed_uuid('citizen:notable:bovold-warden'), 0),
+  (pg_temp.seed_uuid('decree:bovold-settlement:market'), pg_temp.seed_uuid('world:bovold'), pg_temp.seed_uuid('settlement:bovold'), 'The Market Peace', 'No blade may be drawn within the bounds of the market square, on pain of the Watch''s cells.', pg_temp.seed_uuid('citizen:pc:steward'), 0);
 
 -- Established currencies: Bovold and Ka'Po'Tun back their coin with precious
 -- metal; the serpent empire and the isles run fiat currencies.

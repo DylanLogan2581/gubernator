@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (86);
+  plan (88);
 
 -- ---------------------------------------------------------------------------
 -- World
@@ -638,9 +638,31 @@ select
           where
             name = 'Bovold Seed World'
         )
+        and nation_id is not null
     ),
     4,
     'One government body per nation'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)::int
+      from
+        public.government_bodies
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and settlement_id is not null
+    ) >= 1,
+    'At least one settlement-scoped government body'
   );
 
 select
@@ -683,9 +705,31 @@ select
           where
             name = 'Bovold Seed World'
         )
+        and nation_id is not null
     ),
     4,
     'One law document (charter) per nation'
+  );
+
+select
+  ok (
+    (
+      select
+        count(*)::int
+      from
+        public.law_documents
+      where
+        world_id = (
+          select
+            id
+          from
+            public.worlds
+          where
+            name = 'Bovold Seed World'
+        )
+        and settlement_id is not null
+    ) >= 1,
+    'At least one settlement-scoped law document'
   );
 
 select
