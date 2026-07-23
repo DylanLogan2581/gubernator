@@ -158,6 +158,33 @@ type PopulationInstanceRowFixture = {
   readonly updated_at: string;
 };
 
+type PopulationTypeRowFixture = {
+  readonly created_at: string;
+  readonly culling_outputs_json: readonly unknown[];
+  readonly growth_rate: number;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
+  readonly id: string;
+  readonly is_trashed: boolean;
+  readonly maintenance_rules_json: readonly unknown[];
+  readonly managed_population_culling_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly max_cull_per_worker: number;
+  }>;
+  readonly managed_population_husbandry_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly workers_per_n_animals: number;
+  }>;
+  readonly name: string;
+  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
+  readonly regular_outputs_json: readonly unknown[];
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
 type TradeRouteRowFixture = {
   readonly created_at: string;
   readonly destination_approval_status: "approved" | "pending" | "rejected";
@@ -296,6 +323,30 @@ function createPopulationInstanceRow(
   };
 }
 
+function createPopulationTypeRow(
+  overrides: Partial<PopulationTypeRowFixture> = {},
+): PopulationTypeRowFixture {
+  return {
+    created_at: "2026-01-01T00:00:00Z",
+    culling_outputs_json: [],
+    growth_rate: 0.05,
+    icon: null,
+    icon_color: null,
+    id: "mpt-1",
+    is_trashed: false,
+    maintenance_rules_json: [],
+    managed_population_culling_jobs: [],
+    managed_population_husbandry_jobs: [],
+    name: "Sheep",
+    referencing_jobs: [],
+    regular_outputs_json: [],
+    slug: "sheep",
+    updated_at: "2026-01-01T00:00:00Z",
+    world_id: "world-1",
+    ...overrides,
+  };
+}
+
 function createTradeRouteRow(
   overrides: Partial<TradeRouteRowFixture> = {},
 ): TradeRouteRowFixture {
@@ -404,6 +455,7 @@ function createClient(config: {
   readonly citizenAssignmentRows?: readonly CitizenAssignmentRowFixture[];
   readonly depositInstanceRows?: readonly DepositInstanceRowFixture[];
   readonly populationInstanceRows?: readonly PopulationInstanceRowFixture[];
+  readonly populationTypeRows?: readonly PopulationTypeRowFixture[];
   readonly tradeRouteRows?: readonly TradeRouteRowFixture[];
   readonly perTargetMutationResult?: PerTargetMutationResultFixture;
   readonly officeholderCount?: number;
@@ -432,6 +484,9 @@ function createClient(config: {
       }
       if (table === "managed_population_instances") {
         return createTableBuilder(config.populationInstanceRows ?? []);
+      }
+      if (table === "managed_population_types") {
+        return createTableBuilder(config.populationTypeRows ?? []);
       }
       if (table === "trade_routes") {
         return createTableBuilder(config.tradeRouteRows ?? []);
@@ -994,6 +1049,55 @@ describe("SettlementAssignmentBoard", () => {
     // (#1247), so both the husbandry row and the culling row show the
     // population type's own name — there's no single job name to show.
     expect(await screen.findAllByText("Flock A — Sheep")).toHaveLength(2);
+  });
+
+  it("shows the needed-workers maximum for husbandry and culling rows", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenAssignmentRows: [],
+        depositInstanceRows: [],
+        populationInstanceRows: [
+          createPopulationInstanceRow({
+            id: "pop-1",
+            name: "Flock A",
+            managed_population_type_id: "mpt-1",
+            managed_population_types: { name: "Sheep" },
+            current_count: 25,
+            configured_cull_quantity: 12,
+          }),
+        ],
+        populationTypeRows: [
+          createPopulationTypeRow({
+            id: "mpt-1",
+            name: "Sheep",
+            managed_population_husbandry_jobs: [
+              { id: "hj-1", job_id: "job-h1", workers_per_n_animals: 5 },
+            ],
+            managed_population_culling_jobs: [
+              { id: "cj-1", job_id: "job-c1", max_cull_per_worker: 4 },
+            ],
+          }),
+        ],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await screen.findAllByText("Flock A — Sheep");
+
+    // Husbandry: ceil(25 / 5) = 5 needed.
+    expect(
+      screen
+        .getAllByText((_, el) => el?.textContent === "0 / 5 needed")
+        .find((el) => el.tagName === "SPAN"),
+    ).toBeInTheDocument();
+    // Culling: ceil(12 / 4) = 3 needed.
+    expect(
+      screen
+        .getAllByText((_, el) => el?.textContent === "0 / 3 needed")
+        .find((el) => el.tagName === "SPAN"),
+    ).toBeInTheDocument();
   });
 
   it("shows trade route section with origin and destination labels", async () => {

@@ -16,6 +16,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseManagedPopulationExtinctPayload } from "@/shared/simulation";
 
 import { setConfiguredCullQuantityMutationOptions } from "../../mutations/setConfiguredCullQuantityMutations";
+import { calculateNeededWorkers } from "../../utils/calculateNeededWorkers";
 
 import { MarkExtinctConfirmDialog } from "./MarkExtinctConfirmDialog";
 
@@ -177,22 +178,10 @@ export function ManagedPopulationInstanceRow({
   const [editingCull, setEditingCull] = useState(false);
   const [showExtinctConfirm, setShowExtinctConfirm] = useState(false);
 
-  // Required workers = 1 worker per N animals (N = workersPerNAnimals). A
-  // population type can now link 1..n husbandry jobs, each with its own
-  // rate (#1247), so this is an approximation: the average rate across all
-  // linked husbandry jobs, since this display doesn't know which specific
-  // job each assigned worker holds.
-  const averageWorkersPerNAnimals =
-    type !== undefined && type.husbandryJobs.length > 0
-      ? type.husbandryJobs.reduce(
-          (sum, job) => sum + job.workersPerNAnimals,
-          0,
-        ) / type.husbandryJobs.length
-      : null;
-  const requiredWorkers =
-    averageWorkersPerNAnimals !== null
-      ? Math.ceil(instance.currentCount / averageWorkersPerNAnimals)
-      : null;
+  const requiredWorkers = calculateNeededWorkers(
+    instance.currentCount,
+    type?.husbandryJobs.map((job) => job.workersPerNAnimals) ?? [],
+  );
 
   const workerSufficient =
     requiredWorkers === null || husbandryCount >= requiredWorkers;

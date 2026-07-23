@@ -19,8 +19,15 @@ import {
 } from "@/components/ui/table";
 import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
 import type { DepositInstance } from "@/features/deposits";
-import { managedPopulationInstancesBySettlementQueryOptions } from "@/features/managed-populations";
-import type { ManagedPopulationInstance } from "@/features/managed-populations";
+import {
+  activeManagedPopulationTypesByWorldQueryOptions,
+  calculateNeededWorkers,
+  managedPopulationInstancesBySettlementQueryOptions,
+} from "@/features/managed-populations";
+import type {
+  ManagedPopulationInstance,
+  ManagedPopulationType,
+} from "@/features/managed-populations";
 import { tradeRoutesForSettlementQueryOptions } from "@/features/trade";
 import type { TradeRoute, TradeRouteLeg } from "@/features/trade";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -57,6 +64,7 @@ type DepositRow = {
 
 type HusbandryRow = {
   readonly kind: "husbandry";
+  readonly neededWorkers: number | null;
   readonly population: ManagedPopulationInstance;
   readonly jobName: string;
   readonly targetId: string;
@@ -65,6 +73,7 @@ type HusbandryRow = {
 
 type CullingRow = {
   readonly kind: "culling";
+  readonly neededWorkers: number | null;
   readonly population: ManagedPopulationInstance;
   readonly jobName: string;
   readonly targetId: string;
@@ -118,6 +127,9 @@ export function JobAssignmentsTable({
   const populationsQuery = useQuery(
     managedPopulationInstancesBySettlementQueryOptions(settlementId),
   );
+  const populationTypesQuery = useQuery(
+    activeManagedPopulationTypesByWorldQueryOptions(worldId),
+  );
   const tradeRoutesQuery = useQuery(
     tradeRoutesForSettlementQueryOptions(settlementId),
   );
@@ -148,6 +160,7 @@ export function JobAssignmentsTable({
     targetAssignmentsQuery.isPending ||
     depositsQuery.isPending ||
     populationsQuery.isPending ||
+    populationTypesQuery.isPending ||
     tradeRoutesQuery.isPending;
 
   if (isLoading) {
@@ -160,6 +173,7 @@ export function JobAssignmentsTable({
     targetAssignmentsQuery.error ??
     depositsQuery.error ??
     populationsQuery.error ??
+    populationTypesQuery.error ??
     tradeRoutesQuery.error;
 
   if (firstError !== null && firstError !== undefined) {
@@ -184,6 +198,10 @@ export function JobAssignmentsTable({
   const populations = (populationsQuery.data ?? []).filter(
     (p) => p.status === "active",
   );
+  const populationTypeById = new Map<string, ManagedPopulationType>();
+  for (const type of populationTypesQuery.data ?? []) {
+    populationTypeById.set(type.id, type);
+  }
   const tradeRoutes = (tradeRoutesQuery.data ?? []).filter(
     (r) => r.status === "active",
   );
@@ -246,8 +264,13 @@ export function JobAssignmentsTable({
 
   // Husbandry
   for (const population of populations) {
+    const type = populationTypeById.get(population.managedPopulationTypeId);
     rows.push({
       kind: "husbandry",
+      neededWorkers: calculateNeededWorkers(
+        population.currentCount,
+        type?.husbandryJobs.map((job) => job.workersPerNAnimals) ?? [],
+      ),
       population,
       jobName: population.managedPopulationTypeName,
       targetId: population.id,
@@ -257,8 +280,13 @@ export function JobAssignmentsTable({
 
   // Culling
   for (const population of populations) {
+    const type = populationTypeById.get(population.managedPopulationTypeId);
     rows.push({
       kind: "culling",
+      neededWorkers: calculateNeededWorkers(
+        population.configuredCullQuantity,
+        type?.cullingJobs.map((job) => job.maxCullPerWorker) ?? [],
+      ),
       population,
       jobName: population.managedPopulationTypeName,
       targetId: population.id,
@@ -499,6 +527,7 @@ function RowRenderer({
         canEdit={canEdit}
         currentCount={currentCount}
         jobName={row.jobName}
+        neededWorkers={row.neededWorkers}
         population={row.population}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
@@ -516,6 +545,7 @@ function RowRenderer({
         canEdit={canEdit}
         currentCount={currentCount}
         jobName={row.jobName}
+        neededWorkers={row.neededWorkers}
         population={row.population}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
@@ -582,8 +612,10 @@ function RowRenderer({
 function CapacityDisplay({
   current,
   capacity,
+  capacityLabel,
 }: {
   readonly capacity: number | null;
+  readonly capacityLabel?: string;
   readonly current: number;
 }): JSX.Element {
   if (capacity === null) {
@@ -595,8 +627,10 @@ function CapacityDisplay({
   }
 
   const isEmpty = current === 0;
+  const isOverCapacity = current > capacity;
   const fillPct =
     capacity > 0 ? Math.min(100, Math.round((current / capacity) * 100)) : 0;
+  const suffix = capacityLabel !== undefined ? ` ${capacityLabel}` : "";
 
   return (
     <div className="flex min-w-28 flex-col gap-1">
@@ -604,13 +638,19 @@ function CapacityDisplay({
         className={cn(
           "tabular-nums",
           isEmpty && "font-medium text-amber-600 dark:text-amber-500",
+          isOverCapacity && "font-medium text-sky-600 dark:text-sky-400",
         )}
       >
         {current} / {capacity}
+        {suffix}
       </span>
       <Progress
-        aria-label={`${current.toString()} of ${capacity.toString()} filled`}
-        className={cn("h-1.5", isEmpty && "bg-amber-100 dark:bg-amber-950")}
+        aria-label={`${current.toString()} of ${capacity.toString()}${suffix} filled`}
+        className={cn(
+          "h-1.5",
+          isEmpty && "bg-amber-100 dark:bg-amber-950",
+          isOverCapacity && "bg-sky-100 dark:bg-sky-950",
+        )}
         value={fillPct}
       />
     </div>
@@ -842,6 +882,7 @@ function PopulationTargetRow({
   canEdit,
   currentCount,
   jobName,
+  neededWorkers,
   population,
   settlementId,
   unassignedNpcCount,
@@ -852,6 +893,7 @@ function PopulationTargetRow({
   readonly canEdit: boolean;
   readonly currentCount: number;
   readonly jobName: string;
+  readonly neededWorkers: number | null;
   readonly population: ManagedPopulationInstance;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
@@ -896,7 +938,11 @@ function PopulationTargetRow({
     <TableRow className="border-b border-border last:border-0">
       <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
       <TableCell className="py-2 pr-4 text-muted-foreground">
-        <CapacityDisplay capacity={null} current={currentCount} />
+        <CapacityDisplay
+          capacity={neededWorkers}
+          capacityLabel="needed"
+          current={currentCount}
+        />
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
