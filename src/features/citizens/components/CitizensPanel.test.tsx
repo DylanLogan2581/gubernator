@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,6 +8,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CitizensPanel } from "./CitizensPanel";
 
 import type { ReactNode } from "react";
+
+// jsdom lacks pointer capture / scrollIntoView, which Radix Select needs to open.
+/* eslint-disable @typescript-eslint/unbound-method */
+Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
+  return false;
+};
+Element.prototype.setPointerCapture ??= function setPointerCapture() {};
+Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+/* eslint-enable @typescript-eslint/unbound-method */
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -138,19 +148,51 @@ describe("CitizensPanel", () => {
       }),
     );
 
-    await user.click(screen.getByLabelText("Show deceased"));
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by status" }),
+    );
+    await user.click(await screen.findByRole("option", { name: "Deceased" }));
 
     expect(await screen.findByText("Cael")).toBeDefined();
     const caelRow = screen.getByText("Cael").closest("tr");
     expect(caelRow).toHaveTextContent("Deceased");
 
-    // Dead toggle shows only dead and hides create buttons
+    // Deceased filter shows only dead and hides create buttons
     expect(screen.queryByText("Aldra")).toBeNull();
     expect(screen.queryByText("Brann")).toBeNull();
     expect(screen.queryByRole("button", { name: "Create NPC" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Create player character" }),
     ).toBeNull();
+  });
+
+  it("filters by name search and citizen type", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        directoryRows: [createDirectoryRow({ id: "c-1", name: "Aldra" })],
+        totalCount: 1,
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderPanel({ canAdmin: true });
+
+    expect(await screen.findByText("Aldra")).toBeDefined();
+
+    await user.type(screen.getByLabelText("Search citizens by name"), "Ald");
+
+    await waitFor(() => {
+      expect(requireSupabaseClient).toHaveBeenCalled();
+    });
+
+    await user.click(screen.getByRole("combobox", { name: "Filter by type" }));
+    await user.click(
+      await screen.findByRole("option", { name: "Player characters" }),
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: "Filter by type" }),
+    ).toHaveTextContent("Player characters");
   });
 
   it("marks an officeholder with an 'In office' badge instead of their assignment label", async () => {

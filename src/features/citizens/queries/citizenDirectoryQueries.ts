@@ -19,7 +19,10 @@ export type CitizenDirectorySortColumn =
   | "age_turns"
   | "settlement_name"
   | "nation_name"
-  | "status";
+  | "status"
+  | "citizen_type"
+  | "sex"
+  | "education_level_name";
 
 export type CitizenDirectoryOrder = {
   readonly ascending: boolean;

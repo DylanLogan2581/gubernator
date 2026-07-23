@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { GraduationCap, Landmark, Skull, UserPlus } from "lucide-react";
+import { GraduationCap, Landmark, UserPlus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { DataTable } from "@/components/shared/DataTable";
@@ -19,8 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -30,6 +38,7 @@ import { culturesByWorldQueryOptions } from "@/features/cultures";
 import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { religionsByWorldQueryOptions } from "@/features/religions";
 import { settlementPopulationCapQueryOptions } from "@/features/settlements";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
@@ -86,8 +95,11 @@ const DEFAULT_SORTING: SortingState = [{ id: "name", desc: false }];
 // server-side `.order()` call should use (see citizenDirectoryQueries.ts).
 const SORT_COLUMN_BY_ID: Record<string, CitizenDirectorySortColumn> = {
   age: "age_turns",
+  education: "education_level_name",
   name: "name",
+  sex: "sex",
   status: "status",
+  type: "citizen_type",
 };
 
 function buildSettlementCitizensColumns(
@@ -114,13 +126,16 @@ function buildSettlementCitizensColumns(
     },
     {
       id: "sex",
-      enableSorting: false,
+      accessorFn: (row) => row.sex ?? "—",
       header: "Sex",
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
       ),
     },
     {
+      // The displayed value merges two source columns (office_types,
+      // assignment_label), so no single column can drive a server-side sort
+      // that matches what's rendered -- left unsortable.
       id: "assignment",
       enableSorting: false,
       header: "Job / assignment",
@@ -155,7 +170,7 @@ function buildSettlementCitizensColumns(
     },
     {
       id: "type",
-      enableSorting: false,
+      accessorFn: (row) => row.citizenType,
       header: "Type",
       cell: ({ row }) => (
         <Badge variant="secondary">
@@ -165,7 +180,7 @@ function buildSettlementCitizensColumns(
     },
     {
       id: "education",
-      enableSorting: false,
+      accessorFn: (row) => row.educationLevelName ?? "—",
       header: "Education",
       cell: ({ row }) =>
         hasEducationLevels ? (
@@ -205,7 +220,7 @@ export function CitizensPanel({
   settlementId,
   worldId,
 }: CitizensPanelProps): JSX.Element {
-  const [includeDead, setIncludeDead] = useState(false);
+  const [status, setStatus] = useState<CitizenStatus | "all">("alive");
 
   const aggregateQuery = useQuery(
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
@@ -250,29 +265,14 @@ export function CitizensPanel({
           >
             Job assignments →
           </Link>
-          {canAdmin ? (
-            <>
-              {!includeDead ? (
-                <CitizensCreateActions
-                  canAdmin={canAdmin}
-                  incestPreventionDepth={incestPreventionDepth}
-                  isArchived={isArchived}
-                  settlementId={settlementId}
-                  worldId={worldId}
-                />
-              ) : null}
-              <Button
-                aria-label={includeDead ? "Hide deceased" : "Show deceased"}
-                aria-pressed={includeDead}
-                size="icon-sm"
-                title={includeDead ? "Hide deceased" : "Show deceased"}
-                type="button"
-                variant={includeDead ? "secondary" : "ghost"}
-                onClick={() => setIncludeDead(!includeDead)}
-              >
-                <Skull aria-hidden="true" />
-              </Button>
-            </>
+          {canAdmin && status !== "dead" ? (
+            <CitizensCreateActions
+              canAdmin={canAdmin}
+              incestPreventionDepth={incestPreventionDepth}
+              isArchived={isArchived}
+              settlementId={settlementId}
+              worldId={worldId}
+            />
           ) : null}
         </div>
       </div>
@@ -280,9 +280,9 @@ export function CitizensPanel({
       <CardContent>
         {canAdmin ? (
           <CitizensAdminList
-            key={includeDead ? "dead" : "alive"}
-            includeDead={includeDead}
+            onStatusChange={setStatus}
             settlementId={settlementId}
+            status={status}
             worldId={worldId}
           />
         ) : (
@@ -624,16 +624,24 @@ function BulkSetEducationDialog({
 }
 
 function CitizensAdminList({
-  includeDead,
+  onStatusChange,
   settlementId,
+  status,
   worldId,
 }: {
-  readonly includeDead: boolean;
+  readonly onStatusChange: (status: CitizenStatus | "all") => void;
   readonly settlementId: string;
+  readonly status: CitizenStatus | "all";
   readonly worldId: string;
 }): JSX.Element {
+  const [search, setSearch] = useState("");
+  const [citizenType, setCitizenType] = useState<CitizenType | undefined>(
+    undefined,
+  );
   const [pageIndex, setPageIndex] = useState(0);
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   const educationLevelsQuery = useQuery(
     educationLevelsByWorldQueryOptions(worldId),
@@ -650,10 +658,16 @@ function CitizensAdminList({
       : undefined;
 
   const filters: CitizenDirectoryFilters = {
+    citizenType,
     order,
+    search: debouncedSearch,
     settlementId,
-    status: includeDead ? "dead" : "alive",
+    status: status === "all" ? undefined : status,
   };
+
+  function resetToFirstPage(): void {
+    setPageIndex(0);
+  }
 
   const citizensQuery = useQuery(
     citizensDirectoryQueryOptions(worldId, filters, {
@@ -666,29 +680,68 @@ function CitizensAdminList({
   const totalCount = citizensQuery.data?.totalCount ?? 0;
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  if (citizensQuery.isPending) {
-    return <TableSkeleton columnCount={6} rowCount={5} />;
-  }
-
-  if (citizensQuery.isError) {
-    return (
-      <ErrorState
-        title="Citizens could not be loaded"
-        description={getErrorDescription(citizensQuery.error)}
-      />
-    );
-  }
-
   return (
     <div className="grid gap-3">
-      {rows.length === 0 ? (
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Input
+          aria-label="Search citizens by name"
+          className="sm:w-[220px]"
+          placeholder="Search by name…"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.currentTarget.value);
+            resetToFirstPage();
+          }}
+        />
+
+        <Select
+          value={citizenType ?? "all"}
+          onValueChange={(value) => {
+            setCitizenType(
+              value === "all" ? undefined : (value as CitizenType),
+            );
+            resetToFirstPage();
+          }}
+        >
+          <SelectTrigger className="sm:w-[170px]" aria-label="Filter by type">
+            <SelectValue placeholder="PC / NPC" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All citizens</SelectItem>
+            <SelectItem value="player_character">Player characters</SelectItem>
+            <SelectItem value="npc">NPCs</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            onStatusChange(value as CitizenStatus | "all");
+            resetToFirstPage();
+          }}
+        >
+          <SelectTrigger className="sm:w-[150px]" aria-label="Filter by status">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="alive">Alive</SelectItem>
+            <SelectItem value="dead">Deceased</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {citizensQuery.isPending ? (
+        <TableSkeleton columnCount={7} rowCount={5} />
+      ) : citizensQuery.isError ? (
+        <ErrorState
+          title="Citizens could not be loaded"
+          description={getErrorDescription(citizensQuery.error)}
+        />
+      ) : rows.length === 0 ? (
         <EmptyState
-          title={includeDead ? "No citizens yet" : "No living citizens"}
-          description={
-            includeDead
-              ? "Citizens added to this settlement will appear here."
-              : "Toggle the skull icon in the header to see deceased citizens."
-          }
+          title="No citizens found"
+          description="Try widening your filters or search."
         />
       ) : (
         <>
