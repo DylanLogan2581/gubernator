@@ -396,10 +396,12 @@ function SettlementHomelessnessOccurredRenderer({
 
 function TradeRoutePausedRenderer({
   isAdmin,
+  lookup,
   mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
   readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
@@ -408,10 +410,16 @@ function TradeRoutePausedRenderer({
     return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
   }
   const pauseReasonLabel = PAUSE_REASON_LABELS[p.pauseReason] ?? p.pauseReason;
+  const resourceName =
+    p.resourceId === null
+      ? null
+      : (lookup.resourceName(p.resourceId) ?? "Unknown resource");
   return (
     <span className="text-sm">
-      Trade route paused — <em>{pauseReasonLabel}</em> (
-      {p.quantityPerTransition} units/turn)
+      Trade route paused — <em>{pauseReasonLabel}</em>
+      {resourceName !== null && p.quantityPerTransition !== null
+        ? ` (${resourceName}, ${p.quantityPerTransition} units/turn)`
+        : null}
     </span>
   );
 }
@@ -1286,6 +1294,7 @@ export function TurnLogPayloadRenderer({
       return (
         <TradeRoutePausedRenderer
           isAdmin={isAdmin}
+          lookup={lookup}
           mode={mode}
           payload={payload}
         />

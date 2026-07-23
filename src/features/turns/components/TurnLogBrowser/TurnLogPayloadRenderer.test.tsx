@@ -200,4 +200,21 @@ describe("TurnLogPayloadRenderer — trade route renderers", () => {
 
     expect(screen.getByText(/some_new_reason/)).toBeDefined();
   });
+
+  it("renders the pause reason without a dash for historical logs missing quantity/resource (#1324)", () => {
+    render(
+      <TurnLogPayloadRenderer
+        logCategory="trade_route.paused"
+        payload={{
+          destinationSettlementId: "settlement-2",
+          pauseReason: "insufficient_trader_origin",
+          tradeRouteId: "route-1",
+        }}
+        lookup={EMPTY_LOOKUP}
+      />,
+    );
+
+    expect(screen.getByText(/Insufficient traders at origin/)).toBeDefined();
+    expect(screen.queryByText("—")).toBeNull();
+  });
 });

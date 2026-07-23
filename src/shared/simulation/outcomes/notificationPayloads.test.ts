@@ -370,6 +370,22 @@ describe("parseTradeRoutePausedPayload", () => {
       tradeRouteId: "tr-1",
     });
   });
+
+  it("tolerates historical logs missing quantityPerTransition/resourceId (#1324)", () => {
+    expect(
+      parseTradeRoutePausedPayload({
+        destinationSettlementId: "s-2",
+        pauseReason: "insufficient_origin_stock",
+        tradeRouteId: "tr-1",
+      }),
+    ).toEqual({
+      destinationSettlementId: "s-2",
+      pauseReason: "insufficient_origin_stock",
+      quantityPerTransition: null,
+      resourceId: null,
+      tradeRouteId: "tr-1",
+    });
+  });
 });
 
 describe("parseTradeRouteResumedPayload", () => {

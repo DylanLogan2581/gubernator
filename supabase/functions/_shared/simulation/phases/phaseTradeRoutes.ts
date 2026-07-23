@@ -5,6 +5,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import type {
+  SimTradeRouteLeg,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -104,7 +105,12 @@ export function phaseTradeRoutes(
       0,
     );
 
-    const pause = (pauseReason: string, previouslyPaused: boolean): void => {
+    const pause = (
+      pauseReason: string,
+      previouslyPaused: boolean,
+      resourceId: string,
+      quantityPerTransition: number,
+    ): void => {
       allOutcomes.push({
         delivered: false,
         pauseReason,
@@ -116,6 +122,8 @@ export function phaseTradeRoutes(
         payload: {
           destinationSettlementId,
           pauseReason,
+          quantityPerTransition,
+          resourceId,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",
@@ -145,7 +153,7 @@ export function phaseTradeRoutes(
       originNationId !== destinationNationId &&
       atWarNationPairs.has(`${originNationId}:${destinationNationId}`)
     ) {
-      pause("nations_at_war", wasPaused);
+      pause("nations_at_war", wasPaused, legs[0].resourceId, totalQty);
       continue;
     }
 
@@ -162,26 +170,27 @@ export function phaseTradeRoutes(
       (nationById.get(originNationId)?.tradePolicy === "closed" ||
         nationById.get(destinationNationId)?.tradePolicy === "closed")
     ) {
-      pause("trade_policy_closed", wasPaused);
+      pause("trade_policy_closed", wasPaused, legs[0].resourceId, totalQty);
       continue;
     }
 
     // Check trader capacity at origin.
     const originCapacity = traderCapacity.get(`${id}:origin`) ?? 0;
     if (originCapacity < totalQty) {
-      pause("insufficient_trader_origin", wasPaused);
+      pause("insufficient_trader_origin", wasPaused, legs[0].resourceId, totalQty);
       continue;
     }
 
     // Check trader capacity at destination.
     const destCapacity = traderCapacity.get(`${id}:destination`) ?? 0;
     if (destCapacity < totalQty) {
-      pause("insufficient_trader_destination", wasPaused);
+      pause("insufficient_trader_destination", wasPaused, legs[0].resourceId, totalQty);
       continue;
     }
 
     // Check every leg can be satisfied before committing any transfer.
     let pauseReason: string | null = null;
+    let pausingLeg: SimTradeRouteLeg | null = null;
     for (const leg of legs) {
       if (leg.direction === "send") {
         // Send: origin → destination
@@ -189,6 +198,7 @@ export function phaseTradeRoutes(
         const originQty = stockpileQty.get(originKey) ?? 0;
         if (originQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_origin_stock";
+          pausingLeg = leg;
           break;
         }
         const destKey = `${destinationSettlementId}:${leg.resourceId}`;
@@ -196,6 +206,7 @@ export function phaseTradeRoutes(
         const destCap = stockpileCap.get(destKey) ?? 0;
         if (destCap - destQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_destination_space";
+          pausingLeg = leg;
           break;
         }
       } else {
@@ -204,6 +215,7 @@ export function phaseTradeRoutes(
         const destQty = stockpileQty.get(destKey) ?? 0;
         if (destQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_destination_stock";
+          pausingLeg = leg;
           break;
         }
         const originKey = `${originSettlementId}:${leg.resourceId}`;
@@ -211,13 +223,14 @@ export function phaseTradeRoutes(
         const originCap = stockpileCap.get(originKey) ?? 0;
         if (originCap - originQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_origin_space";
+          pausingLeg = leg;
           break;
         }
       }
     }
 
-    if (pauseReason !== null) {
-      pause(pauseReason, wasPaused);
+    if (pauseReason !== null && pausingLeg !== null) {
+      pause(pauseReason, wasPaused, pausingLeg.resourceId, pausingLeg.quantityPerTransition);
       continue;
     }
 

@@ -248,11 +248,14 @@ export function parseSettlementHomelessnessOccurredPayload(
 export type TradeRoutePausedPayload = {
   readonly destinationSettlementId: string;
   readonly pauseReason: string;
-  readonly quantityPerTransition: number;
-  readonly resourceId: string;
+  readonly quantityPerTransition: number | null;
+  readonly resourceId: string | null;
   readonly tradeRouteId: string;
 };
 
+// quantityPerTransition/resourceId were added after some logs were already
+// written (#1324) — old entries lack them, so they are optional here and the
+// renderer falls back to showing only route + reason for those rows.
 export function parseTradeRoutePausedPayload(
   payload: unknown,
 ): TradeRoutePausedPayload | null {
@@ -260,14 +263,20 @@ export function parseTradeRoutePausedPayload(
   const p = payload as Record<string, unknown>;
   if (typeof p.destinationSettlementId !== "string") return null;
   if (typeof p.pauseReason !== "string") return null;
-  if (typeof p.quantityPerTransition !== "number") return null;
-  if (typeof p.resourceId !== "string") return null;
+  if (
+    p.quantityPerTransition !== undefined &&
+    typeof p.quantityPerTransition !== "number"
+  ) {
+    return null;
+  }
+  if (p.resourceId !== undefined && typeof p.resourceId !== "string")
+    return null;
   if (typeof p.tradeRouteId !== "string") return null;
   return {
     destinationSettlementId: p.destinationSettlementId,
     pauseReason: p.pauseReason,
-    quantityPerTransition: p.quantityPerTransition,
-    resourceId: p.resourceId,
+    quantityPerTransition: p.quantityPerTransition ?? null,
+    resourceId: p.resourceId ?? null,
     tradeRouteId: p.tradeRouteId,
   };
 }

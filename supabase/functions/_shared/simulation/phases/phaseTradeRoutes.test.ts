@@ -248,6 +248,8 @@ describe("phaseTradeRoutes — pause behavior", () => {
         payload: {
           destinationSettlementId: "dest",
           pauseReason: "insufficient_origin_stock",
+          quantityPerTransition: 10,
+          resourceId: "wood",
           tradeRouteId: "r1",
         },
         phase: "tradeRoutes",
@@ -314,6 +316,12 @@ describe("phaseTradeRoutes — pause behavior", () => {
 
     expect(result.tradeRouteOutcomes[0].pauseReason).toBe("insufficient_trader_origin");
     expect(result.stockpileDeltas).toEqual([]);
+    // Gate-level pauses (not tied to a specific leg failure) still report the
+    // route's resource/quantity so history entries aren't blank (#1324).
+    expect(result.logs[0].payload).toMatchObject({
+      quantityPerTransition: 10,
+      resourceId: "wood",
+    });
   });
 
   it("pauses on insufficient trader capacity at destination", () => {
