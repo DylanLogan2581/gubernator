@@ -196,6 +196,7 @@ function createClient({
   blueprintRows = [],
   buildingRows = [],
   citizenRows = [],
+  constructionProjectRows = [],
   jobRows = [],
   latestSnapshotRow = null,
   latestTransitionRow = null,
@@ -207,6 +208,7 @@ function createClient({
   readonly blueprintRows?: readonly TestBlueprintRow[];
   readonly buildingRows?: readonly TestBuildingRow[];
   readonly citizenRows?: readonly TestCitizenRow[];
+  readonly constructionProjectRows?: readonly unknown[];
   readonly jobRows?: readonly TestJobRow[];
   readonly latestSnapshotRow?: TestSnapshotLookupRow | null;
   readonly latestTransitionRow?: TestTransitionRow | null;
@@ -337,6 +339,9 @@ function createClient({
       }
       if (table === "building_blueprint_tiers") {
         return createSimpleQueryBuilder(tierRows);
+      }
+      if (table === "construction_projects") {
+        return createSimpleQueryBuilder(constructionProjectRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -1076,6 +1081,71 @@ describe("SettlementBuildingsPanel", () => {
       );
     });
     expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("shows Start construction button for settlement managers when not archived", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: true,
+      isArchived: false,
+    });
+
+    expect(
+      await screen.findByRole("button", { name: "Start construction" }),
+    ).toBeDefined();
+  });
+
+  it("hides Start construction button for users who cannot manage the settlement", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: false,
+      isArchived: false,
+    });
+
+    await screen.findByText("No buildings");
+    expect(
+      screen.queryByRole("button", { name: "Start construction" }),
+    ).toBeNull();
+  });
+
+  it("hides Start construction button when the world is archived", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: true,
+      isArchived: true,
+    });
+
+    await screen.findByText("No buildings");
+    expect(
+      screen.queryByRole("button", { name: "Start construction" }),
+    ).toBeNull();
+  });
+
+  it("opens the Start construction dialog when a manager clicks the button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ blueprintRows: [], buildingRows: [] }),
+    );
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: true,
+      isArchived: false,
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Start construction" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Start construction" }),
+    ).toBeDefined();
   });
 });
 

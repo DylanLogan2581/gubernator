@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CreateProjectDialog } from "@/features/construction";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import {
@@ -67,6 +68,7 @@ export function SettlementBuildingsPanel({
   worldId,
 }: SettlementBuildingsPanelProps): JSX.Element {
   const [addOpen, setAddOpen] = useState(false);
+  const [startConstructionOpen, setStartConstructionOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const buildingsQuery = useQuery(
     settlementBuildingsBySettlementQueryOptions(settlementId),
@@ -77,6 +79,7 @@ export function SettlementBuildingsPanel({
   const queryClient = useQueryClient();
 
   const canAdd = canAdmin && !isArchived;
+  const canStartConstruction = canManageSettlement && !isArchived;
 
   const resourceNames = new Map(
     (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
@@ -84,17 +87,33 @@ export function SettlementBuildingsPanel({
   const jobNames = new Map((jobsQuery.data ?? []).map((j) => [j.id, j.name]));
 
   return (
-    <Card aria-labelledby="settlement-buildings-heading" className="grid gap-3">
-      <div className="flex flex-col gap-1 px-4 pt-4">
-        <div className="flex items-center justify-between gap-2">
+    <Card
+      aria-labelledby="settlement-buildings-heading"
+      className="grid min-w-0 gap-3"
+    >
+      <div className="flex min-w-0 flex-col gap-1 px-4 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2
             id="settlement-buildings-heading"
             className="text-base font-medium"
           >
             Buildings
           </h2>
-          <div className="flex items-center gap-2">
-            {canAdd && !showTrash ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {canStartConstruction ? (
+              <Button
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setStartConstructionOpen(true);
+                }}
+              >
+                <Plus aria-hidden="true" />
+                Start construction
+              </Button>
+            ) : null}
+            {canAdd ? (
               <Button
                 size="sm"
                 type="button"
@@ -126,7 +145,7 @@ export function SettlementBuildingsPanel({
         </div>
       </div>
 
-      <CardContent>
+      <CardContent className="min-w-0">
         {buildingsQuery.isPending ? (
           <TableSkeleton columnCount={6} rowCount={5} />
         ) : buildingsQuery.isError ? (
@@ -162,6 +181,17 @@ export function SettlementBuildingsPanel({
             worldId={worldId}
             onClose={() => {
               setAddOpen(false);
+            }}
+          />
+        ) : null}
+
+        {startConstructionOpen ? (
+          <CreateProjectDialog
+            queryClient={queryClient}
+            settlementId={settlementId}
+            worldId={worldId}
+            onClose={() => {
+              setStartConstructionOpen(false);
             }}
           />
         ) : null}
@@ -215,7 +245,7 @@ function BuildingsGroups({
   );
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       {visibleStateGroups.map((group) => {
         const groupBuildings = buildings.filter((b) =>
           (group.states as readonly string[]).includes(b.state),
@@ -307,7 +337,7 @@ function BuildingStateGroup({
   const duplicateGroups = groupIdenticalBuildings(buildings);
 
   return (
-    <Collapsible defaultOpen className="grid gap-1">
+    <Collapsible defaultOpen className="grid min-w-0 gap-1">
       <CollapsibleTrigger className="group flex cursor-pointer items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
         <ChevronDown
           aria-hidden="true"
@@ -316,59 +346,67 @@ function BuildingStateGroup({
         {label} ({buildings.length})
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <Table className="w-full text-sm">
-          <TableHeader>
-            <TableRow className="text-muted-foreground">
-              <TableHead scope="col">Building</TableHead>
-              <TableHead className="w-12" scope="col">
-                Count
-              </TableHead>
-              {showTierColumn ? <TableHead scope="col">Tier</TableHead> : null}
-              <TableHead scope="col">Effects</TableHead>
-              <TableHead className="w-16" scope="col" aria-label="State" />
-              {canAdmin ? (
-                <TableHead className="w-28" scope="col" aria-label="Actions" />
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {duplicateGroups.map((group) =>
-              group.buildings.length === 1 ? (
-                <BuildingRow
-                  key={group.buildings[0].id}
-                  building={group.buildings[0]}
-                  canAdmin={canAdmin}
-                  canDeconstruct={canDeconstruct}
-                  canManageSettlement={canManageSettlement}
-                  isArchived={isArchived}
-                  jobNames={jobNames}
-                  latestOutcome={latestOutcome}
-                  queryClient={queryClient}
-                  resourceNames={resourceNames}
-                  settlementId={settlementId}
-                  showTierColumn={showTierColumn}
-                  worldId={worldId}
-                />
-              ) : (
-                <DuplicateBuildingGroupRows
-                  key={group.key}
-                  buildings={group.buildings}
-                  canAdmin={canAdmin}
-                  canDeconstruct={canDeconstruct}
-                  canManageSettlement={canManageSettlement}
-                  isArchived={isArchived}
-                  jobNames={jobNames}
-                  latestOutcome={latestOutcome}
-                  queryClient={queryClient}
-                  resourceNames={resourceNames}
-                  settlementId={settlementId}
-                  showTierColumn={showTierColumn}
-                  worldId={worldId}
-                />
-              ),
-            )}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto rounded-md border">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="text-muted-foreground">
+                <TableHead scope="col">Building</TableHead>
+                <TableHead className="w-12" scope="col">
+                  Count
+                </TableHead>
+                {showTierColumn ? (
+                  <TableHead scope="col">Tier</TableHead>
+                ) : null}
+                <TableHead scope="col">Effects</TableHead>
+                <TableHead className="w-16" scope="col" aria-label="State" />
+                {canAdmin ? (
+                  <TableHead
+                    className="w-28"
+                    scope="col"
+                    aria-label="Actions"
+                  />
+                ) : null}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {duplicateGroups.map((group) =>
+                group.buildings.length === 1 ? (
+                  <BuildingRow
+                    key={group.buildings[0].id}
+                    building={group.buildings[0]}
+                    canAdmin={canAdmin}
+                    canDeconstruct={canDeconstruct}
+                    canManageSettlement={canManageSettlement}
+                    isArchived={isArchived}
+                    jobNames={jobNames}
+                    latestOutcome={latestOutcome}
+                    queryClient={queryClient}
+                    resourceNames={resourceNames}
+                    settlementId={settlementId}
+                    showTierColumn={showTierColumn}
+                    worldId={worldId}
+                  />
+                ) : (
+                  <DuplicateBuildingGroupRows
+                    key={group.key}
+                    buildings={group.buildings}
+                    canAdmin={canAdmin}
+                    canDeconstruct={canDeconstruct}
+                    canManageSettlement={canManageSettlement}
+                    isArchived={isArchived}
+                    jobNames={jobNames}
+                    latestOutcome={latestOutcome}
+                    queryClient={queryClient}
+                    resourceNames={resourceNames}
+                    settlementId={settlementId}
+                    showTierColumn={showTierColumn}
+                    worldId={worldId}
+                  />
+                ),
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
@@ -404,117 +442,89 @@ function DuplicateBuildingGroupRows({
   const [expanded, setExpanded] = useState(false);
   const first = buildings[0];
   const name = first.name ?? first.blueprintName;
-  const columnCount = 3 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
-
-  if (expanded) {
-    return (
-      <>
-        <TableRow className="border-b border-border">
-          <TableCell colSpan={columnCount} className="py-1 pr-4">
-            <Button
-              aria-expanded="true"
-              size="sm"
-              type="button"
-              variant="ghost"
-              className="h-6 gap-2 px-0 text-muted-foreground"
-              onClick={() => {
-                setExpanded(false);
-              }}
-            >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-                <ChevronDown aria-hidden="true" className="h-4 w-4" />
-              </span>
-              <IconChip
-                icon={resolveEntityIcon(first.blueprintIcon)}
-                tone={resolveIconTone(
-                  first.blueprintIconColor,
-                  first.buildingBlueprintId,
-                )}
-              />
-              {name}
-            </Button>
-          </TableCell>
-        </TableRow>
-        {buildings.map((building) => (
-          <BuildingRow
-            key={building.id}
-            building={building}
-            canAdmin={canAdmin}
-            canDeconstruct={canDeconstruct}
-            canManageSettlement={canManageSettlement}
-            isArchived={isArchived}
-            jobNames={jobNames}
-            latestOutcome={latestOutcome}
-            queryClient={queryClient}
-            resourceNames={resourceNames}
-            settlementId={settlementId}
-            showTierColumn={showTierColumn}
-            worldId={worldId}
-          />
-        ))}
-      </>
-    );
-  }
-
   const effectChips = buildEffectChips(first, resourceNames, jobNames);
   const showStateBadge = first.state !== "active";
 
   return (
-    <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4">
-        <Button
-          aria-expanded="false"
-          size="sm"
-          type="button"
-          variant="ghost"
-          className="h-6 gap-2 px-0"
-          onClick={() => {
-            setExpanded(true);
-          }}
-        >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-            <ChevronDown aria-hidden="true" className="h-4 w-4 -rotate-90" />
-          </span>
-          <IconChip
-            icon={resolveEntityIcon(first.blueprintIcon)}
-            tone={resolveIconTone(
-              first.blueprintIconColor,
-              first.buildingBlueprintId,
-            )}
-          />
-          {name}
-        </Button>
-      </TableCell>
-      <TableCell className="w-12 py-2 pr-4 text-muted-foreground">
-        {buildings.length}
-      </TableCell>
-      {showTierColumn ? (
-        <TableCell className="py-2 pr-4">Tier {first.tierNumber}</TableCell>
-      ) : null}
-      <TableCell className="py-2 pr-4">
-        {effectChips.length > 0 ? (
-          <span className="flex flex-wrap gap-1">
-            {effectChips.map((chip) => (
-              <Badge key={chip.key} variant="outline">
-                {chip.label}
-              </Badge>
-            ))}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className="w-16 py-2 pr-2">
-        {showStateBadge ? (
-          <Badge
-            aria-label={`State: ${stateBadgeLabel(first.state)}`}
-            variant={stateBadgeVariant(first.state)}
+    <>
+      <TableRow className="border-b border-border">
+        <TableCell className="py-2 pr-4">
+          <Button
+            aria-expanded={expanded}
+            size="sm"
+            type="button"
+            variant="ghost"
+            className="h-6 gap-2 px-0"
+            onClick={() => {
+              setExpanded((prev) => !prev);
+            }}
           >
-            {stateBadgeLabel(first.state)}
-          </Badge>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+              <ChevronDown
+                aria-hidden="true"
+                className={expanded ? "h-4 w-4" : "h-4 w-4 -rotate-90"}
+              />
+            </span>
+            <IconChip
+              icon={resolveEntityIcon(first.blueprintIcon)}
+              tone={resolveIconTone(
+                first.blueprintIconColor,
+                first.buildingBlueprintId,
+              )}
+            />
+            {name}
+          </Button>
+        </TableCell>
+        <TableCell className="w-12 py-2 pr-4">
+          <Badge variant="secondary">{buildings.length}</Badge>
+        </TableCell>
+        {showTierColumn ? (
+          <TableCell className="py-2 pr-4">Tier {first.tierNumber}</TableCell>
         ) : null}
-      </TableCell>
-      {canAdmin ? <TableCell className="w-28 py-2" /> : null}
-    </TableRow>
+        <TableCell className="py-2 pr-4">
+          {effectChips.length > 0 ? (
+            <span className="flex flex-wrap gap-1">
+              {effectChips.map((chip) => (
+                <Badge key={chip.key} variant="outline">
+                  {chip.label}
+                </Badge>
+              ))}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </TableCell>
+        <TableCell className="w-16 py-2 pr-2">
+          {showStateBadge ? (
+            <Badge
+              aria-label={`State: ${stateBadgeLabel(first.state)}`}
+              variant={stateBadgeVariant(first.state)}
+            >
+              {stateBadgeLabel(first.state)}
+            </Badge>
+          ) : null}
+        </TableCell>
+        {canAdmin ? <TableCell className="w-28 py-2" /> : null}
+      </TableRow>
+      {expanded
+        ? buildings.map((building) => (
+            <BuildingRow
+              key={building.id}
+              building={building}
+              canAdmin={canAdmin}
+              canDeconstruct={canDeconstruct}
+              canManageSettlement={canManageSettlement}
+              isArchived={isArchived}
+              jobNames={jobNames}
+              latestOutcome={latestOutcome}
+              queryClient={queryClient}
+              resourceNames={resourceNames}
+              settlementId={settlementId}
+              showTierColumn={showTierColumn}
+              worldId={worldId}
+            />
+          ))
+        : null}
+    </>
   );
 }

@@ -3,6 +3,7 @@
 // Imports blueprint/tier data only through @/features/buildings.
 
 export { SettlementConstructionPanel } from "./components/SettlementConstructionPanel";
+export { CreateProjectDialog } from "./components/SettlementConstructionPanel/CreateProjectDialog";
 export {
   CancelConstructionProjectMutationError,
   cancelConstructionProjectMutationOptions,
