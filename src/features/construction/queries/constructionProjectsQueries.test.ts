@@ -14,6 +14,10 @@ type ProjectRow = {
   readonly activated_on_turn_number: number | null;
   readonly building_blueprint_id: string;
   readonly building_blueprint_tiers: {
+    readonly construction_costs_json: readonly {
+      readonly amount: number;
+      readonly resource_id: string;
+    }[];
     readonly tier_number: number;
     readonly worker_turns_required: number;
   };
@@ -79,7 +83,13 @@ describe("constructionProjectsBySettlementQueryOptions", () => {
     const row: ProjectRow = {
       activated_on_turn_number: 3,
       building_blueprint_id: BLUEPRINT_ID,
-      building_blueprint_tiers: { tier_number: 2, worker_turns_required: 40 },
+      building_blueprint_tiers: {
+        construction_costs_json: [
+          { amount: 5, resource_id: "55555555-5555-5555-5555-555555555555" },
+        ],
+        tier_number: 2,
+        worker_turns_required: 40,
+      },
       building_blueprints: { name: "Granary" },
       completed_in_transition_id: null,
       created_at: "2024-01-01T00:00:00Z",
@@ -104,6 +114,12 @@ describe("constructionProjectsBySettlementQueryOptions", () => {
         blueprintName: "Granary",
         buildingBlueprintId: BLUEPRINT_ID,
         completedInTransitionId: null,
+        constructionCostsJson: [
+          {
+            amount: 5,
+            resourceId: "55555555-5555-5555-5555-555555555555",
+          },
+        ],
         createdAt: "2024-01-01T00:00:00Z",
         id: PROJECT_ID,
         progressWorkerTurns: 10,

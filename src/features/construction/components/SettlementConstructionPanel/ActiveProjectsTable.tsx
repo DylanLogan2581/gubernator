@@ -15,6 +15,7 @@ import {
   citizenAggregateStatsForSettlementQueryOptions,
   settlementConstructionProjectCountsQueryOptions,
 } from "@/features/citizens";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import type { TurnTransitionLogEntry } from "@/features/turns";
 
 import { ProjectRow } from "./ProjectRow";
@@ -49,6 +50,7 @@ export function ActiveProjectsTable({
   const aggregateQuery = useQuery(
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
   );
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
 
   if (activeProjects.length === 0) {
     return (
@@ -78,6 +80,9 @@ export function ActiveProjectsTable({
     ]),
   );
   const unassignedNpcCount = aggregateQuery.data?.unassignedNpcCount ?? 0;
+  const resourceNames = new Map(
+    (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
+  );
 
   return (
     <Table className="w-full text-sm">
@@ -89,6 +94,8 @@ export function ActiveProjectsTable({
           <TableHead scope="col">Workers (this turn)</TableHead>
           <TableHead scope="col">Assigned</TableHead>
           <TableHead scope="col">Progress</TableHead>
+          <TableHead scope="col">Resources required</TableHead>
+          <TableHead scope="col">Per-turn consumption</TableHead>
           {canAct ? (
             <>
               <TableHead scope="col">Set workers</TableHead>
@@ -109,6 +116,7 @@ export function ActiveProjectsTable({
             project={project}
             projects={activeProjects}
             queryClient={queryClient}
+            resourceNames={resourceNames}
             settlementId={settlementId}
             unassignedNpcCount={unassignedNpcCount}
             worldId={worldId}

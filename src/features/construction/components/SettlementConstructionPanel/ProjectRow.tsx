@@ -18,6 +18,7 @@ import { CancelConfirmDialog } from "./CancelConfirmDialog";
 import {
   buildPositions,
   getProjectLogData,
+  getProjectResourceCosts,
   statusBadgeLabel,
   statusBadgeVariant,
 } from "./utils/ConstructionQueueUtils";
@@ -33,6 +34,7 @@ export function ProjectRow({
   project,
   projects,
   queryClient,
+  resourceNames,
   settlementId,
   unassignedNpcCount,
   worldId,
@@ -45,6 +47,7 @@ export function ProjectRow({
   readonly project: ConstructionProject;
   readonly projects: readonly ConstructionProject[];
   readonly queryClient: QueryClient;
+  readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
   readonly worldId: string;
@@ -95,6 +98,8 @@ export function ProjectRow({
   }
 
   const pauseReason: string | null = logData?.pauseReason ?? null;
+
+  const resourceCosts = getProjectResourceCosts(project, assignedWorkerCount);
 
   const statusBadge = (
     <Badge
@@ -147,6 +152,35 @@ export function ProjectRow({
         <TableCell className="py-2 pr-4 text-muted-foreground">
           {project.progressWorkerTurns} / {project.workerTurnsRequired}{" "}
           worker-turns
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground">
+          {resourceCosts.length === 0 ? (
+            "—"
+          ) : (
+            <ul className="grid gap-0.5">
+              {resourceCosts.map((cost) => (
+                <li key={cost.resourceId} className="whitespace-nowrap">
+                  {resourceNames.get(cost.resourceId) ?? cost.resourceId}:{" "}
+                  {cost.remaining.toLocaleString()} /{" "}
+                  {cost.totalRequired.toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
+        </TableCell>
+        <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
+          {resourceCosts.length === 0 ? (
+            "—"
+          ) : (
+            <ul className="grid gap-0.5">
+              {resourceCosts.map((cost) => (
+                <li key={cost.resourceId} className="whitespace-nowrap">
+                  {resourceNames.get(cost.resourceId) ?? cost.resourceId}:{" "}
+                  {cost.perTurn.toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
         </TableCell>
         {canAct ? (
           <>

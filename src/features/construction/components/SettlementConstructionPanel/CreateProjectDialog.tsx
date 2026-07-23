@@ -190,7 +190,10 @@ export function CreateProjectDialog({
                     className="text-sm text-muted-foreground"
                   >
                     {resourceNames.get(cost.resourceId) ?? cost.resourceId}:{" "}
-                    {cost.amount}
+                    {(
+                      cost.amount * selectedTier.workerTurnsRequired
+                    ).toLocaleString()}{" "}
+                    total ({cost.amount.toLocaleString()} per worker per turn)
                   </li>
                 ))}
               </ul>

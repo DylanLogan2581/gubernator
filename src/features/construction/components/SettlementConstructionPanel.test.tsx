@@ -40,6 +40,10 @@ type TestProjectRow = {
   readonly activated_on_turn_number: number | null;
   readonly building_blueprint_id: string;
   readonly building_blueprint_tiers: {
+    readonly construction_costs_json: ReadonlyArray<{
+      readonly amount: number;
+      readonly resource_id: string;
+    }>;
     readonly tier_number: number;
     readonly worker_turns_required: number;
   };
@@ -62,6 +66,7 @@ function createProjectRow(
     activated_on_turn_number: null,
     building_blueprint_id: BLUEPRINT_ID,
     building_blueprint_tiers: {
+      construction_costs_json: [],
       tier_number: 1,
       worker_turns_required: 10,
     },
@@ -187,12 +192,13 @@ function createTierRow(overrides: Partial<TestTierRow> = {}): TestTierRow {
 }
 
 type TestCitizenAggRow = {
-  readonly id: string;
+  readonly assignment_type: string | null;
   readonly citizen_type: string;
+  readonly id: string;
+  readonly is_enrolled_in_education: boolean;
+  readonly is_labor_excluded_officeholder: boolean;
+  readonly is_soldier: boolean;
   readonly status: string;
-  readonly citizen_assignments: ReadonlyArray<{
-    readonly assignment_type: string;
-  }>;
 };
 
 type TestResourceRow = {
@@ -359,7 +365,7 @@ function createClient({
       if (table === "building_blueprint_tiers") {
         return { select: vi.fn(() => tiersSelectBuilder) };
       }
-      if (table === "citizens") {
+      if (table === "citizen_directory_view") {
         return createSimpleQueryBuilder(citizenRows);
       }
       if (table === "resources") {
@@ -473,6 +479,7 @@ describe("SettlementConstructionPanel", () => {
         projectRows: [
           createProjectRow({
             building_blueprint_tiers: {
+              construction_costs_json: [],
               tier_number: 1,
               worker_turns_required: 20,
             },
@@ -486,6 +493,54 @@ describe("SettlementConstructionPanel", () => {
 
     await screen.findByText("Barracks");
     expect(screen.getByText(/5 \/ 20 worker-turns/)).toBeDefined();
+  });
+
+  it("shows total required, remaining, and per-turn resource costs that react to assigned worker count", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        projectRows: [
+          createProjectRow({
+            building_blueprint_tiers: {
+              construction_costs_json: [
+                { amount: 2, resource_id: RESOURCE_ID },
+              ],
+              tier_number: 1,
+              worker_turns_required: 20,
+            },
+            progress_worker_turns: 5,
+          }),
+        ],
+        resourceRows: [{ id: RESOURCE_ID, name: "Lumber" }],
+        rpcMock: vi.fn((fn: string) => {
+          if (fn === "get_settlement_construction_project_counts") {
+            return {
+              returns: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    construction_project_id: PROJECT_ID_1,
+                    status: "queued",
+                    queue_position: 1,
+                    current_count: 3,
+                    building_blueprint_id: BLUEPRINT_ID,
+                    target_tier_id: TIER_ID,
+                  },
+                ],
+                error: null,
+              }),
+            };
+          }
+          throw new Error(`Unexpected RPC: ${fn}`);
+        }),
+      }),
+    );
+
+    renderPanel({ canManageSettlement: true, isArchived: false });
+
+    await screen.findByText("Barracks");
+    // total required = 2 * 20 = 40, consumed so far = 2 * 5 = 10, remaining = 30
+    expect(await screen.findByText("Lumber: 30 / 40")).toBeDefined();
+    // per-turn = amount (2) * assigned workers (3), reacting to the assigned count
+    expect(screen.getByText("Lumber: 6")).toBeDefined();
   });
 
   it("hides Start construction button from non-managers", async () => {
@@ -771,7 +826,7 @@ describe("SettlementConstructionPanel", () => {
     renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Barracks");
-    expect(screen.getByText("—")).toBeDefined();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("shows paused badge with pause reason tooltip when project is paused", async () => {
@@ -832,22 +887,31 @@ describe("SettlementConstructionPanel", () => {
       createClient({
         citizenRows: [
           {
+            assignment_type: null,
+            citizen_type: "npc",
             id: "c1",
-            citizen_type: "npc",
+            is_enrolled_in_education: false,
+            is_labor_excluded_officeholder: false,
+            is_soldier: false,
             status: "alive",
-            citizen_assignments: [],
           },
           {
+            assignment_type: null,
+            citizen_type: "npc",
             id: "c2",
-            citizen_type: "npc",
+            is_enrolled_in_education: false,
+            is_labor_excluded_officeholder: false,
+            is_soldier: false,
             status: "alive",
-            citizen_assignments: [],
           },
           {
-            id: "c3",
+            assignment_type: null,
             citizen_type: "npc",
+            id: "c3",
+            is_enrolled_in_education: false,
+            is_labor_excluded_officeholder: false,
+            is_soldier: false,
             status: "alive",
-            citizen_assignments: [],
           },
         ],
         projectRows: [createProjectRow({ status: "queued" })],

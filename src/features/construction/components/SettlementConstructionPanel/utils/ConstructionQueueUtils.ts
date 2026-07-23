@@ -15,6 +15,29 @@ export type ProjectLogData = {
   readonly workers: number;
 };
 
+export type ProjectResourceCost = {
+  readonly perTurn: number;
+  readonly remaining: number;
+  readonly resourceId: string;
+  readonly totalRequired: number;
+};
+
+export function getProjectResourceCosts(
+  project: ConstructionProject,
+  workers: number,
+): readonly ProjectResourceCost[] {
+  return project.constructionCostsJson.map((cost) => {
+    const totalRequired = cost.amount * project.workerTurnsRequired;
+    const consumedSoFar = cost.amount * project.progressWorkerTurns;
+    return {
+      perTurn: cost.amount * workers,
+      remaining: Math.max(totalRequired - consumedSoFar, 0),
+      resourceId: cost.resourceId,
+      totalRequired,
+    };
+  });
+}
+
 export const CONSTRUCTION_LOG_CATEGORIES = new Set([
   "construction.completed",
   "construction.paused",
