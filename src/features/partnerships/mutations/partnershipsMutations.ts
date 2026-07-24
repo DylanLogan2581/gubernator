@@ -160,7 +160,7 @@ async function invalidatePartnershipCaches(
     invalidatePartnershipCachesForCitizen(queryClient, partnership.citizenAId),
     invalidatePartnershipCachesForCitizen(queryClient, partnership.citizenBId),
     queryClient.invalidateQueries({
-      queryKey: [...citizensQueryKeys.all, "unpaired-alive-in-world"],
+      queryKey: citizensQueryKeys.unpairedAliveAll(),
     }),
   ]);
 }

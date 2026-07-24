@@ -107,6 +107,10 @@ describe("citizensQueryKeys", () => {
       "player-characters-in-nation",
       "nation-1",
     ]);
+    expect(citizensQueryKeys.unpairedAliveAll()).toEqual([
+      "citizens",
+      "unpaired-alive-in-world",
+    ]);
     expect(citizensQueryKeys.unpairedAliveInWorld("world-1")).toEqual([
       "citizens",
       "unpaired-alive-in-world",
