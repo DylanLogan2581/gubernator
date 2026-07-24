@@ -1,4 +1,4 @@
-import type { CultureLoreFieldKey } from "../../types/cultureTypes";
+import type { CultureLoreFieldKey } from "../types/cultureTypes";
 
 export type CultureLoreSection = {
   readonly title: string;

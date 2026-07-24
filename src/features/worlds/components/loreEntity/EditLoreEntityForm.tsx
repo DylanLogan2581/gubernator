@@ -19,47 +19,70 @@ import { cultureReligionInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
-import { updateCultureMutationOptions } from "../../mutations/culturesMutations";
-import {
-  updateCultureInputSchema,
-  type UpdateCultureInput,
-} from "../../schemas/cultureSchemas";
+import { DeleteLoreEntityDialog } from "./DeleteLoreEntityDialog";
 
-import { DeleteCultureDialog } from "./DeleteCultureDialog";
+import type { LoreEntityBase, LoreEntityDescriptor } from "./LoreEntityTypes";
 
-import type { Culture } from "../../types/cultureTypes";
-
-type CultureFieldErrors = {
+type EditLoreEntityFieldErrors = {
   readonly color?: string;
   readonly description?: string;
   readonly name?: string;
 };
 
-type EditCultureFormProps = {
-  readonly culture: Culture;
+type EditLoreEntityFormProps<
+  TEntity extends LoreEntityBase,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError,
+> = {
+  readonly descriptor: LoreEntityDescriptor<
+    TEntity,
+    TCreateInput,
+    TUpdateInput,
+    TDeleteInput,
+    TMutationError
+  >;
+  readonly entity: TEntity;
   readonly onClose: () => void;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 };
 
-export function EditCultureForm({
-  culture,
+export function EditLoreEntityForm<
+  TEntity extends LoreEntityBase,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError,
+>({
+  descriptor,
+  entity,
   onClose,
   queryClient,
   worldId,
-}: EditCultureFormProps): JSX.Element {
+}: EditLoreEntityFormProps<
+  TEntity,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError
+>): JSX.Element {
+  const { labels } = descriptor;
   const updateMutation = useMutation(
-    updateCultureMutationOptions({ queryClient }),
+    descriptor.mutations.update({ queryClient }),
   );
 
-  const [name, setName] = useState(culture.name);
-  const [description, setDescription] = useState(culture.description ?? "");
-  const [color, setColor] = useState(culture.color);
+  const [name, setName] = useState(entity.name);
+  const [description, setDescription] = useState(entity.description ?? "");
+  const [color, setColor] = useState(entity.color);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { fieldErrors, setFromZod, clear } =
-    useFieldErrors<keyof CultureFieldErrors>();
+    useFieldErrors<keyof EditLoreEntityFieldErrors>();
 
   const isPending = updateMutation.isPending;
+  const nameId = `edit-${labels.singular}-name`;
+  const descriptionId = `edit-${labels.singular}-description`;
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -67,15 +90,13 @@ export function EditCultureForm({
     event.preventDefault();
     clear();
 
-    const input: UpdateCultureInput = {
-      color,
-      cultureId: culture.id,
-      description,
-      name,
+    const input = descriptor.buildUpdateInput({
+      id: entity.id,
+      patch: { color, description, name },
       worldId,
-    };
+    });
 
-    const result = updateCultureInputSchema.safeParse(input);
+    const result = descriptor.updateInputSchema.safeParse(input);
     if (!result.success) {
       setFromZod(result.error);
       return;
@@ -83,10 +104,10 @@ export function EditCultureForm({
 
     try {
       await updateMutation.mutateAsync(input);
-      notifyMutationSuccess("Culture saved.");
+      notifyMutationSuccess(`${labels.singularCapital} saved.`);
       onClose();
     } catch (error) {
-      handleCrudError(error, "Failed to save culture.");
+      handleCrudError(error, `Failed to save ${labels.singular}.`);
     }
   }
 
@@ -99,7 +120,7 @@ export function EditCultureForm({
     >
       <DialogContent className="max-w-lg">
         <form
-          aria-label="Edit culture"
+          aria-label={`Edit ${labels.singular}`}
           className="contents"
           noValidate
           onSubmit={(e) => {
@@ -107,16 +128,16 @@ export function EditCultureForm({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Edit culture</DialogTitle>
+            <DialogTitle>Edit {labels.singular}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
-            <Label className="grid gap-1 text-sm" htmlFor="edit-culture-name">
+            <Label className="grid gap-1 text-sm" htmlFor={nameId}>
               <span className="text-muted-foreground">Name</span>
               <Input
                 aria-invalid={fieldErrors.name !== undefined}
                 aria-label="Name"
                 disabled={isPending}
-                id="edit-culture-name"
+                id={nameId}
                 maxLength={cultureReligionInputLimits.nameMax}
                 value={name}
                 onChange={(e) => {
@@ -127,15 +148,12 @@ export function EditCultureForm({
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
             </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-culture-description"
-            >
+            <Label className="grid gap-1 text-sm" htmlFor={descriptionId}>
               <span className="text-muted-foreground">Description</span>
               <Textarea
                 aria-invalid={fieldErrors.description !== undefined}
                 disabled={isPending}
-                id="edit-culture-description"
+                id={descriptionId}
                 maxLength={cultureReligionInputLimits.descriptionMax}
                 value={description}
                 onChange={(e) => {
@@ -191,8 +209,9 @@ export function EditCultureForm({
         </form>
       </DialogContent>
       {showDeleteDialog ? (
-        <DeleteCultureDialog
-          culture={culture}
+        <DeleteLoreEntityDialog
+          descriptor={descriptor}
+          entity={entity}
           queryClient={queryClient}
           worldId={worldId}
           onClose={() => {

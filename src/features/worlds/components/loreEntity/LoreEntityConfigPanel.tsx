@@ -10,39 +10,65 @@ import { Button } from "@/components/ui/button";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
-import { createReligionMutationOptions } from "../../mutations/religionsMutations";
-import { religionsByWorldQueryOptions } from "../../queries/religionsQueries";
+import { CreateLoreEntityForm } from "./CreateLoreEntityForm";
+import { LoreEntityTable } from "./LoreEntityTable";
 
-import { CreateReligionForm } from "./CreateReligionForm";
-import { ReligionsTable } from "./ReligionsTable";
+import type { LoreEntityBase, LoreEntityDescriptor } from "./LoreEntityTypes";
 
-import type { CreateReligionInput } from "../../schemas/religionSchemas";
-
-type ReligionsConfigPanelProps = {
+type LoreEntityConfigPanelProps<
+  TEntity extends LoreEntityBase,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError,
+> = {
   readonly canAdmin: boolean;
+  readonly descriptor: LoreEntityDescriptor<
+    TEntity,
+    TCreateInput,
+    TUpdateInput,
+    TDeleteInput,
+    TMutationError
+  >;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
 
-export function ReligionsConfigPanel({
+export function LoreEntityConfigPanel<
+  TEntity extends LoreEntityBase,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError,
+>({
   canAdmin,
+  descriptor,
   isArchived,
   worldId,
-}: ReligionsConfigPanelProps): JSX.Element {
+}: LoreEntityConfigPanelProps<
+  TEntity,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError
+>): JSX.Element {
+  const { labels } = descriptor;
   const queryClient = useQueryClient();
   const canEdit = canAdmin && !isArchived;
 
   const [showForm, setShowForm] = useState(false);
 
-  const religionsQuery = useQuery(religionsByWorldQueryOptions(worldId));
+  const entitiesQuery = useQuery(descriptor.queries.byWorld(worldId));
   const createMutation = useMutation(
-    createReligionMutationOptions({ queryClient }),
+    descriptor.mutations.create({ queryClient }),
   );
 
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-normal">Religions</h2>
+        <h2 className="text-lg font-semibold tracking-normal">
+          {labels.pluralCapital}
+        </h2>
         {canEdit && !showForm ? (
           <Button
             type="button"
@@ -53,46 +79,50 @@ export function ReligionsConfigPanel({
             }}
           >
             <Plus aria-hidden="true" />
-            Add religion
+            Add {labels.singular}
           </Button>
         ) : null}
       </div>
 
-      {religionsQuery.isPending ? (
+      {entitiesQuery.isPending ? (
         <TableSkeleton columnCount={3} rowCount={5} />
-      ) : religionsQuery.isError ? (
+      ) : entitiesQuery.isError ? (
         <ErrorState
-          title="Religions could not be loaded"
-          description={getErrorDescription(religionsQuery.error)}
+          title={`${labels.pluralCapital} could not be loaded`}
+          description={getErrorDescription(entitiesQuery.error)}
         />
-      ) : religionsQuery.data.length === 0 ? (
+      ) : entitiesQuery.data.length === 0 ? (
         <EmptyState
-          title="No religions yet"
-          description="Add the first religion for this world."
+          title={`No ${labels.plural} yet`}
+          description={`Add the first ${labels.singular} for this world.`}
         />
       ) : (
-        <ReligionsTable
+        <LoreEntityTable
           canEdit={canEdit}
-          religions={religionsQuery.data}
+          descriptor={descriptor}
+          entities={entitiesQuery.data}
           queryClient={queryClient}
           worldId={worldId}
         />
       )}
 
       {canEdit && showForm ? (
-        <CreateReligionForm
+        <CreateLoreEntityForm
+          buildCreateInput={descriptor.buildCreateInput}
+          createInputSchema={descriptor.createInputSchema}
           isPending={createMutation.isPending}
+          labels={labels}
           worldId={worldId}
           onCancel={() => {
             setShowForm(false);
           }}
-          onSubmit={(input: CreateReligionInput) => {
+          onSubmit={(input) => {
             createMutation.mutate(input, {
               onError: (error) => {
-                handleCrudError(error, "Failed to create religion.");
+                handleCrudError(error, `Failed to create ${labels.singular}.`);
               },
               onSuccess: () => {
-                notifyMutationSuccess("Religion created.");
+                notifyMutationSuccess(`${labels.singularCapital} created.`);
                 setShowForm(false);
               },
             });

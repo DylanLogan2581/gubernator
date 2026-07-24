@@ -7,6 +7,17 @@ export {
   getVisibleConfigTabs,
 } from "./configTabs";
 export type { ConfigTab, ConfigTabId } from "./configTabs";
+export { LoreEntityConfigPanel } from "./components/loreEntity/LoreEntityConfigPanel";
+export { LoreEntityDetailPage } from "./components/loreEntity/LoreEntityDetailPage";
+export type {
+  LoreEntityBase,
+  LoreEntityDescriptor,
+  LoreEntityLabels,
+  LoreEntityLoreField,
+  LoreEntityLoreSection,
+  LoreEntityUpdatePatch,
+  LoreEntityUsage,
+} from "./components/loreEntity/LoreEntityTypes";
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldAvatar } from "./components/WorldAvatar";
 export { WorldDashboardHeroBanner } from "./components/WorldDashboardHeroBanner";

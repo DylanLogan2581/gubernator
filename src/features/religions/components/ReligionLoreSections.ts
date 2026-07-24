@@ -1,4 +1,4 @@
-import type { ReligionLoreFieldKey } from "../../types/religionTypes";
+import type { ReligionLoreFieldKey } from "../types/religionTypes";
 
 export type ReligionLoreSection = {
   readonly title: string;

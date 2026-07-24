@@ -16,64 +16,90 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { cultureReligionInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import { updateReligionMutationOptions } from "../../mutations/religionsMutations";
-import {
-  updateReligionInputSchema,
-  type UpdateReligionInput,
-} from "../../schemas/religionSchemas";
-import {
-  RELIGION_LORE_FIELD_KEYS,
-  type Religion,
-  type ReligionLoreFieldKey,
-} from "../../types/religionTypes";
+import type { LoreEntityBase, LoreEntityDescriptor } from "./LoreEntityTypes";
 
-import { RELIGION_LORE_SECTIONS } from "./ReligionLoreSections";
+type LoreValues = Record<string, string>;
 
-type ReligionLoreValues = Record<ReligionLoreFieldKey, string>;
-
-function valuesFromReligion(religion: Religion): ReligionLoreValues {
+function loreValuesFrom(
+  entity: LoreEntityBase,
+  loreFieldKeys: readonly string[],
+): LoreValues {
+  const record = entity as unknown as Record<string, string | null>;
   return Object.fromEntries(
-    RELIGION_LORE_FIELD_KEYS.map((key) => [key, religion[key] ?? ""]),
-  ) as ReligionLoreValues;
+    loreFieldKeys.map((key) => [key, record[key] ?? ""]),
+  );
 }
 
-export function ReligionLoreForm({
-  canEdit,
-  queryClient,
-  religion,
-}: {
+type LoreEntityLoreFormProps<
+  TEntity extends LoreEntityBase,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError,
+> = {
   readonly canEdit: boolean;
+  readonly descriptor: LoreEntityDescriptor<
+    TEntity,
+    TCreateInput,
+    TUpdateInput,
+    TDeleteInput,
+    TMutationError
+  >;
+  readonly entity: TEntity;
   readonly queryClient: QueryClient;
-  readonly religion: Religion;
-}): JSX.Element {
-  const initialValues = useMemo(() => valuesFromReligion(religion), [religion]);
-  const [values, setValues] = useState<ReligionLoreValues>(initialValues);
+};
 
-  const isDirty = RELIGION_LORE_FIELD_KEYS.some(
+export function LoreEntityLoreForm<
+  TEntity extends LoreEntityBase,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError,
+>({
+  canEdit,
+  descriptor,
+  entity,
+  queryClient,
+}: LoreEntityLoreFormProps<
+  TEntity,
+  TCreateInput,
+  TUpdateInput,
+  TDeleteInput,
+  TMutationError
+>): JSX.Element {
+  const { labels, loreFieldKeys, loreSections } = descriptor;
+
+  const initialValues = useMemo(
+    () => loreValuesFrom(entity, loreFieldKeys),
+    [entity, loreFieldKeys],
+  );
+  const [values, setValues] = useState<LoreValues>(initialValues);
+
+  const isDirty = loreFieldKeys.some(
     (key) => values[key] !== initialValues[key],
   );
   const unsavedChangesDialog = useUnsavedChangesGuard(isDirty && canEdit);
 
   const updateMutation = useMutation(
-    updateReligionMutationOptions({ queryClient }),
+    descriptor.mutations.update({ queryClient }),
   );
 
   async function handleSave(): Promise<void> {
-    const changedEntries = RELIGION_LORE_FIELD_KEYS.filter(
+    const changedKeys = loreFieldKeys.filter(
       (key) => values[key] !== initialValues[key],
     );
 
-    if (changedEntries.length === 0) {
+    if (changedKeys.length === 0) {
       return;
     }
 
-    const input: UpdateReligionInput = {
-      religionId: religion.id,
-      worldId: religion.worldId,
-      ...Object.fromEntries(changedEntries.map((key) => [key, values[key]])),
-    };
+    const input = descriptor.buildUpdateInput({
+      id: entity.id,
+      patch: Object.fromEntries(changedKeys.map((key) => [key, values[key]])),
+      worldId: entity.worldId,
+    });
 
-    const result = updateReligionInputSchema.safeParse(input);
+    const result = descriptor.updateInputSchema.safeParse(input);
     if (!result.success) {
       notifyMutationError(result.error, "Failed to save lore.");
       return;
@@ -81,15 +107,13 @@ export function ReligionLoreForm({
 
     try {
       await updateMutation.mutateAsync(input);
-      notifyMutationSuccess("Religion lore saved.");
+      notifyMutationSuccess(`${labels.singularCapital} lore saved.`);
     } catch (error) {
       notifyMutationError(error, "Failed to save lore.");
     }
   }
 
-  const defaultOpenSections = RELIGION_LORE_SECTIONS.map(
-    (section) => section.title,
-  );
+  const defaultOpenSections = loreSections.map((section) => section.title);
 
   return (
     <>
@@ -111,19 +135,19 @@ export function ReligionLoreForm({
           ) : null}
         </div>
         <Accordion type="multiple" defaultValue={defaultOpenSections}>
-          {RELIGION_LORE_SECTIONS.map((section) => (
+          {loreSections.map((section) => (
             <AccordionItem key={section.title} value={section.title}>
               <AccordionTrigger>{section.title}</AccordionTrigger>
               <AccordionContent>
                 <div className="grid gap-3">
                   {section.fields.map((field) => (
                     <div key={field.key} className="grid gap-1 text-sm">
-                      <Label htmlFor={`religion-lore-${field.key}`}>
+                      <Label htmlFor={`${labels.singular}-lore-${field.key}`}>
                         {field.label}
                       </Label>
                       <Textarea
                         disabled={!canEdit || updateMutation.isPending}
-                        id={`religion-lore-${field.key}`}
+                        id={`${labels.singular}-lore-${field.key}`}
                         maxLength={cultureReligionInputLimits.loreFieldMax}
                         value={values[field.key]}
                         onChange={(event) => {

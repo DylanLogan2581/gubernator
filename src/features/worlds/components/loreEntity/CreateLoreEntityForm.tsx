@@ -16,50 +16,57 @@ import { Textarea } from "@/components/ui/textarea";
 import { cultureReligionInputLimits } from "@/lib/inputLimits";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
-import {
-  createReligionInputSchema,
-  type CreateReligionInput,
-} from "../../schemas/religionSchemas";
+import type { LoreEntityLabels } from "./LoreEntityTypes";
+import type { z } from "zod";
 
 const DEFAULT_COLOR = "#6b7280";
 
-type CreateReligionFieldErrors = {
+type CreateLoreEntityFieldErrors = {
   readonly color?: string;
   readonly description?: string;
   readonly name?: string;
 };
 
-type CreateReligionFormProps = {
+type CreateLoreEntityFormProps<TCreateInput> = {
+  readonly buildCreateInput: (args: {
+    readonly worldId: string;
+    readonly name: string;
+    readonly description: string;
+    readonly color: string;
+  }) => TCreateInput;
+  readonly createInputSchema: z.ZodTypeAny;
   readonly isPending: boolean;
+  readonly labels: LoreEntityLabels;
   readonly onCancel: () => void;
-  readonly onSubmit: (input: CreateReligionInput) => void;
+  readonly onSubmit: (input: TCreateInput) => void;
   readonly worldId: string;
 };
 
-export function CreateReligionForm({
+export function CreateLoreEntityForm<TCreateInput>({
+  buildCreateInput,
+  createInputSchema,
   isPending,
+  labels,
   onCancel,
   onSubmit,
   worldId,
-}: CreateReligionFormProps): JSX.Element {
+}: CreateLoreEntityFormProps<TCreateInput>): JSX.Element {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(DEFAULT_COLOR);
   const { fieldErrors, setFromZod, clear } =
-    useFieldErrors<keyof CreateReligionFieldErrors>();
+    useFieldErrors<keyof CreateLoreEntityFieldErrors>();
+
+  const nameId = `create-${labels.singular}-name`;
+  const descriptionId = `create-${labels.singular}-description`;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     clear();
 
-    const input: CreateReligionInput = {
-      color,
-      description,
-      name,
-      worldId,
-    };
+    const input = buildCreateInput({ color, description, name, worldId });
 
-    const result = createReligionInputSchema.safeParse(input);
+    const result = createInputSchema.safeParse(input);
     if (!result.success) {
       setFromZod(result.error);
       return;
@@ -78,22 +85,19 @@ export function CreateReligionForm({
       <DialogContent className="max-w-lg">
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create religion</DialogTitle>
+            <DialogTitle>Create {labels.singular}</DialogTitle>
             <DialogDescription>
-              Define a religion that nations in this world can adopt.
+              Define a {labels.singular} that nations in this world can adopt.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="create-religion-name"
-            >
+            <Label className="grid gap-1 text-sm" htmlFor={nameId}>
               <span className="text-muted-foreground">Name</span>
               <Input
                 aria-invalid={fieldErrors.name !== undefined}
                 aria-label="Name"
                 disabled={isPending}
-                id="create-religion-name"
+                id={nameId}
                 maxLength={cultureReligionInputLimits.nameMax}
                 value={name}
                 onChange={(e) => {
@@ -104,15 +108,12 @@ export function CreateReligionForm({
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
             </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="create-religion-description"
-            >
+            <Label className="grid gap-1 text-sm" htmlFor={descriptionId}>
               <span className="text-muted-foreground">Description</span>
               <Textarea
                 aria-invalid={fieldErrors.description !== undefined}
                 disabled={isPending}
-                id="create-religion-description"
+                id={descriptionId}
                 maxLength={cultureReligionInputLimits.descriptionMax}
                 value={description}
                 onChange={(e) => {

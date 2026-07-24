@@ -58,7 +58,10 @@ vi.mock("@/features/permissions", () => ({
   useEffectiveCanAdmin: (canAdmin: boolean) => canAdmin,
 }));
 
-vi.mock("@/features/worlds", () => ({
+// The shared LoreEntityDetailPage imports the world-access query helpers
+// directly from the worlds feature's query module, so mock that module rather
+// than the feature barrel (the barrel still provides the real detail page).
+vi.mock("@/features/worlds/queries/worldQueries", () => ({
   isWorldNotFoundError: (error: unknown) =>
     error instanceof Error && error.message === "world-not-found",
   worldRouteAccessQueryOptions: () => ({
@@ -67,14 +70,19 @@ vi.mock("@/features/worlds", () => ({
   }),
 }));
 
-vi.mock("../queries/culturesQueries", () => ({
+// The shared detail page reaches the data layer through the culture descriptor,
+// which references every query/mutation factory. Keep the real exports and
+// override only the ones this test drives.
+vi.mock("../queries/culturesQueries", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   cultureByIdQueryOptions: () => ({
     queryFn: () => Promise.resolve(testState.culture),
     queryKey: ["test", "culture"],
   }),
 }));
 
-vi.mock("../mutations/culturesMutations", () => ({
+vi.mock("../mutations/culturesMutations", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   updateCultureMutationOptions: () => ({
     mutationFn: (input: unknown) => testState.updateMutationFn(input),
     mutationKey: ["test", "update-culture"],
