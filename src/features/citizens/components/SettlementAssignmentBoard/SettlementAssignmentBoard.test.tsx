@@ -8,6 +8,7 @@ import { citizensQueryKeys } from "../../queries/citizensQueryKeys";
 
 import { SettlementAssignmentBoard } from "./index";
 
+import type { SettlementJobCount } from "../../types/bulkAssignmentTypes";
 import type { ReactNode } from "react";
 
 const { mockNavigate, requireSupabaseClient } = vi.hoisted(() => ({
@@ -1490,6 +1491,70 @@ describe("SettlementAssignmentBoard", () => {
         queryKey: ["forecast", "world", "world-1"],
       }),
     );
+  });
+
+  it("resyncs a mounted row's input when the server count changes externally", async () => {
+    const SETTLEMENT_UUID = "22222222-2222-2222-2222-222222222222";
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [],
+        jobCounts: [
+          createJobCountRow({
+            job_id: "job-1",
+            job_name: "Farmer",
+            current_count: 3,
+            capacity: 10,
+          }),
+        ],
+      }),
+    );
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SettlementAssignmentBoard
+          canManageSettlement={true}
+          isArchived={false}
+          nationId="nation-1"
+          settlementId={SETTLEMENT_UUID}
+          worldId="world-1"
+        />
+      </QueryClientProvider>,
+    );
+
+    const input = await screen.findByRole("spinbutton", {
+      name: "Target count for Farmer",
+    });
+    expect(input).toHaveValue(3);
+
+    // Simulate an external change to the server count (e.g. another user's
+    // change or a turn advance) landing in the cache while the row stays
+    // mounted.
+    const updated: readonly SettlementJobCount[] = [
+      {
+        capacity: 10,
+        currentCount: 8,
+        jobId: "job-1",
+        jobName: "Farmer",
+        jobSlug: "farmer",
+        qualifiedCitizenCount: 10,
+        requiredEducationLevelId: null,
+        requiredEducationLevelName: null,
+        worldId: "world-1",
+      },
+    ];
+    queryClient.setQueryData(
+      citizensQueryKeys.settlementJobCounts(SETTLEMENT_UUID),
+      updated,
+    );
+
+    await waitFor(() => {
+      expect(input).toHaveValue(8);
+    });
   });
 
   it("Apply button is disabled with tooltip when no unassigned NPCs and count is raised", async () => {

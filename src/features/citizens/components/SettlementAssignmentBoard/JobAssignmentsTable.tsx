@@ -718,184 +718,103 @@ function CapacityDisplay({
   );
 }
 
-function BulkJobRow({
+/**
+ * Shared "count + Apply" row: a label cell, a capacity display, and (when
+ * editable) a numeric input plus Apply button. The six per-kind rows below are
+ * thin config wrappers over this component — only the label cell, capacity,
+ * dirty key, extra validation, and mutation payload vary.
+ */
+function CountAssignmentRow({
+  ariaLabel,
   canEdit,
-  job,
-  settlementId,
-  unassignedNpcCount,
-  worldId,
-  onDirtyChange,
-}: {
-  readonly canEdit: boolean;
-  readonly job: SettlementJobCount;
-  readonly settlementId: string;
-  readonly unassignedNpcCount: number;
-  readonly worldId: string;
-  readonly onDirtyChange: (key: string, delta: number) => void;
-}): JSX.Element {
-  const queryClient = useQueryClient();
-  const [localCount, setLocalCount] = useState(String(job.currentCount));
-  const mutation = useMutation(
-    setBulkStandardJobAssignmentMutationOptions({ queryClient, worldId }),
-  );
-
-  const dirtyKey = `bulk-${job.jobId}`;
-  const hasRequirement = job.requiredEducationLevelId !== null;
-
-  const parsedCount = parseInt(localCount, 10);
-  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
-  const isDirty = isValid && parsedCount !== job.currentCount;
-  const isRaising = isValid && parsedCount > job.currentCount;
-  const noNpcs = isRaising && unassignedNpcCount === 0;
-  const exceedsQualified =
-    hasRequirement && isValid && parsedCount > job.qualifiedCitizenCount;
-  const noQualified = hasRequirement && job.qualifiedCitizenCount === 0;
-  const applyDisabled =
-    mutation.isPending || !isDirty || noNpcs || exceedsQualified;
-
-  const applyTooltip = noQualified
-    ? `No citizens meet the ${job.requiredEducationLevelName ?? "education"} requirement`
-    : exceedsQualified
-      ? `Only ${job.qualifiedCitizenCount.toString()} citizens meet the education requirement`
-      : noNpcs
-        ? "No unassigned NPCs available"
-        : undefined;
-
-  async function handleApply(): Promise<void> {
-    if (!isValid) return;
-    try {
-      const result = await mutation.mutateAsync({
-        jobId: job.jobId,
-        settlementId,
-        targetCount: parsedCount,
-      });
-      setLocalCount(String(result.after));
-      onDirtyChange(dirtyKey, 0);
-      notifyMutationSuccess("Job assignment updated.");
-    } catch (error) {
-      notifyMutationError(error, "Failed to update job assignment.");
-    }
-  }
-
-  return (
-    <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4 font-medium">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span>{job.jobName}</span>
-          {job.requiredEducationLevelName !== null ? (
-            <Badge variant="outline">
-              Requires {job.requiredEducationLevelName}
-            </Badge>
-          ) : null}
-        </div>
-      </TableCell>
-      <TableCell className="py-2 pr-4 text-muted-foreground">
-        <CapacityDisplay capacity={job.capacity} current={job.currentCount} />
-        {hasRequirement ? (
-          <div className="mt-1 text-xs">
-            {job.qualifiedCitizenCount} qualified
-          </div>
-        ) : null}
-      </TableCell>
-      {canEdit ? (
-        <TableCell className="py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              aria-label={`Target count for ${job.jobName}`}
-              className="w-20"
-              disabled={mutation.isPending}
-              inputMode="numeric"
-              max={hasRequirement ? job.qualifiedCitizenCount : undefined}
-              min="0"
-              type="number"
-              value={localCount}
-              onChange={(e) => {
-                const value = e.currentTarget.value;
-                setLocalCount(value);
-                const parsed = parseInt(value, 10);
-                const valid = !Number.isNaN(parsed) && parsed >= 0;
-                onDirtyChange(dirtyKey, valid ? parsed - job.currentCount : 0);
-              }}
-            />
-            <span title={applyTooltip}>
-              <Button
-                disabled={applyDisabled}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  void handleApply();
-                }}
-              >
-                Apply
-              </Button>
-            </span>
-          </div>
-        </TableCell>
-      ) : null}
-    </TableRow>
-  );
-}
-
-function ConstructionPoolRow({
-  canEdit,
+  capacity,
+  capacityExtra,
+  capacityLabel,
   currentCount,
-  settlementId,
+  dirtyKey,
+  errorMessage,
+  inputMax,
+  isPending,
+  labelCell,
+  successMessage,
   unassignedNpcCount,
-  worldId,
+  validate,
+  onApply,
   onDirtyChange,
 }: {
+  readonly ariaLabel: string;
   readonly canEdit: boolean;
+  readonly capacity: number | null;
+  readonly capacityExtra?: ReactNode;
+  readonly capacityLabel?: string;
   readonly currentCount: number;
-  readonly settlementId: string;
+  readonly dirtyKey: string;
+  readonly errorMessage: string;
+  readonly inputMax?: number;
+  readonly isPending: boolean;
+  readonly labelCell: ReactNode;
+  readonly successMessage: string;
   readonly unassignedNpcCount: number;
-  readonly worldId: string;
+  readonly validate?: (parsedCount: number) => {
+    readonly disabled: boolean;
+    readonly tooltip?: string;
+  };
+  readonly onApply: (parsedCount: number) => Promise<number>;
   readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
-  const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
-  const mutation = useMutation(
-    setBulkConstructionPoolMutationOptions({ queryClient, worldId }),
-  );
+  const [syncedCount, setSyncedCount] = useState(currentCount);
 
-  const dirtyKey = "construction-pool";
+  // Resync the input to the server count when it changes externally (e.g.
+  // another user's change or a turn advance) while the board stays mounted.
+  if (currentCount !== syncedCount) {
+    setSyncedCount(currentCount);
+    setLocalCount(String(currentCount));
+  }
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
   const isDirty = isValid && parsedCount !== currentCount;
   const isRaising = isValid && parsedCount > currentCount;
   const noNpcs = isRaising && unassignedNpcCount === 0;
-  const applyDisabled = mutation.isPending || !isDirty || noNpcs;
-  const applyTooltip = noNpcs ? "No unassigned NPCs available" : undefined;
+  const extra = validate?.(parsedCount);
+  const applyDisabled =
+    isPending || !isDirty || noNpcs || (extra?.disabled ?? false);
+  const applyTooltip =
+    extra?.tooltip ?? (noNpcs ? "No unassigned NPCs available" : undefined);
 
   async function handleApply(): Promise<void> {
     if (!isValid) return;
     try {
-      const result = await mutation.mutateAsync({
-        settlementId,
-        targetCount: parsedCount,
-      });
-      setLocalCount(String(result.after));
+      const after = await onApply(parsedCount);
+      setLocalCount(String(after));
       onDirtyChange(dirtyKey, 0);
-      notifyMutationSuccess("Construction worker pool updated.");
+      notifyMutationSuccess(successMessage);
     } catch (error) {
-      notifyMutationError(error, "Failed to update construction worker pool.");
+      notifyMutationError(error, errorMessage);
     }
   }
 
   return (
     <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4 font-medium">Construction</TableCell>
+      <TableCell className="py-2 pr-4 font-medium">{labelCell}</TableCell>
       <TableCell className="py-2 pr-4 text-muted-foreground">
-        <CapacityDisplay capacity={null} current={currentCount} />
+        <CapacityDisplay
+          capacity={capacity}
+          capacityLabel={capacityLabel}
+          current={currentCount}
+        />
+        {capacityExtra}
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input
-              aria-label="Target count for Construction"
+              aria-label={ariaLabel}
               className="w-20"
-              disabled={mutation.isPending}
+              disabled={isPending}
               inputMode="numeric"
+              max={inputMax}
               min="0"
               type="number"
               value={localCount}
@@ -923,6 +842,124 @@ function ConstructionPoolRow({
         </TableCell>
       ) : null}
     </TableRow>
+  );
+}
+
+function BulkJobRow({
+  canEdit,
+  job,
+  settlementId,
+  unassignedNpcCount,
+  worldId,
+  onDirtyChange,
+}: {
+  readonly canEdit: boolean;
+  readonly job: SettlementJobCount;
+  readonly settlementId: string;
+  readonly unassignedNpcCount: number;
+  readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
+}): JSX.Element {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    setBulkStandardJobAssignmentMutationOptions({ queryClient, worldId }),
+  );
+
+  const hasRequirement = job.requiredEducationLevelId !== null;
+  const noQualified = hasRequirement && job.qualifiedCitizenCount === 0;
+
+  return (
+    <CountAssignmentRow
+      ariaLabel={`Target count for ${job.jobName}`}
+      canEdit={canEdit}
+      capacity={job.capacity}
+      capacityExtra={
+        hasRequirement ? (
+          <div className="mt-1 text-xs">
+            {job.qualifiedCitizenCount} qualified
+          </div>
+        ) : undefined
+      }
+      currentCount={job.currentCount}
+      dirtyKey={`bulk-${job.jobId}`}
+      errorMessage="Failed to update job assignment."
+      inputMax={hasRequirement ? job.qualifiedCitizenCount : undefined}
+      isPending={mutation.isPending}
+      labelCell={
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span>{job.jobName}</span>
+          {job.requiredEducationLevelName !== null ? (
+            <Badge variant="outline">
+              Requires {job.requiredEducationLevelName}
+            </Badge>
+          ) : null}
+        </div>
+      }
+      successMessage="Job assignment updated."
+      unassignedNpcCount={unassignedNpcCount}
+      validate={(parsedCount) => {
+        const exceedsQualified =
+          hasRequirement && parsedCount > job.qualifiedCitizenCount;
+        const tooltip = noQualified
+          ? `No citizens meet the ${job.requiredEducationLevelName ?? "education"} requirement`
+          : exceedsQualified
+            ? `Only ${job.qualifiedCitizenCount.toString()} citizens meet the education requirement`
+            : undefined;
+        return { disabled: exceedsQualified, tooltip };
+      }}
+      onApply={(parsedCount) =>
+        mutation
+          .mutateAsync({
+            jobId: job.jobId,
+            settlementId,
+            targetCount: parsedCount,
+          })
+          .then((result) => result.after)
+      }
+      onDirtyChange={onDirtyChange}
+    />
+  );
+}
+
+function ConstructionPoolRow({
+  canEdit,
+  currentCount,
+  settlementId,
+  unassignedNpcCount,
+  worldId,
+  onDirtyChange,
+}: {
+  readonly canEdit: boolean;
+  readonly currentCount: number;
+  readonly settlementId: string;
+  readonly unassignedNpcCount: number;
+  readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
+}): JSX.Element {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    setBulkConstructionPoolMutationOptions({ queryClient, worldId }),
+  );
+
+  return (
+    <CountAssignmentRow
+      ariaLabel="Target count for Construction"
+      canEdit={canEdit}
+      capacity={null}
+      currentCount={currentCount}
+      dirtyKey="construction-pool"
+      errorMessage="Failed to update construction worker pool."
+      isPending={mutation.isPending}
+      labelCell="Construction"
+      successMessage="Construction worker pool updated."
+      unassignedNpcCount={unassignedNpcCount}
+      onApply={(parsedCount) =>
+        mutation
+          .mutateAsync({ settlementId, targetCount: parsedCount })
+          .then((result) => result.after)
+      }
+      onDirtyChange={onDirtyChange}
+    />
   );
 }
 
@@ -944,87 +981,46 @@ function DepositTargetRow({
   readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
-  const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
     setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
   const label = `${deposit.name} — ${deposit.depositTypeName}`;
   const capacity = deposit.maxWorkers;
-  const dirtyKey = `deposit-${deposit.id}`;
-
-  const parsedCount = parseInt(localCount, 10);
-  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
-  const isDirty = isValid && parsedCount !== currentCount;
-  const isRaising = isValid && parsedCount > currentCount;
-  const atCapacity = capacity !== null && isValid && parsedCount > capacity;
-  const noNpcs = isRaising && unassignedNpcCount === 0;
-  const applyDisabled = mutation.isPending || !isDirty || atCapacity || noNpcs;
-
-  const applyTooltip = atCapacity
-    ? `Maximum workers for this deposit is ${capacity?.toString()}`
-    : noNpcs
-      ? "No unassigned NPCs available"
-      : undefined;
-
-  async function handleApply(): Promise<void> {
-    if (!isValid) return;
-    try {
-      const result = await mutation.mutateAsync({
-        assignmentType: "deposit",
-        settlementId,
-        targetCount: parsedCount,
-        targetId: deposit.id,
-      });
-      setLocalCount(String(result.after));
-      onDirtyChange(dirtyKey, 0);
-      notifyMutationSuccess("Deposit assignment updated.");
-    } catch (error) {
-      notifyMutationError(error, "Failed to update deposit assignment.");
-    }
-  }
 
   return (
-    <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
-      <TableCell className="py-2 pr-4 text-muted-foreground">
-        <CapacityDisplay capacity={capacity} current={currentCount} />
-      </TableCell>
-      {canEdit ? (
-        <TableCell className="py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              aria-label={`Target count for ${label}`}
-              className="w-20"
-              disabled={mutation.isPending}
-              inputMode="numeric"
-              min="0"
-              type="number"
-              value={localCount}
-              onChange={(e) => {
-                const value = e.currentTarget.value;
-                setLocalCount(value);
-                const parsed = parseInt(value, 10);
-                const valid = !Number.isNaN(parsed) && parsed >= 0;
-                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
-              }}
-            />
-            <span title={applyTooltip}>
-              <Button
-                disabled={applyDisabled}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  void handleApply();
-                }}
-              >
-                Apply
-              </Button>
-            </span>
-          </div>
-        </TableCell>
-      ) : null}
-    </TableRow>
+    <CountAssignmentRow
+      ariaLabel={`Target count for ${label}`}
+      canEdit={canEdit}
+      capacity={capacity}
+      currentCount={currentCount}
+      dirtyKey={`deposit-${deposit.id}`}
+      errorMessage="Failed to update deposit assignment."
+      isPending={mutation.isPending}
+      labelCell={label}
+      successMessage="Deposit assignment updated."
+      unassignedNpcCount={unassignedNpcCount}
+      validate={(parsedCount) => {
+        const atCapacity = capacity !== null && parsedCount > capacity;
+        return {
+          disabled: atCapacity,
+          tooltip: atCapacity
+            ? `Maximum workers for this deposit is ${capacity?.toString()}`
+            : undefined,
+        };
+      }}
+      onApply={(parsedCount) =>
+        mutation
+          .mutateAsync({
+            assignmentType: "deposit",
+            settlementId,
+            targetCount: parsedCount,
+            targetId: deposit.id,
+          })
+          .then((result) => result.after)
+      }
+      onDirtyChange={onDirtyChange}
+    />
   );
 }
 
@@ -1052,84 +1048,37 @@ function PopulationTargetRow({
   readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
-  const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
     setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
   const label = `${population.name} — ${jobName}`;
-  const dirtyKey = `${assignmentType}-${population.id}`;
-
-  const parsedCount = parseInt(localCount, 10);
-  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
-  const isDirty = isValid && parsedCount !== currentCount;
-  const isRaising = isValid && parsedCount > currentCount;
-  const noNpcs = isRaising && unassignedNpcCount === 0;
-  const applyDisabled = mutation.isPending || !isDirty || noNpcs;
-  const applyTooltip = noNpcs ? "No unassigned NPCs available" : undefined;
-
-  async function handleApply(): Promise<void> {
-    if (!isValid) return;
-    try {
-      const result = await mutation.mutateAsync({
-        assignmentType,
-        settlementId,
-        targetCount: parsedCount,
-        targetId: population.id,
-      });
-      setLocalCount(String(result.after));
-      onDirtyChange(dirtyKey, 0);
-      notifyMutationSuccess("Assignment updated.");
-    } catch (error) {
-      notifyMutationError(error, "Failed to update assignment.");
-    }
-  }
 
   return (
-    <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
-      <TableCell className="py-2 pr-4 text-muted-foreground">
-        <CapacityDisplay
-          capacity={neededWorkers}
-          capacityLabel="needed"
-          current={currentCount}
-        />
-      </TableCell>
-      {canEdit ? (
-        <TableCell className="py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              aria-label={`Target count for ${label}`}
-              className="w-20"
-              disabled={mutation.isPending}
-              inputMode="numeric"
-              min="0"
-              type="number"
-              value={localCount}
-              onChange={(e) => {
-                const value = e.currentTarget.value;
-                setLocalCount(value);
-                const parsed = parseInt(value, 10);
-                const valid = !Number.isNaN(parsed) && parsed >= 0;
-                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
-              }}
-            />
-            <span title={applyTooltip}>
-              <Button
-                disabled={applyDisabled}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  void handleApply();
-                }}
-              >
-                Apply
-              </Button>
-            </span>
-          </div>
-        </TableCell>
-      ) : null}
-    </TableRow>
+    <CountAssignmentRow
+      ariaLabel={`Target count for ${label}`}
+      canEdit={canEdit}
+      capacity={neededWorkers}
+      capacityLabel="needed"
+      currentCount={currentCount}
+      dirtyKey={`${assignmentType}-${population.id}`}
+      errorMessage="Failed to update assignment."
+      isPending={mutation.isPending}
+      labelCell={label}
+      successMessage="Assignment updated."
+      unassignedNpcCount={unassignedNpcCount}
+      onApply={(parsedCount) =>
+        mutation
+          .mutateAsync({
+            assignmentType,
+            settlementId,
+            targetCount: parsedCount,
+            targetId: population.id,
+          })
+          .then((result) => result.after)
+      }
+      onDirtyChange={onDirtyChange}
+    />
   );
 }
 
@@ -1157,85 +1106,40 @@ function TradeRouteLocalEndRow({
   readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
-  const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
     setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
-  const dirtyKey = `trade-route-${routeId}-${tradeRouteEnd}`;
-
-  const parsedCount = parseInt(localCount, 10);
-  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
-  const isDirty = isValid && parsedCount !== currentCount;
-  const isRaising = isValid && parsedCount > currentCount;
-  const noNpcs = isRaising && unassignedNpcCount === 0;
-  const applyDisabled = mutation.isPending || !isDirty || noNpcs;
-  const applyTooltip = noNpcs ? "No unassigned NPCs available" : undefined;
-
-  async function handleApply(): Promise<void> {
-    if (!isValid) return;
-    try {
-      const result = await mutation.mutateAsync({
-        assignmentType: "trade_route",
-        settlementId,
-        targetCount: parsedCount,
-        targetId: routeId,
-        tradeRouteEnd,
-      });
-      setLocalCount(String(result.after));
-      onDirtyChange(dirtyKey, 0);
-      notifyMutationSuccess("Trade route assignment updated.");
-    } catch (error) {
-      notifyMutationError(error, "Failed to update trade route assignment.");
-    }
-  }
-
   return (
-    <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4 font-medium">
+    <CountAssignmentRow
+      ariaLabel={`Target count for ${label}`}
+      canEdit={canEdit}
+      capacity={null}
+      currentCount={currentCount}
+      dirtyKey={`trade-route-${routeId}-${tradeRouteEnd}`}
+      errorMessage="Failed to update trade route assignment."
+      isPending={mutation.isPending}
+      labelCell={
         <div className="flex items-center gap-1.5">
           {icon}
           <span>{label}</span>
         </div>
-      </TableCell>
-      <TableCell className="py-2 pr-4 text-muted-foreground">
-        <CapacityDisplay capacity={null} current={currentCount} />
-      </TableCell>
-      {canEdit ? (
-        <TableCell className="py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              aria-label={`Target count for ${label}`}
-              className="w-20"
-              disabled={mutation.isPending}
-              inputMode="numeric"
-              min="0"
-              type="number"
-              value={localCount}
-              onChange={(e) => {
-                const value = e.currentTarget.value;
-                setLocalCount(value);
-                const parsed = parseInt(value, 10);
-                const valid = !Number.isNaN(parsed) && parsed >= 0;
-                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
-              }}
-            />
-            <span title={applyTooltip}>
-              <Button
-                disabled={applyDisabled}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  void handleApply();
-                }}
-              >
-                Apply
-              </Button>
-            </span>
-          </div>
-        </TableCell>
-      ) : null}
-    </TableRow>
+      }
+      successMessage="Trade route assignment updated."
+      unassignedNpcCount={unassignedNpcCount}
+      onApply={(parsedCount) =>
+        mutation
+          .mutateAsync({
+            assignmentType: "trade_route",
+            settlementId,
+            targetCount: parsedCount,
+            targetId: routeId,
+            tradeRouteEnd,
+          })
+          .then((result) => result.after)
+      }
+      onDirtyChange={onDirtyChange}
+    />
   );
 }
 
