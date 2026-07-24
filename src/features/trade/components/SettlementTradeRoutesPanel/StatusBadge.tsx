@@ -1,9 +1,20 @@
-import { Badge } from "@/components/ui/badge";
+import {
+  StatusBadge as SharedStatusBadge,
+  type StatusBadgeConfigEntry,
+} from "@/components/shared/StatusBadge";
 
 import { PAUSE_REASON_LABELS } from "./TradeRouteHelpers";
 
 import type { TradeRouteStatus } from "../../types/tradeRouteTypes";
 import type { JSX } from "react";
+
+const STATUS_CONFIG: Record<TradeRouteStatus, StatusBadgeConfigEntry> = {
+  active: { label: "Active", variant: "success" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+  paused: { label: "Paused", variant: "warning" },
+  proposed: { label: "Proposed", variant: "warning" },
+  replaced: { label: "Replaced", variant: "outline" },
+};
 
 export function StatusBadge({
   pauseReason,
@@ -12,31 +23,12 @@ export function StatusBadge({
   readonly pauseReason?: string | null;
   readonly status: TradeRouteStatus;
 }): JSX.Element {
-  const variantMap: Record<
-    TradeRouteStatus,
-    "success" | "destructive" | "warning" | "outline"
-  > = {
-    active: "success",
-    cancelled: "destructive",
-    paused: "warning",
-    proposed: "warning",
-    replaced: "outline",
-  };
-  const labels: Record<TradeRouteStatus, string> = {
-    active: "Active",
-    cancelled: "Cancelled",
-    paused: "Paused",
-    proposed: "Proposed",
-    replaced: "Replaced",
-  };
   const title =
     status === "paused" && pauseReason !== null && pauseReason !== undefined
       ? (PAUSE_REASON_LABELS[pauseReason] ?? pauseReason)
       : undefined;
 
   return (
-    <Badge title={title} variant={variantMap[status]}>
-      {labels[status]}
-    </Badge>
+    <SharedStatusBadge config={STATUS_CONFIG} status={status} title={title} />
   );
 }

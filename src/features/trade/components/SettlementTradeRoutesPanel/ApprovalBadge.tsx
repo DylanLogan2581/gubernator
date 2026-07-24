@@ -1,9 +1,33 @@
 import { Check, Clock, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import {
+  StatusBadge as SharedStatusBadge,
+  type StatusBadgeConfigEntry,
+} from "@/components/shared/StatusBadge";
 
 import type { TradeRouteApprovalStatus } from "../../types/tradeRouteTypes";
 import type { JSX } from "react";
+
+const APPROVAL_CONFIG: Record<
+  TradeRouteApprovalStatus,
+  StatusBadgeConfigEntry
+> = {
+  approved: {
+    label: "Approved",
+    variant: "success",
+    icon: <Check className="size-3" />,
+  },
+  pending: {
+    label: "Pending",
+    variant: "outline",
+    icon: <Clock className="size-3" />,
+  },
+  rejected: {
+    label: "Rejected",
+    variant: "destructive",
+    icon: <X className="size-3" />,
+  },
+};
 
 export function ApprovalBadge({
   label,
@@ -12,33 +36,11 @@ export function ApprovalBadge({
   readonly label?: string;
   readonly status: TradeRouteApprovalStatus;
 }): JSX.Element {
-  const statusLabels: Record<TradeRouteApprovalStatus, string> = {
-    approved: "Approved",
-    pending: "Pending",
-    rejected: "Rejected",
-  };
-  const iconMap: Record<TradeRouteApprovalStatus, React.ReactNode> = {
-    approved: <Check className="size-3" />,
-    pending: <Clock className="size-3" />,
-    rejected: <X className="size-3" />,
-  };
-  const variantMap: Record<
-    TradeRouteApprovalStatus,
-    "success" | "outline" | "destructive"
-  > = {
-    approved: "success",
-    pending: "outline",
-    rejected: "destructive",
-  };
-
   return (
-    <Badge variant={variantMap[status]}>
-      <span>
-        {label === undefined
-          ? statusLabels[status]
-          : `${label} ${statusLabels[status]}`}
-      </span>
-      {iconMap[status]}
-    </Badge>
+    <SharedStatusBadge
+      config={APPROVAL_CONFIG}
+      labelPrefix={label}
+      status={status}
+    />
   );
 }
