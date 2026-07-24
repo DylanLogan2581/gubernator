@@ -10,6 +10,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { WORLD_IMAGES_BUCKET } from "../queries/worldImageQueries";
 import { worldQueryKeys } from "../queries/worldQueryKeys";
@@ -203,11 +204,13 @@ async function assertCanEditWorldImages(
     });
   }
 
-  if (data.status === "archived" || data.archived_at !== null) {
-    throw new WorldImageError({
-      code: "world_image_archived",
-      message: "Archived worlds are read-only.",
-      worldId,
-    });
-  }
+  assertWorldWritable(
+    data,
+    () =>
+      new WorldImageError({
+        code: "world_image_archived",
+        message: "Archived worlds are read-only.",
+        worldId,
+      }),
+  );
 }

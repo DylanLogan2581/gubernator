@@ -7,7 +7,6 @@ import {
 import { RotateCw, Save, Sparkles } from "lucide-react";
 import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -25,7 +24,11 @@ import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { npcFlavorInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import {
+  notifyMutationError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
@@ -58,7 +61,7 @@ export function WorldNpcFlavorConfigPanel({
     return (
       <ErrorState
         title="NPC flavor pools could not be loaded"
-        description={getNpcFlavorErrorDescription(configQuery.error)}
+        description={resolveMutationErrorMessage(configQuery.error)}
       />
     );
   }
@@ -121,7 +124,7 @@ function WorldNpcFlavorConfigPanelContent({
       { config: sanitizedConfig, worldId },
       {
         onError: (error) => {
-          toast.error(getNpcFlavorErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           setIsDirty(false);
@@ -356,11 +359,4 @@ function PoolCountReadout({
       </dd>
     </div>
   );
-}
-
-function getNpcFlavorErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { removeManagedPopulationInstanceMutationOptions } from "../../mutations/removeManagedPopulationInstanceMutations";
 
@@ -19,28 +18,9 @@ export function MarkExtinctConfirmDialog({
   onClose,
   queryClient,
 }: MarkExtinctConfirmDialogProps): JSX.Element {
-  const mutation = useMutation(
-    removeManagedPopulationInstanceMutationOptions({ queryClient }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await mutation.mutateAsync({
-        managedPopulationInstanceId: instance.id,
-      });
-      notifyMutationSuccess(`${instance.name} marked extinct.`);
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to mark population extinct.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Mark ${instance.name} extinct?`}
       description={
         <>
@@ -50,8 +30,12 @@ export function MarkExtinctConfirmDialog({
         </>
       }
       confirmLabel="Mark extinct"
-      isPending={mutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={removeManagedPopulationInstanceMutationOptions({
+        queryClient,
+      })}
+      input={{ managedPopulationInstanceId: instance.id }}
+      successMessage={`${instance.name} marked extinct.`}
+      errorFallback="Failed to mark population extinct."
     />
   );
 }

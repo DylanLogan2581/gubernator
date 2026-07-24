@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,14 +13,10 @@ import {
   type Citizen,
 } from "@/features/citizens";
 import { settlementByIdQueryOptions } from "@/features/settlements";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { ScopeDropdown } from "./ScopeDropdown";
-import {
-  citizenRoleLabel,
-  getRoleMutationErrorDescription,
-  invalidatePermissionsContext,
-} from "./Utils";
+import { citizenRoleLabel, invalidatePermissionsContext } from "./Utils";
 
 import { type RoleSelection, type RoleAssignmentControlsProps } from "./index";
 
@@ -98,7 +93,7 @@ function CitizenRoleAssignmentForm({
         { citizenId: citizen.id, worldId: citizen.worldId },
         {
           onError: (error) => {
-            toast.error(getRoleMutationErrorDescription(error));
+            notifyMutationError(error);
           },
           onSuccess: () => {
             invalidatePermissionsContext(queryClient);
@@ -131,7 +126,7 @@ function CitizenRoleAssignmentForm({
         },
         {
           onError: (error) => {
-            toast.error(getRoleMutationErrorDescription(error));
+            notifyMutationError(error);
           },
           onSuccess: () => {
             invalidatePermissionsContext(queryClient);
@@ -154,7 +149,7 @@ function CitizenRoleAssignmentForm({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);

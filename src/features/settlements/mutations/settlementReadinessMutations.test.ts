@@ -68,6 +68,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["forecast", "world", "world-1"],
+      refetchType: "none",
     });
   });
 
@@ -244,6 +245,7 @@ describe("setSettlementAutoReadyMutationOptions", () => {
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["forecast", "world", "world-1"],
+      refetchType: "none",
     });
   });
 

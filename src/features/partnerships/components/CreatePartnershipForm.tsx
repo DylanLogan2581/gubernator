@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { Citizen } from "@/features/citizens";
 import { unpairedAliveCitizensInWorldQueryOptions } from "@/features/citizens";
+import { notifyMutationError } from "@/lib/notify";
 
 import { usePartnerCandidates } from "../hooks/usePartnerCandidates";
 import { createPartnershipMutationOptions } from "../mutations/partnershipsMutations";
-import { getPartnershipMutationErrorDescription } from "../utils/partnershipErrors";
 
 import {
   ChangeReasonField,
@@ -80,7 +79,7 @@ export function CreatePartnershipForm({
       },
       {
         onError: (error) => {
-          toast.error(getPartnershipMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: onClose,
       },

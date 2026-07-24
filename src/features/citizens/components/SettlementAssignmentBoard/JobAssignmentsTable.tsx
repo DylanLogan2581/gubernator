@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-import { useCallback, useState, type JSX, type ReactNode } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type JSX,
+  type ReactNode,
+} from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -161,6 +167,185 @@ export function JobAssignmentsTable({
     });
   }, []);
 
+  // Build count maps for per-target assignments
+  const {
+    countByDeposit,
+    countByHusbandry,
+    countByCulling,
+    countByTradeRouteEnd,
+  } = useMemo(() => {
+    const countByDeposit = new Map<string, number>();
+    const countByHusbandry = new Map<string, number>();
+    const countByCulling = new Map<string, number>();
+    const countByTradeRouteEnd = new Map<string, number>();
+
+    for (const assignment of targetAssignmentsQuery.data ?? []) {
+      if (
+        assignment.assignmentType === "deposit" &&
+        assignment.depositInstance !== null
+      ) {
+        const id = assignment.depositInstance.id;
+        countByDeposit.set(id, (countByDeposit.get(id) ?? 0) + 1);
+      } else if (
+        assignment.assignmentType === "husbandry" &&
+        assignment.managedPopulationInstance !== null
+      ) {
+        const id = assignment.managedPopulationInstance.id;
+        countByHusbandry.set(id, (countByHusbandry.get(id) ?? 0) + 1);
+      } else if (
+        assignment.assignmentType === "culling" &&
+        assignment.managedPopulationInstance !== null
+      ) {
+        const id = assignment.managedPopulationInstance.id;
+        countByCulling.set(id, (countByCulling.get(id) ?? 0) + 1);
+      } else if (
+        assignment.assignmentType === "trade_route" &&
+        assignment.tradeRoute !== null
+      ) {
+        const key = `${assignment.tradeRoute.id}:${assignment.tradeRouteEnd}`;
+        countByTradeRouteEnd.set(key, (countByTradeRouteEnd.get(key) ?? 0) + 1);
+      }
+    }
+
+    return {
+      countByDeposit,
+      countByHusbandry,
+      countByCulling,
+      countByTradeRouteEnd,
+    };
+  }, [targetAssignmentsQuery.data]);
+
+  // Build unified, sorted row list
+  const rows = useMemo(() => {
+    const jobCounts = jobCountsQuery.data ?? [];
+    const deposits = (depositsQuery.data ?? []).filter(
+      (d) => d.status === "active",
+    );
+    const populations = (populationsQuery.data ?? []).filter(
+      (p) => p.status === "active",
+    );
+    const populationTypeById = new Map<string, ManagedPopulationType>();
+    for (const type of populationTypesQuery.data ?? []) {
+      populationTypeById.set(type.id, type);
+    }
+    const tradeRoutes = (tradeRoutesQuery.data ?? []).filter(
+      (r) => r.status === "active",
+    );
+
+    const rows: Row[] = [];
+
+    // Bulk jobs
+    for (const job of jobCounts) {
+      rows.push({
+        kind: "bulk",
+        job,
+      });
+    }
+
+    // Construction (settlement-wide pool)
+    rows.push({
+      kind: "construction",
+      currentCount:
+        aggregateQuery.data?.assignmentTypeBreakdown.construction_project ?? 0,
+    });
+
+    // Deposits
+    for (const deposit of deposits) {
+      rows.push({
+        kind: "deposit",
+        deposit,
+        jobName: deposit.depositTypeName,
+        targetId: deposit.id,
+        targetName: deposit.name,
+      });
+    }
+
+    // Husbandry
+    for (const population of populations) {
+      const type = populationTypeById.get(population.managedPopulationTypeId);
+      rows.push({
+        kind: "husbandry",
+        neededWorkers: calculateNeededWorkers(
+          population.currentCount,
+          type?.husbandryJobs.map((job) => job.workersPerNAnimals) ?? [],
+        ),
+        population,
+        jobName: population.managedPopulationTypeName,
+        targetId: population.id,
+        targetName: population.name,
+      });
+    }
+
+    // Culling
+    for (const population of populations) {
+      const type = populationTypeById.get(population.managedPopulationTypeId);
+      rows.push({
+        kind: "culling",
+        neededWorkers: calculateNeededWorkers(
+          population.configuredCullQuantity,
+          type?.cullingJobs.map((job) => job.maxCullPerWorker) ?? [],
+        ),
+        population,
+        jobName: population.managedPopulationTypeName,
+        targetId: population.id,
+        targetName: population.name,
+      });
+    }
+
+    // Trade routes (local end + remote end for each route)
+    for (const route of tradeRoutes) {
+      const localEnd =
+        route.originSettlementId === settlementId ? "origin" : "destination";
+      const remoteEnd = localEnd === "origin" ? "destination" : "origin";
+      const remoteSettlementName =
+        localEnd === "origin"
+          ? route.destinationSettlementName
+          : route.originSettlementName;
+      const resourcesLabel = legsLabel(route.legs);
+
+      // Local end (editable)
+      rows.push({
+        kind: "trade_route_origin",
+        route,
+        localEnd,
+        resourcesLabel,
+        remoteSettlementName,
+        routeId: route.id,
+        tradeRouteEnd: localEnd,
+      });
+
+      // Remote end (read-only)
+      rows.push({
+        kind: "trade_route_destination",
+        route,
+        localEnd,
+        remoteSettlementName,
+        routeId: route.id,
+        tradeRouteEnd: remoteEnd,
+      });
+    }
+
+    // Sort: alphabetical by job name + target name
+    rows.sort((a, b) => {
+      const aName = getRowJobName(a);
+      const bName = getRowJobName(b);
+      if (aName !== bName) return aName.localeCompare(bName);
+      const aTarget = getRowTargetName(a);
+      const bTarget = getRowTargetName(b);
+      return aTarget.localeCompare(bTarget);
+    });
+
+    return rows;
+  }, [
+    aggregateQuery.data,
+    jobCountsQuery.data,
+    depositsQuery.data,
+    populationsQuery.data,
+    populationTypesQuery.data,
+    tradeRoutesQuery.data,
+    settlementId,
+  ]);
+
   const isLoading =
     aggregateQuery.isPending ||
     jobCountsQuery.isPending ||
@@ -196,159 +381,6 @@ export function JobAssignmentsTable({
   if (stats === undefined) {
     return <TableSkeleton columnCount={6} rowCount={8} />;
   }
-
-  const jobCounts = jobCountsQuery.data ?? [];
-  const assignments = targetAssignmentsQuery.data ?? [];
-  const deposits = (depositsQuery.data ?? []).filter(
-    (d) => d.status === "active",
-  );
-  const populations = (populationsQuery.data ?? []).filter(
-    (p) => p.status === "active",
-  );
-  const populationTypeById = new Map<string, ManagedPopulationType>();
-  for (const type of populationTypesQuery.data ?? []) {
-    populationTypeById.set(type.id, type);
-  }
-  const tradeRoutes = (tradeRoutesQuery.data ?? []).filter(
-    (r) => r.status === "active",
-  );
-
-  // Build count maps for per-target assignments
-  const countByDeposit = new Map<string, number>();
-  const countByHusbandry = new Map<string, number>();
-  const countByCulling = new Map<string, number>();
-  const countByTradeRouteEnd = new Map<string, number>();
-
-  for (const assignment of assignments) {
-    if (
-      assignment.assignmentType === "deposit" &&
-      assignment.depositInstance !== null
-    ) {
-      const id = assignment.depositInstance.id;
-      countByDeposit.set(id, (countByDeposit.get(id) ?? 0) + 1);
-    } else if (
-      assignment.assignmentType === "husbandry" &&
-      assignment.managedPopulationInstance !== null
-    ) {
-      const id = assignment.managedPopulationInstance.id;
-      countByHusbandry.set(id, (countByHusbandry.get(id) ?? 0) + 1);
-    } else if (
-      assignment.assignmentType === "culling" &&
-      assignment.managedPopulationInstance !== null
-    ) {
-      const id = assignment.managedPopulationInstance.id;
-      countByCulling.set(id, (countByCulling.get(id) ?? 0) + 1);
-    } else if (
-      assignment.assignmentType === "trade_route" &&
-      assignment.tradeRoute !== null
-    ) {
-      const key = `${assignment.tradeRoute.id}:${assignment.tradeRouteEnd}`;
-      countByTradeRouteEnd.set(key, (countByTradeRouteEnd.get(key) ?? 0) + 1);
-    }
-  }
-
-  // Build unified row list
-  const rows: Row[] = [];
-
-  // Bulk jobs
-  for (const job of jobCounts) {
-    rows.push({
-      kind: "bulk",
-      job,
-    });
-  }
-
-  // Construction (settlement-wide pool)
-  rows.push({
-    kind: "construction",
-    currentCount: stats.assignmentTypeBreakdown.construction_project,
-  });
-
-  // Deposits
-  for (const deposit of deposits) {
-    rows.push({
-      kind: "deposit",
-      deposit,
-      jobName: deposit.depositTypeName,
-      targetId: deposit.id,
-      targetName: deposit.name,
-    });
-  }
-
-  // Husbandry
-  for (const population of populations) {
-    const type = populationTypeById.get(population.managedPopulationTypeId);
-    rows.push({
-      kind: "husbandry",
-      neededWorkers: calculateNeededWorkers(
-        population.currentCount,
-        type?.husbandryJobs.map((job) => job.workersPerNAnimals) ?? [],
-      ),
-      population,
-      jobName: population.managedPopulationTypeName,
-      targetId: population.id,
-      targetName: population.name,
-    });
-  }
-
-  // Culling
-  for (const population of populations) {
-    const type = populationTypeById.get(population.managedPopulationTypeId);
-    rows.push({
-      kind: "culling",
-      neededWorkers: calculateNeededWorkers(
-        population.configuredCullQuantity,
-        type?.cullingJobs.map((job) => job.maxCullPerWorker) ?? [],
-      ),
-      population,
-      jobName: population.managedPopulationTypeName,
-      targetId: population.id,
-      targetName: population.name,
-    });
-  }
-
-  // Trade routes (local end + remote end for each route)
-  for (const route of tradeRoutes) {
-    const localEnd =
-      route.originSettlementId === settlementId ? "origin" : "destination";
-    const remoteEnd = localEnd === "origin" ? "destination" : "origin";
-    const remoteSettlementName =
-      localEnd === "origin"
-        ? route.destinationSettlementName
-        : route.originSettlementName;
-    const resourcesLabel = legsLabel(route.legs);
-
-    // Local end (editable)
-    rows.push({
-      kind: "trade_route_origin",
-      route,
-      localEnd,
-      resourcesLabel,
-      remoteSettlementName,
-      routeId: route.id,
-      tradeRouteEnd: localEnd,
-    });
-
-    // Remote end (read-only)
-    rows.push({
-      kind: "trade_route_destination",
-      route,
-      localEnd,
-      remoteSettlementName,
-      routeId: route.id,
-      tradeRouteEnd: remoteEnd,
-    });
-  }
-
-  // Sort: alphabetical by job name + target name
-  rows.sort((a, b) => {
-    const aName = getRowJobName(a);
-    const bName = getRowJobName(b);
-    if (aName !== bName) return aName.localeCompare(bName);
-    const aTarget = getRowTargetName(a);
-    const bTarget = getRowTargetName(b);
-    return aTarget.localeCompare(bTarget);
-  });
 
   // Check if any rows to display
   const hasBulkOrPerTarget = rows.length > 0;

@@ -10,6 +10,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { worldQueryKeys } from "../queries/worldQueryKeys";
 import {
@@ -115,13 +116,15 @@ async function saveWorldNpcFlavorConfig(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SaveWorldNpcFlavorConfigError({
-      code: "world_npc_flavor_config_archived",
-      message: "Archived worlds are read-only.",
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SaveWorldNpcFlavorConfigError({
+        code: "world_npc_flavor_config_archived",
+        message: "Archived worlds are read-only.",
+        worldId: input.worldId,
+      }),
+  );
 
   const { data, error } = await client
     .from("worlds")

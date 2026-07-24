@@ -1,16 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { cancelConstructionProjectMutationOptions } from "../../mutations/cancelConstructionProjectMutations";
 
@@ -29,71 +20,36 @@ export function CancelConfirmDialog({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const cancelMutation = useMutation(
-    cancelConstructionProjectMutationOptions({
-      queryClient,
-      settlementId,
-      worldId,
-    }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      const result = await cancelMutation.mutateAsync({
-        projectId: project.id,
-      });
-      if (result.unassignedCitizenCount > 0) {
-        notifyMutationSuccess("Construction project cancelled.", {
-          description: `${result.unassignedCitizenCount} citizen(s) unassigned.`,
-        });
-      } else {
-        notifyMutationSuccess("Construction project cancelled.");
-      }
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to cancel construction project.");
-    }
-  }
-
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Cancel {project.blueprintName}?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+    <MutationConfirmDialog
+      onClose={onClose}
+      title={`Cancel ${project.blueprintName}?`}
+      description={
+        <>
           This will cancel the construction of{" "}
           <span className="font-medium text-foreground">
             {project.blueprintName}
           </span>{" "}
           (Tier {project.tierNumber}). Any assigned citizens will be unassigned.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={cancelMutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Keep
-          </Button>
-          <Button
-            disabled={cancelMutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Cancel project
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Cancel project"
+      cancelLabel="Keep"
+      mutationOptions={cancelConstructionProjectMutationOptions({
+        queryClient,
+        settlementId,
+        worldId,
+      })}
+      input={{ projectId: project.id }}
+      successMessage={(result) =>
+        result.unassignedCitizenCount > 0
+          ? {
+              message: "Construction project cancelled.",
+              description: `${result.unassignedCitizenCount.toString()} citizen(s) unassigned.`,
+            }
+          : "Construction project cancelled."
+      }
+      errorFallback="Failed to cancel construction project."
+    />
   );
 }

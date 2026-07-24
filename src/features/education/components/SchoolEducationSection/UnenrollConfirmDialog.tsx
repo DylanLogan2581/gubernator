@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { unenrollCitizenMutationOptions } from "../../mutations/educationEnrollmentMutations";
 
@@ -25,30 +24,9 @@ export function UnenrollConfirmDialog({
   settlementBuildingName,
   settlementId,
 }: UnenrollConfirmDialogProps): JSX.Element {
-  const unenrollMutation = useMutation(
-    unenrollCitizenMutationOptions({
-      queryClient,
-      settlementBuildingId,
-      settlementId,
-    }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await unenrollMutation.mutateAsync({ enrollmentId: enrollment.id });
-      notifyMutationSuccess("Citizen unenrolled.");
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to unenroll citizen.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Unenroll ${enrollment.citizenName}?`}
       description={
         <>
@@ -61,8 +39,14 @@ export function UnenrollConfirmDialog({
         </>
       }
       confirmLabel="Unenroll"
-      isPending={unenrollMutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={unenrollCitizenMutationOptions({
+        queryClient,
+        settlementBuildingId,
+        settlementId,
+      })}
+      input={{ enrollmentId: enrollment.id }}
+      successMessage="Citizen unenrolled."
+      errorFallback="Failed to unenroll citizen."
     />
   );
 }

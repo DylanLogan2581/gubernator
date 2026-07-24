@@ -4,7 +4,7 @@ import { useRef, useState, type ChangeEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import { useNationManageAuthority } from "@/features/permissions";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -34,13 +34,11 @@ export function NationFlagSection({
   readonly isArchived: boolean;
   readonly nation: Nation;
 }): JSX.Element {
-  const { activeCharacter } = useActivePlayerCharacter();
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nation.id &&
-    activeCharacter.status === "alive";
-  const canEdit = (canAdminWorld || isNationManager) && !isArchived;
+  const { canManageNation } = useNationManageAuthority({
+    canAdmin: canAdminWorld,
+    nationId: nation.id,
+  });
+  const canEdit = canManageNation && !isArchived;
 
   return (
     <Card aria-labelledby="nation-flag-heading" className="grid gap-4 p-4">

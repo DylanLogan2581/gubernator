@@ -1,5 +1,5 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
-import { useEffect, type FormEvent, type JSX } from "react";
+import { type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,14 +42,11 @@ export function AddTierDialog({
   const createMutation = useMutation(
     createTierMutationOptions({ queryClient }),
   );
-  const form = useTierDraftForm();
-
-  useEffect(() => {
-    const nextTierNumber =
-      tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
-    form.setTierNumber(String(nextTierNumber));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Initial value only — the dialog is mounted fresh each time it opens, so
+  // the next tier number is fixed at open time (as before).
+  const nextTierNumber =
+    tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
+  const form = useTierDraftForm({ tierNumber: String(nextTierNumber) });
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,

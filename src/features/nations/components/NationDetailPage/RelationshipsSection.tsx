@@ -12,7 +12,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import {
+  useActivePlayerCharacter,
+  useNationManageAuthority,
+} from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import type { Resource } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -54,12 +57,11 @@ export function NationRelationshipsSection({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const { activeCharacter } = useActivePlayerCharacter();
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nation.id &&
-    activeCharacter.status === "alive";
-  const canControl = (canAdminWorld || isNationManager) && !isArchived;
+  const { canManageNation } = useNationManageAuthority({
+    canAdmin: canAdminWorld,
+    nationId: nation.id,
+  });
+  const canControl = canManageNation && !isArchived;
 
   const nationsQuery = useQuery(nationsListQueryOptions(nation.worldId));
   const discoveriesQuery = useQuery(

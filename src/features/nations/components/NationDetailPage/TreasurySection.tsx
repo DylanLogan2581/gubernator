@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AuthUiError } from "@/features/auth";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import { useNationManageAuthority } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -69,13 +69,10 @@ export function NationTreasurySection({
   readonly isArchived: boolean;
   readonly nation: Nation;
 }): JSX.Element {
-  const { activeCharacter } = useActivePlayerCharacter();
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nation.id &&
-    activeCharacter.status === "alive";
-  const canManage = canAdminWorld || isNationManager;
+  const { canManageNation: canManage } = useNationManageAuthority({
+    canAdmin: canAdminWorld,
+    nationId: nation.id,
+  });
 
   const queryClient = useQueryClient();
   const stockpileQuery = useQuery(nationStockpileQueryOptions(nation.id));

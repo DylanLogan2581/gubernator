@@ -5,7 +5,7 @@ import { type JSX } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import { useNationManageAuthority } from "@/features/permissions";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { setNationTradePolicyMutationOptions } from "../../mutations/nationsMutations";
@@ -26,13 +26,11 @@ export function NationTradePolicySection({
   readonly isArchived: boolean;
   readonly nation: Nation;
 }): JSX.Element {
-  const { activeCharacter } = useActivePlayerCharacter();
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nation.id &&
-    activeCharacter.status === "alive";
-  const canManage = (canAdminWorld || isNationManager) && !isArchived;
+  const { canManageNation } = useNationManageAuthority({
+    canAdmin: canAdminWorld,
+    nationId: nation.id,
+  });
+  const canManage = canManageNation && !isArchived;
 
   const queryClient = useQueryClient();
   const tradePolicyMutation = useMutation(

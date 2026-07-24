@@ -153,42 +153,55 @@ async function getScopeResolverContext(
     readonly settlementId: string;
   }[];
 }> {
-  const officeHoldersQuery = client
-    .from("nation_offices")
-    .select("citizen_id,office_type_id")
-    .is("ended_turn_number", null);
-  const officeHoldersResult = await (
-    nationId !== null
-      ? officeHoldersQuery.eq("nation_id", nationId)
-      : officeHoldersQuery.eq("settlement_id", settlementId as string)
-  ).returns<OfficeHolderRow[]>();
-  if (officeHoldersResult.error !== null) {
-    throw normalizeSupabaseError(officeHoldersResult.error);
-  }
-  const officeHolders = officeHoldersResult.data.map((row) => ({
-    citizenId: row.citizen_id,
-    officeTypeId: row.office_type_id,
-  }));
+  const fetchOfficeHolders = async (): Promise<
+    readonly { readonly citizenId: string; readonly officeTypeId: string }[]
+  > => {
+    const officeHoldersQuery = client
+      .from("nation_offices")
+      .select("citizen_id,office_type_id")
+      .is("ended_turn_number", null);
+    const officeHoldersResult = await (
+      nationId !== null
+        ? officeHoldersQuery.eq("nation_id", nationId)
+        : officeHoldersQuery.eq("settlement_id", settlementId as string)
+    ).returns<OfficeHolderRow[]>();
+    if (officeHoldersResult.error !== null) {
+      throw normalizeSupabaseError(officeHoldersResult.error);
+    }
+    return officeHoldersResult.data.map((row) => ({
+      citizenId: row.citizen_id,
+      officeTypeId: row.office_type_id,
+    }));
+  };
 
-  const rulerQuery = client.from("citizens").select("id").eq("status", "alive");
-  const rulerResult = await (
-    nationId !== null
-      ? rulerQuery
-          .eq("role_type", "nation_manager")
-          .eq("role_nation_id", nationId)
-      : rulerQuery
-          .eq("role_type", "settlement_manager")
-          .eq("role_settlement_id", settlementId as string)
-  ).maybeSingle<{ id: string }>();
-  if (rulerResult.error !== null) {
-    throw normalizeSupabaseError(rulerResult.error);
-  }
+  const fetchRulerCitizenId = async (): Promise<string | null> => {
+    const rulerQuery = client
+      .from("citizens")
+      .select("id")
+      .eq("status", "alive");
+    const rulerResult = await (
+      nationId !== null
+        ? rulerQuery
+            .eq("role_type", "nation_manager")
+            .eq("role_nation_id", nationId)
+        : rulerQuery
+            .eq("role_type", "settlement_manager")
+            .eq("role_settlement_id", settlementId as string)
+    ).maybeSingle<{ id: string }>();
+    if (rulerResult.error !== null) {
+      throw normalizeSupabaseError(rulerResult.error);
+    }
+    return rulerResult.data?.id ?? null;
+  };
 
-  let settlementManagers: readonly {
-    citizenId: string;
-    settlementId: string;
-  }[] = [];
-  if (nationId !== null) {
+  // Managers depend on the settlement list, so that pair stays chained --
+  // but the chain runs alongside the two independent queries above.
+  const fetchSettlementManagers = async (): Promise<
+    readonly { readonly citizenId: string; readonly settlementId: string }[]
+  > => {
+    if (nationId === null) {
+      return [];
+    }
     const settlementsResult = await client
       .from("settlements")
       .select("id")
@@ -198,27 +211,32 @@ async function getScopeResolverContext(
       throw normalizeSupabaseError(settlementsResult.error);
     }
     const settlementIds = settlementsResult.data.map((row) => row.id);
-    if (settlementIds.length > 0) {
-      const managersResult = await client
-        .from("citizens")
-        .select("id,role_settlement_id")
-        .eq("role_type", "settlement_manager")
-        .eq("status", "alive")
-        .in("role_settlement_id", settlementIds)
-        .returns<{ id: string; role_settlement_id: string }[]>();
-      if (managersResult.error !== null) {
-        throw normalizeSupabaseError(managersResult.error);
-      }
-      settlementManagers = managersResult.data.map((row) => ({
-        citizenId: row.id,
-        settlementId: row.role_settlement_id,
-      }));
+    if (settlementIds.length === 0) {
+      return [];
     }
-  }
+    const managersResult = await client
+      .from("citizens")
+      .select("id,role_settlement_id")
+      .eq("role_type", "settlement_manager")
+      .eq("status", "alive")
+      .in("role_settlement_id", settlementIds)
+      .returns<{ id: string; role_settlement_id: string }[]>();
+    if (managersResult.error !== null) {
+      throw normalizeSupabaseError(managersResult.error);
+    }
+    return managersResult.data.map((row) => ({
+      citizenId: row.id,
+      settlementId: row.role_settlement_id,
+    }));
+  };
+
+  const [officeHolders, rulerCitizenId, settlementManagers] = await Promise.all(
+    [fetchOfficeHolders(), fetchRulerCitizenId(), fetchSettlementManagers()],
+  );
 
   return {
     officeHolders,
-    rulerCitizenId: rulerResult.data?.id ?? null,
+    rulerCitizenId,
     settlementManagers,
   };
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createSeededRng, hashStringToSeed, mulberry32 } from "./seededRng";
+import {
+  createSeededRng,
+  hashStringToSeed,
+  mulberry32,
+  pickDeterministic,
+} from "./seededRng";
 
 describe("mulberry32", () => {
   it("produces deterministic sequences from the same seed", () => {
@@ -51,5 +56,26 @@ describe("createSeededRng", () => {
     const a = createSeededRng("npc-1");
     const b = createSeededRng("npc-1");
     expect([a(), a(), a()]).toEqual([b(), b(), b()]);
+  });
+});
+
+describe("pickDeterministic", () => {
+  it("picks the same items for the same seed", () => {
+    const items = ["a", "b", "c", "d", "e"] as const;
+    const first = pickDeterministic(createSeededRng("pick-1"), items, 3);
+    const second = pickDeterministic(createSeededRng("pick-1"), items, 3);
+    expect(first).toEqual(second);
+  });
+
+  it("picks distinct items from the pool", () => {
+    const items = [1, 2, 3, 4, 5];
+    const picked = pickDeterministic(createSeededRng(9), items, 5);
+    expect([...picked].sort((a, b) => a - b)).toEqual(items);
+  });
+
+  it("throws when count exceeds the pool size", () => {
+    expect(() => pickDeterministic(createSeededRng(1), [1, 2], 3)).toThrow(
+      RangeError,
+    );
   });
 });

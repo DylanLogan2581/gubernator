@@ -26,7 +26,7 @@ import { ReligionsConfigPanel } from "@/features/religions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
-import { getVisibleConfigTabs } from "../configTabs";
+import { CONFIG_TAB_IDS, getVisibleConfigTabs } from "../configTabs";
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
 import { WorldImagesPanel } from "./WorldImagesPanel";
@@ -36,7 +36,95 @@ import { WorldSettingsPanel } from "./WorldSettingsPanel";
 import { WorldTemplateExportButton } from "./WorldTemplateExportButton";
 
 import type { ConfigTabId } from "../configTabs";
+import type { WorldRouteAccess } from "../types/worldTypes";
 import type { JSX, ReactNode } from "react";
+
+// ---------------------------------------------------------------------------
+// Panel lookup table — companion to `getVisibleConfigTabs` / CONFIG_TABS in
+// ../configTabs. Every ConfigTabId must map to a renderer (Record enforces
+// exhaustiveness).
+// ---------------------------------------------------------------------------
+
+type PanelRenderProps = {
+  readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
+  readonly canAdmin: boolean;
+  readonly header: WorldRouteAccess["header"];
+  readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly worldId: string;
+};
+
+function basePanelProps({ canAdmin, header, worldId }: PanelRenderProps): {
+  readonly canAdmin: boolean;
+  readonly isArchived: boolean;
+  readonly worldId: string;
+} {
+  return { canAdmin, isArchived: header.isArchived, worldId };
+}
+
+const CONFIG_PANEL_RENDERERS: Record<
+  ConfigTabId,
+  (props: PanelRenderProps) => JSX.Element | null
+> = {
+  resources: (p) => <ResourcesConfigPanel {...basePanelProps(p)} />,
+  jobs: (p) => <JobsConfigPanel {...basePanelProps(p)} />,
+  buildings: (p) => <BuildingsConfigPanel {...basePanelProps(p)} />,
+  deposits: (p) => <DepositsConfigPanel {...basePanelProps(p)} />,
+  "managed-populations": (p) => (
+    <ManagedPopulationsConfigPanel {...basePanelProps(p)} />
+  ),
+  cultures: (p) => (
+    <ConfigPanelShell>
+      <CulturesConfigPanel {...basePanelProps(p)} />
+    </ConfigPanelShell>
+  ),
+  religions: (p) => (
+    <ConfigPanelShell>
+      <ReligionsConfigPanel {...basePanelProps(p)} />
+    </ConfigPanelShell>
+  ),
+  education: (p) => <EducationConfigPanel {...basePanelProps(p)} />,
+  military: (p) => <MilitaryConfigPanel {...basePanelProps(p)} />,
+  calendar: (p) => (
+    <WorldCalendarConfigPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+    />
+  ),
+  namesets: (p) => <NamesetsConfigPanel {...basePanelProps(p)} />,
+  discovery: (p) => <NationDiscoveryConfigPanel {...basePanelProps(p)} />,
+  "npc-flavor": (p) => (
+    <WorldNpcFlavorConfigPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+    />
+  ),
+  "population-rules": (p) => (
+    <WorldPopulationRulesConfigPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+    />
+  ),
+  images: (p) => (
+    <WorldImagesPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+      worldName={p.header.name}
+    />
+  ),
+  "world-settings": (p) =>
+    p.accessContext.isSuperAdmin ? (
+      <WorldSettingsPanel
+        currentTurnNumber={p.header.currentTurnNumber}
+        queryClient={p.queryClient}
+        worldId={p.worldId}
+        worldName={p.header.name}
+      />
+    ) : null,
+};
+
+function isConfigTabId(id: string): id is ConfigTabId {
+  return (CONFIG_TAB_IDS as readonly string[]).includes(id);
+}
 
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
@@ -181,183 +269,6 @@ function WorldConfigurationContent({
     return <AdminSuppressedNotice />;
   }
 
-  function renderPanel(): JSX.Element | null {
-    if (activeTab === "resources") {
-      return (
-        <ResourcesConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "jobs") {
-      return (
-        <JobsConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "buildings") {
-      return (
-        <BuildingsConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "deposits") {
-      return (
-        <DepositsConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "managed-populations") {
-      return (
-        <ManagedPopulationsConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "cultures") {
-      return (
-        <ConfigPanelShell>
-          <CulturesConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "religions") {
-      return (
-        <ConfigPanelShell>
-          <ReligionsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "education") {
-      return (
-        <EducationConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "military") {
-      return (
-        <MilitaryConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "calendar") {
-      return (
-        <WorldCalendarConfigPanel
-          accessContext={accessContext}
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "namesets") {
-      return (
-        <NamesetsConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "discovery") {
-      return (
-        <NationDiscoveryConfigPanel
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "npc-flavor") {
-      return (
-        <WorldNpcFlavorConfigPanel
-          accessContext={accessContext}
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "population-rules") {
-      return (
-        <WorldPopulationRulesConfigPanel
-          accessContext={accessContext}
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-        />
-      );
-    }
-
-    if (activeTab === "images") {
-      return (
-        <WorldImagesPanel
-          accessContext={accessContext}
-          canAdmin={canAdmin}
-          isArchived={header.isArchived}
-          worldId={worldId}
-          worldName={header.name}
-        />
-      );
-    }
-
-    if (activeTab === "world-settings") {
-      if (!accessContext.isSuperAdmin) {
-        return null;
-      }
-      return (
-        <WorldSettingsPanel
-          currentTurnNumber={header.currentTurnNumber}
-          queryClient={queryClient}
-          worldId={worldId}
-          worldName={header.name}
-        />
-      );
-    }
-
-    return null;
-  }
-
   return (
     <>
       {canAdmin && (
@@ -368,7 +279,15 @@ function WorldConfigurationContent({
           />
         </div>
       )}
-      {renderPanel()}
+      {isConfigTabId(activeTab)
+        ? CONFIG_PANEL_RENDERERS[activeTab]({
+            accessContext,
+            canAdmin,
+            header,
+            queryClient,
+            worldId,
+          })
+        : null}
     </>
   );
 }

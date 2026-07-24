@@ -315,7 +315,7 @@ async function invalidateAfterCitizenChange(
       queryKey: citizensQueryKeys.detail(citizen.id),
     }),
     queryClient.invalidateQueries({
-      queryKey: [...citizensQueryKeys.all, "directory", citizen.worldId],
+      queryKey: citizensQueryKeys.directoryByWorld(citizen.worldId),
     }),
     queryClient.invalidateQueries({
       queryKey: citizensQueryKeys.unpairedAliveInWorld(citizen.worldId),

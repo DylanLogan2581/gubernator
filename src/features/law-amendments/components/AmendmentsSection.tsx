@@ -15,7 +15,10 @@ import {
   nationOfficeTypesQueryOptions,
   settlementOfficeTypesQueryOptions,
 } from "@/features/nations";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import {
+  checkCanManageNation,
+  useActivePlayerCharacter,
+} from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import {
   canProposeAmendment,
@@ -152,14 +155,16 @@ export function AmendmentsSection(props: AmendmentsSectionProps): JSX.Element {
   const procedure = parseProcedure(document.amendmentProcedure);
   const isDecree = procedure?.kind === "decree";
 
-  const isRuler =
-    activeCharacter !== null &&
-    activeCharacter.status === "alive" &&
-    (isNationScope
-      ? activeCharacter.roleType === "nation_manager" &&
-        activeCharacter.roleNationId === props.nationId
-      : activeCharacter.roleType === "settlement_manager" &&
-        activeCharacter.roleSettlementId === settlementId);
+  const isRuler = isNationScope
+    ? checkCanManageNation({
+        activeCharacter,
+        canAdmin: false,
+        nationId: props.nationId,
+      })
+    : activeCharacter !== null &&
+      activeCharacter.status === "alive" &&
+      activeCharacter.roleType === "settlement_manager" &&
+      activeCharacter.roleSettlementId === settlementId;
 
   const heldOfficeTypeIds = new Set(
     resolverContext.officeHolders

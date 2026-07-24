@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { hardDeleteDepositInstanceMutationOptions } from "../../mutations/hardDeleteDepositInstanceMutations";
 
@@ -19,29 +18,9 @@ export function HardDeleteDepositConfirmDialog({
   onClose,
   queryClient,
 }: HardDeleteDepositConfirmDialogProps): JSX.Element {
-  const mutation = useMutation(
-    hardDeleteDepositInstanceMutationOptions({ queryClient }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await mutation.mutateAsync({ depositInstanceId: instance.id });
-      notifyMutationSuccess(`${instance.name} permanently deleted.`);
-      onClose();
-    } catch (error) {
-      notifyMutationError(
-        error,
-        "Failed to permanently delete deposit instance.",
-      );
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Permanently delete ${instance.name}?`}
       description={
         <>
@@ -51,8 +30,12 @@ export function HardDeleteDepositConfirmDialog({
         </>
       }
       confirmLabel="Delete permanently"
-      isPending={mutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={hardDeleteDepositInstanceMutationOptions({
+        queryClient,
+      })}
+      input={{ depositInstanceId: instance.id }}
+      successMessage={`${instance.name} permanently deleted.`}
+      errorFallback="Failed to permanently delete deposit instance."
     />
   );
 }

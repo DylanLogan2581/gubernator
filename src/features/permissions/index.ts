@@ -30,6 +30,7 @@ export {
 } from "./utils/manageAuthority";
 export { toWorldAccessTarget } from "./utils/worldAccessTarget";
 export { useEffectiveCanAdmin } from "./hooks/useEffectiveCanAdmin";
+export { useNationManageAuthority } from "./hooks/useNationManageAuthority";
 export { useSettlementManageAuthority } from "./hooks/useSettlementManageAuthority";
 export {
   allUsersForSuperadminQueryOptions,

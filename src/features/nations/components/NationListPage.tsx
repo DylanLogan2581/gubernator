@@ -7,7 +7,6 @@ import {
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Landmark, Plus } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
-import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -38,12 +37,9 @@ import {
 import type { WorldRouteAccess } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import {
-  createNationMutationOptions,
-  isNationMutationError,
-} from "../mutations/nationsMutations";
+import { createNationMutationOptions } from "../mutations/nationsMutations";
 import { nationsListQueryOptions } from "../queries/nationsQueries";
 import {
   NATION_GOVERNMENT_TYPES,
@@ -324,7 +320,7 @@ function CreateNationSection({
       },
       {
         onError: (error) => {
-          toast.error(getCreateErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: (nation) => {
           notifyMutationSuccess(`Nation "${nation.name}" created.`);
@@ -497,15 +493,4 @@ function getDescriptionPreview(description: string | null): string | null {
   }
 
   return `${collapsed.slice(0, limit).trimEnd()}…`;
-}
-
-function getCreateErrorDescription(error: unknown): string {
-  if (isNationMutationError(error)) {
-    const firstIssue = error.issues[0];
-    if (firstIssue !== undefined) {
-      return firstIssue.message;
-    }
-    return error.message;
-  }
-  return getErrorDescription(error);
 }

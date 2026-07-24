@@ -24,7 +24,7 @@ import {
   playerCharactersInNationQueryOptions,
 } from "@/features/citizens";
 import { culturesByWorldQueryOptions } from "@/features/cultures";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import { useNationManageAuthority } from "@/features/permissions";
 import { religionsByWorldQueryOptions } from "@/features/religions";
 import { notifyMutationError } from "@/lib/notify";
 import {
@@ -80,13 +80,11 @@ export function NationIdentitySection({
   // Mirrors the visibility check in NationRoleAssignmentSection/
   // NationGovernmentRoute — capital and founded turn are editable by world
   // admins and by this nation's own (alive) nation_manager citizen.
-  const { activeCharacter } = useActivePlayerCharacter();
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nation.id &&
-    activeCharacter.status === "alive";
-  const canEdit = (canAdminWorld || isNationManager) && !isArchived;
+  const { canManageNation } = useNationManageAuthority({
+    canAdmin: canAdminWorld,
+    nationId: nation.id,
+  });
+  const canEdit = canManageNation && !isArchived;
   // Government type is admin-arbitrated roleplay: unlike capital/founded
   // turn, the nation manager never gets an edit control here.
   const canEditGovernmentType = canAdminWorld && !isArchived;

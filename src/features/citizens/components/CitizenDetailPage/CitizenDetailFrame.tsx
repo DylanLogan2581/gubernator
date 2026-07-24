@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { DetailPageFrame } from "@/components/shared/DetailPageFrame";
 
 import type { JSX, ReactNode } from "react";
 
@@ -21,9 +21,9 @@ export function CitizenDetailFrame({
   readonly worldId: string;
 }): JSX.Element {
   return (
-    <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" size="sm" className="w-fit">
-        {settlementNav !== null ? (
+    <DetailPageFrame
+      backLink={
+        settlementNav !== null ? (
           <Link
             to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
             params={{
@@ -40,9 +40,10 @@ export function CitizenDetailFrame({
             <ArrowLeft aria-hidden="true" />
             Back to world
           </Link>
-        )}
-      </Button>
+        )
+      }
+    >
       {children}
-    </div>
+    </DetailPageFrame>
   );
 }

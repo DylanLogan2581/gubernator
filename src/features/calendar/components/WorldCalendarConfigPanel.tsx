@@ -6,20 +6,22 @@ import {
 } from "@tanstack/react-query";
 import { RotateCcw, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import type { WorldPermissionContext } from "@/features/worlds";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { notifyMutationSuccess } from "@/lib/notify";
+import {
+  notifyMutationError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 
 import { saveWorldCalendarConfigMutationOptions } from "../mutations/calendarMutations";
 import { worldCalendarConfigQueryOptions } from "../queries/calendarQueries";
 import {
   emptyCalendarValidationErrors,
-  getCalendarErrorDescription,
   getCalendarValidationErrors,
   hasCalendarValidationErrors,
 } from "../utils/calendarConfigValidation";
@@ -53,7 +55,7 @@ export function WorldCalendarConfigPanel({
     return (
       <ErrorState
         title="Calendar could not be loaded"
-        description={getCalendarErrorDescription(calendarQuery.error)}
+        description={resolveMutationErrorMessage(calendarQuery.error)}
       />
     );
   }
@@ -119,7 +121,7 @@ function WorldCalendarConfigPanelContent({
       },
       {
         onError: (error) => {
-          toast.error(getCalendarErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           setIsDirty(false);

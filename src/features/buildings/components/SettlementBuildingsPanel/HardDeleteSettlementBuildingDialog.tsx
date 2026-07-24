@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { hardDeleteSettlementBuildingMutationOptions } from "../../mutations/settlementBuildingsMutations";
 
@@ -23,29 +22,9 @@ export function HardDeleteSettlementBuildingDialog({
   settlementId,
   worldId,
 }: HardDeleteSettlementBuildingDialogProps): JSX.Element {
-  const hardDeleteMutation = useMutation(
-    hardDeleteSettlementBuildingMutationOptions({ queryClient, settlementId }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await hardDeleteMutation.mutateAsync({
-        settlementBuildingId: building.id,
-        worldId,
-      });
-      notifyMutationSuccess("Building permanently deleted.");
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to delete building.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Permanently delete ${building.blueprintName}?`}
       description={
         <>
@@ -57,8 +36,13 @@ export function HardDeleteSettlementBuildingDialog({
         </>
       }
       confirmLabel="Delete"
-      isPending={hardDeleteMutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={hardDeleteSettlementBuildingMutationOptions({
+        queryClient,
+        settlementId,
+      })}
+      input={{ settlementBuildingId: building.id, worldId }}
+      successMessage="Building permanently deleted."
+      errorFallback="Failed to delete building."
     />
   );
 }

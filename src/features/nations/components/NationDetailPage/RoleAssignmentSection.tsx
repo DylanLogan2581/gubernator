@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import {
+  checkCanManageNation,
   RoleAssignmentControls,
   useActivePlayerCharacter,
 } from "@/features/permissions";
@@ -17,11 +18,14 @@ export function NationRoleAssignmentSection({
   readonly nation: Nation;
 }): JSX.Element | null {
   const { activeCharacter } = useActivePlayerCharacter();
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nation.id &&
-    activeCharacter.status === "alive";
+  // canAdmin is deliberately false: this section needs the raw
+  // nation-manager check separate from world-admin access, since both are
+  // passed to RoleAssignmentControls individually.
+  const isNationManager = checkCanManageNation({
+    activeCharacter,
+    canAdmin: false,
+    nationId: nation.id,
+  });
 
   if (!canAdminWorld && !isNationManager) {
     return null;

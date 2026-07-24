@@ -15,6 +15,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { settlementForecastQueryKeys } from "../queries/settlementForecastQueryKeys";
 import { settlementReadinessQueryKeys } from "../queries/settlementReadinessQueryKeys";
@@ -159,8 +160,12 @@ export function setSettlementReadinessMutationOptions({
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
         }),
+        // Mark the forecast stale without awaiting an active refetch: the
+        // forecast is an end-turn dry-run that can take tens of seconds, and
+        // awaiting it here would block the readiness button.
         queryClient.invalidateQueries({
           queryKey: settlementForecastQueryKeys.byWorld(input.worldId),
+          refetchType: "none",
         }),
       ]);
     },
@@ -188,8 +193,12 @@ export function setSettlementAutoReadyMutationOptions({
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
         }),
+        // Mark the forecast stale without awaiting an active refetch: the
+        // forecast is an end-turn dry-run that can take tens of seconds, and
+        // awaiting it here would block the readiness button.
         queryClient.invalidateQueries({
           queryKey: settlementForecastQueryKeys.byWorld(input.worldId),
+          refetchType: "none",
         }),
       ]);
     },
@@ -226,14 +235,16 @@ async function setSettlementReadiness(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SetSettlementReadinessError({
-      code: "settlement_readiness_archived",
-      message: "Archived worlds are read-only.",
-      settlementId: input.settlementId,
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SetSettlementReadinessError({
+        code: "settlement_readiness_archived",
+        message: "Archived worlds are read-only.",
+        settlementId: input.settlementId,
+        worldId: input.worldId,
+      }),
+  );
 
   const { data, error } = await client
     .rpc("set_settlement_readiness", {
@@ -279,14 +290,16 @@ async function setSettlementAutoReady(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SetSettlementAutoReadyError({
-      code: "settlement_auto_ready_archived",
-      message: "Archived worlds are read-only.",
-      settlementId: input.settlementId,
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SetSettlementAutoReadyError({
+        code: "settlement_auto_ready_archived",
+        message: "Archived worlds are read-only.",
+        settlementId: input.settlementId,
+        worldId: input.worldId,
+      }),
+  );
 
   const { data, error } = await client
     .rpc("set_settlement_auto_ready", {

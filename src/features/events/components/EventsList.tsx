@@ -362,32 +362,40 @@ export function EventsList({
               />
             ) : isMobile ? (
               <div className="space-y-2">
-                {paginatedItems.map((item) =>
-                  item.type === "single" ? (
+                {paginatedItems.map((item) => {
+                  if (item.type === "single") {
+                    return (
+                      <EventCard
+                        key={item.event.id}
+                        event={item.event}
+                        isSelected={item.event.id === selectedEventId}
+                        onSelect={() => {
+                          setSelectedEventId(item.event.id);
+                        }}
+                      />
+                    );
+                  }
+                  const firstEvent = item.events[0];
+                  if (firstEvent === undefined) {
+                    return null;
+                  }
+                  return (
                     <EventCard
-                      key={item.event.id}
-                      event={item.event}
-                      isSelected={item.event.id === selectedEventId}
-                      onSelect={() => {
-                        setSelectedEventId(item.event.id);
-                      }}
-                    />
-                  ) : (
-                    <GroupedEventCard
                       key={item.groupId}
-                      events={item.events}
+                      event={firstEvent}
+                      scopeLabel={groupScopeLabel(
+                        firstEvent.scope_type,
+                        item.events.length,
+                      )}
                       isSelected={item.events.some(
                         (e) => e.id === selectedEventId,
                       )}
                       onSelect={() => {
-                        const firstEvent = item.events[0];
-                        if (firstEvent !== undefined) {
-                          setSelectedEventId(firstEvent.id);
-                        }
+                        setSelectedEventId(firstEvent.id);
                       }}
                     />
-                  ),
-                )}
+                  );
+                })}
               </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border">
@@ -401,32 +409,40 @@ export function EventsList({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedItems.map((item) =>
-                      item.type === "single" ? (
+                    {paginatedItems.map((item) => {
+                      if (item.type === "single") {
+                        return (
+                          <EventRow
+                            key={item.event.id}
+                            event={item.event}
+                            isSelected={item.event.id === selectedEventId}
+                            onSelect={() => {
+                              setSelectedEventId(item.event.id);
+                            }}
+                          />
+                        );
+                      }
+                      const firstEvent = item.events[0];
+                      if (firstEvent === undefined) {
+                        return null;
+                      }
+                      return (
                         <EventRow
-                          key={item.event.id}
-                          event={item.event}
-                          isSelected={item.event.id === selectedEventId}
-                          onSelect={() => {
-                            setSelectedEventId(item.event.id);
-                          }}
-                        />
-                      ) : (
-                        <GroupedEventRow
                           key={item.groupId}
-                          events={item.events}
+                          event={firstEvent}
+                          scopeLabel={groupScopeLabel(
+                            firstEvent.scope_type,
+                            item.events.length,
+                          )}
                           isSelected={item.events.some(
                             (e) => e.id === selectedEventId,
                           )}
                           onSelect={() => {
-                            const firstEvent = item.events[0];
-                            if (firstEvent !== undefined) {
-                              setSelectedEventId(firstEvent.id);
-                            }
+                            setSelectedEventId(firstEvent.id);
                           }}
                         />
-                      ),
-                    )}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -504,10 +520,13 @@ function EventCard({
   event,
   isSelected,
   onSelect,
+  scopeLabel,
 }: {
   readonly event: EventWithGroup;
   readonly isSelected: boolean;
   readonly onSelect: () => void;
+  /** Target-count label for grouped events, e.g. "3 settlements". */
+  readonly scopeLabel?: string;
 }): JSX.Element {
   const displayName = event.group?.name ?? event.name;
 
@@ -528,54 +547,12 @@ function EventCard({
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <EventStatusBadge status={event.status} />
           <EventScopeBadge scopeType={event.scope_type} />
+          {scopeLabel !== undefined && (
+            <span className="text-xs text-muted-foreground">{scopeLabel}</span>
+          )}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {eventDurationLabel(event)}
-        </p>
-      </div>
-    </button>
-  );
-}
-
-function GroupedEventCard({
-  events,
-  isSelected,
-  onSelect,
-}: {
-  readonly events: readonly EventWithGroup[];
-  readonly isSelected: boolean;
-  readonly onSelect: () => void;
-}): JSX.Element | null {
-  const firstEvent = events[0];
-
-  if (firstEvent === undefined) {
-    return null;
-  }
-
-  const displayName = firstEvent.group?.name ?? firstEvent.name;
-  const scopeLabel = groupScopeLabel(firstEvent.scope_type, events.length);
-
-  return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      data-state={isSelected ? "selected" : undefined}
-      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=selected]:border-primary"
-      onClick={onSelect}
-    >
-      <IconChip
-        icon={resolveEventIcon(firstEvent.icon)}
-        tone={DOMAIN_ICON_CHIPS.events.tone}
-      />
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{displayName}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          <EventStatusBadge status={firstEvent.status} />
-          <EventScopeBadge scopeType={firstEvent.scope_type} />
-          <span className="text-xs text-muted-foreground">{scopeLabel}</span>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {eventDurationLabel(firstEvent)}
         </p>
       </div>
     </button>
@@ -586,10 +563,13 @@ function EventRow({
   event,
   isSelected,
   onSelect,
+  scopeLabel,
 }: {
   readonly event: EventWithGroup;
   readonly isSelected: boolean;
   readonly onSelect: () => void;
+  /** Target-count label for grouped events, e.g. "3 settlements". */
+  readonly scopeLabel?: string;
 }): JSX.Element {
   const displayName = event.group?.name ?? event.name;
 
@@ -620,70 +600,16 @@ function EventRow({
         <EventStatusBadge status={event.status} />
       </TableCell>
       <TableCell>
-        <EventScopeBadge scopeType={event.scope_type} />
+        {scopeLabel !== undefined ? (
+          <div className="flex items-center gap-2">
+            <EventScopeBadge scopeType={event.scope_type} />
+            <span className="text-xs text-muted-foreground">{scopeLabel}</span>
+          </div>
+        ) : (
+          <EventScopeBadge scopeType={event.scope_type} />
+        )}
       </TableCell>
       <TableCell>{eventDurationLabel(event)}</TableCell>
-    </TableRow>
-  );
-}
-
-/**
- * Render an event group as a single table row.
- * Displays the group name, status, scope, and target count.
- * Selecting shows the first event in the group in the detail panel.
- */
-function GroupedEventRow({
-  events,
-  isSelected,
-  onSelect,
-}: {
-  readonly events: readonly EventWithGroup[];
-  readonly isSelected: boolean;
-  readonly onSelect: () => void;
-}): JSX.Element | null {
-  // Use first event as representative for name, status, effect type, duration
-  const firstEvent = events[0];
-
-  if (firstEvent === undefined) {
-    return null;
-  }
-
-  const displayName = firstEvent.group?.name ?? firstEvent.name;
-  const scopeLabel = groupScopeLabel(firstEvent.scope_type, events.length);
-
-  return (
-    <TableRow
-      aria-selected={isSelected}
-      className="cursor-pointer"
-      data-state={isSelected ? "selected" : undefined}
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-    >
-      <TableCell className="font-medium">
-        <span className="flex items-center gap-2">
-          <IconChip
-            icon={resolveEventIcon(firstEvent.icon)}
-            tone={DOMAIN_ICON_CHIPS.events.tone}
-          />
-          {displayName}
-        </span>
-      </TableCell>
-      <TableCell>
-        <EventStatusBadge status={firstEvent.status} />
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
-          <EventScopeBadge scopeType={firstEvent.scope_type} />
-          <span className="text-xs text-muted-foreground">{scopeLabel}</span>
-        </div>
-      </TableCell>
-      <TableCell>{eventDurationLabel(firstEvent)}</TableCell>
     </TableRow>
   );
 }

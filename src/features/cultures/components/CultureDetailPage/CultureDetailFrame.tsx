@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { DetailPageFrame } from "@/components/shared/DetailPageFrame";
 
 import type { JSX, ReactNode } from "react";
 
@@ -13,8 +13,8 @@ export function CultureDetailFrame({
   readonly worldId: string;
 }): JSX.Element {
   return (
-    <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" size="sm" className="w-fit">
+    <DetailPageFrame
+      backLink={
         <Link
           to="/worlds/$worldId/configuration"
           params={{ worldId }}
@@ -23,8 +23,9 @@ export function CultureDetailFrame({
           <ArrowLeft aria-hidden="true" />
           Back to cultures
         </Link>
-      </Button>
+      }
+    >
       {children}
-    </div>
+    </DetailPageFrame>
   );
 }

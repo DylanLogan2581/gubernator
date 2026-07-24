@@ -44,7 +44,10 @@ import {
   playerCharactersInNationQueryOptions,
   citizensInSettlementQueryOptions,
 } from "@/features/citizens";
-import { useActivePlayerCharacter } from "@/features/permissions";
+import {
+  checkCanManageNation,
+  useActivePlayerCharacter,
+} from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -129,14 +132,16 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
     worldCalendarConfigQueryOptions(props.worldId),
   );
 
-  const isManagerActive =
-    activeCharacter !== null &&
-    activeCharacter.status === "alive" &&
-    (isNationScope
-      ? activeCharacter.roleType === "nation_manager" &&
-        activeCharacter.roleNationId === props.nationId
-      : activeCharacter.roleType === "settlement_manager" &&
-        activeCharacter.roleSettlementId === settlementId);
+  const isManagerActive = isNationScope
+    ? checkCanManageNation({
+        activeCharacter,
+        canAdmin: false,
+        nationId: props.nationId,
+      })
+    : activeCharacter !== null &&
+      activeCharacter.status === "alive" &&
+      activeCharacter.roleType === "settlement_manager" &&
+      activeCharacter.roleSettlementId === settlementId;
 
   // Only needed when an admin who is not themselves the manager wants to
   // issue: falls back to the scope's current manager citizen as the acting
@@ -157,9 +162,11 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
         []
       ).find((citizen) =>
         isNationScope
-          ? citizen.roleType === "nation_manager" &&
-            citizen.roleNationId === props.nationId &&
-            citizen.status === "alive"
+          ? checkCanManageNation({
+              activeCharacter: citizen,
+              canAdmin: false,
+              nationId: props.nationId,
+            })
           : citizen.roleType === "settlement_manager" &&
             citizen.roleSettlementId === settlementId &&
             citizen.status === "alive",

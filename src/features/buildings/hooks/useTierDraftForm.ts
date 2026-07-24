@@ -36,7 +36,13 @@ export type TierDraftFormData = {
   effectsJson?: TierEffectInput[];
 };
 
-export function useTierDraftForm(): {
+/**
+ * Form state for a blueprint-tier draft. `initial` seeds the state on mount
+ * (omitted fields fall back to the empty defaults); it is not re-read on later
+ * renders, so callers that need a reset per entity must remount (e.g. via a
+ * React `key`).
+ */
+export function useTierDraftForm(initial?: Partial<TierDraftFormState>): {
   tierNumber: string;
   setTierNumber: (value: string) => void;
   workerTurns: string;
@@ -55,13 +61,17 @@ export function useTierDraftForm(): {
     activeEducationLevels: readonly EducationLevel[],
   ) => TierDraftFormData | null;
 } {
-  const [tierNumber, setTierNumber] = useState("");
-  const [workerTurns, setWorkerTurns] = useState("0");
+  const [tierNumber, setTierNumber] = useState(initial?.tierNumber ?? "");
+  const [workerTurns, setWorkerTurns] = useState(initial?.workerTurns ?? "0");
   const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
-    [],
+    initial?.constructionCosts ?? [],
   );
-  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>([]);
-  const [effects, setEffects] = useState<EffectRowState[]>([]);
+  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>(
+    initial?.upkeepCosts ?? [],
+  );
+  const [effects, setEffects] = useState<EffectRowState[]>(
+    initial?.effects ?? [],
+  );
   const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
 
   function validate(

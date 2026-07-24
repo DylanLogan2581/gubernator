@@ -22,12 +22,16 @@ export const citizensQueryKeys = {
       "assignments-in-settlement",
       settlementId,
     ] as const,
+  currentAssignmentAll: () =>
+    [...citizensQueryKeys.all, "current-assignment-for-citizen"] as const,
   currentAssignmentForCitizen: (citizenId: string) =>
     [
       ...citizensQueryKeys.all,
       "current-assignment-for-citizen",
       citizenId,
     ] as const,
+  directoryByWorld: (worldId: string) =>
+    [...citizensQueryKeys.all, "directory", worldId] as const,
   directory: (
     worldId: string,
     filters: Record<string, unknown>,

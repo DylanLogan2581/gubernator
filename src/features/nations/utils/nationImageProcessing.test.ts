@@ -1,34 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  computeCoverCropRect,
+  downscaleImageToBlob,
   NATION_FLAG_TARGET,
+  NationImageProcessingError,
 } from "./nationImageProcessing";
 
-describe("computeCoverCropRect", () => {
-  it("crops the sides off a wider-than-target source", () => {
-    expect(computeCoverCropRect(2000, 1000, NATION_FLAG_TARGET)).toEqual({
-      sHeight: 1000,
-      sWidth: 1500,
-      sx: 250,
-      sy: 0,
+describe("NATION_FLAG_TARGET", () => {
+  it("pins the nation flag dimensions", () => {
+    expect(NATION_FLAG_TARGET).toEqual({ height: 200, width: 300 });
+  });
+});
+
+describe("downscaleImageToBlob", () => {
+  it("throws a NationImageProcessingError with a nation-scoped code", async () => {
+    const file = new File(["not an image"], "notes.txt", {
+      type: "text/plain",
     });
-  });
 
-  it("crops the top/bottom off a taller-than-target source", () => {
-    const rect = computeCoverCropRect(1000, 1000, NATION_FLAG_TARGET);
-    expect(rect.sWidth).toBe(1000);
-    expect(rect.sx).toBe(0);
-    expect(rect.sHeight).toBeCloseTo(666.667, 2);
-    expect(rect.sy).toBeCloseTo(166.667, 2);
-  });
-
-  it("returns the full frame when the source aspect ratio already matches", () => {
-    expect(computeCoverCropRect(300, 200, NATION_FLAG_TARGET)).toEqual({
-      sHeight: 200,
-      sWidth: 300,
-      sx: 0,
-      sy: 0,
+    const promise = downscaleImageToBlob(file, NATION_FLAG_TARGET);
+    await expect(promise).rejects.toBeInstanceOf(NationImageProcessingError);
+    await expect(promise).rejects.toMatchObject({
+      code: "nation_image_invalid_type",
     });
   });
 });

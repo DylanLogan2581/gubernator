@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as CitizensFeature from "@/features/citizens";
 import type { Citizen } from "@/features/citizens";
+import type { NationManageInput } from "@/features/permissions";
 
 import { NationIdentitySection } from "./IdentitySection";
 
@@ -98,9 +99,40 @@ vi.mock("@/lib/notify", () => ({
   notifyMutationError: mockNotifyError,
 }));
 
-vi.mock("@/features/permissions", () => ({
-  useActivePlayerCharacter: mockUseActivePlayerCharacter,
-}));
+vi.mock("@/features/permissions", async () => {
+  // Import the util module directly (not the feature entrypoint) so the mock
+  // stays independent of the entrypoint's component graph.
+  const utils = await vi.importActual(
+    "@/features/permissions/utils/manageAuthority",
+  );
+  const checkCanManageNation = utils.checkCanManageNation as (
+    input: NationManageInput,
+  ) => boolean;
+  return {
+    useActivePlayerCharacter: mockUseActivePlayerCharacter,
+    // Route the real hook's logic through the mocked active character so
+    // tests can drive nation-manager access without a context provider.
+    useNationManageAuthority: ({
+      canAdmin,
+      nationId,
+    }: {
+      readonly canAdmin: boolean;
+      readonly nationId: string;
+    }) => {
+      const { activeCharacter } = mockUseActivePlayerCharacter();
+      return {
+        canManageNation: checkCanManageNation({
+          activeCharacter:
+            activeCharacter === null
+              ? null
+              : { roleSettlementId: null, ...activeCharacter },
+          canAdmin,
+          nationId,
+        }),
+      };
+    },
+  };
+});
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({

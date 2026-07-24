@@ -5,13 +5,13 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { worldAccessQueryKeys } from "@/features/worlds";
 import { createMutationError } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
-import { worldAccessQueryKeys } from "../../worlds/queries/worldAccessQueryKeys";
 import { permissionQueryKeys } from "../queries/permissionQueryKeys";
 import { superadminQueryKeys } from "../queries/superadminQueryKeys";
 import { readSendEmailErrorPayload } from "../utils/sendEmailErrorPayload";

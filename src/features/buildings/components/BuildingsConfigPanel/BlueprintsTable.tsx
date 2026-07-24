@@ -405,6 +405,7 @@ function TierSubRows({
 
       {editingTier !== null ? (
         <EditTierDialog
+          key={editingTier.id}
           activeEducationLevels={activeEducationLevels}
           activeJobs={activeJobs}
           activeResources={activeResources}

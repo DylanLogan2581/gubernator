@@ -22,16 +22,14 @@ import {
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { nationsListQueryOptions } from "@/features/nations";
 import {
+  createTurnLabelers,
+  defaultReportTurnRange,
   PopulationTrendChart,
   TurnRangeSelector,
   worldNationsPopulationQueryOptions,
   worldPopulationAggregatesQueryOptions,
 } from "@/features/reports";
 import type { WorldNationPopulationAggregateRow } from "@/features/reports";
-import {
-  formatCalendarDateShort,
-  resolveTurnCalendarDate,
-} from "@/shared/turnCalendarPrimitives";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,15 +49,6 @@ type NationSummary = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function defaultRange(currentTurnNumber: number): {
-  fromTurn: number;
-  toTurn: number;
-} {
-  const toTurn = Math.max(1, currentTurnNumber);
-  const fromTurn = Math.max(1, toTurn - 19);
-  return { fromTurn, toTurn };
-}
 
 function buildNationSummaries(
   rows: readonly WorldNationPopulationAggregateRow[],
@@ -313,7 +302,7 @@ export function WorldReportsSection({
   currentTurnNumber,
   worldId,
 }: WorldReportsSectionProps): JSX.Element {
-  const initial = defaultRange(currentTurnNumber);
+  const initial = defaultReportTurnRange(currentTurnNumber);
   const [fromTurn, setFromTurn] = useState(initial.fromTurn);
   const [toTurn, setToTurn] = useState(initial.toTurn);
 
@@ -333,19 +322,7 @@ export function WorldReportsSection({
   );
 
   // Chart axis ticks use the short template so labels don't overflow.
-  function turnLabel(turn: number): string {
-    if (calendarConfig === null) return `T${String(turn)}`;
-    try {
-      return formatCalendarDateShort(
-        resolveTurnCalendarDate(calendarConfig, turn),
-        {
-          shortDateFormatTemplate: calendarConfig.shortDateFormatTemplate,
-        },
-      );
-    } catch {
-      return `T${String(turn)}`;
-    }
-  }
+  const { axisLabel } = createTurnLabelers(calendarConfig);
 
   function handleApply(from: number, to: number): void {
     setFromTurn(from);
@@ -395,7 +372,7 @@ export function WorldReportsSection({
           ) : (
             <PopulationTrendChart
               rows={worldPopQuery.data}
-              turnLabel={turnLabel}
+              turnLabel={axisLabel}
             />
           )}
         </CardContent>

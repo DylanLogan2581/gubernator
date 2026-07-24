@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { rejectTradeRouteSideMutationOptions } from "../../mutations/rejectTradeRouteSideMutations";
 
@@ -27,30 +26,9 @@ export function RejectConfirmDialog({
   side,
   worldId,
 }: RejectConfirmDialogProps): JSX.Element {
-  const mutation = useMutation(
-    rejectTradeRouteSideMutationOptions({ queryClient, worldId }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await mutation.mutateAsync({
-        rejectorCitizenId,
-        side,
-        tradeRouteId: route.id,
-      });
-      notifyMutationSuccess("Trade route rejected.");
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to reject trade route.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title="Reject trade route?"
       description={
         <>
@@ -60,8 +38,17 @@ export function RejectConfirmDialog({
         </>
       }
       confirmLabel="Reject"
-      isPending={mutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={rejectTradeRouteSideMutationOptions({
+        queryClient,
+        worldId,
+      })}
+      input={{
+        rejectorCitizenId,
+        side,
+        tradeRouteId: route.id,
+      }}
+      successMessage="Trade route rejected."
+      errorFallback="Failed to reject trade route."
     />
   );
 }

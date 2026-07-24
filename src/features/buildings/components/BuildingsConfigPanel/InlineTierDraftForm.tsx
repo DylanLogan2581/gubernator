@@ -1,4 +1,4 @@
-import { useEffect, type JSX } from "react";
+import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { type EducationLevel } from "@/features/education";
@@ -30,12 +30,7 @@ export default function InlineTierDraftForm({
   readonly onAdd: (draft: PendingTierDraft) => void;
   readonly onCancel: () => void;
 }): JSX.Element {
-  const form = useTierDraftForm();
-
-  useEffect(() => {
-    form.setTierNumber(String(defaultTierNumber));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const form = useTierDraftForm({ tierNumber: String(defaultTierNumber) });
 
   function handleAdd(): void {
     const data = form.validate(

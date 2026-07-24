@@ -1,5 +1,5 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
-import { useEffect, type FormEvent, type JSX } from "react";
+import { type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,16 +44,15 @@ export function EditTierDialog({
   const updateMutation = useMutation(
     updateTierMutationOptions({ queryClient }),
   );
-  const form = useTierDraftForm();
-
-  useEffect(() => {
-    form.setTierNumber(String(tier.tierNumber));
-    form.setWorkerTurns(String(tier.workerTurnsRequired));
-    form.setConstructionCosts(tierCostsToState(tier.constructionCostsJson));
-    form.setUpkeepCosts(tierCostsToState(tier.upkeepCostsJson));
-    form.setEffects(tierEffectsToState(tier.effectsJson));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tier.id]);
+  // Initial values only — the render site keys this dialog by `tier.id`, so
+  // switching tiers remounts and re-seeds the form.
+  const form = useTierDraftForm({
+    constructionCosts: tierCostsToState(tier.constructionCostsJson),
+    effects: tierEffectsToState(tier.effectsJson),
+    tierNumber: String(tier.tierNumber),
+    upkeepCosts: tierCostsToState(tier.upkeepCostsJson),
+    workerTurns: String(tier.workerTurnsRequired),
+  });
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,

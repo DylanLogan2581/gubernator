@@ -5,7 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Citizen } from "@/features/citizens";
-import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
+import type {
+  ActivePlayerCharacterContextValue,
+  NationManageInput,
+} from "@/features/permissions";
 
 import { NationOfficesSection } from "./OfficesSection";
 
@@ -77,9 +80,27 @@ const { useActivePlayerCharacterMock } = vi.hoisted(() => ({
 
 vi.mock("@/features/permissions", async () => {
   const actual = await vi.importActual("@/features/permissions");
+  const checkCanManageNation = actual.checkCanManageNation as (
+    input: NationManageInput,
+  ) => boolean;
   return {
     ...actual,
     useActivePlayerCharacter: useActivePlayerCharacterMock,
+    // Route the real hook's logic through the mocked active character so
+    // tests can drive nation-manager access without a context provider.
+    useNationManageAuthority: ({
+      canAdmin,
+      nationId,
+    }: {
+      readonly canAdmin: boolean;
+      readonly nationId: string;
+    }) => ({
+      canManageNation: checkCanManageNation({
+        activeCharacter: useActivePlayerCharacterMock().activeCharacter,
+        canAdmin,
+        nationId,
+      }),
+    }),
   };
 });
 

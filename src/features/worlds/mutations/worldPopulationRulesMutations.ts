@@ -10,6 +10,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { worldQueryKeys } from "../queries/worldQueryKeys";
 import {
@@ -115,13 +116,15 @@ async function saveWorldPopulationRules(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SaveWorldPopulationRulesError({
-      code: "world_population_rules_archived",
-      message: "Archived worlds are read-only.",
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SaveWorldPopulationRulesError({
+        code: "world_population_rules_archived",
+        message: "Archived worlds are read-only.",
+        worldId: input.worldId,
+      }),
+  );
 
   const rules = parseResult.data;
 

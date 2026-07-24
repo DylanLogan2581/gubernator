@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -21,12 +20,9 @@ import {
 import type { Nation } from "@/features/nations";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import {
-  getRoleMutationErrorDescription,
-  invalidatePermissionsContext,
-} from "./Utils";
+import { invalidatePermissionsContext } from "./Utils";
 
 import { type RoleAssignmentControlsProps } from "./index";
 
@@ -246,7 +242,7 @@ function NationRoleAssignmentRow({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);
@@ -280,7 +276,7 @@ function NationRoleAssignmentRow({
       { citizenId: citizen.id, worldId: citizen.worldId },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);

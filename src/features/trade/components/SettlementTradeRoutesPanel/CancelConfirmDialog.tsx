@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { cancelTradeRouteMutationOptions } from "../../mutations/cancelTradeRouteMutations";
 
@@ -25,33 +24,9 @@ export function CancelConfirmDialog({
   traderCount,
   worldId,
 }: CancelConfirmDialogProps): JSX.Element {
-  const mutation = useMutation(
-    cancelTradeRouteMutationOptions({ queryClient, worldId }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    const countBefore = traderCount;
-    try {
-      await mutation.mutateAsync({ tradeRouteId: route.id });
-      if (countBefore > 0) {
-        notifyMutationSuccess(
-          `Trade route cancelled. ${countBefore.toString()} ${countBefore === 1 ? "trader was" : "traders were"} unassigned.`,
-        );
-      } else {
-        notifyMutationSuccess("Trade route cancelled.");
-      }
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to cancel trade route.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title="Cancel trade route?"
       description={
         <>
@@ -70,8 +45,17 @@ export function CancelConfirmDialog({
         </>
       }
       confirmLabel="Cancel route"
-      isPending={mutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={cancelTradeRouteMutationOptions({
+        queryClient,
+        worldId,
+      })}
+      input={{ tradeRouteId: route.id }}
+      successMessage={
+        traderCount > 0
+          ? `Trade route cancelled. ${traderCount.toString()} ${traderCount === 1 ? "trader was" : "traders were"} unassigned.`
+          : "Trade route cancelled."
+      }
+      errorFallback="Failed to cancel trade route."
     />
   );
 }

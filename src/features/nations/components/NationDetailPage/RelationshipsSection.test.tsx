@@ -84,6 +84,10 @@ vi.mock("@/features/citizens", () => ({
 
 vi.mock("@/features/permissions", () => ({
   useActivePlayerCharacter: () => ({ activeCharacter: null }),
+  // With no active character, nation-manage authority reduces to canAdmin.
+  useNationManageAuthority: ({ canAdmin }: { readonly canAdmin: boolean }) => ({
+    canManageNation: canAdmin,
+  }),
 }));
 
 const nation: Nation = {

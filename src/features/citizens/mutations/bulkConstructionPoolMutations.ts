@@ -89,10 +89,7 @@ export function setBulkConstructionPoolMutationOptions({
           queryKey: citizensQueryKeys.settlementJobCounts(values.settlementId),
         }),
         queryClient.invalidateQueries({
-          queryKey: [
-            ...citizensQueryKeys.all,
-            "current-assignment-for-citizen",
-          ],
+          queryKey: citizensQueryKeys.currentAssignmentAll(),
         }),
         queryClient.invalidateQueries({
           queryKey: settlementForecastQueryKeys.byWorld(worldId),

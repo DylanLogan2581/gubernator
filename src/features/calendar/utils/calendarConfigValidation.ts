@@ -1,4 +1,3 @@
-import { isSaveWorldCalendarConfigError } from "../mutations/calendarMutations";
 import {
   worldCalendarConfigSchema,
   type WorldCalendarConfig,
@@ -99,16 +98,4 @@ export function hasCalendarValidationErrors(
     errors.dateFormatTemplate !== undefined ||
     errors.shortDateFormatTemplate !== undefined
   );
-}
-
-export function getCalendarErrorDescription(error: unknown): string {
-  if (isSaveWorldCalendarConfigError(error)) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }
