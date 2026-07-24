@@ -30,7 +30,7 @@ import {
 } from "../../utils/aggregateJobProcessedRows";
 import { formatResourceDeltas } from "../../utils/formatResourceDeltas";
 import { isTurnLogRowExpandable } from "../../utils/isTurnLogRowExpandable";
-import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+import { logCategoryLabel } from "../../utils/logCategoryLabels";
 
 import { EntityRef } from "./EntityRef";
 import { TurnLogPayloadRenderer } from "./TurnLogPayloadRenderer";
@@ -249,7 +249,7 @@ function buildColumns(
               : "standard_job.processed";
         return (
           <Badge variant="outline" className="font-mono text-xs">
-            {LOG_CATEGORY_LABELS[logCategory] ?? logCategory}
+            {logCategoryLabel(logCategory)}
           </Badge>
         );
       },
@@ -278,8 +278,7 @@ function buildColumns(
           );
         }
         if (original.kind === "category-summary") {
-          const label =
-            LOG_CATEGORY_LABELS[original.logCategory] ?? original.logCategory;
+          const label = logCategoryLabel(original.logCategory);
           return (
             <span className="text-sm">
               <strong>{label}</strong> ×{original.count}

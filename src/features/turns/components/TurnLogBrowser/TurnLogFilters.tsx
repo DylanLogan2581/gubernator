@@ -22,59 +22,17 @@ import { citizenByIdQueryOptions } from "@/features/citizens";
 import { nationsListQueryOptions } from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import { LOG_CODES } from "@/shared/simulation";
 
-import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+import {
+  LOG_CATEGORY_LABELS,
+  logCategoryLabel,
+} from "../../utils/logCategoryLabels";
 
 import { TurnLogCitizenCombobox } from "./TurnLogCitizenCombobox";
 
 import type { TurnLogBrowserFilter } from "../../queries/turnLogBrowserQueries";
 import type { JSX } from "react";
-
-// All known log categories in the codebase — for the dropdown.
-// Unknown categories still appear via the raw-JSON fallback renderer;
-// this list only affects the filter dropdown options.
-const LOG_CATEGORIES = [
-  "basic_turn_advancement",
-  "building.auto_deconstructed",
-  "building.recovered",
-  "building.suspended",
-  "citizen.born",
-  "citizen.consumed_food_water",
-  "citizen.died_homeless",
-  "citizen.starved",
-  "construction.completed",
-  "construction.paused",
-  "construction.progress",
-  "deposit.depleted",
-  "deposit.processed",
-  "event.building_destroyed",
-  "event.consumption_multiplier",
-  "event.deposit_discovered",
-  "event.deposit_destroyed",
-  "event.managed_population_change",
-  "event.population_boost",
-  "event.population_loss",
-  "event.production_multiplier",
-  "event.resource_drain",
-  "event.resource_grant",
-  "event.upkeep_multiplier",
-  "homeless",
-  "managed_population.declining",
-  "managed_population.extinct",
-  "manual_deconstruct_overshoot",
-  "partnership.formed",
-  "partnership.widowed",
-  "passive_effect.applied",
-  "settlement.homelessness_occurred",
-  "settlement.starvation_occurred",
-  "standard_job.processed",
-  "starvation",
-  "stockpile.clamped",
-  "stockpile.changed",
-  "tampered",
-  "trade_route.paused",
-  "trade_route.resumed",
-] as const;
 
 type TurnLogFiltersProps = {
   readonly fixedFilter: TurnLogBrowserFilter;
@@ -164,7 +122,7 @@ export function TurnLogFilters({
   if (filter.logCategory !== undefined) {
     chips.push({
       key: "logCategory",
-      label: LOG_CATEGORY_LABELS[filter.logCategory] ?? filter.logCategory,
+      label: logCategoryLabel(filter.logCategory),
     });
   }
   if (filter.turnFrom !== undefined) {
@@ -228,9 +186,9 @@ export function TurnLogFilters({
                 className="h-8 text-sm"
               >
                 <option value="">All categories</option>
-                {LOG_CATEGORIES.map((cat) => (
+                {LOG_CODES.map((cat) => (
                   <option key={cat} value={cat}>
-                    {LOG_CATEGORY_LABELS[cat] ?? cat}
+                    {LOG_CATEGORY_LABELS[cat]}
                   </option>
                 ))}
               </NativeSelect>

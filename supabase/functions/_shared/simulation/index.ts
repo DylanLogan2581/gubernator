@@ -87,6 +87,9 @@ export type {
   SimulationPhase,
 } from "./simulationConstants.ts";
 
+export { LOG_CODES } from "./logCodes.ts";
+export type { LogCode } from "./logCodes.ts";
+
 export {
   addDecimal,
   clampDecimal,

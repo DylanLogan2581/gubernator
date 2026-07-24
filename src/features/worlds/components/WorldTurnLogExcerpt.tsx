@@ -7,10 +7,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  LOG_CATEGORY_LABELS,
-  turnLogBrowserQueryOptions,
-} from "@/features/turns";
+import { logCategoryLabel, turnLogBrowserQueryOptions } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import type { JSX } from "react";
@@ -63,8 +60,7 @@ export function WorldTurnLogExcerpt({
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-medium">
-                    {LOG_CATEGORY_LABELS[entry.logCategory] ??
-                      entry.logCategory}
+                    {logCategoryLabel(entry.logCategory)}
                   </p>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     T{entry.fromTurnNumber}→T{entry.toTurnNumber}
