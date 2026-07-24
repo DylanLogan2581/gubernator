@@ -2,7 +2,6 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
-import { ColorPicker } from "@/components/shared/ColorPicker";
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { resourceCategoryInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
@@ -27,12 +23,12 @@ import {
   type UpdateResourceCategoryInput,
 } from "../../schemas/resourceCategorySchemas";
 
-import type { ResourceCategory } from "../../types/resourceCategoryTypes";
+import {
+  ResourceCategoryFormFields,
+  type ResourceCategoryFieldErrors,
+} from "./ResourceCategoryFormFields";
 
-type ResourceCategoryFieldErrors = {
-  readonly color?: string;
-  readonly name?: string;
-};
+import type { ResourceCategory } from "../../types/resourceCategoryTypes";
 
 type EditResourceCategoryFormProps = {
   readonly category: ResourceCategory;
@@ -118,39 +114,15 @@ export function EditResourceCategoryForm({
           <DialogHeader>
             <DialogTitle>Edit resource category</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-resource-category-name"
-            >
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
-                disabled={isPending}
-                id="edit-resource-category-name"
-                maxLength={resourceCategoryInputLimits.nameMax}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Color</span>
-              <ColorPicker
-                disabled={isPending}
-                value={color}
-                onChange={setColor}
-              />
-              {fieldErrors.color !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.color}</p>
-              ) : null}
-            </Label>
-          </div>
+          <ResourceCategoryFormFields
+            color={color}
+            disabled={isPending}
+            fieldErrors={fieldErrors}
+            idPrefix="edit-resource-category"
+            name={name}
+            onColorChange={setColor}
+            onNameChange={setName}
+          />
           <p className="text-xs text-muted-foreground">
             Deleting this category leaves any resources using it uncategorized.
           </p>

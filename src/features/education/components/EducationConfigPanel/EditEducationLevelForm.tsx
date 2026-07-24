@@ -3,8 +3,6 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
-import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
-import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,11 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { CategoricalSlot } from "@/lib/categoricalPalette";
-import { educationLevelInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { roundDecimal } from "@/lib/roundDecimal";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -31,13 +25,12 @@ import {
   type UpdateEducationLevelInput,
 } from "../../schemas/educationLevelSchemas";
 
-import type { EducationLevel } from "../../types/educationLevelTypes";
+import {
+  EducationLevelFormFields,
+  type EducationLevelFieldErrors,
+} from "./EducationLevelFormFields";
 
-type EducationLevelFieldErrors = {
-  readonly description?: string;
-  readonly name?: string;
-  readonly naturalBornPercent?: string;
-};
+import type { EducationLevel } from "../../types/educationLevelTypes";
 
 type EditEducationLevelFormProps = {
   readonly educationLevel: EducationLevel;
@@ -147,103 +140,22 @@ export function EditEducationLevelForm({
           <DialogHeader>
             <DialogTitle>Edit education level</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-education-level-name"
-            >
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
-                disabled={isPending}
-                id="edit-education-level-name"
-                maxLength={educationLevelInputLimits.nameMax}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-education-level-description"
-            >
-              <span className="text-muted-foreground">Description</span>
-              <Textarea
-                aria-invalid={fieldErrors.description !== undefined}
-                disabled={isPending}
-                id="edit-education-level-description"
-                maxLength={educationLevelInputLimits.descriptionMax}
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.description !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.description}
-                </p>
-              ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon</span>
-              <IconPicker
-                disabled={isPending}
-                value={icon}
-                onChange={setIcon}
-              />
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon color</span>
-              <PaletteSlotPicker
-                disabled={isPending}
-                value={iconColor}
-                onChange={setIconColor}
-              />
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-education-level-natural-born-percent"
-            >
-              <span className="text-muted-foreground">Natural born %</span>
-              <p className="text-xs text-muted-foreground">
-                Share of newborns that start at this education level; all levels
-                together may total at most 100%.
-              </p>
-              <Input
-                aria-invalid={fieldErrors.naturalBornPercent !== undefined}
-                aria-label="Natural born %"
-                disabled={isPending}
-                id="edit-education-level-natural-born-percent"
-                max={100}
-                min={0}
-                type="number"
-                value={naturalBornPercent}
-                onChange={(e) => {
-                  setNaturalBornPercent(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.naturalBornPercent !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.naturalBornPercent}
-                </p>
-              ) : null}
-              <p
-                className={
-                  projectedTotal > 100
-                    ? "text-xs text-destructive"
-                    : "text-xs text-muted-foreground"
-                }
-              >
-                World total would be {projectedTotal} / 100
-                {projectedTotal > 100 ? " — over the limit" : ""}
-              </p>
-            </Label>
-          </div>
+          <EducationLevelFormFields
+            description={description}
+            disabled={isPending}
+            fieldErrors={fieldErrors}
+            icon={icon}
+            iconColor={iconColor}
+            idPrefix="edit-education-level"
+            name={name}
+            naturalBornPercent={naturalBornPercent}
+            onDescriptionChange={setDescription}
+            onIconChange={setIcon}
+            onIconColorChange={setIconColor}
+            onNameChange={setName}
+            onNaturalBornPercentChange={setNaturalBornPercent}
+            projectedTotal={projectedTotal}
+          />
           <p className="text-xs text-muted-foreground">
             Deleting a level that is still assigned to citizens, jobs, or
             building tiers will fail until nothing references it.

@@ -1,6 +1,5 @@
 import { useState, type FormEvent, type JSX } from "react";
 
-import { ColorPicker } from "@/components/shared/ColorPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,9 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { resourceCategoryInputLimits } from "@/lib/inputLimits";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
@@ -20,12 +16,12 @@ import {
   type CreateResourceCategoryInput,
 } from "../../schemas/resourceCategorySchemas";
 
-const DEFAULT_COLOR = "#6b7280";
+import {
+  ResourceCategoryFormFields,
+  type ResourceCategoryFieldErrors,
+} from "./ResourceCategoryFormFields";
 
-type CreateResourceCategoryFieldErrors = {
-  readonly color?: string;
-  readonly name?: string;
-};
+const DEFAULT_COLOR = "#6b7280";
 
 type CreateResourceCategoryFormProps = {
   readonly isPending: boolean;
@@ -43,7 +39,7 @@ export function CreateResourceCategoryForm({
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLOR);
   const { fieldErrors, setFromZod, clear } =
-    useFieldErrors<keyof CreateResourceCategoryFieldErrors>();
+    useFieldErrors<keyof ResourceCategoryFieldErrors>();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -79,42 +75,20 @@ export function CreateResourceCategoryForm({
               Group resources in this world under a shared category.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3">
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="create-resource-category-name"
-            >
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
-                disabled={isPending}
-                id="create-resource-category-name"
-                maxLength={resourceCategoryInputLimits.nameMax}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                  if (fieldErrors.name !== undefined) {
-                    clear();
-                  }
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Color</span>
-              <ColorPicker
-                disabled={isPending}
-                value={color}
-                onChange={setColor}
-              />
-              {fieldErrors.color !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.color}</p>
-              ) : null}
-            </Label>
-          </div>
+          <ResourceCategoryFormFields
+            color={color}
+            disabled={isPending}
+            fieldErrors={fieldErrors}
+            idPrefix="create-resource-category"
+            name={name}
+            onColorChange={setColor}
+            onNameChange={(value) => {
+              setName(value);
+              if (fieldErrors.name !== undefined) {
+                clear();
+              }
+            }}
+          />
           <DialogFooter>
             <Button
               disabled={isPending}

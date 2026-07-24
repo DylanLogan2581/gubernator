@@ -3,9 +3,6 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
-import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
-import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
-import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,9 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { resourceCategoriesByWorldQueryOptions } from "@/features/resourceCategories";
 import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { resourceInputLimits } from "@/lib/inputLimits";
@@ -32,20 +26,14 @@ import {
   updateResourceInputSchema,
   type UpdateResourceInput,
 } from "../../schemas/resourceSchemas";
-import {
-  buildChangePreviewText,
-  isPercentChangeBelowMinimum,
-} from "../../utils/changePreviewText";
 import { buildCleanupDescription } from "../../utils/cleanupDescription";
 
-import type { Resource, ResourceChangeMode } from "../../types/resourceTypes";
+import {
+  ResourceFormFields,
+  type ResourceFieldErrors,
+} from "./ResourceFormFields";
 
-type ResourceFieldErrors = {
-  readonly baseStockpileCap?: string;
-  readonly changeAmount?: string;
-  readonly name?: string;
-  readonly slug?: string;
-};
+import type { Resource, ResourceChangeMode } from "../../types/resourceTypes";
 
 type EditResourceFormProps = {
   readonly onClose: () => void;
@@ -93,13 +81,6 @@ export function EditResourceForm({
   );
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
-
-  const parsedChangeAmount = changeAmount !== "" ? parseFloat(changeAmount) : 0;
-  const changePreview = buildChangePreviewText(changeMode, parsedChangeAmount);
-  const isChangeAmountBelowMinimum = isPercentChangeBelowMinimum(
-    changeMode,
-    parsedChangeAmount,
-  );
 
   function handleNameChange(value: string): void {
     setName(value);
@@ -176,119 +157,27 @@ export function EditResourceForm({
           <DialogHeader>
             <DialogTitle>Edit resource</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-name">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
-                disabled={isPending}
-                id="edit-resource-name"
-                maxLength={resourceInputLimits.resourceNameMax}
-                value={name}
-                onChange={(e) => {
-                  handleNameChange(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-              <SlugHint slug={slug} error={fieldErrors.slug} />
-            </Label>
-            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-cap">
-              <span className="text-muted-foreground">Base stockpile cap</span>
-              <Input
-                aria-invalid={fieldErrors.baseStockpileCap !== undefined}
-                disabled={isPending}
-                id="edit-resource-cap"
-                inputMode="decimal"
-                placeholder="0"
-                value={baseStockpileCap}
-                onChange={(e) => {
-                  setBaseStockpileCap(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.baseStockpileCap !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.baseStockpileCap}
-                </p>
-              ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Change per turn</span>
-              <div className="flex gap-2">
-                <NativeSelect
-                  aria-label="Change mode"
-                  disabled={isPending}
-                  value={changeMode}
-                  onChange={(e) => {
-                    setChangeMode(e.currentTarget.value as ResourceChangeMode);
-                  }}
-                >
-                  <option value="percent">Percent</option>
-                  <option value="flat">Flat amount</option>
-                </NativeSelect>
-                <Input
-                  aria-invalid={fieldErrors.changeAmount !== undefined}
-                  aria-label="Change amount"
-                  disabled={isPending}
-                  id="edit-resource-change-amount"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={changeAmount}
-                  onChange={(e) => {
-                    setChangeAmount(e.currentTarget.value);
-                  }}
-                />
-              </div>
-              {fieldErrors.changeAmount !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.changeAmount}
-                </p>
-              ) : isChangeAmountBelowMinimum ? (
-                <p className="text-xs text-destructive">
-                  Percent decay cannot exceed 100% per turn.
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">{changePreview}</p>
-              )}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon</span>
-              <IconPicker
-                disabled={isPending}
-                value={icon}
-                onChange={setIcon}
-              />
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon color</span>
-              <PaletteSlotPicker
-                disabled={isPending}
-                value={iconColor}
-                onChange={setIconColor}
-              />
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Category</span>
-              <NativeSelect
-                aria-label="Category"
-                disabled={isPending}
-                value={categoryId ?? ""}
-                onChange={(e) => {
-                  const next = e.currentTarget.value;
-                  setCategoryId(next === "" ? null : next);
-                }}
-              >
-                <option value="">Uncategorized</option>
-                {categoriesQuery.data?.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Label>
-          </div>
+          <ResourceFormFields
+            baseStockpileCap={baseStockpileCap}
+            categories={categoriesQuery.data}
+            categoryId={categoryId}
+            changeAmount={changeAmount}
+            changeMode={changeMode}
+            disabled={isPending}
+            fieldErrors={fieldErrors}
+            icon={icon}
+            iconColor={iconColor}
+            idPrefix="edit-resource"
+            name={name}
+            slug={slug}
+            onBaseStockpileCapChange={setBaseStockpileCap}
+            onCategoryIdChange={setCategoryId}
+            onChangeAmountChange={setChangeAmount}
+            onChangeModeChange={setChangeMode}
+            onIconChange={setIcon}
+            onIconColorChange={setIconColor}
+            onNameChange={handleNameChange}
+          />
           <DialogFooter className="sm:justify-between">
             <Button
               type="button"

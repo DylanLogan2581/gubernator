@@ -11,21 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   blueprintsByWorldQueryOptions,
   buildCostInputs,
-  CostEditor,
   tierCostsToState,
   tiersByBlueprintQueryOptions,
   type CostRowState,
 } from "@/features/buildings";
 import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
-import { unitTypeInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
@@ -38,19 +32,12 @@ import {
   type UpdateUnitTypeInput,
 } from "../../schemas/unitTypeSchemas";
 
-import type { UnitType } from "../../types/unitTypeTypes";
+import {
+  UnitTypeFormFields,
+  type UnitTypeFieldErrors,
+} from "./UnitTypeFormFields";
 
-type UnitTypeFieldErrors = {
-  readonly description?: string;
-  readonly desertionRate?: string;
-  readonly name?: string;
-  readonly recruitmentCostsJson?: string;
-  readonly requiredBuildingBlueprintId?: string;
-  readonly requiredBuildingTierNumber?: string;
-  readonly requiredEducationLevelId?: string;
-  readonly soldiersPerUnit?: string;
-  readonly upkeepCostsJson?: string;
-};
+import type { UnitType } from "../../types/unitTypeTypes";
 
 export function EditUnitTypeForm({
   onClose,
@@ -183,199 +170,37 @@ export function EditUnitTypeForm({
           <DialogHeader>
             <DialogTitle>Edit unit type</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <Label className="grid gap-1 text-sm" htmlFor="edit-unit-type-name">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                disabled={isPending}
-                id="edit-unit-type-name"
-                maxLength={unitTypeInputLimits.nameMax}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-unit-type-description"
-            >
-              <span className="text-muted-foreground">Description</span>
-              <Textarea
-                aria-invalid={fieldErrors.description !== undefined}
-                disabled={isPending}
-                id="edit-unit-type-description"
-                maxLength={unitTypeInputLimits.descriptionMax}
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.description !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.description}
-                </p>
-              ) : null}
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-unit-type-soldiers-per-unit"
-            >
-              <span className="text-muted-foreground">Soldiers per unit</span>
-              <Input
-                aria-invalid={fieldErrors.soldiersPerUnit !== undefined}
-                disabled={isPending}
-                id="edit-unit-type-soldiers-per-unit"
-                inputMode="numeric"
-                value={soldiersPerUnit}
-                onChange={(e) => {
-                  setSoldiersPerUnit(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.soldiersPerUnit !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.soldiersPerUnit}
-                </p>
-              ) : null}
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-unit-type-desertion-rate"
-            >
-              <span className="text-muted-foreground">
-                Desertion rate (0–1 per unpaid turn)
-              </span>
-              <Input
-                aria-invalid={fieldErrors.desertionRate !== undefined}
-                disabled={isPending}
-                id="edit-unit-type-desertion-rate"
-                inputMode="decimal"
-                value={desertionRate}
-                onChange={(e) => {
-                  setDesertionRate(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.desertionRate !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.desertionRate}
-                </p>
-              ) : null}
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-unit-type-required-education-level"
-            >
-              <span className="text-muted-foreground">
-                Required education level
-              </span>
-              <NativeSelect
-                aria-invalid={
-                  fieldErrors.requiredEducationLevelId !== undefined
-                }
-                disabled={isPending}
-                id="edit-unit-type-required-education-level"
-                value={requiredEducationLevelId}
-                onChange={(e) => {
-                  setRequiredEducationLevelId(e.currentTarget.value);
-                }}
-              >
-                <option value="">None</option>
-                {(educationLevelsQuery.data ?? []).map((level) => (
-                  <option key={level.id} value={level.id}>
-                    {level.name}
-                  </option>
-                ))}
-              </NativeSelect>
-              {fieldErrors.requiredEducationLevelId !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.requiredEducationLevelId}
-                </p>
-              ) : null}
-            </Label>
-            <Label
-              className="grid gap-1 text-sm"
-              htmlFor="edit-unit-type-required-blueprint"
-            >
-              <span className="text-muted-foreground">Required building</span>
-              <NativeSelect
-                aria-invalid={
-                  fieldErrors.requiredBuildingBlueprintId !== undefined
-                }
-                disabled={isPending}
-                id="edit-unit-type-required-blueprint"
-                value={requiredBuildingBlueprintId}
-                onChange={(e) => {
-                  setRequiredBuildingBlueprintId(e.currentTarget.value);
-                  setRequiredBuildingTierNumber("");
-                }}
-              >
-                <option value="">None — recruit anywhere</option>
-                {activeBlueprints.map((blueprint) => (
-                  <option key={blueprint.id} value={blueprint.id}>
-                    {blueprint.name}
-                  </option>
-                ))}
-              </NativeSelect>
-              {fieldErrors.requiredBuildingBlueprintId !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.requiredBuildingBlueprintId}
-                </p>
-              ) : null}
-            </Label>
-            {requiredBuildingBlueprintId !== "" ? (
-              <Label
-                className="grid gap-1 text-sm"
-                htmlFor="edit-unit-type-required-tier"
-              >
-                <span className="text-muted-foreground">
-                  Minimum building tier
-                </span>
-                <NativeSelect
-                  aria-invalid={
-                    fieldErrors.requiredBuildingTierNumber !== undefined
-                  }
-                  disabled={isPending || tiersQuery.isPending}
-                  id="edit-unit-type-required-tier"
-                  value={requiredBuildingTierNumber}
-                  onChange={(e) => {
-                    setRequiredBuildingTierNumber(e.currentTarget.value);
-                  }}
-                >
-                  <option value="">Select tier</option>
-                  {(tiersQuery.data ?? []).map((tier) => (
-                    <option key={tier.id} value={tier.tierNumber}>
-                      Tier {tier.tierNumber}
-                    </option>
-                  ))}
-                </NativeSelect>
-                {fieldErrors.requiredBuildingTierNumber !== undefined ? (
-                  <p className="text-xs text-destructive">
-                    {fieldErrors.requiredBuildingTierNumber}
-                  </p>
-                ) : null}
-              </Label>
-            ) : null}
-            <CostEditor
-              activeResources={resourcesQuery.data ?? []}
-              disabled={isPending}
-              error={fieldErrors.recruitmentCostsJson}
-              label="Recruitment cost (per soldier)"
-              rows={recruitmentRows}
-              onChange={setRecruitmentRows}
-            />
-            <CostEditor
-              activeResources={resourcesQuery.data ?? []}
-              disabled={isPending}
-              error={fieldErrors.upkeepCostsJson}
-              label="Upkeep cost (per soldier, per turn)"
-              rows={upkeepRows}
-              onChange={setUpkeepRows}
-            />
-          </div>
+          <UnitTypeFormFields
+            activeBlueprints={activeBlueprints}
+            activeResources={resourcesQuery.data ?? []}
+            description={description}
+            desertionRate={desertionRate}
+            disabled={isPending}
+            educationLevels={educationLevelsQuery.data ?? []}
+            fieldErrors={fieldErrors}
+            idPrefix="edit-unit-type"
+            name={name}
+            recruitmentRows={recruitmentRows}
+            requiredBuildingBlueprintId={requiredBuildingBlueprintId}
+            requiredBuildingTierNumber={requiredBuildingTierNumber}
+            requiredEducationLevelId={requiredEducationLevelId}
+            soldiersPerUnit={soldiersPerUnit}
+            tiers={tiersQuery.data ?? []}
+            tiersPending={tiersQuery.isPending}
+            upkeepRows={upkeepRows}
+            onBlueprintChange={(value) => {
+              setRequiredBuildingBlueprintId(value);
+              setRequiredBuildingTierNumber("");
+            }}
+            onDescriptionChange={setDescription}
+            onDesertionRateChange={setDesertionRate}
+            onEducationLevelChange={setRequiredEducationLevelId}
+            onNameChange={setName}
+            onRecruitmentRowsChange={setRecruitmentRows}
+            onSoldiersPerUnitChange={setSoldiersPerUnit}
+            onTierChange={setRequiredBuildingTierNumber}
+            onUpkeepRowsChange={setUpkeepRows}
+          />
           <p className="text-xs text-muted-foreground">
             Deleting a unit type that is still in use will fail until nothing
             references it.

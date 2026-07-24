@@ -1,12 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
 import { type FormEvent, type JSX, useState } from "react";
 
-import { EmptyState } from "@/components/shared/EmptyState";
-import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
-import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
-import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,8 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import type { CategoricalSlot } from "@/lib/categoricalPalette";
@@ -30,14 +22,11 @@ import {
   type CreateDepositTypeInput,
 } from "../../schemas/depositSchemas";
 
-import { DepositTypeJobRow } from "./DepositTypeJobRow";
+import {
+  DepositTypeFormFields,
+  type DepositTypeFieldErrors,
+} from "./DepositTypeFormFields";
 import { useDepositTypeJobRows } from "./hooks/UseDepositTypeJobRows";
-
-type DepositTypeFieldErrors = {
-  readonly jobs?: string;
-  readonly name?: string;
-  readonly slug?: string;
-};
 
 export function CreateDepositTypeForm({
   depositJobs,
@@ -121,109 +110,26 @@ export function CreateDepositTypeForm({
               outputs linked to it.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid max-h-[70vh] gap-3 overflow-y-auto pr-1">
-            <Label htmlFor="deposit-create-name" className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                id="deposit-create-name"
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
-                disabled={isPending}
-                maxLength={depositInputLimits.depositTypeNameMax}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-              <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon</span>
-              <IconPicker
-                disabled={isPending}
-                value={icon}
-                onChange={setIcon}
-              />
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon color</span>
-              <PaletteSlotPicker
-                disabled={isPending}
-                value={iconColor}
-                onChange={setIconColor}
-              />
-            </Label>
-            {depositJobs.length === 0 ? (
-              <div className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Linked jobs</span>
-                <EmptyState
-                  title="No deposit jobs yet"
-                  description="Create one to assign to this deposit type."
-                  action={
-                    <Button asChild size="sm" variant="outline">
-                      <Link
-                        to="/worlds/$worldId/configuration"
-                        params={{ worldId }}
-                        search={{ tab: "jobs" }}
-                      >
-                        Create deposit job
-                      </Link>
-                    </Button>
-                  }
-                />
-              </div>
-            ) : (
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Linked jobs
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={addRow}
-                  >
-                    <Plus aria-hidden="true" />
-                    Add job
-                  </Button>
-                </div>
-                {fieldErrors.jobs !== undefined ? (
-                  <p className="text-xs text-destructive">{fieldErrors.jobs}</p>
-                ) : null}
-                {rows.map((row, index) => (
-                  <DepositTypeJobRow
-                    key={row.localId}
-                    canRemove={rows.length > 1}
-                    disabled={isPending}
-                    depositJobs={depositJobs}
-                    index={index}
-                    isDuplicate={duplicateJobIds.has(row.jobId)}
-                    jobId={row.jobId}
-                    outputUnitsPerWorker={row.outputUnitsPerWorker}
-                    resources={resources}
-                    workerInputs={row.workerInputs}
-                    onJobIdChange={(jobId) => {
-                      updateRow(row.localId, { jobId });
-                    }}
-                    onOutputUnitsPerWorkerChange={(outputUnitsPerWorker) => {
-                      updateRow(row.localId, { outputUnitsPerWorker });
-                    }}
-                    onRemove={() => {
-                      removeRow(row.localId);
-                    }}
-                    onWorkerInputsChange={(workerInputs) => {
-                      updateRow(row.localId, { workerInputs });
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <DepositTypeFormFields
+            addRow={addRow}
+            depositJobs={depositJobs}
+            disabled={isPending}
+            duplicateJobIds={duplicateJobIds}
+            fieldErrors={fieldErrors}
+            icon={icon}
+            iconColor={iconColor}
+            idPrefix="deposit-create"
+            name={name}
+            onIconChange={setIcon}
+            onIconColorChange={setIconColor}
+            onNameChange={setName}
+            removeRow={removeRow}
+            resources={resources}
+            rows={rows}
+            slug={derivedSlug}
+            updateRow={updateRow}
+            worldId={worldId}
+          />
           <DialogFooter>
             <Button
               disabled={isPending}
