@@ -8,7 +8,6 @@ export { AuthCallbackPage } from "./components/AuthCallbackPage";
 export { SetPasswordPage } from "./components/SetPasswordPage";
 export { SignInPage } from "./components/SignInPage";
 export { UserMenu } from "./components/UserMenu";
-export { authQueryKeys } from "./queries/authQueryKeys";
 export {
   currentAppUserQueryOptions,
   currentSessionQueryOptions,

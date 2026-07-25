@@ -8,7 +8,6 @@ export {
   updateResourceCategoryMutationOptions,
 } from "./mutations/resourceCategoriesMutations";
 export { resourceCategoriesByWorldQueryOptions } from "./queries/resourceCategoriesQueries";
-export { resourceCategoriesQueryKeys } from "./queries/resourceCategoriesQueryKeys";
 export {
   createResourceCategoryInputSchema,
   deleteResourceCategoryInputSchema,

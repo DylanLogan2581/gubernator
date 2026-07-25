@@ -15,11 +15,7 @@ export { NationCultureReligionSection } from "./components/NationDetailPage/Cult
 export { NationBankSection } from "./components/NationDetailPage/BankSection";
 export { NationCharterPage } from "./components/NationCharterPage";
 export { NationOfficesSection } from "./components/NationDetailPage/OfficesSection";
-export {
-  OfficesSection,
-  type OfficeRosterEntryLike,
-  type OfficesSectionProps,
-} from "./components/offices/OfficesSectionCore";
+export { OfficesSection } from "./components/offices/OfficesSectionCore";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
 export { NationReadinessSection } from "./components/NationDetailPage/ReadinessSection";
 export { NationRelationshipsSection } from "./components/NationDetailPage/RelationshipsSection";
@@ -118,7 +114,6 @@ export {
   nationCurrencySnapshotsQueryOptions,
   nationCurrencyTreasuryQueryOptions,
 } from "./queries/currencyQueries";
-export { nationOfficesQueryKeys } from "./queries/nationOfficesQueryKeys";
 export { nationReadinessListQueryOptions } from "./queries/nationReadinessQueries";
 export { nationReadinessQueryKeys } from "./queries/nationReadinessQueryKeys";
 export { nationReadinessVotersQueryOptions } from "./queries/nationReadinessVotersQueries";

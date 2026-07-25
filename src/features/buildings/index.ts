@@ -133,11 +133,9 @@ export type {
 export type { BuildingReferenceIssue } from "./utils/validateBuildingReferences";
 export type {
   AddSettlementBuildingResult,
-  EffectsDigest,
   ManualDeconstructBuildingResult,
   RestoreSettlementBuildingResult,
   HardDeleteSettlementBuildingResult,
   SettlementBuilding,
   SettlementBuildingState,
 } from "./types/settlementBuildingTypes";
-export { computeEffectsDigest } from "./types/settlementBuildingTypes";

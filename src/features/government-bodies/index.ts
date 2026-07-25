@@ -2,10 +2,7 @@
 // named bodies ("The Senate", "Moot of Elders") for a nation or settlement,
 // membership defined by composition rules and resolved via
 // resolveBodyMembers (src/shared/government).
-export {
-  GovernmentBodiesSection,
-  type GovernmentBodiesSectionProps,
-} from "./components/BodiesSection";
+export { GovernmentBodiesSection } from "./components/BodiesSection";
 export {
   createGovernmentBodyMutationOptions,
   deleteGovernmentBodyMutationOptions,
@@ -24,7 +21,6 @@ export {
   settlementBodyResolverContextQueryOptions,
   settlementGovernmentBodiesQueryOptions,
 } from "./queries/governmentBodiesQueries";
-export { governmentBodiesQueryKeys } from "./queries/governmentBodiesQueryKeys";
 export {
   bodyCompositionRuleSchema,
   bodyCompositionSchema,

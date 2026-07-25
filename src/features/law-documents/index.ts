@@ -2,19 +2,11 @@
 // settlement -- title + preamble + versioned articles, with a version-1
 // snapshot on creation and a per-article diff browser across versions.
 // Zero simulation effects; every write is RPC-only.
-export {
-  LawDocumentsSection,
-  type LawDocumentsSectionProps,
-} from "./components/LawDocumentsSection";
+export { LawDocumentsSection } from "./components/LawDocumentsSection";
 export {
   ArticleDiffRow,
   diffArticles,
   LawDocumentVersionBrowser,
-  TextDiff,
-} from "./components/LawDocumentVersionBrowser";
-export type {
-  ArticleDiff,
-  ArticleDiffStatus,
 } from "./components/LawDocumentVersionBrowser";
 export {
   createLawDocumentMutationOptions,

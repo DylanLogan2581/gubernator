@@ -20,7 +20,6 @@ export {
   activeNamesetsByWorldQueryOptions,
   namesetsByWorldQueryOptions,
 } from "./queries/namesetsQueries";
-export { namesetsQueryKeys } from "./queries/namesetsQueryKeys";
 export {
   resolveNameset,
   resolveNamingConfig,

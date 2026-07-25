@@ -11,10 +11,6 @@ export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensDirectoryPage } from "./components/CitizensDirectoryPage";
 export { CitizensPanel } from "./components/CitizensPanel";
 export { SettlementAssignmentBoard } from "./components/SettlementAssignmentBoard";
-export { NpcFlavorLine } from "./components/NpcFlavorLine";
-export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
-// Partnership exports moved to partnerships feature; re-exported for backward compatibility
-export { PartnershipHistoryPanel } from "@/features/partnerships";
 export {
   BulkConstructionPoolMutationError,
   isBulkConstructionPoolMutationError,
@@ -101,8 +97,6 @@ export {
   partnershipsForCitizenQueryOptions,
 } from "@/features/partnerships";
 export { setBulkConstructionPoolInputSchema } from "./schemas/setBulkConstructionPoolSchemas";
-export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
-export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
 export {
   assignCitizenRoleInputSchema,
   bulkSetCitizenCultureReligionInputSchema,
@@ -114,8 +108,6 @@ export {
   markCitizenDeadInputSchema,
   revokeCitizenRoleInputSchema,
   reviveCitizenInputSchema,
-  setCitizenCultureReligionInputSchema,
-  setCitizenEducationInputSchema,
   unlinkUserFromCitizenInputSchema,
   updateCitizenCoreInputSchema,
   updateCitizenNpcFieldsInputSchema,

@@ -3,10 +3,7 @@
 // simulation effects. Every write is RPC-only. Distinct from
 // law-amendments' decree-procedure amendments, which live in that feature
 // and never write here.
-export {
-  DecreesSection,
-  type DecreesSectionProps,
-} from "./components/DecreesSection";
+export { DecreesSection } from "./components/DecreesSection";
 export {
   DecreeMutationError,
   isDecreeMutationError,
@@ -18,7 +15,6 @@ export {
   nationDecreesQueryOptions,
   settlementDecreesQueryOptions,
 } from "./queries/decreesQueries";
-export { decreesQueryKeys } from "./queries/decreesQueryKeys";
 export {
   issueDecreeInputSchema,
   revokeDecreeInputSchema,

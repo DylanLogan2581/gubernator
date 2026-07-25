@@ -39,7 +39,6 @@ export {
   RecruitmentMutationError,
 } from "./mutations/recruitmentMutations";
 export { unitTypesByWorldQueryOptions } from "./queries/unitTypesQueries";
-export { unitTypesQueryKeys } from "./queries/unitTypesQueryKeys";
 export {
   armiesByNationQueryOptions,
   armiesBySettlementQueryOptions,
@@ -52,7 +51,6 @@ export {
   soldierCitizenIdsByWorldQueryOptions,
   unitSoldiersByUnitQueryOptions,
 } from "./queries/armiesQueries";
-export { armiesQueryKeys } from "./queries/armiesQueryKeys";
 export {
   createUnitTypeInputSchema,
   deleteUnitTypeInputSchema,

@@ -22,9 +22,7 @@ export {
   settlementEducationSummaryQueryOptions,
   settlementEnrolledCitizenIdsQueryOptions,
 } from "./queries/educationEnrollmentsQueries";
-export { educationEnrollmentsQueryKeys } from "./queries/educationEnrollmentsQueryKeys";
 export { educationLevelsByWorldQueryOptions } from "./queries/educationLevelsQueries";
-export { educationLevelsQueryKeys } from "./queries/educationLevelsQueryKeys";
 export {
   createEducationLevelInputSchema,
   deleteEducationLevelInputSchema,
