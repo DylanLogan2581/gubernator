@@ -13,9 +13,8 @@ import type { JSX } from "react";
 function SignInRoute(): JSX.Element {
   const router = useRouter();
   const { returnTo } = Route.useSearch();
-  const handleSignInSuccess = useCallback(() => {
-    router.history.push(returnTo);
-    return Promise.resolve();
+  const handleSignInSuccess = useCallback(async () => {
+    await router.navigate({ href: returnTo });
   }, [router, returnTo]);
 
   return <SignInPage onSignInSuccess={handleSignInSuccess} />;
