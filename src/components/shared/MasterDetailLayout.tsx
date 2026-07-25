@@ -62,7 +62,7 @@ export function MasterDetailLayout({
         {list}
       </div>
       {detail !== null ? (
-        <Card className="self-start lg:col-span-1">
+        <Card variant="boxed" className="self-start lg:col-span-1">
           <CardHeader>
             <CardTitle>{detailTitle}</CardTitle>
           </CardHeader>
