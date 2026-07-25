@@ -776,8 +776,8 @@ describe("SettlementConstructionPanel", () => {
     const tierSelect = await within(dialog).findByLabelText("Tier");
     await user.selectOptions(tierSelect, TIER_ID);
 
-    await screen.findByText("Construction cost");
-    expect(screen.getByText(/Lumber/)).toBeDefined();
+    await screen.findByText("Construction cost breakdown");
+    expect(screen.getAllByText(/Lumber/).length).toBeGreaterThan(0);
     expect(screen.queryByText(new RegExp(RESOURCE_ID))).toBeNull();
   });
 

@@ -108,6 +108,7 @@ function makeStateResponses(): Record<
     "/rest/v1/nation_offices": { body: [], status: 200 },
     "/rest/v1/nation_relationships": { body: [], status: 200 },
     "/rest/v1/nation_resource_stockpiles": { body: [], status: 200 },
+    "/rest/v1/nation_tax_policies": { body: [], status: 200 },
     "/rest/v1/nation_treaties": { body: [], status: 200 },
     "/rest/v1/nation_currencies": { body: [], status: 200 },
     "/rest/v1/nation_currency_ledger": { body: [], status: 200 },
