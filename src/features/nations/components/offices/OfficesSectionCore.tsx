@@ -464,11 +464,14 @@ function OfficeGroup({
           No {label.toLowerCase()} appointed.
         </p>
       ) : (
-        <ul className="grid gap-2" aria-label={label}>
+        <ul
+          className="grid divide-y divide-border border-y border-border"
+          aria-label={label}
+        >
           {entries.map((entry) => (
             <li
               key={entry.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-background p-3"
+              className="flex flex-wrap items-center justify-between gap-2 py-3"
             >
               <div className="grid gap-0.5 text-sm">
                 <span className="flex items-center gap-2 font-medium">
@@ -917,11 +920,11 @@ function OfficeTypeManagerDialog({
                 No custom offices yet.
               </p>
             ) : (
-              <ul className="grid gap-2">
+              <ul className="grid divide-y divide-border border-y border-border">
                 {customTypes.map((type) => (
                   <li
                     key={type.id}
-                    className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-sm"
+                    className="flex items-center justify-between gap-2 py-2 text-sm"
                   >
                     <span>
                       {type.name}

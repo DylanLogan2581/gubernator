@@ -78,14 +78,11 @@ function TurnTransitionOutcomeSkeleton(): JSX.Element {
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-4 w-48" />
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-4 sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-border sm:[&>*]:px-4 sm:[&>*:first-child]:pl-0 sm:[&>*:last-child]:pr-0">
         {SKELETON_METRIC_LABELS.map((label) => (
-          <div
-            key={label}
-            className="rounded-md border border-border bg-background px-3 py-2"
-          >
-            <Skeleton className="mb-1 h-4 w-20" />
-            <Skeleton className="h-8 w-12" />
+          <div key={label} className="flex min-w-0 flex-col gap-1.5">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-6 w-12" />
           </div>
         ))}
       </div>
@@ -132,7 +129,7 @@ export function TurnTransitionOutcomeEmptyState(): JSX.Element {
   return (
     <section
       aria-labelledby="turn-transition-outcome-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
+      className="grid gap-4"
     >
       <div className="space-y-1">
         <h2
@@ -199,7 +196,7 @@ export function TurnTransitionOutcomeContent({
     <div className="grid gap-4">
       <section
         aria-labelledby="turn-transition-outcome-title"
-        className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
+        className="grid gap-4"
       >
         <div className="space-y-1">
           <h2
@@ -216,7 +213,7 @@ export function TurnTransitionOutcomeContent({
           </p>
         </div>
 
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-4 sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-border sm:[&>*]:px-4 sm:[&>*:first-child]:pl-0 sm:[&>*:last-child]:pr-0">
           <MetricTile label="Births" value={deltas.births} />
           <MetricTile label="Deaths" value={deltas.deaths} />
           <MetricTile
@@ -306,10 +303,7 @@ function OutcomePanelFrame({
   readonly children: ReactNode;
 }): JSX.Element {
   return (
-    <section
-      aria-label="Last transition"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <section aria-label="Last transition" className="grid gap-4">
       {children}
     </section>
   );
