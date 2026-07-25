@@ -154,11 +154,13 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
                 disabled={isSubmitting}
                 onChange={handleEmailChange}
               />
-              {fieldErrors.email === undefined ? null : (
-                <p id={emailErrorId} className="text-sm text-destructive">
-                  {fieldErrors.email}
-                </p>
-              )}
+              <div className="min-h-5">
+                {fieldErrors.email === undefined ? null : (
+                  <p id={emailErrorId} className="text-sm text-destructive">
+                    {fieldErrors.email}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -182,19 +184,23 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
                 disabled={isSubmitting}
                 onChange={handlePasswordChange}
               />
-              {fieldErrors.password === undefined ? null : (
-                <p id={passwordErrorId} className="text-sm text-destructive">
-                  {fieldErrors.password}
-                </p>
-              )}
+              <div className="min-h-5">
+                {fieldErrors.password === undefined ? null : (
+                  <p id={passwordErrorId} className="text-sm text-destructive">
+                    {fieldErrors.password}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {signInErrorMessage === null ? null : (
-              <Alert variant="destructive">
-                <TriangleAlert aria-hidden="true" />
-                <AlertDescription>{signInErrorMessage}</AlertDescription>
-              </Alert>
-            )}
+            <div className="min-h-[2.375rem]">
+              {signInErrorMessage === null ? null : (
+                <Alert variant="destructive">
+                  <TriangleAlert aria-hidden="true" />
+                  <AlertDescription>{signInErrorMessage}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
             <Button
               type="submit"
