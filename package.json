@@ -37,6 +37,8 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource/marcellus": "^5.3.0",
     "@iconify-json/game-icons": "^1.2.4",
     "@iconify/react": "^6.0.2",
     "@supabase/supabase-js": "2.99.3",

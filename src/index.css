@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource/marcellus";
+@import "@fontsource-variable/geist-mono";
 
 @custom-variant dark {
   &:is(.dark *) {
@@ -15,24 +17,30 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  /* Neutral scale warmed slightly toward ink-on-paper (small hue ~85 /
+     chroma shifts only, no wholesale repaint) for the State Papers theme. */
+  --background: oklch(0.995 0.003 85);
+  --foreground: oklch(0.16 0.008 75);
+  --card: oklch(0.995 0.003 85);
+  --card-foreground: oklch(0.16 0.008 75);
+  --popover: oklch(0.995 0.003 85);
+  --popover-foreground: oklch(0.16 0.008 75);
   --primary: oklch(0.45 0.16 262);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.49 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.97 0.004 85);
+  --secondary-foreground: oklch(0.22 0.008 75);
+  --muted: oklch(0.97 0.004 85);
+  --muted-foreground: oklch(0.5 0.006 75);
+  --accent: oklch(0.97 0.004 85);
+  --accent-foreground: oklch(0.22 0.008 75);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  /* Wax-seal red accent for decree-like emphasis and the seal motif.
+     Distinct from --destructive, whose semantics stay intact. */
+  --seal: oklch(0.48 0.17 25);
+  --seal-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.004 85);
+  --input: oklch(0.92 0.004 85);
   --ring: oklch(0.55 0.18 262);
   --chart-1: oklch(0.65 0.19 262);
   --chart-2: oklch(0.623 0.214 259.815);
@@ -111,22 +119,24 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
+  --background: oklch(0.16 0.005 75);
+  --foreground: oklch(0.98 0.003 85);
+  --card: oklch(0.21 0.005 75);
+  --card-foreground: oklch(0.98 0.003 85);
+  --popover: oklch(0.21 0.005 75);
+  --popover-foreground: oklch(0.98 0.003 85);
   --primary: oklch(0.75 0.15 262);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.27 0.005 75);
+  --secondary-foreground: oklch(0.98 0.003 85);
+  --muted: oklch(0.27 0.005 75);
+  --muted-foreground: oklch(0.71 0.004 85);
+  --accent: oklch(0.37 0.005 75);
+  --accent-foreground: oklch(0.98 0.003 85);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.205 0 0);
+  --seal: oklch(0.58 0.17 25);
+  --seal-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.65 0.17 262);
@@ -160,6 +170,10 @@
 
 @theme inline {
   --font-sans: "Geist Variable", sans-serif;
+  --font-display: "Marcellus", serif;
+  --font-mono: "Geist Mono Variable", monospace;
+  --color-seal: var(--seal);
+  --color-seal-foreground: var(--seal-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -234,24 +248,54 @@
   }
 }
 
+@layer components {
+  /* State Papers typographic tools. Used by later de-carding restyle work
+     to build hierarchy from type and rules instead of card borders. */
+
+  /* Small-caps letterspaced label, e.g. section eyebrows above headings. */
+  .eyebrow {
+    font-size: 0.6875rem;
+    line-height: 1;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+  }
+
+  /* Hairline divider. */
+  .rule {
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Thin-over-thick ledger divider used by the letterhead signature. */
+  .rule-double {
+    border: none;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 3px 0 -2px var(--border);
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
+    --background: oklch(0.16 0.005 75);
+    --foreground: oklch(0.98 0.003 85);
+    --card: oklch(0.21 0.005 75);
+    --card-foreground: oklch(0.98 0.003 85);
+    --popover: oklch(0.21 0.005 75);
+    --popover-foreground: oklch(0.98 0.003 85);
     --primary: oklch(0.75 0.15 262);
     --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.371 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.27 0.005 75);
+    --secondary-foreground: oklch(0.98 0.003 85);
+    --muted: oklch(0.27 0.005 75);
+    --muted-foreground: oklch(0.71 0.004 85);
+    --accent: oklch(0.37 0.005 75);
+    --accent-foreground: oklch(0.98 0.003 85);
     --destructive: oklch(0.704 0.191 22.216);
     --destructive-foreground: oklch(0.205 0 0);
+    --seal: oklch(0.58 0.17 25);
+    --seal-foreground: oklch(0.985 0 0);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.65 0.17 262);
