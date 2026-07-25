@@ -52,6 +52,11 @@ import type {
   SettlementBuildingState,
 } from "../../types/settlementBuildingTypes";
 
+const DECONSTRUCTED_STATES: readonly SettlementBuildingState[] = [
+  "manually_deconstructed",
+  "auto_deconstructed",
+];
+
 type SettlementBuildingsPanelProps = {
   readonly canAdmin: boolean;
   readonly canManageSettlement: boolean;
@@ -85,6 +90,10 @@ export function SettlementBuildingsPanel({
     (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
   );
   const jobNames = new Map((jobsQuery.data ?? []).map((j) => [j.id, j.name]));
+
+  const deconstructedCount = (buildingsQuery.data ?? []).filter((b) =>
+    DECONSTRUCTED_STATES.includes(b.state),
+  ).length;
 
   return (
     <Card
@@ -126,21 +135,22 @@ export function SettlementBuildingsPanel({
                 Add building
               </Button>
             ) : null}
-            <Button
-              aria-label={
-                showTrash ? "Hide deconstructed" : "Show deconstructed"
-              }
-              aria-pressed={showTrash}
-              size="icon-sm"
-              title={showTrash ? "Hide deconstructed" : "Show deconstructed"}
-              type="button"
-              variant={showTrash ? "secondary" : "ghost"}
-              onClick={() => {
-                setShowTrash((prev) => !prev);
-              }}
-            >
-              <Eye aria-hidden="true" />
-            </Button>
+            {deconstructedCount > 0 ? (
+              <Button
+                aria-pressed={showTrash}
+                size="sm"
+                type="button"
+                variant={showTrash ? "secondary" : "outline"}
+                onClick={() => {
+                  setShowTrash((prev) => !prev);
+                }}
+              >
+                <Eye aria-hidden="true" />
+                {showTrash
+                  ? "Hide deconstructed"
+                  : `Show deconstructed (${deconstructedCount})`}
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>

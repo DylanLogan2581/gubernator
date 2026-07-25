@@ -549,8 +549,8 @@ describe("SettlementBuildingsPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     // Click trash toggle to show deconstructed buildings
-    const trashToggle = screen.getByRole("button", {
-      name: "Show deconstructed",
+    const trashToggle = await screen.findByRole("button", {
+      name: "Show deconstructed (1)",
     });
     await userEvent.click(trashToggle);
 
@@ -561,6 +561,55 @@ describe("SettlementBuildingsPanel", () => {
     expect(badge).toBeDefined();
     expect(badge.getAttribute("data-variant")).toBe("destructive");
     expect(badge.getAttribute("title")).toBe("Missed upkeep 3×");
+  });
+
+  it("hides the show-deconstructed toggle when no deconstructed buildings exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.queryByRole("button", { name: /deconstructed/i })).toBeNull();
+  });
+
+  it("labels the show-deconstructed toggle with a count when deconstructed buildings exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+          createBuildingRow({
+            building_blueprints: { name: "Granary" },
+            id: BUILDING_ID_2,
+            state: "auto_deconstructed",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    const toggle = await screen.findByRole("button", {
+      name: "Show deconstructed (1)",
+    });
+    await userEvent.click(toggle);
+    expect(
+      screen.getByRole("button", { name: "Hide deconstructed" }),
+    ).toBeDefined();
   });
 
   it("shows transition-sourced tooltip when latest outcome has a matching log entry", async () => {
