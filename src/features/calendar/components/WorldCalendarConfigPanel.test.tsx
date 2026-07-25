@@ -146,9 +146,38 @@ describe("WorldCalendarConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Add weekday" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Add month" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Save calendar" })).toBeDefined();
-    expect(screen.getByText(/Tokens:/)).toBeDefined();
-    expect(screen.getByText("{weekday}")).toBeDefined();
-    expect(screen.getByText("{yearNumber}")).toBeDefined();
+    expect(screen.getByText(/Tokens/)).toBeDefined();
+    expect(screen.getByRole("button", { name: "{weekday}" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "{yearNumber}" })).toBeDefined();
+  });
+
+  it("inserts a token into the focused date format template on click", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    const dateFormatField = await screen.findByRole("textbox", {
+      name: "Date format template",
+    });
+    await user.clear(dateFormatField);
+    dateFormatField.focus();
+
+    await user.click(screen.getByRole("button", { name: "{weekday}" }));
+
+    expect(dateFormatField).toHaveValue("{weekday}");
   });
 
   it("appends a typed weekday chip and reorders it with the move buttons", async () => {

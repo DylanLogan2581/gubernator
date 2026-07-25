@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +16,7 @@ import { FieldError, NumberField } from "./CalendarFieldPrimitives";
 
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
 import type { CalendarValidationErrors } from "../utils/calendarConfigValidation";
+import type { TurnCalendarDate } from "../utils/turnCalendarDates";
 import type { JSX } from "react";
 
 function previewLongDate(config: WorldCalendarConfig): string {
@@ -57,15 +60,86 @@ function moveItem<TItem extends { readonly index: number }>(
   return next.map((item, position) => ({ ...item, index: position }));
 }
 
-const dateFormatTokens = [
-  "{weekday}",
-  "{month}",
-  "{day}",
-  "{year}",
-  "{monthNumber}",
-  "{dayNumber}",
-  "{yearNumber}",
-] as const;
+type DateFormatToken = {
+  readonly token: string;
+  readonly meaning: string;
+  readonly example: (date: TurnCalendarDate) => string;
+};
+
+const dateFormatTokens: readonly DateFormatToken[] = [
+  {
+    token: "{weekday}",
+    meaning: "Weekday name",
+    example: (d) => d.weekdayName,
+  },
+  { token: "{month}", meaning: "Month name", example: (d) => d.monthName },
+  {
+    token: "{day}",
+    meaning: "Day of the month",
+    example: (d) => String(d.dayOfMonth),
+  },
+  { token: "{year}", meaning: "Year", example: (d) => String(d.year) },
+  {
+    token: "{monthNumber}",
+    meaning: "Month number",
+    example: (d) => String(d.monthIndex + 1),
+  },
+  {
+    token: "{dayNumber}",
+    meaning: "Day of the month (number)",
+    example: (d) => String(d.dayOfMonth),
+  },
+  {
+    token: "{yearNumber}",
+    meaning: "Year (number)",
+    example: (d) => String(d.year),
+  },
+];
+
+// Longest tokens first so the splitter matches {monthNumber} before {month}.
+const tokenSplitPattern = new RegExp(
+  `(${[...dateFormatTokens]
+    .map(({ token }) => token)
+    .sort((a, b) => b.length - a.length)
+    .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")})`,
+);
+
+const knownTokens = new Set(dateFormatTokens.map(({ token }) => token));
+
+// Renders a template with recognised tokens badged, so valid tokens are
+// visible at a glance without a full syntax-highlighted input.
+function HighlightedTemplate({
+  template,
+}: {
+  readonly template: string;
+}): JSX.Element {
+  if (template.length === 0) {
+    return <span className="text-muted-foreground">Empty template.</span>;
+  }
+
+  return (
+    <>
+      {template.split(tokenSplitPattern).map((segment, index) =>
+        knownTokens.has(segment) ? (
+          <code
+            // Segments can repeat, so the index is part of the key.
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            key={`${segment}-${index}`}
+            className="rounded bg-primary/10 px-1 font-mono text-primary"
+          >
+            {segment}
+          </code>
+        ) : (
+          // eslint-disable-next-line @eslint-react/no-array-index-key
+          <span key={`text-${index}`} className="font-mono">
+            {segment}
+          </span>
+        ),
+      )}
+    </>
+  );
+}
 
 export function CalendarEditableFields({
   config,
@@ -77,6 +151,43 @@ export function CalendarEditableFields({
   readonly onChange: (config: WorldCalendarConfig) => void;
 }): JSX.Element {
   const startingMonth = config.months[config.startingMonthIndex];
+
+  const longInputRef = useRef<HTMLInputElement>(null);
+  const shortInputRef = useRef<HTMLInputElement>(null);
+  const [activeField, setActiveField] = useState<"long" | "short">("long");
+
+  const insertToken = (token: string): void => {
+    const isShort = activeField === "short";
+    const input = isShort ? shortInputRef.current : longInputRef.current;
+    const current = isShort
+      ? config.shortDateFormatTemplate
+      : config.dateFormatTemplate;
+    const start = input?.selectionStart ?? current.length;
+    const end = input?.selectionEnd ?? current.length;
+    const next = current.slice(0, start) + token + current.slice(end);
+
+    onChange(
+      isShort
+        ? { ...config, shortDateFormatTemplate: next }
+        : { ...config, dateFormatTemplate: next },
+    );
+
+    requestAnimationFrame(() => {
+      if (input === null) {
+        return;
+      }
+      const caret = start + token.length;
+      input.focus();
+      input.setSelectionRange(caret, caret);
+    });
+  };
+
+  let exampleDate: TurnCalendarDate | undefined;
+  try {
+    exampleDate = resolveTurnCalendarDate(config, 1);
+  } catch {
+    exampleDate = undefined;
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -339,6 +450,7 @@ export function CalendarEditableFields({
             <span className="font-medium">Date format template</span>
             <Input
               id="calendar-date-format"
+              ref={longInputRef}
               aria-describedby={
                 errors.dateFormatTemplate === undefined
                   ? undefined
@@ -348,6 +460,7 @@ export function CalendarEditableFields({
                 errors.dateFormatTemplate === undefined ? undefined : true
               }
               value={config.dateFormatTemplate}
+              onFocus={() => setActiveField("long")}
               onChange={(event) =>
                 onChange({
                   ...config,
@@ -362,6 +475,9 @@ export function CalendarEditableFields({
               />
             )}
           </Label>
+          <p className="text-sm">
+            <HighlightedTemplate template={config.dateFormatTemplate} />
+          </p>
           <p className="text-sm text-muted-foreground">
             Long: {previewLongDate(config)}
           </p>
@@ -373,6 +489,7 @@ export function CalendarEditableFields({
             <span className="font-medium">Short date format template</span>
             <Input
               id="calendar-date-format-short"
+              ref={shortInputRef}
               aria-describedby={
                 errors.shortDateFormatTemplate === undefined
                   ? undefined
@@ -382,6 +499,7 @@ export function CalendarEditableFields({
                 errors.shortDateFormatTemplate === undefined ? undefined : true
               }
               value={config.shortDateFormatTemplate}
+              onFocus={() => setActiveField("short")}
               onChange={(event) =>
                 onChange({
                   ...config,
@@ -396,19 +514,50 @@ export function CalendarEditableFields({
               />
             )}
           </Label>
+          <p className="text-sm">
+            <HighlightedTemplate template={config.shortDateFormatTemplate} />
+          </p>
           <p className="text-sm text-muted-foreground">
             Short: {previewShortDate(config)}
           </p>
 
-          <p className="text-xs text-muted-foreground">
-            Tokens:{" "}
-            {dateFormatTokens.map((token, index) => (
-              <span key={token}>
-                <code className="font-mono">{token}</code>
-                {index === dateFormatTokens.length - 1 ? "" : ", "}
-              </span>
-            ))}
-          </p>
+          <div className="grid gap-1">
+            <p className="text-xs text-muted-foreground">
+              Tokens (click to insert into the{" "}
+              {activeField === "short" ? "short" : "long"} template):
+            </p>
+            <table className="w-full text-left text-xs">
+              <thead className="text-muted-foreground">
+                <tr>
+                  <th className="pb-1 pr-3 font-medium">Token</th>
+                  <th className="pb-1 pr-3 font-medium">Meaning</th>
+                  <th className="pb-1 font-medium">Example</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dateFormatTokens.map(({ token, meaning, example }) => (
+                  <tr key={token} className="align-top">
+                    <td className="pr-3">
+                      <button
+                        type="button"
+                        // Keep the focused template input's caret so the token
+                        // lands where the user was typing.
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => insertToken(token)}
+                        className="rounded bg-primary/10 px-1 font-mono text-primary hover:bg-primary/20"
+                      >
+                        {token}
+                      </button>
+                    </td>
+                    <td className="pr-3 text-muted-foreground">{meaning}</td>
+                    <td className="text-muted-foreground">
+                      {exampleDate === undefined ? "—" : example(exampleDate)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </div>
