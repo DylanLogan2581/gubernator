@@ -3,6 +3,12 @@ export { SettlementReportsPanel } from "./components/SettlementReportsPanel";
 export { CompositionDonutChart } from "./components/SettlementReportsPanel/CompositionDonutChart";
 export { PopulationTrendChart } from "./components/SettlementReportsPanel/PopulationTrendChart";
 export { TurnRangeSelector } from "./components/SettlementReportsPanel/TurnRangeSelector";
+export { VitalStatsComparisonTable } from "./components/VitalStatsComparisonTable";
+export {
+  aggregateVitalStats,
+  type VitalStatsEntry,
+  type VitalStatsSummary,
+} from "./utils/vitalStats";
 export {
   settlementPopulationSnapshotsQueryOptions,
   settlementResourceSnapshotsQueryOptions,

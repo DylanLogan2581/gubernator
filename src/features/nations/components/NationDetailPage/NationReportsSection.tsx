@@ -3,9 +3,6 @@ import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   Baby,
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
   Clock,
   Skull,
   TrendingUp,
@@ -18,315 +15,38 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import {
+  aggregateVitalStats,
   createTurnLabelers,
   defaultReportTurnRange,
   nationSettlementSnapshotsQueryOptions,
   TurnRangeSelector,
+  VitalStatsComparisonTable,
 } from "@/features/reports";
-import type { NationSettlementSnapshotRow } from "@/features/reports";
+import type {
+  NationSettlementSnapshotRow,
+  VitalStatsSummary,
+} from "@/features/reports";
 
 import { NationSettlementTrendSmallMultiples } from "./NationSettlementTrendSmallMultiples";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type SortKey = "name" | "population" | "births" | "deaths";
-type SortDir = "asc" | "desc";
-
-type SettlementSummary = {
-  readonly settlementId: string;
-  readonly name: string;
-  readonly latestPopulation: number;
-  readonly totalBirths: number;
-  readonly totalDeaths: number;
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildSettlementSummaries(
+function settlementSummaries(
   rows: readonly NationSettlementSnapshotRow[],
-): SettlementSummary[] {
-  const bySettlement = new Map<
-    string,
-    {
-      name: string;
-      latestTurn: number;
-      latestPop: number;
-      births: number;
-      deaths: number;
-    }
-  >();
-
-  for (const row of rows) {
-    const existing = bySettlement.get(row.settlement_id);
-    if (existing === undefined) {
-      bySettlement.set(row.settlement_id, {
-        births: row.birth_count,
-        deaths: row.death_count,
-        latestPop: row.population_total,
-        latestTurn: row.turn_number,
-        name: row.settlement_name,
-      });
-    } else {
-      existing.births += row.birth_count;
-      existing.deaths += row.death_count;
-      if (row.turn_number > existing.latestTurn) {
-        existing.latestTurn = row.turn_number;
-        existing.latestPop = row.population_total;
-      }
-    }
-  }
-
-  return Array.from(bySettlement.entries()).map(([id, s]) => ({
-    latestPopulation: s.latestPop,
-    name: s.name,
-    settlementId: id,
-    totalBirths: s.births,
-    totalDeaths: s.deaths,
-  }));
-}
-
-function compareSummaries(
-  a: SettlementSummary,
-  b: SettlementSummary,
-  key: SortKey,
-  dir: SortDir,
-): number {
-  let diff: number;
-  if (key === "name") {
-    diff = a.name.localeCompare(b.name);
-  } else if (key === "population") {
-    diff = a.latestPopulation - b.latestPopulation;
-  } else if (key === "births") {
-    diff = a.totalBirths - b.totalBirths;
-  } else {
-    diff = a.totalDeaths - b.totalDeaths;
-  }
-  return dir === "asc" ? diff : -diff;
-}
-
-function sortSummaries(
-  summaries: SettlementSummary[],
-  key: SortKey,
-  dir: SortDir,
-): SettlementSummary[] {
-  return [...summaries].sort((a, b) => compareSummaries(a, b, key, dir));
-}
-
-// ---------------------------------------------------------------------------
-// SortIcon — module-level component
-// ---------------------------------------------------------------------------
-
-function SortIcon({
-  column,
-  sortKey,
-  sortDir,
-}: {
-  readonly column: SortKey;
-  readonly sortKey: SortKey;
-  readonly sortDir: SortDir;
-}): JSX.Element {
-  if (column !== sortKey) {
-    return (
-      <ChevronsUpDown
-        className="ml-1 inline-block h-3 w-3 opacity-40"
-        aria-hidden="true"
-      />
-    );
-  }
-  return sortDir === "asc" ? (
-    <ChevronUp
-      className="ml-1 inline-block h-3 w-3 text-foreground"
-      aria-hidden="true"
-    />
-  ) : (
-    <ChevronDown
-      className="ml-1 inline-block h-3 w-3 text-foreground"
-      aria-hidden="true"
-    />
-  );
-}
-
-function ariaSortFor(
-  column: SortKey,
-  sortKey: SortKey,
-  sortDir: SortDir,
-): "ascending" | "descending" | undefined {
-  if (column !== sortKey) return undefined;
-  return sortDir === "asc" ? "ascending" : "descending";
-}
-
-// ---------------------------------------------------------------------------
-// ColumnSortButton — module-level component
-// ---------------------------------------------------------------------------
-
-function ColumnSortButton({
-  column,
-  label,
-  sortKey,
-  sortDir,
-  onSort,
-}: {
-  readonly column: SortKey;
-  readonly label: string;
-  readonly sortKey: SortKey;
-  readonly sortDir: SortDir;
-  readonly onSort: (key: SortKey) => void;
-}): JSX.Element {
-  const isActive = column === sortKey;
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className={`-ml-3 h-auto p-1 text-xs ${
-        isActive
-          ? "font-semibold text-foreground"
-          : "font-medium text-muted-foreground"
-      }`}
-      onClick={() => onSort(column)}
-    >
-      {label}
-      <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
-    </Button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Settlement comparison table
-// ---------------------------------------------------------------------------
-
-function SettlementComparisonTable({
-  isLoading,
-  isError,
-  rows,
-}: {
-  readonly isLoading: boolean;
-  readonly isError: boolean;
-  readonly rows: readonly NationSettlementSnapshotRow[];
-}): JSX.Element {
-  const [sortKey, setSortKey] = useState<SortKey>("population");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  function handleSort(key: SortKey): void {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
-  }
-
-  if (isLoading) {
-    return <Skeleton className="h-32 w-full" />;
-  }
-
-  if (isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          Settlement data could not be loaded.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const summaries = sortSummaries(
-    buildSettlementSummaries(rows),
-    sortKey,
-    sortDir,
-  );
-
-  if (summaries.length === 0) {
-    return (
-      <p className="py-4 text-center text-sm text-muted-foreground">
-        No settlement data in this turn range.
-      </p>
-    );
-  }
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead aria-sort={ariaSortFor("name", sortKey, sortDir)}>
-            <ColumnSortButton
-              column="name"
-              label="Settlement"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
-          </TableHead>
-          <TableHead
-            className="text-right"
-            aria-sort={ariaSortFor("population", sortKey, sortDir)}
-          >
-            <ColumnSortButton
-              column="population"
-              label="Latest pop."
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
-          </TableHead>
-          <TableHead
-            className="text-right"
-            aria-sort={ariaSortFor("births", sortKey, sortDir)}
-          >
-            <ColumnSortButton
-              column="births"
-              label="Births"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
-          </TableHead>
-          <TableHead
-            className="text-right"
-            aria-sort={ariaSortFor("deaths", sortKey, sortDir)}
-          >
-            <ColumnSortButton
-              column="deaths"
-              label="Deaths"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {summaries.map((s) => (
-          <TableRow key={s.settlementId}>
-            <TableCell className="font-medium">{s.name}</TableCell>
-            <TableCell className="text-right">
-              {s.latestPopulation.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              {s.totalBirths.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              {s.totalDeaths.toLocaleString()}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+): VitalStatsSummary[] {
+  return aggregateVitalStats(
+    rows.map((row) => ({
+      birthCount: row.birth_count,
+      deathCount: row.death_count,
+      id: row.settlement_id,
+      name: row.settlement_name,
+      populationTotal: row.population_total,
+      turnNumber: row.turn_number,
+    })),
   );
 }
 
@@ -353,7 +73,7 @@ function NationReportStatTiles({
   readonly isLoading: boolean;
   readonly rows: readonly NationSettlementSnapshotRow[];
 }): JSX.Element {
-  const summaries = buildSettlementSummaries(rows);
+  const summaries = settlementSummaries(rows);
   const totalPopulation = summaries.reduce(
     (sum, s) => sum + s.latestPopulation,
     0,
@@ -488,10 +208,13 @@ export function NationReportsSection({
             <CardTitle className="text-base">Settlement comparison</CardTitle>
           </CardHeader>
           <CardContent>
-            <SettlementComparisonTable
+            <VitalStatsComparisonTable
+              entityLabel="Settlement"
               isLoading={settlementQuery.isPending}
               isError={settlementQuery.isError}
-              rows={settlementQuery.data ?? []}
+              summaries={settlementSummaries(settlementQuery.data ?? [])}
+              errorMessage="Settlement data could not be loaded."
+              emptyMessage="No settlement data in this turn range."
             />
           </CardContent>
         </Card>
