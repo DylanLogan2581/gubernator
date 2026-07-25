@@ -13,7 +13,6 @@ import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -96,11 +95,11 @@ export function SettlementBuildingsPanel({
   ).length;
 
   return (
-    <Card
+    <section
       aria-labelledby="settlement-buildings-heading"
       className="grid min-w-0 gap-3"
     >
-      <div className="flex min-w-0 flex-col gap-1 px-4 pt-4">
+      <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2
             id="settlement-buildings-heading"
@@ -155,7 +154,7 @@ export function SettlementBuildingsPanel({
         </div>
       </div>
 
-      <CardContent className="min-w-0">
+      <div className="min-w-0">
         {buildingsQuery.isPending ? (
           <TableSkeleton columnCount={6} rowCount={5} />
         ) : buildingsQuery.isError ? (
@@ -205,8 +204,8 @@ export function SettlementBuildingsPanel({
             }}
           />
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

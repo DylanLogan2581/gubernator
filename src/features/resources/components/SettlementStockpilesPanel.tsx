@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Loader2, Lock, Package } from "lucide-react";
+import { AlertTriangle, Loader2, Package } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -16,7 +16,6 @@ import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -80,23 +79,19 @@ export function SettlementStockpilesPanel({
   }, [forecastQuery.data, settlementId]);
 
   return (
-    <Card
+    <section
       aria-labelledby="settlement-stockpiles-heading"
       className="grid min-w-0 grid-cols-1 gap-3"
     >
-      <div className="flex items-center justify-between gap-2 px-4 pt-4">
+      <div className="flex items-center justify-between gap-2">
         <h2
           id="settlement-stockpiles-heading"
           className="text-base font-medium"
         >
           Stockpiles
         </h2>
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Stockpiles are simulation-managed
-        </span>
       </div>
-      <CardContent>
+      <div>
         {stockpilesQuery.isPending ? (
           <TableSkeleton columnCount={5} rowCount={5} />
         ) : stockpilesQuery.isError ? (
@@ -122,8 +117,8 @@ export function SettlementStockpilesPanel({
             worldId={worldId}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

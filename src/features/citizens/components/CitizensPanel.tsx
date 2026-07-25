@@ -10,7 +10,6 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -235,11 +234,11 @@ export function CitizensPanel({
     livingCount !== null && popCap !== null && livingCount >= popCap;
 
   return (
-    <Card
+    <section
       aria-labelledby="citizens-panel-heading"
       className="grid min-w-0 grid-cols-1 gap-3"
     >
-      <div className="flex items-start justify-between gap-2 px-4 pt-4">
+      <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
           <h2 id="citizens-panel-heading" className="text-base font-medium">
             {canAdmin ? "Citizens" : "Citizen summary"}
@@ -277,7 +276,7 @@ export function CitizensPanel({
         </div>
       </div>
 
-      <CardContent>
+      <div>
         {canAdmin ? (
           <CitizensAdminList
             onStatusChange={setStatus}
@@ -292,8 +291,8 @@ export function CitizensPanel({
             worldId={worldId}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

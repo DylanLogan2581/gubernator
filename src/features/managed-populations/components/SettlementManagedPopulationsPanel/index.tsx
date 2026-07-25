@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -124,25 +123,23 @@ export function SettlementManagedPopulationsPanel({
   const displayedInstances = showExtinct ? extinctInstances : activeInstances;
 
   return (
-    <Card
+    <section
       aria-labelledby="settlement-managed-populations-heading"
       className="grid gap-3"
     >
-      <div className="px-4 pt-4">
-        <ManagedPopulationsPanelHeader
-          canAdmin={canAdmin && !isArchived}
-          instancesLoaded={!instancesQuery.isPending}
-          queryClient={queryClient}
-          settlementId={settlementId}
-          showExtinct={showExtinct}
-          worldId={worldId}
-          onToggleExtinct={() => {
-            setShowExtinct((prev) => !prev);
-          }}
-        />
-      </div>
+      <ManagedPopulationsPanelHeader
+        canAdmin={canAdmin && !isArchived}
+        instancesLoaded={!instancesQuery.isPending}
+        queryClient={queryClient}
+        settlementId={settlementId}
+        showExtinct={showExtinct}
+        worldId={worldId}
+        onToggleExtinct={() => {
+          setShowExtinct((prev) => !prev);
+        }}
+      />
 
-      <CardContent>
+      <div>
         {instancesQuery.isPending ? (
           <TableSkeleton columnCount={6} rowCount={5} />
         ) : instancesQuery.isError ? (
@@ -181,8 +178,8 @@ export function SettlementManagedPopulationsPanel({
             typeById={typeById}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

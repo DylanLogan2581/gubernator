@@ -208,7 +208,6 @@ describe("SettlementStockpilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /Edit Food quantity/i }),
     ).toBeNull();
-    expect(screen.getByText("Stockpiles are simulation-managed")).toBeDefined();
   });
 
   it("hides the edit affordance when the world is archived", async () => {
@@ -226,7 +225,6 @@ describe("SettlementStockpilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /Edit Food quantity/i }),
     ).toBeNull();
-    expect(screen.getByText("Stockpiles are simulation-managed")).toBeDefined();
   });
 
   it("opens the edit dialog when the admin clicks Edit", async () => {
