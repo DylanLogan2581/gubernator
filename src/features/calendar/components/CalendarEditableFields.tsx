@@ -36,29 +36,25 @@ function previewShortDate(config: WorldCalendarConfig): string {
   }
 }
 
-function swapItems<TItem extends { readonly index: number }>(
+function moveItem<TItem extends { readonly index: number }>(
   items: readonly TItem[],
-  index: number,
-  direction: "up" | "down",
+  fromIndex: number,
+  toIndex: number,
 ): TItem[] {
-  const targetIndex = direction === "up" ? index - 1 : index + 1;
-
-  if (targetIndex < 0 || targetIndex >= items.length) {
+  if (
+    toIndex < 0 ||
+    toIndex >= items.length ||
+    fromIndex === toIndex ||
+    items[fromIndex] === undefined
+  ) {
     return [...items];
   }
 
   const next = [...items];
-  const current = next[index];
-  const target = next[targetIndex];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
 
-  if (current === undefined || target === undefined) {
-    return next;
-  }
-
-  next[index] = { ...target, index: current.index };
-  next[targetIndex] = { ...current, index: target.index };
-
-  return next;
+  return next.map((item, position) => ({ ...item, index: position }));
 }
 
 const dateFormatTokens = [
@@ -111,10 +107,10 @@ export function CalendarEditableFields({
                 ],
               })
             }
-            onMove={(index, direction) =>
+            onReorder={(fromIndex, toIndex) =>
               onChange({
                 ...config,
-                weekdays: swapItems(config.weekdays, index, direction),
+                weekdays: moveItem(config.weekdays, fromIndex, toIndex),
               })
             }
             onRemove={(index) => {
@@ -176,8 +172,8 @@ export function CalendarEditableFields({
                 ],
               })
             }
-            onMove={(index, direction) => {
-              const months = swapItems(config.months, index, direction);
+            onReorder={(fromIndex, toIndex) => {
+              const months = moveItem(config.months, fromIndex, toIndex);
               const nextStartingMonth = months[config.startingMonthIndex];
 
               onChange({

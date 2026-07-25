@@ -1,8 +1,9 @@
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Plus, X } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import { FieldError } from "./CalendarFieldPrimitives";
 
@@ -20,8 +21,8 @@ export function CalendarChipEditor<
   items,
   legend,
   onAdd,
-  onMove,
   onRemove,
+  onReorder,
   onUpdate,
   showDayCount = false,
 }: {
@@ -32,8 +33,8 @@ export function CalendarChipEditor<
   readonly items: readonly TItem[];
   readonly legend: string;
   readonly onAdd: (name: string) => void;
-  readonly onMove: (index: number, direction: "up" | "down") => void;
   readonly onRemove: (index: number) => void;
+  readonly onReorder: (fromIndex: number, toIndex: number) => void;
   readonly onUpdate: (
     index: number,
     key: "dayCount" | "name",
@@ -42,12 +43,23 @@ export function CalendarChipEditor<
   readonly showDayCount?: boolean;
 }): JSX.Element {
   const [newItemName, setNewItemName] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const errorId = `calendar-${legend.toLowerCase()}-error`;
   const rowLabel = itemLabel ?? legend;
+  const legendLower = legend.toLowerCase();
 
   function handleAdd(): void {
     onAdd(newItemName.trim());
     setNewItemName("");
+  }
+
+  function handleDrop(targetIndex: number): void {
+    if (dragIndex !== null && dragIndex !== targetIndex) {
+      onReorder(dragIndex, targetIndex);
+    }
+    setDragIndex(null);
+    setDropIndex(null);
   }
 
   return (
@@ -67,35 +79,38 @@ export function CalendarChipEditor<
           return (
             <div
               key={item.index}
-              className="flex items-center gap-0.5 rounded-full border bg-muted/40 py-1 pr-1 pl-1.5"
+              className={cn(
+                "flex items-center gap-1.5 rounded-md border bg-muted/40 p-1.5 transition-colors",
+                dragIndex === index && "opacity-50",
+                dropIndex === index && dragIndex !== index && "border-primary",
+              )}
+              onDragOver={(event) => {
+                if (dragIndex === null) {
+                  return;
+                }
+                event.preventDefault();
+                setDropIndex(index);
+              }}
+              onDrop={() => handleDrop(index)}
             >
-              <div className="flex flex-col">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4"
-                  disabled={index === 0}
-                  aria-label={`Move ${legend.toLowerCase()} ${index + 1} up`}
-                  onClick={() => onMove(index, "up")}
-                >
-                  <ArrowUp aria-hidden="true" className="size-3" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4"
-                  disabled={index === items.length - 1}
-                  aria-label={`Move ${legend.toLowerCase()} ${index + 1} down`}
-                  onClick={() => onMove(index, "down")}
-                >
-                  <ArrowDown aria-hidden="true" className="size-3" />
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                draggable
+                className="size-8 shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
+                aria-label={`Reorder ${legendLower} ${index + 1}`}
+                onDragStart={() => setDragIndex(index)}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  setDropIndex(null);
+                }}
+              >
+                <GripVertical aria-hidden="true" className="size-4" />
+              </Button>
               <Input
                 aria-label={nameLabel}
-                className="h-7 w-24 border-none bg-transparent px-1.5 shadow-none focus-visible:ring-1"
+                className="h-9 flex-1"
                 value={item.name}
                 onChange={(event) =>
                   onUpdate(index, "name", event.currentTarget.value)
@@ -104,7 +119,7 @@ export function CalendarChipEditor<
               {showDayCount ? (
                 <Input
                   aria-label={`${rowLabel} ${index + 1} Days`}
-                  className="h-7 w-14 border-none bg-transparent px-1.5 shadow-none focus-visible:ring-1"
+                  className="h-9 w-20 shrink-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   min={1}
                   type="number"
                   value={Number(item.dayCount)}
@@ -117,15 +132,39 @@ export function CalendarChipEditor<
                   }
                 />
               ) : null}
+              <div className="flex shrink-0 flex-col">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-8"
+                  disabled={index === 0}
+                  aria-label={`Move ${legendLower} ${index + 1} up`}
+                  onClick={() => onReorder(index, index - 1)}
+                >
+                  <ArrowUp aria-hidden="true" className="size-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-8"
+                  disabled={index === items.length - 1}
+                  aria-label={`Move ${legendLower} ${index + 1} down`}
+                  onClick={() => onReorder(index, index + 1)}
+                >
+                  <ArrowDown aria-hidden="true" className="size-3" />
+                </Button>
+              </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
-                aria-label={`Remove ${legend.toLowerCase()} ${index + 1}`}
+                className="size-8 shrink-0"
+                aria-label={`Remove ${legendLower} ${index + 1}`}
                 onClick={() => onRemove(index)}
               >
-                <X aria-hidden="true" className="size-3" />
+                <X aria-hidden="true" className="size-4" />
               </Button>
             </div>
           );

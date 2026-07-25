@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -188,6 +188,51 @@ describe("WorldCalendarConfigPanel", () => {
     await user.click(
       screen.getByRole("button", { name: "Move weekdays 1 down" }),
     );
+
+    expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
+      "Secondday",
+    );
+    expect(screen.getByRole("textbox", { name: "Day 2" })).toHaveValue(
+      "Firstday",
+    );
+  });
+
+  it("reorders a weekday by dragging its handle onto another row", async () => {
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+
+    const firstRow = screen
+      .getByRole("textbox", { name: "Day 1" })
+      .closest("div");
+    const secondRow = screen
+      .getByRole("textbox", { name: "Day 2" })
+      .closest("div");
+    const firstHandle = screen.getByRole("button", {
+      name: "Reorder weekdays 1",
+    });
+
+    if (firstRow === null || secondRow === null) {
+      throw new Error("Expected weekday rows to be present.");
+    }
+
+    fireEvent.dragStart(firstHandle);
+    fireEvent.dragOver(secondRow);
+    fireEvent.drop(secondRow);
 
     expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
       "Secondday",
