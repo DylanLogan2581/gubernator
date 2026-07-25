@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-router";
 import { MapPinOff } from "lucide-react";
 import { lazy, Suspense, useEffect, type JSX } from "react";
-import { Toaster } from "sonner";
 
 import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserMenu } from "@/features/auth";
 import { scheduleAuthStateQueryCacheSync } from "@/lib/authStateQueryCache";
+import { Toaster } from "@/lib/notify";
 import { type AppRouterContext } from "@/lib/queryClient";
 import { subscribeToSupabaseAuthStateChanges } from "@/lib/supabaseAuthState";
 import {

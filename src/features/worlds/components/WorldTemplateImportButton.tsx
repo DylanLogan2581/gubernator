@@ -9,7 +9,6 @@ import {
   type JSX,
   type RefObject,
 } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +22,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import {
+  notifyError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
@@ -206,7 +209,7 @@ export function ImportConfirmDialog({
     }
 
     if (report.danglingRefs.length > 0) {
-      toast.error("Template has dangling references", {
+      notifyError("Template has dangling references", {
         description: "Resolve the cross-reference errors before importing.",
       });
       return;
@@ -215,11 +218,11 @@ export function ImportConfirmDialog({
     const input: ImportWorldFromTemplateInput = { name, template };
     importMutation.mutate(input, {
       onError: (error) => {
-        toast.error("Import failed", {
-          description:
-            error instanceof Error
-              ? error.message
-              : "Could not import template.",
+        notifyError("Import failed", {
+          description: resolveMutationErrorMessage(
+            error,
+            "Could not import template.",
+          ),
         });
       },
       onSuccess: () => {

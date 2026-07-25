@@ -701,7 +701,10 @@ describe("EventCreateWizard", () => {
       await user.click(screen.getByRole("button", { name: "Create Event" }));
 
       await waitFor(() =>
-        expect(toastSuccess).toHaveBeenCalledWith("Event created successfully"),
+        expect(toastSuccess).toHaveBeenCalledWith(
+          "Event created successfully",
+          undefined,
+        ),
       );
 
       expect(latestShouldBlockFn()()).toBe(false);

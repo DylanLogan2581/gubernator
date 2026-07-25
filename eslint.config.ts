@@ -207,6 +207,17 @@ const boundariesConfig = createBoundariesConfig({
   },
 });
 
+const sonnerRestrictedImportPath = {
+  name: "sonner",
+  message:
+    "Import toast helpers (notifyMutationSuccess/notifyMutationError/notifyError/Toaster) from @/lib/notify instead of sonner directly.",
+} as const;
+
+const parentRelativeRestrictedImportPattern = {
+  group: ["../*", "../../*", "../../../*", "../../../../*"],
+  message: "Prefer the @/ alias over parent relative imports inside src.",
+} as const;
+
 const commonRestrictedSyntax = [
   {
     selector: "ForInStatement",
@@ -491,13 +502,8 @@ export default defineConfig([
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: ["../*", "../../*", "../../../*", "../../../../*"],
-              message:
-                "Prefer the @/ alias over parent relative imports inside src.",
-            },
-          ],
+          paths: [sonnerRestrictedImportPath],
+          patterns: [parentRelativeRestrictedImportPattern],
         },
       ],
       "no-restricted-syntax": ["error", ...commonRestrictedSyntax],
@@ -659,12 +665,9 @@ export default defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          paths: [sonnerRestrictedImportPath],
           patterns: [
-            {
-              group: ["../*", "../../*", "../../../*", "../../../../*"],
-              message:
-                "Prefer the @/ alias over parent relative imports inside src.",
-            },
+            parentRelativeRestrictedImportPattern,
             {
               group: [
                 "@/components/app/**",
@@ -712,6 +715,7 @@ export default defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          paths: [sonnerRestrictedImportPath],
           patterns: [
             {
               group: ["@/features/*/**"],
@@ -730,12 +734,9 @@ export default defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          paths: [sonnerRestrictedImportPath],
           patterns: [
-            {
-              group: ["../*", "../../*", "../../../*", "../../../../*"],
-              message:
-                "Prefer the @/ alias over parent relative imports inside src.",
-            },
+            parentRelativeRestrictedImportPattern,
             {
               group: ["@/lib/supabase"],
               message:
@@ -754,6 +755,7 @@ export default defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          paths: [sonnerRestrictedImportPath],
           patterns: [
             {
               group: ["@/lib/supabase"],
@@ -800,6 +802,40 @@ export default defineConfig([
     files: ["supabase/functions/**/*.ts"],
     rules: {
       "no-restricted-imports": "off",
+    },
+  },
+  {
+    // notify.ts is the single approved home for sonner, and test files mock
+    // sonner directly. Exempt both from the sonner import ban while preserving
+    // the parent-relative import restriction they had under the base config.
+    files: ["src/lib/notify.ts", "src/**/*.test.ts", "src/**/*.test.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [parentRelativeRestrictedImportPattern],
+        },
+      ],
+    },
+  },
+  {
+    // Feature test files were governed by the feature block (cross-feature
+    // entrypoint rule, no parent-relative ban); restore that here so exempting
+    // them from the sonner ban above does not tighten their import rules.
+    files: ["src/features/**/*.test.ts", "src/features/**/*.test.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/features/*/**"],
+              message:
+                "Import other features through public entrypoints. Within the same feature, local relative imports are allowed.",
+            },
+          ],
+        },
+      ],
     },
   },
   eslintConfigPrettier,

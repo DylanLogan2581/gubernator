@@ -24,7 +24,6 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -54,7 +53,12 @@ import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import {
+  notifyError,
+  notifyMutationError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
@@ -455,11 +459,7 @@ function WorldListItem({
       notifyMutationSuccess("World moved to trash.");
       setTrashConfirmOpen(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to move world to trash.",
-      );
+      notifyMutationError(error, "Failed to move world to trash.");
     }
   }
 
@@ -552,9 +552,7 @@ function TrashedWorldRow({
       { worldId: world.id },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to restore world.",
-          );
+          notifyMutationError(error, "Failed to restore world.");
         },
         onSuccess: () => {
           notifyMutationSuccess("World restored.");
@@ -716,11 +714,7 @@ function CreateWorldDialog({
         { name },
         {
           onError: (error) => {
-            toast.error(
-              error instanceof Error
-                ? error.message
-                : "Failed to create world.",
-            );
+            notifyMutationError(error, "Failed to create world.");
           },
           onSuccess: () => {
             notifyMutationSuccess("World created.");
@@ -730,7 +724,7 @@ function CreateWorldDialog({
       );
     } else {
       if (dryRunReport !== null && dryRunReport.danglingRefs.length > 0) {
-        toast.error("Template has cross-reference errors", {
+        notifyError("Template has cross-reference errors", {
           description: "Resolve the errors in the template before importing.",
         });
         return;
@@ -739,11 +733,11 @@ function CreateWorldDialog({
         { name, template: effectiveTemplate },
         {
           onError: (error) => {
-            toast.error("Import failed", {
-              description:
-                error instanceof Error
-                  ? error.message
-                  : "Could not import template.",
+            notifyError("Import failed", {
+              description: resolveMutationErrorMessage(
+                error,
+                "Could not import template.",
+              ),
             });
           },
           onSuccess: () => {

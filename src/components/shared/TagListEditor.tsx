@@ -1,6 +1,5 @@
 import { ClipboardList, Plus, X } from "lucide-react";
 import { useState, type JSX, type KeyboardEvent } from "react";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { notifyError, notifyMutationSuccess } from "@/lib/notify";
 import { generateLocalId } from "@/lib/uid";
 
 import { countBulkPastePieces, parseBulkPaste } from "./PoolEditorUtils";
@@ -108,9 +108,9 @@ export function TagListEditor({
       );
     }
     if (accepted.length > 0) {
-      toast.success(messageParts.join(" "));
+      notifyMutationSuccess(messageParts.join(" "));
     } else {
-      toast.error(messageParts.join(" "));
+      notifyError(messageParts.join(" "));
     }
 
     setBulkText("");

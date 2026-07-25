@@ -3,9 +3,8 @@ import {
   type UseMutationOptions,
   type UseMutationResult,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 export function useHardDeleteRow<TData, TError, TVariables>(
   mutationOptions: UseMutationOptions<TData, TError, TVariables>,
@@ -18,11 +17,7 @@ export function useHardDeleteRow<TData, TError, TVariables>(
   return useMutation({
     ...mutationOptions,
     onError: (error, variables, onMutateResult, context) => {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to permanently delete.",
-      );
+      notifyMutationError(error, "Failed to permanently delete.");
       return mutationOptions.onError?.(
         error,
         variables,

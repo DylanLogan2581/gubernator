@@ -138,6 +138,7 @@ describe("TagListEditor", () => {
       expect(onChange).toHaveBeenCalledWith(["alpha", "beta", "gamma"]);
       expect(toast.success).toHaveBeenCalledWith(
         "Added 2 entries. Skipped 2 duplicate.",
+        undefined,
       );
     });
 
@@ -163,6 +164,7 @@ describe("TagListEditor", () => {
       expect(onChange).toHaveBeenCalledWith(["short"]);
       expect(toast.success).toHaveBeenCalledWith(
         "Added 1 entry. Skipped 1 too long.",
+        undefined,
       );
     });
 
@@ -188,6 +190,7 @@ describe("TagListEditor", () => {
       expect(onChange).toHaveBeenCalledWith(["existing", "alpha"]);
       expect(toast.success).toHaveBeenCalledWith(
         "Added 1 entry. Skipped 1 — pool limit reached.",
+        undefined,
       );
     });
 
@@ -208,6 +211,7 @@ describe("TagListEditor", () => {
       expect(onChange).not.toHaveBeenCalled();
       expect(toast.error).toHaveBeenCalledWith(
         "Added 0 entries. Skipped 1 duplicate.",
+        undefined,
       );
     });
   });

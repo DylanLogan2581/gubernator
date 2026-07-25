@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Download, Upload } from "lucide-react";
 import { useRef, useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { notifyMutationSuccess } from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
@@ -61,7 +61,7 @@ function BundledScenarioCard({
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    toast.success("Scenario downloaded", {
+    notifyMutationSuccess("Scenario downloaded", {
       description: `Saved as ${scenario.template.meta.slug}.json`,
     });
   }

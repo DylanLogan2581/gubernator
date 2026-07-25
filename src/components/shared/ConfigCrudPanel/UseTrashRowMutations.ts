@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { notifyMutationError } from "@/lib/notify";
 
 /**
  * Standard error handler for CRUD mutation callbacks.
@@ -7,6 +7,5 @@ import { toast } from "sonner";
  * Usage: onError: (error) => handleCrudError(error, "Failed to delete item.")
  */
 export function handleCrudError(error: unknown, fallbackMessage: string): void {
-  const message = error instanceof Error ? error.message : fallbackMessage;
-  toast.error(message);
+  notifyMutationError(error, fallbackMessage);
 }

@@ -199,7 +199,10 @@ describe("app shell auth controls", () => {
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith("Sign-out failed. Try again.");
+      expect(toastError).toHaveBeenCalledWith(
+        "Sign-out failed. Try again.",
+        undefined,
+      );
     });
     expect(toastError).not.toHaveBeenCalledWith(
       "Internal credential cleanup failed.",

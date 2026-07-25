@@ -8,7 +8,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { IconChip } from "@/components/shared/IconChip";
@@ -35,11 +34,11 @@ import { nationByIdQueryOptions } from "@/features/nations";
 import { resourceByIdQueryOptions } from "@/features/resources";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   cancelEventMutationOptions,
   deleteEventMutationOptions,
-  isEventMutationError,
 } from "../mutations/eventMutations";
 import {
   eventDetailQueryOptions,
@@ -109,7 +108,7 @@ export function EventDetail({
         eventId: event.id,
         worldId,
       });
-      toast.success("Event cancelled");
+      notifyMutationSuccess("Event cancelled");
       setShowCancelDialog(false);
       if (onCancelled !== undefined) {
         onCancelled();
@@ -118,11 +117,7 @@ export function EventDetail({
         await (navigate as any)({ to: `/worlds/${worldId}/events` });
       }
     } catch (error) {
-      if (isEventMutationError(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to cancel event");
-      }
+      notifyMutationError(error, "Failed to cancel event");
     }
   };
 
@@ -132,7 +127,7 @@ export function EventDetail({
         eventId: event.id,
         worldId,
       });
-      toast.success("Event deleted");
+      notifyMutationSuccess("Event deleted");
       setShowDeleteDialog(false);
       if (onDeleted !== undefined) {
         onDeleted();
@@ -141,11 +136,7 @@ export function EventDetail({
         await (navigate as any)({ to: `/worlds/${worldId}/events` });
       }
     } catch (error) {
-      if (isEventMutationError(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to delete event");
-      }
+      notifyMutationError(error, "Failed to delete event");
     }
   };
 

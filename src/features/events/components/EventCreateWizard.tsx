@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -12,12 +11,16 @@ import type { AccessContext } from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
+import {
+  notifyError,
+  notifyMutationError,
+  notifyMutationSuccess,
+} from "@/lib/notify";
 import { generateLocalId } from "@/lib/uid";
 
 import {
   createEventGroupMutationOptions,
   editEventGroupMutationOptions,
-  isEventMutationError,
 } from "../mutations/eventMutations";
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 
@@ -423,7 +426,7 @@ export function EventCreateWizard({
     )
       return;
     if (hasInvalidJobSelection(state.effects)) {
-      toast.error(
+      notifyError(
         "Select at least one job for the production multiplier, or choose All Jobs.",
       );
       return;
@@ -495,7 +498,7 @@ export function EventCreateWizard({
 
         await editMutation.mutateAsync(input);
 
-        toast.success("Event updated successfully");
+        notifyMutationSuccess("Event updated successfully");
         await queryClient.invalidateQueries({
           queryKey: eventQueryKeys.byWorld(worldId),
         });
@@ -562,7 +565,7 @@ export function EventCreateWizard({
 
         await createMutationCreate.mutateAsync(input);
 
-        toast.success("Event created successfully");
+        notifyMutationSuccess("Event created successfully");
         setState(createInitialState(nextTurnNumber));
         setGroupName("");
         setGroupDescription("");
@@ -574,13 +577,10 @@ export function EventCreateWizard({
         onClose();
       }
     } catch (error) {
-      if (isEventMutationError(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error(
-          isEditMode ? "Failed to update event" : "Failed to create event",
-        );
-      }
+      notifyMutationError(
+        error,
+        isEditMode ? "Failed to update event" : "Failed to create event",
+      );
     }
   };
 

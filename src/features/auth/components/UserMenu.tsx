@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LoaderCircle, LogIn, LogOut, ShieldCheck } from "lucide-react";
-import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffectiveCanAdmin } from "@/features/permissions";
 import { syncAuthStateQueryCache } from "@/lib/authStateQueryCache";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyError, notifyMutationSuccess } from "@/lib/notify";
 
 import { signOutMutationOptions } from "../mutations/authMutations";
 import {
@@ -63,7 +62,7 @@ export function UserMenu(): JSX.Element | null {
   function handleSignOut(): void {
     signOutMutation.mutate(undefined, {
       onError: () => {
-        toast.error("Sign-out failed. Try again.");
+        notifyError("Sign-out failed. Try again.");
       },
       onSuccess: () => {
         syncAuthStateQueryCache(queryClient, null);

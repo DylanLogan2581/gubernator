@@ -1,7 +1,6 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Save, UserPlus } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyError, notifyMutationSuccess } from "@/lib/notify";
 
 import { createPlayerCharacterMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
@@ -119,7 +118,7 @@ export function CreatePlayerCharacterDialog({
         },
         {
           onError: (error) => {
-            toast.error(getCreationErrorDescription(error));
+            notifyError(getCreationErrorDescription(error));
           },
           onSuccess: (citizen) => {
             notifyMutationSuccess("Player character created.");
