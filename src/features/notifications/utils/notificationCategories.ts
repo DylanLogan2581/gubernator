@@ -63,6 +63,7 @@ const CATEGORY_BY_NOTIFICATION_TYPE: Record<NotificationType, CategoryKey> = {
   "nation.grant_received": "nations",
   "nation.subsidy_received": "nations",
   "nation.treaty_broken": "nations",
+  "nation.tribute_demanded": "nations",
   "nation.tribute_missed": "nations",
   "nation.treaty_expired": "nations",
   "currency.default": "nations",

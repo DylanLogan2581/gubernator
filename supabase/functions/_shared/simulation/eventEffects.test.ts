@@ -65,6 +65,7 @@ function makeInput(
     nationOffices: [],
     nationRelationships: [],
     nationResourceStockpiles: [],
+    nationTaxPolicies: [],
     nationTreaties: [],
     nations: [],
     partnerships: [],

@@ -6,7 +6,14 @@
 import { describe, expect, it } from "vitest";
 
 import { phaseNationalEconomy } from "./phaseNationalEconomy.ts";
-import { makeContext, makeCurrency, makeLedgerEntry, makeNation, makeSettlement } from "./testFixtures.ts";
+import {
+  makeContext,
+  makeCurrency,
+  makeLedgerEntry,
+  makeNation,
+  makeNationTaxPolicy,
+  makeSettlement,
+} from "./testFixtures.ts";
 
 import type { StockpileDelta } from "../simulationTypes.ts";
 
@@ -19,9 +26,10 @@ function production(
 }
 
 describe("phaseNationalEconomy — regression-safe default", () => {
-  it("collects nothing when tax_rate is 0", () => {
+  it("collects nothing when the default rule rate is 0", () => {
     const ctx = makeContext({
-      nations: [makeNation({ id: "n1", taxRate: 0 })],
+      nations: [makeNation({ id: "n1" })],
+      nationTaxPolicies: [makeNationTaxPolicy({ nationId: "n1", rate: 0 })],
       settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
     });
     ctx.shared.pendingStockpiles.set("s1:food", 100);
@@ -32,6 +40,19 @@ describe("phaseNationalEconomy — regression-safe default", () => {
     expect(result.nationStockpileDeltas).toHaveLength(0);
     expect(result.nationTurnSnapshots).toHaveLength(0);
     expect(result.logs).toHaveLength(0);
+  });
+
+  it("collects nothing when a nation has no tax policy", () => {
+    const ctx = makeContext({
+      nations: [makeNation({ id: "n1" })],
+      settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
+    });
+    ctx.shared.pendingStockpiles.set("s1:food", 100);
+
+    const result = phaseNationalEconomy(ctx, [production("s1", "food", 50)]);
+
+    expect(result.stockpileDeltas).toHaveLength(0);
+    expect(result.nationStockpileDeltas).toHaveLength(0);
   });
 
   it("collects nothing for a settlement with no nation", () => {
@@ -48,10 +69,13 @@ describe("phaseNationalEconomy — regression-safe default", () => {
   });
 });
 
-describe("phaseNationalEconomy — government efficiency", () => {
-  it("taxes production x tax_rate x efficiency for monarchy (1.0)", () => {
+describe("phaseNationalEconomy — percent-of-production method", () => {
+  it("taxes production x rate x efficiency for monarchy (1.0)", () => {
     const ctx = makeContext({
-      nations: [makeNation({ governmentType: "monarchy", id: "n1", taxRate: 0.1 })],
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [
+        makeNationTaxPolicy({ method: "percent_production", nationId: "n1", rate: 0.1 }),
+      ],
       settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
     });
     ctx.shared.pendingStockpiles.set("s1:food", 200);
@@ -67,11 +91,11 @@ describe("phaseNationalEconomy — government efficiency", () => {
     ]);
     expect(result.nationTurnSnapshots).toEqual([
       {
-  nationId: "n1",
-  taxCollectedByResource: { food: 10 },
-  tributePaidByResource: {},
-  tributeReceivedByResource: {},
-},
+        nationId: "n1",
+        taxCollectedByResource: { food: 10 },
+        tributePaidByResource: {},
+        tributeReceivedByResource: {},
+      },
     ]);
     expect(result.logs).toHaveLength(1);
     expect(result.logs[0]).toMatchObject({
@@ -85,9 +109,10 @@ describe("phaseNationalEconomy — government efficiency", () => {
     });
   });
 
-  it("taxes production x tax_rate x efficiency for republic (1.1)", () => {
+  it("applies government efficiency for republic (1.1)", () => {
     const ctx = makeContext({
-      nations: [makeNation({ governmentType: "republic", id: "n1", taxRate: 0.1 })],
+      nations: [makeNation({ governmentType: "republic", id: "n1" })],
+      nationTaxPolicies: [makeNationTaxPolicy({ nationId: "n1", rate: 0.1 })],
       settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
     });
     ctx.shared.pendingStockpiles.set("s1:food", 200);
@@ -95,9 +120,6 @@ describe("phaseNationalEconomy — government efficiency", () => {
     const result = phaseNationalEconomy(ctx, [production("s1", "food", 100)]);
 
     // 100 * 0.1 * 1.1 = 11
-    expect(result.stockpileDeltas).toEqual([
-      { delta: -11, resourceId: "food", settlementId: "s1" },
-    ]);
     expect(result.nationStockpileDeltas).toEqual([
       { delta: 11, nationId: "n1", resourceId: "food" },
     ]);
@@ -105,24 +127,24 @@ describe("phaseNationalEconomy — government efficiency", () => {
 
   it("floors the computed tax rather than rounding", () => {
     const ctx = makeContext({
-      nations: [makeNation({ governmentType: "theocracy", id: "n1", taxRate: 0.33 })],
+      nations: [makeNation({ governmentType: "theocracy", id: "n1" })],
+      nationTaxPolicies: [makeNationTaxPolicy({ nationId: "n1", rate: 0.33 })],
       settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
     });
     ctx.shared.pendingStockpiles.set("s1:food", 200);
 
     const result = phaseNationalEconomy(ctx, [production("s1", "food", 100)]);
 
-    // 100 * 0.33 * 0.9 = 29.7 -> floors to 29.7 (already at 4dp scale, no rounding up)
+    // 100 * 0.33 * 0.9 = 29.7
     expect(result.nationStockpileDeltas).toEqual([
       { delta: 29.7, nationId: "n1", resourceId: "food" },
     ]);
   });
-});
 
-describe("phaseNationalEconomy — caps at available stock", () => {
   it("caps tax at the settlement's currently available stockpile", () => {
     const ctx = makeContext({
-      nations: [makeNation({ governmentType: "monarchy", id: "n1", taxRate: 0.5 })],
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [makeNationTaxPolicy({ nationId: "n1", rate: 0.5 })],
       settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
     });
     ctx.shared.pendingStockpiles.set("s1:food", 200);
@@ -137,26 +159,157 @@ describe("phaseNationalEconomy — caps at available stock", () => {
       { delta: 200, nationId: "n1", resourceId: "food" },
     ]);
   });
+});
 
-  it("collects nothing when the settlement has no stock available", () => {
+describe("phaseNationalEconomy — percent-of-stockpile method", () => {
+  it("taxes the current stockpile independent of production", () => {
     const ctx = makeContext({
-      nations: [makeNation({ id: "n1", taxRate: 0.5 })],
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [
+        makeNationTaxPolicy({ method: "percent_stockpile", nationId: "n1", rate: 0.1 }),
+      ],
       settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
     });
-    ctx.shared.pendingStockpiles.set("s1:food", 0);
+    ctx.shared.pendingStockpiles.set("s1:food", 500);
+
+    // No production this turn, but the 500-unit stockpile is still taxed.
+    const result = phaseNationalEconomy(ctx, []);
+
+    // 500 * 0.1 * 1.0 = 50
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -50, resourceId: "food", settlementId: "s1" },
+    ]);
+    expect(result.nationStockpileDeltas).toEqual([
+      { delta: 50, nationId: "n1", resourceId: "food" },
+    ]);
+  });
+});
+
+describe("phaseNationalEconomy — flat method", () => {
+  it("seizes a flat per-resource amount, clamped to available stock", () => {
+    const ctx = makeContext({
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [
+        makeNationTaxPolicy({ flatAmount: 15, method: "flat", nationId: "n1" }),
+      ],
+      settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
+    });
+    ctx.shared.pendingStockpiles.set("s1:food", 10);
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    // flat 15 but only 10 available.
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -10, resourceId: "food", settlementId: "s1" },
+    ]);
+    expect(result.nationStockpileDeltas).toEqual([
+      { delta: 10, nationId: "n1", resourceId: "food" },
+    ]);
+  });
+});
+
+describe("phaseNationalEconomy — minimum stockpile floor", () => {
+  it("never taxes a settlement below the configured floor", () => {
+    const ctx = makeContext({
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [
+        makeNationTaxPolicy({
+          method: "percent_stockpile",
+          minStockpileFloor: 80,
+          nationId: "n1",
+          rate: 0.5,
+        }),
+      ],
+      settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
+    });
+    ctx.shared.pendingStockpiles.set("s1:food", 100);
+
+    // computed 100 * 0.5 = 50, but only 100 - 80 = 20 is above the floor.
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -20, resourceId: "food", settlementId: "s1" },
+    ]);
+  });
+});
+
+describe("phaseNationalEconomy — resource selection", () => {
+  it("only taxes the resources listed in taxedResourceIds", () => {
+    const ctx = makeContext({
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [
+        makeNationTaxPolicy({
+          method: "percent_stockpile",
+          nationId: "n1",
+          rate: 0.1,
+          taxedResourceIds: ["food"],
+        }),
+      ],
+      settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
+    });
+    ctx.shared.pendingStockpiles.set("s1:food", 200);
+    ctx.shared.pendingStockpiles.set("s1:wood", 200);
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    // Only food is taxed; wood is untouched.
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -20, resourceId: "food", settlementId: "s1" },
+    ]);
+  });
+});
+
+describe("phaseNationalEconomy — exemptions and per-settlement overrides", () => {
+  it("collects nothing from a settlement whose effective rule is exempt", () => {
+    const ctx = makeContext({
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [makeNationTaxPolicy({ exempt: true, nationId: "n1", rate: 0.5 })],
+      settlements: [makeSettlement({ id: "s1", nationId: "n1" })],
+    });
+    ctx.shared.pendingStockpiles.set("s1:food", 200);
 
     const result = phaseNationalEconomy(ctx, [production("s1", "food", 100)]);
 
     expect(result.stockpileDeltas).toHaveLength(0);
     expect(result.nationStockpileDeltas).toHaveLength(0);
-    expect(result.nationTurnSnapshots).toHaveLength(0);
+  });
+
+  it("applies a per-settlement override in place of the default rule", () => {
+    const ctx = makeContext({
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [
+        makeNationTaxPolicy({ nationId: "n1", rate: 0.1 }),
+        // s2 is exempt via an override even though the nation default taxes.
+        makeNationTaxPolicy({ exempt: true, nationId: "n1", settlementId: "s2" }),
+      ],
+      settlements: [
+        makeSettlement({ id: "s1", nationId: "n1" }),
+        makeSettlement({ id: "s2", nationId: "n1" }),
+      ],
+    });
+    ctx.shared.pendingStockpiles.set("s1:food", 200);
+    ctx.shared.pendingStockpiles.set("s2:food", 200);
+
+    const result = phaseNationalEconomy(ctx, [
+      production("s1", "food", 100),
+      production("s2", "food", 100),
+    ]);
+
+    // Only s1 pays; s2's override exempts it.
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -10, resourceId: "food", settlementId: "s1" },
+    ]);
+    expect(result.nationStockpileDeltas).toEqual([
+      { delta: 10, nationId: "n1", resourceId: "food" },
+    ]);
   });
 });
 
 describe("phaseNationalEconomy — aggregation across settlements", () => {
   it("credits one nation-level delta and snapshot for multiple settlements", () => {
     const ctx = makeContext({
-      nations: [makeNation({ governmentType: "monarchy", id: "n1", taxRate: 0.1 })],
+      nations: [makeNation({ governmentType: "monarchy", id: "n1" })],
+      nationTaxPolicies: [makeNationTaxPolicy({ nationId: "n1", rate: 0.1 })],
       settlements: [
         makeSettlement({ id: "s1", nationId: "n1" }),
         makeSettlement({ id: "s2", nationId: "n1" }),
@@ -179,11 +332,11 @@ describe("phaseNationalEconomy — aggregation across settlements", () => {
     ]);
     expect(result.nationTurnSnapshots).toEqual([
       {
-  nationId: "n1",
-  taxCollectedByResource: { food: 15 },
-  tributePaidByResource: {},
-  tributeReceivedByResource: {},
-},
+        nationId: "n1",
+        taxCollectedByResource: { food: 15 },
+        tributePaidByResource: {},
+        tributeReceivedByResource: {},
+      },
     ]);
     expect(result.logs).toHaveLength(1);
     expect(result.logs[0].payload).toEqual({

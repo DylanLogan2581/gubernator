@@ -20,6 +20,7 @@ export type NationSection =
   | "reports"
   | "settings"
   | "settlements"
+  | "taxPolicy"
   | "treasury";
 
 export type NationScopeSwitcherProps = {
@@ -38,6 +39,7 @@ type NationSectionRouteId =
   | "/worlds/$worldId/nations/$nationId/reports"
   | "/worlds/$worldId/nations/$nationId/settings"
   | "/worlds/$worldId/nations/$nationId/settlements"
+  | "/worlds/$worldId/nations/$nationId/taxPolicy"
   | "/worlds/$worldId/nations/$nationId/treasury";
 
 function sectionRouteId(section: NationSection | null): NationSectionRouteId {
@@ -58,6 +60,8 @@ function sectionRouteId(section: NationSection | null): NationSectionRouteId {
       return "/worlds/$worldId/nations/$nationId/settings";
     case "settlements":
       return "/worlds/$worldId/nations/$nationId/settlements";
+    case "taxPolicy":
+      return "/worlds/$worldId/nations/$nationId/taxPolicy";
     case "treasury":
       return "/worlds/$worldId/nations/$nationId/treasury";
     case "overview":

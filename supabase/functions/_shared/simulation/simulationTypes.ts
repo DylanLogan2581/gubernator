@@ -173,6 +173,21 @@ export type SimNationStockpile = {
   readonly resourceId: string;
 };
 
+export type SimTaxMethod = "percent_production" | "percent_stockpile" | "flat";
+
+export type SimNationTaxPolicy = {
+  readonly exempt: boolean;
+  readonly flatAmount: number;
+  readonly method: SimTaxMethod;
+  readonly minStockpileFloor: number;
+  readonly nationId: string;
+  readonly rate: number;
+  // null => the nation's default rule; otherwise a per-settlement override.
+  readonly settlementId: string | null;
+  // null => applies to all resources; otherwise only these resource ids.
+  readonly taxedResourceIds: readonly string[] | null;
+};
+
 export type SimSettlement = {
   readonly autoReadyEnabled?: boolean;
   readonly id: string;
@@ -552,6 +567,7 @@ export type SimulationInputState = {
   readonly nationOffices: readonly SimNationOffice[];
   readonly nationRelationships: readonly SimNationRelationship[];
   readonly nationResourceStockpiles: readonly SimNationStockpile[];
+  readonly nationTaxPolicies: readonly SimNationTaxPolicy[];
   readonly nationTreaties: readonly SimTreaty[];
   readonly nations: readonly SimNation[];
   readonly npcFlavorConfig?: NpcFlavorConfig | null;

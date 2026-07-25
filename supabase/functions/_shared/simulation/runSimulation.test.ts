@@ -72,6 +72,7 @@ function makeInput(
     nationOffices: [],
     nationRelationships: [],
     nationResourceStockpiles: [],
+    nationTaxPolicies: [],
     nationTreaties: [],
     nations: [],
     partnerships: [],
@@ -465,6 +466,18 @@ describe("runSimulation — national economy tax collection", () => {
       nations: [
         { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 1.0, tradePolicy: "free" as const },
       ],
+      nationTaxPolicies: [
+        {
+          exempt: false,
+          flatAmount: 0,
+          method: "percent_production" as const,
+          minStockpileFloor: 0,
+          nationId: "n1",
+          rate: 1.0,
+          settlementId: null,
+          taxedResourceIds: null,
+        },
+      ],
       populationRules: { ...BASE_POPULATION_RULES, foodConsumptionPerCitizen: 10 },
       settlements: [{ id: "s1", name: "s1", nationId: "n1" }],
       stockpiles: [makeStockpile("s1", "food", 0)],
@@ -482,6 +495,7 @@ describe("runSimulation — national economy tax collection", () => {
         nations: [
           { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0, tradePolicy: "free" as const },
         ],
+        nationTaxPolicies: [],
       }),
       "t-notax",
     );

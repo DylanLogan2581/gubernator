@@ -276,6 +276,17 @@ export type SupabaseNationStockpileRow = {
   readonly quantity: number;
 };
 
+export type SupabaseNationTaxPolicyRow = {
+  readonly nation_id: string;
+  readonly settlement_id: string | null;
+  readonly method: string;
+  readonly rate: number;
+  readonly flat_amount: number;
+  readonly taxed_resource_ids: readonly string[] | null;
+  readonly min_stockpile_floor: number;
+  readonly exempt: boolean;
+};
+
 export type SupabaseNationTreatyRow = {
   readonly id: string;
   readonly proposer_nation_id: string;
@@ -733,6 +744,20 @@ export function isNationStockpileRow(v: unknown): v is SupabaseNationStockpileRo
     typeof v.nation_id === "string" &&
     typeof v.resource_id === "string" &&
     typeof v.quantity === "number"
+  );
+}
+
+export function isNationTaxPolicyRow(v: unknown): v is SupabaseNationTaxPolicyRow {
+  return (
+    isRecord(v) &&
+    typeof v.nation_id === "string" &&
+    (v.settlement_id === null || typeof v.settlement_id === "string") &&
+    typeof v.method === "string" &&
+    typeof v.rate === "number" &&
+    typeof v.flat_amount === "number" &&
+    (v.taxed_resource_ids === null || Array.isArray(v.taxed_resource_ids)) &&
+    typeof v.min_stockpile_floor === "number" &&
+    typeof v.exempt === "boolean"
   );
 }
 

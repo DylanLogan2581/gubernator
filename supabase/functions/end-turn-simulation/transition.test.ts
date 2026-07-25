@@ -85,6 +85,7 @@ function makeBaseInput(
     nationOffices: [],
     nationRelationships: [],
     nationResourceStockpiles: [],
+    nationTaxPolicies: [],
     nationTreaties: [],
     nations: [],
     npcFlavorConfig: null,

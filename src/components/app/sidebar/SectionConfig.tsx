@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Package,
   PawPrint,
+  Percent,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -64,6 +65,7 @@ type NationSectionRouteId =
   | "/worlds/$worldId/nations/$nationId/reports"
   | "/worlds/$worldId/nations/$nationId/settings"
   | "/worlds/$worldId/nations/$nationId/settlements"
+  | "/worlds/$worldId/nations/$nationId/taxPolicy"
   | "/worlds/$worldId/nations/$nationId/treasury";
 
 const SETTLEMENT_SECTION_CONFIG: readonly SectionConfig<
@@ -208,6 +210,12 @@ const NATION_SECTION_CONFIG: readonly SectionConfig<
     label: "Bank",
     segment: "bank",
     to: "/worlds/$worldId/nations/$nationId/bank",
+  },
+  {
+    icon: <Percent aria-hidden="true" />,
+    label: "Tax Policy",
+    segment: "taxPolicy",
+    to: "/worlds/$worldId/nations/$nationId/taxPolicy",
   },
   {
     icon: <FileText aria-hidden="true" />,

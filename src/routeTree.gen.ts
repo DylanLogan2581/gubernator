@@ -46,6 +46,7 @@ import { Route as WorldsWorldIdConfigurationCulturesCultureIdRouteImport } from 
 import { Route as WorldsWorldIdNationsNationIdNationIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.index'
 import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId'
 import { Route as WorldsWorldIdNationsNationIdNationTreasuryRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.treasury'
+import { Route as WorldsWorldIdNationsNationIdNationTaxPolicyRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.taxPolicy'
 import { Route as WorldsWorldIdNationsNationIdNationSettlementsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.settlements'
 import { Route as WorldsWorldIdNationsNationIdNationSettingsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.settings'
 import { Route as WorldsWorldIdNationsNationIdNationReportsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.reports'
@@ -270,6 +271,12 @@ const WorldsWorldIdNationsNationIdNationTreasuryRoute =
     path: '/treasury',
     getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
   } as any)
+const WorldsWorldIdNationsNationIdNationTaxPolicyRoute =
+  WorldsWorldIdNationsNationIdNationTaxPolicyRouteImport.update({
+    id: '/taxPolicy',
+    path: '/taxPolicy',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
 const WorldsWorldIdNationsNationIdNationSettlementsRoute =
   WorldsWorldIdNationsNationIdNationSettlementsRouteImport.update({
     id: '/settlements',
@@ -479,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/worlds/$worldId/nations/$nationId/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
   '/worlds/$worldId/nations/$nationId/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
   '/worlds/$worldId/nations/$nationId/settlements': typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  '/worlds/$worldId/nations/$nationId/taxPolicy': typeof WorldsWorldIdNationsNationIdNationTaxPolicyRoute
   '/worlds/$worldId/nations/$nationId/treasury': typeof WorldsWorldIdNationsNationIdNationTreasuryRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren
   '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdNationIndexRoute
@@ -533,6 +541,7 @@ export interface FileRoutesByTo {
   '/worlds/$worldId/nations/$nationId/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
   '/worlds/$worldId/nations/$nationId/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
   '/worlds/$worldId/nations/$nationId/settlements': typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  '/worlds/$worldId/nations/$nationId/taxPolicy': typeof WorldsWorldIdNationsNationIdNationTaxPolicyRoute
   '/worlds/$worldId/nations/$nationId/treasury': typeof WorldsWorldIdNationsNationIdNationTreasuryRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute
@@ -593,6 +602,7 @@ export interface FileRoutesById {
   '/worlds/$worldId/nations/$nationId/_nation/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
   '/worlds/$worldId/nations/$nationId/_nation/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
   '/worlds/$worldId/nations/$nationId/_nation/settlements': typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  '/worlds/$worldId/nations/$nationId/_nation/taxPolicy': typeof WorldsWorldIdNationsNationIdNationTaxPolicyRoute
   '/worlds/$worldId/nations/$nationId/_nation/treasury': typeof WorldsWorldIdNationsNationIdNationTreasuryRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren
   '/worlds/$worldId/nations/$nationId/_nation/': typeof WorldsWorldIdNationsNationIdNationIndexRoute
@@ -655,6 +665,7 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/nations/$nationId/reports'
     | '/worlds/$worldId/nations/$nationId/settings'
     | '/worlds/$worldId/nations/$nationId/settlements'
+    | '/worlds/$worldId/nations/$nationId/taxPolicy'
     | '/worlds/$worldId/nations/$nationId/treasury'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
     | '/worlds/$worldId/nations/$nationId/'
@@ -709,6 +720,7 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/nations/$nationId/reports'
     | '/worlds/$worldId/nations/$nationId/settings'
     | '/worlds/$worldId/nations/$nationId/settlements'
+    | '/worlds/$worldId/nations/$nationId/taxPolicy'
     | '/worlds/$worldId/nations/$nationId/treasury'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings'
@@ -768,6 +780,7 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/nations/$nationId/_nation/reports'
     | '/worlds/$worldId/nations/$nationId/_nation/settings'
     | '/worlds/$worldId/nations/$nationId/_nation/settlements'
+    | '/worlds/$worldId/nations/$nationId/_nation/taxPolicy'
     | '/worlds/$worldId/nations/$nationId/_nation/treasury'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
     | '/worlds/$worldId/nations/$nationId/_nation/'
@@ -1058,6 +1071,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationTreasuryRouteImport
       parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
     }
+    '/worlds/$worldId/nations/$nationId/_nation/taxPolicy': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/taxPolicy'
+      path: '/taxPolicy'
+      fullPath: '/worlds/$worldId/nations/$nationId/taxPolicy'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationTaxPolicyRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
     '/worlds/$worldId/nations/$nationId/_nation/settlements': {
       id: '/worlds/$worldId/nations/$nationId/_nation/settlements'
       path: '/settlements'
@@ -1277,6 +1297,7 @@ interface WorldsWorldIdNationsNationIdNationRouteChildren {
   WorldsWorldIdNationsNationIdNationReportsRoute: typeof WorldsWorldIdNationsNationIdNationReportsRoute
   WorldsWorldIdNationsNationIdNationSettingsRoute: typeof WorldsWorldIdNationsNationIdNationSettingsRoute
   WorldsWorldIdNationsNationIdNationSettlementsRoute: typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  WorldsWorldIdNationsNationIdNationTaxPolicyRoute: typeof WorldsWorldIdNationsNationIdNationTaxPolicyRoute
   WorldsWorldIdNationsNationIdNationTreasuryRoute: typeof WorldsWorldIdNationsNationIdNationTreasuryRoute
   WorldsWorldIdNationsNationIdNationIndexRoute: typeof WorldsWorldIdNationsNationIdNationIndexRoute
 }
@@ -1299,6 +1320,8 @@ const WorldsWorldIdNationsNationIdNationRouteChildren: WorldsWorldIdNationsNatio
       WorldsWorldIdNationsNationIdNationSettingsRoute,
     WorldsWorldIdNationsNationIdNationSettlementsRoute:
       WorldsWorldIdNationsNationIdNationSettlementsRoute,
+    WorldsWorldIdNationsNationIdNationTaxPolicyRoute:
+      WorldsWorldIdNationsNationIdNationTaxPolicyRoute,
     WorldsWorldIdNationsNationIdNationTreasuryRoute:
       WorldsWorldIdNationsNationIdNationTreasuryRoute,
     WorldsWorldIdNationsNationIdNationIndexRoute:

@@ -96,6 +96,7 @@ function makeContext(
       nationOffices: [],
       nationRelationships: [],
       nationResourceStockpiles: [],
+      nationTaxPolicies: [],
       nationTreaties: [],
       nations: [],
       partnerships: [],

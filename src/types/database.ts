@@ -3020,6 +3020,63 @@ export type Database = {
           },
         ];
       };
+      nation_tax_policies: {
+        Row: {
+          created_at: string;
+          exempt: boolean;
+          flat_amount: number;
+          id: string;
+          method: Database["public"]["Enums"]["tax_method"];
+          min_stockpile_floor: number;
+          nation_id: string;
+          rate: number;
+          settlement_id: string | null;
+          taxed_resource_ids: string[] | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          exempt?: boolean;
+          flat_amount?: number;
+          id?: string;
+          method?: Database["public"]["Enums"]["tax_method"];
+          min_stockpile_floor?: number;
+          nation_id: string;
+          rate?: number;
+          settlement_id?: string | null;
+          taxed_resource_ids?: string[] | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          exempt?: boolean;
+          flat_amount?: number;
+          id?: string;
+          method?: Database["public"]["Enums"]["tax_method"];
+          min_stockpile_floor?: number;
+          nation_id?: string;
+          rate?: number;
+          settlement_id?: string | null;
+          taxed_resource_ids?: string[] | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_tax_policies_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_tax_policies_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_treaties: {
         Row: {
           created_at: string;
@@ -6327,11 +6384,23 @@ export type Database = {
         Args: { p_event_id: string; p_group_id: string };
         Returns: Json;
       };
+      delete_nation_tax_policy: {
+        Args: { p_nation_id: string; p_settlement_id: string };
+        Returns: undefined;
+      };
       delete_religion: {
         Args: { p_reassign_to_id?: string; p_religion_id: string };
         Returns: {
           id: string;
           world_id: string;
+        }[];
+      };
+      demand_tribute: {
+        Args: { p_items: Json; p_nation_id: string; p_settlement_id: string };
+        Returns: {
+          clamped: boolean;
+          resource_id: string;
+          seized_quantity: number;
         }[];
       };
       deposit_reserves: {
@@ -8842,6 +8911,37 @@ export type Database = {
           id: string;
         }[];
       };
+      upsert_nation_tax_policy: {
+        Args: {
+          p_exempt: boolean;
+          p_flat_amount: number;
+          p_method: Database["public"]["Enums"]["tax_method"];
+          p_min_stockpile_floor: number;
+          p_nation_id: string;
+          p_rate: number;
+          p_settlement_id: string;
+          p_taxed_resource_ids: string[];
+        };
+        Returns: {
+          created_at: string;
+          exempt: boolean;
+          flat_amount: number;
+          id: string;
+          method: Database["public"]["Enums"]["tax_method"];
+          min_stockpile_floor: number;
+          nation_id: string;
+          rate: number;
+          settlement_id: string | null;
+          taxed_resource_ids: string[] | null;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nation_tax_policies";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       upsert_world_retention_config: {
         Args: {
           p_log_retention_turns?: number;
@@ -8977,7 +9077,9 @@ export type Database = {
         | "law.amendment_failed"
         | "law.amendment_withdrawn"
         | "law.amendment_expired"
-        | "office.term_ended";
+        | "office.term_ended"
+        | "nation.tribute_demanded";
+      tax_method: "percent_production" | "percent_stockpile" | "flat";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -9160,7 +9262,9 @@ export const Constants = {
         "law.amendment_withdrawn",
         "law.amendment_expired",
         "office.term_ended",
+        "nation.tribute_demanded",
       ],
+      tax_method: ["percent_production", "percent_stockpile", "flat"],
     },
   },
 } as const;

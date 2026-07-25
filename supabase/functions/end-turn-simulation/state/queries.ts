@@ -619,6 +619,24 @@ export function fetchNationResourceStockpiles(
   });
 }
 
+// #1375: nation_tax_policies has no world_id column, so scope via the nation
+// join like nation_resource_stockpiles.
+export function fetchNationTaxPolicies(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_tax_policies",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "nation_id,settlement_id,method,rate,flat_amount,taxed_resource_ids,min_stockpile_floor,exempt,nations!inner(world_id)",
+    },
+  });
+}
+
 // #1090: scoped via the proposer side's world; the same-world check on
 // nation_treaties guarantees responder_nation_id always agrees. Only active
 // treaties act in simulation — proposed/declined/withdrawn/expired/broken

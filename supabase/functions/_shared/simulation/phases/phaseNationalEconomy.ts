@@ -20,6 +20,7 @@ import type {
   NationCurrencyUpdate,
   NationStockpileDelta,
   NationTurnSnapshot,
+  SimNationTaxPolicy,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -36,12 +37,6 @@ export type PhaseNationalEconomyOutput = {
   readonly stockpileDeltas: readonly StockpileDelta[];
 };
 
-type ProductionEntry = {
-  readonly amount: number;
-  readonly resourceId: string;
-  readonly settlementId: string;
-};
-
 /**
  * Taxes settlement production for the settlement's nation, in kind.
  *
@@ -55,24 +50,50 @@ export function phaseNationalEconomy(
   context: SimulationContext,
   productionDeltas: readonly StockpileDelta[],
 ): PhaseNationalEconomyOutput {
-  const { nations, settlements } = context.input;
+  const { nations, nationTaxPolicies, settlements } = context.input;
   const { pendingStockpiles } = context.shared;
 
   const nationById = new Map(nations.map((n) => [n.id, n]));
-  const settlementById = new Map(settlements.map((s) => [s.id, s]));
+
+  // Resolve tax policy per settlement: a per-settlement override wins over the
+  // nation's default rule.
+  const defaultPolicyByNation = new Map<string, SimNationTaxPolicy>();
+  const overridePolicyByKey = new Map<string, SimNationTaxPolicy>();
+  for (const policy of nationTaxPolicies) {
+    if (policy.settlementId === null) {
+      defaultPolicyByNation.set(policy.nationId, policy);
+    } else {
+      overridePolicyByKey.set(`${policy.nationId}:${policy.settlementId}`, policy);
+    }
+  }
 
   // Sum gross production per (settlementId, resourceId) — multiple production
   // phases (jobs, deposits) may contribute to the same resource.
-  const productionByKey = new Map<string, ProductionEntry>();
+  const productionByKey = new Map<string, number>();
   for (const d of productionDeltas) {
     if (d.delta <= 0) continue;
     const key = `${d.settlementId}:${d.resourceId}`;
-    const existing = productionByKey.get(key);
-    productionByKey.set(key, {
-      amount: (existing?.amount ?? 0) + d.delta,
-      resourceId: d.resourceId,
-      settlementId: d.settlementId,
-    });
+    productionByKey.set(key, (productionByKey.get(key) ?? 0) + d.delta);
+  }
+
+  // Resource universe per settlement, derived from the (fully seeded) pending
+  // stockpile map so percent-of-stockpile / flat rules can tax resources a
+  // settlement holds even without production this turn. Deterministic order.
+  const resourcesBySettlement = new Map<string, string[]>();
+  for (const key of pendingStockpiles.keys()) {
+    const sep = key.indexOf(":");
+    if (sep < 0) continue;
+    const settlementId = key.slice(0, sep);
+    const resourceId = key.slice(sep + 1);
+    const list = resourcesBySettlement.get(settlementId);
+    if (list === undefined) {
+      resourcesBySettlement.set(settlementId, [resourceId]);
+    } else {
+      list.push(resourceId);
+    }
+  }
+  for (const list of resourcesBySettlement.values()) {
+    list.sort();
   }
 
   const logs: SimulationLogEntry[] = [];
@@ -84,44 +105,70 @@ export function phaseNationalEconomy(
     Array<{ readonly amount: number; readonly resourceId: string; readonly settlementId: string }>
   >();
 
-  for (const { amount: production, resourceId, settlementId } of productionByKey.values()) {
-    const settlement = settlementById.get(settlementId);
-    if (settlement?.nationId === undefined) continue;
+  // Iterate settlements in id order for determinism.
+  const sortedSettlements = [...settlements].sort(compareById);
+  for (const settlement of sortedSettlements) {
+    if (settlement.nationId === undefined) continue;
     const nation = nationById.get(settlement.nationId);
-    if (nation === undefined || nation.taxRate <= 0) continue;
+    if (nation === undefined) continue;
+
+    const policy =
+      overridePolicyByKey.get(`${nation.id}:${settlement.id}`) ??
+      defaultPolicyByNation.get(nation.id);
+    if (policy === undefined || policy.exempt) continue;
 
     const efficiency = GOVERNMENT_TAX_EFFICIENCY[nation.governmentType];
-    const computedTax = floorToDatabaseScale(production * nation.taxRate * efficiency);
-    if (computedTax <= 0) continue;
 
-    const stockpileKey = `${settlementId}:${resourceId}`;
-    const available = Math.max(0, pendingStockpiles.get(stockpileKey) ?? 0);
-    const taxAmount = Math.min(computedTax, available);
-    if (taxAmount <= 0) continue;
+    const targetResourceIds =
+      policy.taxedResourceIds !== null
+        ? [...policy.taxedResourceIds].sort()
+        : (resourcesBySettlement.get(settlement.id) ?? []);
 
-    stockpileDeltas.push({ delta: -taxAmount, resourceId, settlementId });
+    for (const resourceId of targetResourceIds) {
+      const stockpileKey = `${settlement.id}:${resourceId}`;
+      const available = Math.max(0, pendingStockpiles.get(stockpileKey) ?? 0);
 
-    const nationResourceKey = `${nation.id}:${resourceId}`;
-    const existingCredit = nationCredits.get(nationResourceKey);
-    nationCredits.set(nationResourceKey, {
-      delta: (existingCredit?.delta ?? 0) + taxAmount,
-      nationId: nation.id,
-      resourceId,
-    });
+      let base: number;
+      if (policy.method === "percent_production") {
+        base = (productionByKey.get(stockpileKey) ?? 0) * policy.rate;
+      } else if (policy.method === "percent_stockpile") {
+        base = available * policy.rate;
+      } else {
+        base = policy.flatAmount;
+      }
 
-    let totalsByResource = nationTotalsByResource.get(nation.id);
-    if (totalsByResource === undefined) {
-      totalsByResource = new Map();
-      nationTotalsByResource.set(nation.id, totalsByResource);
+      const computedTax = floorToDatabaseScale(base * efficiency);
+      if (computedTax <= 0) continue;
+
+      // Never tax a settlement below its minimum-stockpile floor.
+      const taxableAbove = Math.max(0, available - policy.minStockpileFloor);
+      const taxAmount = Math.min(computedTax, taxableAbove);
+      if (taxAmount <= 0) continue;
+
+      stockpileDeltas.push({ delta: -taxAmount, resourceId, settlementId: settlement.id });
+
+      const nationResourceKey = `${nation.id}:${resourceId}`;
+      const existingCredit = nationCredits.get(nationResourceKey);
+      nationCredits.set(nationResourceKey, {
+        delta: (existingCredit?.delta ?? 0) + taxAmount,
+        nationId: nation.id,
+        resourceId,
+      });
+
+      let totalsByResource = nationTotalsByResource.get(nation.id);
+      if (totalsByResource === undefined) {
+        totalsByResource = new Map();
+        nationTotalsByResource.set(nation.id, totalsByResource);
+      }
+      totalsByResource.set(resourceId, (totalsByResource.get(resourceId) ?? 0) + taxAmount);
+
+      let breakdown = nationBreakdown.get(nation.id);
+      if (breakdown === undefined) {
+        breakdown = [];
+        nationBreakdown.set(nation.id, breakdown);
+      }
+      breakdown.push({ amount: taxAmount, resourceId, settlementId: settlement.id });
     }
-    totalsByResource.set(resourceId, (totalsByResource.get(resourceId) ?? 0) + taxAmount);
-
-    let breakdown = nationBreakdown.get(nation.id);
-    if (breakdown === undefined) {
-      breakdown = [];
-      nationBreakdown.set(nation.id, breakdown);
-    }
-    breakdown.push({ amount: taxAmount, resourceId, settlementId });
   }
 
   const nationTurnSnapshots: NationTurnSnapshot[] = [];

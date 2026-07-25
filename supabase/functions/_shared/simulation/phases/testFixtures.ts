@@ -16,6 +16,7 @@ import type {
   SimNation,
   SimNationCurrency,
   SimNationOffice,
+  SimNationTaxPolicy,
   SimSettlement,
   SimTreaty,
   SimulationContext,
@@ -86,6 +87,7 @@ export function makeInputState(
     nationOffices: [],
     nationRelationships: [],
     nationResourceStockpiles: [],
+    nationTaxPolicies: [],
     nationTreaties: [],
     nations: [],
     partnerships: [],
@@ -153,6 +155,21 @@ export function makeNation(
     name: "Testland",
     taxRate: 0,
     tradePolicy: "free",
+    ...overrides,
+  };
+}
+
+export function makeNationTaxPolicy(
+  overrides: Partial<SimNationTaxPolicy> & { nationId: string },
+): SimNationTaxPolicy {
+  return {
+    exempt: false,
+    flatAmount: 0,
+    method: "percent_production",
+    minStockpileFloor: 0,
+    rate: 0,
+    settlementId: null,
+    taxedResourceIds: null,
     ...overrides,
   };
 }

@@ -30,6 +30,7 @@ import {
   toSimNationOffice,
   toSimNationRelationship,
   toSimNationStockpile,
+  toSimNationTaxPolicy,
   toSimPartnership,
   toSimProject,
   toSimSettlement,
@@ -62,6 +63,7 @@ import {
   fetchNationOffices,
   fetchNationRelationships,
   fetchNationResourceStockpiles,
+  fetchNationTaxPolicies,
   fetchNations,
   fetchNationTreaties,
   fetchPartnerships,
@@ -93,6 +95,7 @@ import {
   isNationRelationshipRow,
   isNationRow,
   isNationStockpileRow,
+  isNationTaxPolicyRow,
   isNationTreatyRow,
   isPartnershipRow,
   isProjectRow,
@@ -230,6 +233,7 @@ async function resolveEndTurnInputFromCtx(
     nationOfficesResult,
     nationRelationshipsResult,
     nationResourceStockpilesResult,
+    nationTaxPoliciesResult,
     nationTreatiesResult,
     nationCurrenciesResult,
     nationCurrencyLedgerEntriesResult,
@@ -261,6 +265,7 @@ async function resolveEndTurnInputFromCtx(
     fetchNationOffices(ctx, worldId),
     fetchNationRelationships(ctx, worldId),
     fetchNationResourceStockpiles(ctx, worldId),
+    fetchNationTaxPolicies(ctx, worldId),
     fetchNationTreaties(ctx, worldId),
     fetchNationCurrencies(ctx, worldId),
     fetchNationCurrencyLedgerEntries(ctx, worldId, worldRow.current_turn_number),
@@ -294,6 +299,7 @@ async function resolveEndTurnInputFromCtx(
     nationOfficesResult,
     nationRelationshipsResult,
     nationResourceStockpilesResult,
+    nationTaxPoliciesResult,
     nationTreatiesResult,
     nationCurrenciesResult,
     nationCurrencyLedgerEntriesResult,
@@ -455,6 +461,11 @@ async function resolveEndTurnInputFromCtx(
     ).rows
       .filter(isNationStockpileRow)
       .map(toSimNationStockpile),
+    nationTaxPolicies: (
+      nationTaxPoliciesResult as Extract<typeof nationTaxPoliciesResult, { ok: true }>
+    ).rows
+      .filter(isNationTaxPolicyRow)
+      .map(toSimNationTaxPolicy),
     nationTreaties: (
       nationTreatiesResult as Extract<typeof nationTreatiesResult, { ok: true }>
     ).rows

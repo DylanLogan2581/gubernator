@@ -35,6 +35,7 @@ import type {
   SupabaseNationRelationshipRow,
   SupabaseNationRow,
   SupabaseNationStockpileRow,
+  SupabaseNationTaxPolicyRow,
   SupabaseNationTreatyRow,
   SupabasePartnershipRow,
   SupabaseProjectRow,
@@ -74,11 +75,13 @@ import type {
   SimNationOffice,
   SimNationRelationship,
   SimNationStockpile,
+  SimNationTaxPolicy,
   SimPartnership,
   SimPopulationResourceEntry,
   SimSettlement,
   SimSettlementBuilding,
   SimStockpile,
+  SimTaxMethod,
   SimTierCostEntry,
   SimTierEffect,
   SimTradeRoute,
@@ -457,6 +460,24 @@ export function toSimNationStockpile(row: SupabaseNationStockpileRow): SimNation
     nationId: row.nation_id,
     quantity: row.quantity,
     resourceId: row.resource_id,
+  };
+}
+
+const TAX_METHODS: readonly SimTaxMethod[] = ["percent_production", "percent_stockpile", "flat"];
+
+export function toSimNationTaxPolicy(row: SupabaseNationTaxPolicyRow): SimNationTaxPolicy {
+  const method: SimTaxMethod = TAX_METHODS.includes(row.method as SimTaxMethod)
+    ? (row.method as SimTaxMethod)
+    : "percent_production";
+  return {
+    exempt: row.exempt,
+    flatAmount: row.flat_amount,
+    method,
+    minStockpileFloor: row.min_stockpile_floor,
+    nationId: row.nation_id,
+    rate: row.rate,
+    settlementId: row.settlement_id,
+    taxedResourceIds: row.taxed_resource_ids === null ? null : [...row.taxed_resource_ids],
   };
 }
 
