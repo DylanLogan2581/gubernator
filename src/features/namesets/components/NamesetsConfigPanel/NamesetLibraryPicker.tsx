@@ -47,9 +47,14 @@ export function NamesetLibraryPicker({
   const filteredEntries = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (query.length === 0) return namesetLibraryIndex;
-    return namesetLibraryIndex.filter((entry) =>
-      entry.displayName.toLowerCase().includes(query),
-    );
+    return namesetLibraryIndex.filter((entry) => {
+      // Match the display name, the category, and the id with its dashes
+      // treated as spaces so franchise prefixes buried in the id (e.g.
+      // "star-trek-klingon-names") are discoverable by queries like
+      // "star trek" even though the display name is just "Klingon".
+      const haystack = `${entry.displayName} ${entry.category} ${entry.id.replace(/-/g, " ")}`;
+      return haystack.toLowerCase().includes(query);
+    });
   }, [search]);
 
   const groupedEntries = useMemo(
