@@ -17,6 +17,7 @@ import {
 import type {
   SimBuildingTier,
   SimConstructionProject,
+  SimSettlementBuilding,
   SimStockpile,
 } from "../simulationTypes.ts";
 
@@ -51,6 +52,7 @@ function makeConstructionProject(
     progressWorkerTurns: 0,
     queuePosition: 0,
     status: "queued",
+    upgradeSettlementBuildingId: null,
     workerTurnsRequired: 100,
     ...overrides,
   };
@@ -62,6 +64,23 @@ function makeStockpile(
   return {
     cap: 1000,
     quantity: 1000,
+    ...overrides,
+  };
+}
+
+function makeSettlementBuilding(
+  overrides: Partial<SimSettlementBuilding> & {
+    id: string;
+    settlementId: string;
+    currentTierId: string;
+  },
+): SimSettlementBuilding {
+  return {
+    activatedOnTurnNumber: 1,
+    buildingBlueprintId: "blueprint-1",
+    missedUpkeepCount: 0,
+    sourceProjectId: null,
+    state: "active",
     ...overrides,
   };
 }
@@ -477,5 +496,130 @@ describe("phaseConstruction — worker-turn progress accumulation", () => {
         { delta: -2, resourceId: "wood", settlementId: "s2" },
       ]),
     );
+  });
+});
+
+describe("phaseConstruction — cumulative cost and tier upgrades (#1372)", () => {
+  const tier1 = makeBuildingTier({
+    id: "tier-1",
+    tierNumber: 1,
+    constructionCostsJson: [{ amount: 1, resourceId: "wood" }],
+    workerTurnsRequired: 100,
+  });
+  const tier2 = makeBuildingTier({
+    id: "tier-2",
+    tierNumber: 2,
+    constructionCostsJson: [{ amount: 3, resourceId: "wood" }],
+    workerTurnsRequired: 100,
+  });
+
+  it("direct-build to tier 2 deducts the cumulative tier 1 + tier 2 cost", () => {
+    const project = makeConstructionProject({
+      id: "p1",
+      settlementId: "s1",
+      status: "in_progress",
+      targetTierId: tier2.id,
+    });
+
+    const ctx = makeContext({
+      buildingTiers: [tier1, tier2],
+      citizenAssignments: [
+        makeAssignment({
+          assignmentType: "construction_project",
+          citizenId: "c1",
+          constructionProjectId: "p1",
+        }),
+      ],
+      citizens: [makeCitizen({ id: "c1", settlementId: "s1" })],
+      constructionProjects: [project],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ quantity: 100, resourceId: "wood", settlementId: "s1" })],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    // 1 worker * (tier1 amount 1 + tier2 amount 3) = 4
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -4, resourceId: "wood", settlementId: "s1" },
+    ]);
+  });
+
+  it("upgrade from tier 1 to tier 2 deducts only the delta (tier 2) cost", () => {
+    const building = makeSettlementBuilding({
+      id: "b1",
+      settlementId: "s1",
+      currentTierId: tier1.id,
+    });
+    const project = makeConstructionProject({
+      id: "p1",
+      settlementId: "s1",
+      status: "in_progress",
+      targetTierId: tier2.id,
+      upgradeSettlementBuildingId: "b1",
+    });
+
+    const ctx = makeContext({
+      buildingTiers: [tier1, tier2],
+      citizenAssignments: [
+        makeAssignment({
+          assignmentType: "construction_project",
+          citizenId: "c1",
+          constructionProjectId: "p1",
+        }),
+      ],
+      citizens: [makeCitizen({ id: "c1", settlementId: "s1" })],
+      constructionProjects: [project],
+      settlementBuildings: [building],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ quantity: 100, resourceId: "wood", settlementId: "s1" })],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    // 1 worker * tier2 amount 3 (tier1 excluded — already built) = 3
+    expect(result.stockpileDeltas).toEqual([
+      { delta: -3, resourceId: "wood", settlementId: "s1" },
+    ]);
+  });
+
+  it("completing an upgrade bumps the building tier in place, creating no new building", () => {
+    const building = makeSettlementBuilding({
+      id: "b1",
+      settlementId: "s1",
+      currentTierId: tier1.id,
+    });
+    const project = makeConstructionProject({
+      id: "p1",
+      progressWorkerTurns: 99,
+      settlementId: "s1",
+      status: "in_progress",
+      targetTierId: tier2.id,
+      upgradeSettlementBuildingId: "b1",
+      workerTurnsRequired: 100,
+    });
+
+    const ctx = makeContext({
+      buildingTiers: [tier1, tier2],
+      citizenAssignments: [
+        makeAssignment({
+          assignmentType: "construction_project",
+          citizenId: "c1",
+          constructionProjectId: "p1",
+        }),
+      ],
+      citizens: [makeCitizen({ id: "c1", settlementId: "s1" })],
+      constructionProjects: [project],
+      settlementBuildings: [building],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ quantity: 100, resourceId: "wood", settlementId: "s1" })],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    expect(result.constructionUpdates[0]?.toStatus).toBe("complete");
+    expect(result.buildingsCreated).toHaveLength(0);
+    expect(result.buildingTierUpgrades).toEqual([
+      { settlementBuildingId: "b1", toTierId: tier2.id },
+    ]);
   });
 });

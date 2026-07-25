@@ -850,6 +850,7 @@ export type Database = {
           status: string;
           target_tier_id: string;
           updated_at: string;
+          upgrade_settlement_building_id: string | null;
         };
         Insert: {
           activated_on_turn_number?: number | null;
@@ -864,6 +865,7 @@ export type Database = {
           status: string;
           target_tier_id: string;
           updated_at?: string;
+          upgrade_settlement_building_id?: string | null;
         };
         Update: {
           activated_on_turn_number?: number | null;
@@ -878,6 +880,7 @@ export type Database = {
           status?: string;
           target_tier_id?: string;
           updated_at?: string;
+          upgrade_settlement_building_id?: string | null;
         };
         Relationships: [
           {
@@ -906,6 +909,13 @@ export type Database = {
             columns: ["target_tier_id"];
             isOneToOne: false;
             referencedRelation: "building_blueprint_tiers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_upgrade_settlement_building_id_fkey";
+            columns: ["upgrade_settlement_building_id"];
+            isOneToOne: false;
+            referencedRelation: "settlement_buildings";
             referencedColumns: ["id"];
           },
         ];
@@ -5900,6 +5910,7 @@ export type Database = {
           p_blueprint_id: string;
           p_settlement_id: string;
           p_target_tier_id: string;
+          p_upgrade_settlement_building_id?: string;
         };
         Returns: {
           activated_on_turn_number: number | null;
@@ -5914,6 +5925,7 @@ export type Database = {
           status: string;
           target_tier_id: string;
           updated_at: string;
+          upgrade_settlement_building_id: string | null;
         }[];
         SetofOptions: {
           from: "*";

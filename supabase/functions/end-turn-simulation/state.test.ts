@@ -228,6 +228,7 @@ function makeAllSuccessResponses(): Record<
           status: "in_progress",
           target_tier: { worker_turns_required: 10 },
           target_tier_id: TIER_ID,
+          upgrade_settlement_building_id: null,
         },
       ],
       status: 200,

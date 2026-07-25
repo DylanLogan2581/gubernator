@@ -292,6 +292,9 @@ export type SimConstructionProject = {
   readonly settlementId: string;
   readonly status: SimConstructionStatus;
   readonly targetTierId: string;
+  // When set, this project upgrades the referenced settlement_building in place
+  // instead of creating a new building; null for direct-build projects (#1372).
+  readonly upgradeSettlementBuildingId: string | null;
   readonly workerTurnsRequired: number;
 };
 
@@ -592,6 +595,13 @@ export type BuildingCreated = {
   readonly tierId: string;
 };
 
+// #1372: an in-place tier bump of an existing settlement_building when an
+// upgrade construction project completes (no new building row is created).
+export type BuildingTierUpgrade = {
+  readonly settlementBuildingId: string;
+  readonly toTierId: string;
+};
+
 export type BuildingStateChange = {
   readonly missedUpkeepCountDelta: number | null;
   readonly settlementBuildingId: string;
@@ -834,6 +844,7 @@ export type SimulationResult = {
   readonly armyTurnSnapshots: readonly ArmyTurnSnapshot[];
   readonly assignmentClears: readonly AssignmentClear[];
   readonly buildingStateChanges: readonly BuildingStateChange[];
+  readonly buildingTierUpgrades: readonly BuildingTierUpgrade[];
   readonly buildingsCreated: readonly BuildingCreated[];
   readonly citizenBirths: readonly CitizenBirth[];
   readonly citizenDeaths: readonly CitizenDeath[];

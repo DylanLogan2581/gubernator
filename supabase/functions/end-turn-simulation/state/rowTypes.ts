@@ -103,6 +103,7 @@ export type SupabaseProjectRow = {
   readonly status: string;
   readonly queue_position: number;
   readonly progress_worker_turns: number;
+  readonly upgrade_settlement_building_id: string | null;
   readonly target_tier: { readonly worker_turns_required: number } | null;
 };
 
@@ -483,6 +484,8 @@ export function isProjectRow(v: unknown): v is SupabaseProjectRow {
     typeof v.status === "string" &&
     typeof v.queue_position === "number" &&
     typeof v.progress_worker_turns === "number" &&
+    (v.upgrade_settlement_building_id === null ||
+      typeof v.upgrade_settlement_building_id === "string") &&
     (v.target_tier === null ||
       (isRecord(v.target_tier) &&
         typeof v.target_tier.worker_turns_required === "number"))

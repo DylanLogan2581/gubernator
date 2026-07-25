@@ -261,6 +261,7 @@ export function toSimProject(row: SupabaseProjectRow): SimConstructionProject {
     settlementId: row.settlement_id,
     status: row.status as SimConstructionProject["status"],
     targetTierId: row.target_tier_id,
+    upgradeSettlementBuildingId: row.upgrade_settlement_building_id,
     workerTurnsRequired: row.target_tier?.worker_turns_required ?? 0,
   };
 }

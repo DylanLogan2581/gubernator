@@ -720,6 +720,7 @@ export function runSimulation(
       })),
     ],
     buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
+    buildingTierUpgrades: p3.buildingTierUpgrades,
     buildingsCreated: p3.buildingsCreated,
     citizenBirths: allCitizenBirths,
     citizenDeaths: allDeaths,

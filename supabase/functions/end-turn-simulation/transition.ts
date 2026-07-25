@@ -65,6 +65,11 @@ type BuildingStateChangeEntry = {
   readonly state: string;
 };
 
+type BuildingTierUpgradeEntry = {
+  readonly buildingId: string;
+  readonly currentTierId: string;
+};
+
 type TradeRouteOutcomeEntry = {
   readonly pauseReason: string | null;
   readonly toStatus: "active" | "paused";
@@ -116,6 +121,7 @@ export type ApplyTurnTransitionPayload = {
     readonly citizenId: string;
   }>;
   readonly buildingStateChanges: readonly BuildingStateChangeEntry[];
+  readonly buildingTierUpgrades: readonly BuildingTierUpgradeEntry[];
   readonly buildingsCreated: readonly BuildingCreatedEntry[];
   readonly citizenBirths: readonly CitizenBirthEntry[];
   readonly citizenDeaths: readonly CitizenDeathEntry[];
@@ -291,6 +297,15 @@ export function mapSimulationResultToPayload(
     };
   });
 
+  // §C29d: buildingTierUpgrades — rename settlementBuildingId → buildingId,
+  // toTierId → currentTierId (#1372).
+  const buildingTierUpgrades: BuildingTierUpgradeEntry[] = result.buildingTierUpgrades.map(
+    (u) => ({
+      buildingId: u.settlementBuildingId,
+      currentTierId: u.toTierId,
+    }),
+  );
+
   // §C31: tradeRouteOutcomes — derive toStatus from pauseReason.
   const tradeRouteOutcomes: TradeRouteOutcomeEntry[] = result.tradeRouteOutcomes.map((tro) => ({
     pauseReason: tro.pauseReason,
@@ -364,6 +379,7 @@ export function mapSimulationResultToPayload(
     assignmentClears: result.assignmentClears,
     bornOnTurnBackfill,
     buildingStateChanges,
+    buildingTierUpgrades,
     buildingsCreated,
     citizenBirths,
     citizenDeaths,

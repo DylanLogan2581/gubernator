@@ -344,6 +344,9 @@ function BuildingStateGroup({
 }): JSX.Element {
   const showTierColumn = new Set(buildings.map((b) => b.tierNumber)).size > 1;
   const duplicateGroups = groupIdenticalBuildings(buildings);
+  // The actions column shows for world admins (deconstruct/restore) and for
+  // settlement managers (upgrade) alike.
+  const showActionsColumn = canAdmin || (canManageSettlement && !isArchived);
 
   return (
     <Collapsible defaultOpen className="grid min-w-0 gap-1">
@@ -368,7 +371,7 @@ function BuildingStateGroup({
                 ) : null}
                 <TableHead scope="col">Effects</TableHead>
                 <TableHead className="w-16" scope="col" aria-label="State" />
-                {canAdmin ? (
+                {showActionsColumn ? (
                   <TableHead
                     className="w-28"
                     scope="col"
@@ -449,6 +452,7 @@ function DuplicateBuildingGroupRows({
   readonly worldId: string;
 }): JSX.Element {
   const [expanded, setExpanded] = useState(false);
+  const showActionsColumn = canAdmin || (canManageSettlement && !isArchived);
   const first = buildings[0];
   const name = first.name ?? first.blueprintName;
   const effectChips = buildEffectChips(first, resourceNames, jobNames);
@@ -513,7 +517,7 @@ function DuplicateBuildingGroupRows({
             </Badge>
           ) : null}
         </TableCell>
-        {canAdmin ? <TableCell className="w-28 py-2" /> : null}
+        {showActionsColumn ? <TableCell className="w-28 py-2" /> : null}
       </TableRow>
       {expanded
         ? buildings.map((building) => (

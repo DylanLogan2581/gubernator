@@ -801,7 +801,7 @@ export function fetchProjects(
       status: "in.(in_progress,queued,paused)",
       order: "queue_position.asc",
       select:
-        "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,target_tier:building_blueprint_tiers!target_tier_id(worker_turns_required)",
+        "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,upgrade_settlement_building_id,target_tier:building_blueprint_tiers!target_tier_id(worker_turns_required)",
     },
   });
 }

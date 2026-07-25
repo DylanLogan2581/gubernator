@@ -45,6 +45,7 @@ function makeMinimalPayload(): ApplyTurnTransitionPayload {
     assignmentClears: [],
     bornOnTurnBackfill: [],
     buildingStateChanges: [],
+    buildingTierUpgrades: [],
     buildingsCreated: [],
     citizenBirths: [],
     citizenDeaths: [],

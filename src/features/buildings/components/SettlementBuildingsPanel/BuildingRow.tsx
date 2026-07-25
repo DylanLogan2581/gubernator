@@ -7,6 +7,7 @@ import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { UpgradeBuildingDialog } from "@/features/construction";
 import { SchoolEducationSection } from "@/features/education";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { resolveIconTone } from "@/lib/categoricalPalette";
@@ -107,19 +108,24 @@ export function BuildingRow({
   worldId,
 }: BuildingRowProps): JSX.Element {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [trashActionOpen, setTrashActionOpen] = useState<
     "restore" | "hard-delete" | null
   >(null);
   const [educationOpen, setEducationOpen] = useState(false);
   const effectChips = buildEffectChips(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
+  const canUpgrade = canManageSettlement && !isArchived;
+  const showUpgradeButton = canUpgrade && building.state === "active";
   const isDeconstructed =
     building.state === "auto_deconstructed" ||
     building.state === "manually_deconstructed";
   const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
   const showStateBadge = building.state !== "active";
   const isSchool = building.educationConfig !== null;
-  const columnCount = 3 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
+  const showActionsColumn = canAdmin || canUpgrade;
+  const columnCount =
+    3 + (showTierColumn ? 1 : 0) + (showActionsColumn ? 1 : 0);
 
   return (
     <>
@@ -192,21 +198,36 @@ export function BuildingRow({
             </Badge>
           ) : null}
         </TableCell>
-        {canAdmin ? (
+        {showActionsColumn ? (
           <TableCell className="w-28 py-2 text-right">
-            {showDeconstructButton ? (
-              <Button
-                aria-label={`Deconstruct ${building.blueprintName}`}
-                size="sm"
-                type="button"
-                variant="destructive"
-                onClick={() => {
-                  setConfirmOpen(true);
-                }}
-              >
-                Deconstruct
-              </Button>
-            ) : null}
+            <div className="flex flex-wrap justify-end gap-1">
+              {showUpgradeButton ? (
+                <Button
+                  aria-label={`Upgrade ${building.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setUpgradeOpen(true);
+                  }}
+                >
+                  Upgrade
+                </Button>
+              ) : null}
+              {showDeconstructButton ? (
+                <Button
+                  aria-label={`Deconstruct ${building.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setConfirmOpen(true);
+                  }}
+                >
+                  Deconstruct
+                </Button>
+              ) : null}
+            </div>
             {isDeconstructed ? (
               <div className="flex gap-1 justify-end">
                 <Button
@@ -251,6 +272,20 @@ export function BuildingRow({
             />
           </TableCell>
         </TableRow>
+      ) : null}
+      {upgradeOpen ? (
+        <UpgradeBuildingDialog
+          buildingBlueprintId={building.buildingBlueprintId}
+          buildingName={building.name ?? building.blueprintName}
+          currentTierNumber={building.tierNumber}
+          queryClient={queryClient}
+          settlementBuildingId={building.id}
+          settlementId={settlementId}
+          worldId={worldId}
+          onClose={() => {
+            setUpgradeOpen(false);
+          }}
+        />
       ) : null}
       {confirmOpen ? (
         <DeconstructConfirmDialog
