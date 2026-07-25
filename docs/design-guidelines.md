@@ -150,9 +150,12 @@ breakpoints).
 - Activation: `.dark` class on any ancestor **or** OS `prefers-color-scheme: dark`
   (unless a `.light` ancestor overrides). See `@custom-variant dark` in
   `src/index.css`.
-- There is currently **no in-app toggle**; the app follows the OS. For manual
-  testing use DevTools rendering emulation or set the class on `<html>` (see
-  README of this doc's PR / verification workflow).
+- In-app toggle: a light/dark/system control sits in the header right cluster
+  (`ThemeToggle`, next to notifications). `ThemeProvider` (`src/lib/theme.tsx`)
+  persists the choice to `localStorage` and toggles the `.dark`/`.light` class
+  on `<html>`; "system" removes both and defers to `prefers-color-scheme`. A
+  pre-paint script in `index.html` applies the stored class before first paint
+  to avoid a flash, and Sonner toasts follow the same selection.
 - Every visual change is verified in both themes. Token-driven styling makes this
   nearly free — which is why hard-coded colors are banned.
 
@@ -171,4 +174,3 @@ breakpoints).
 - `TurnTransitionOutcomePanel` hand-rolls the StatStrip grid.
 - Several sections still use bare `<Card className="grid gap-4 p-4">` with manual
   padding instead of Card's slot components.
-- No theme toggle UI (see Dark mode above).

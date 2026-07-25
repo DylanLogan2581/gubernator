@@ -11,6 +11,7 @@ import {
   ActivePlayerCharacterContext,
   type ActivePlayerCharacterContextValue,
 } from "@/features/permissions";
+import { ThemeProvider } from "@/lib/ThemeProvider";
 
 import { AppHeader } from "./AppHeader";
 
@@ -398,9 +399,11 @@ function renderAppHeader(
   render(
     <QueryClientProvider client={queryClient}>
       <ActivePlayerCharacterContext value={contextValue}>
-        <TooltipProvider>
-          <SidebarProvider>{ui}</SidebarProvider>
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <SidebarProvider>{ui}</SidebarProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </ActivePlayerCharacterContext>
     </QueryClientProvider>,
   );

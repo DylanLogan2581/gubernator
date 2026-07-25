@@ -23,6 +23,8 @@ import {
   shouldBlockAppForSupabaseConfig,
   supabaseConfig,
 } from "@/lib/supabaseConfig";
+import { useTheme } from "@/lib/theme";
+import { ThemeProvider } from "@/lib/ThemeProvider";
 
 const isDev =
   import.meta.env.DEV && import.meta.env.VITE_DISABLE_DEVTOOLS !== "true";
@@ -58,29 +60,35 @@ function RootLayout(): JSX.Element {
   );
 
   return (
-    <TooltipProvider>
-      <QueryClientProvider client={queryClient}>
-        <AppLayout headerAction={<UserMenu />}>
-          {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
-        </AppLayout>
-        <Toaster
-          theme="system"
-          richColors
-          closeButton
-          position="bottom-right"
-        />
-        {TanStackRouterDevtools !== null ? (
-          <Suspense fallback={null}>
-            <TanStackRouterDevtools />
-          </Suspense>
-        ) : null}
-        {ReactQueryDevtools !== null ? (
-          <Suspense fallback={null}>
-            <ReactQueryDevtools />
-          </Suspense>
-        ) : null}
-      </QueryClientProvider>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppLayout headerAction={<UserMenu />}>
+            {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
+          </AppLayout>
+          <ThemedToaster />
+          {TanStackRouterDevtools !== null ? (
+            <Suspense fallback={null}>
+              <TanStackRouterDevtools />
+            </Suspense>
+          ) : null}
+          {ReactQueryDevtools !== null ? (
+            <Suspense fallback={null}>
+              <ReactQueryDevtools />
+            </Suspense>
+          ) : null}
+        </QueryClientProvider>
+      </TooltipProvider>
+    </ThemeProvider>
+  );
+}
+
+// Sonner follows the same selection as the rest of the app; "system" lets
+// Sonner honor prefers-color-scheme, matching the CSS fallback (#1381).
+function ThemedToaster(): JSX.Element {
+  const { theme } = useTheme();
+  return (
+    <Toaster theme={theme} richColors closeButton position="bottom-right" />
   );
 }
 

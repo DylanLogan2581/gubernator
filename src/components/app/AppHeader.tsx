@@ -11,6 +11,7 @@ import { HeaderReadinessChip } from "./HeaderReadinessChip";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
 import { SuperadminBreadcrumb } from "./SuperadminBreadcrumb";
+import { ThemeToggle } from "./ThemeToggle";
 import { WorldBreadcrumb } from "./WorldBreadcrumb";
 
 type AppHeaderProps = {
@@ -134,6 +135,7 @@ function AuthenticatedHeaderControls({
         />
       ) : null}
       <CommandPaletteTrigger onOpen={onOpenCommandPalette} />
+      <ThemeToggle />
       <NotificationsPopover />
     </>
   );
