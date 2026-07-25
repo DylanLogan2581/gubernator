@@ -3,8 +3,6 @@ import { Mail } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,14 +17,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { nationsListQueryOptions } from "@/features/nations";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { sendEmailMutationOptions } from "../mutations/superadminMutations";
 import {
   allUsersForSuperadminQueryOptions,
   allWorldsForSuperadminQueryOptions,
-  smtpStatusQueryOptions,
 } from "../queries/superadminQueries";
 
 import { SmtpSettingsForm } from "./SmtpSettingsForm";
@@ -48,101 +44,13 @@ const AUDIENCE_OPTIONS: readonly {
 ];
 
 export function SuperadminEmailPanel(): JSX.Element {
-  const queryClient = useQueryClient();
-  const smtpStatusQuery = useQuery(smtpStatusQueryOptions());
-  const testMutation = useMutation(sendEmailMutationOptions({ queryClient }));
-
-  function handleSendTest(): void {
-    testMutation.mutate(
-      { kind: "test" },
-      {
-        onError: (error) => {
-          notifyMutationError(error, "Test email failed to send");
-        },
-        onSuccess: (result) => {
-          notifyMutationSuccess(
-            result.sentCount > 0
-              ? "Test email sent to you."
-              : "Test email could not be delivered.",
-          );
-        },
-      },
-    );
-  }
-
   return (
     <>
       <PageHeader
         icon={Mail}
         title="Email"
-        description="SMTP status, a test send, and the manual notification sender."
+        description="SMTP settings, a test send, and the manual notification sender."
       />
-
-      <div className="mt-6 rounded-lg border border-border p-4">
-        <h2 className="text-base font-semibold">SMTP status</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Read-only. Secrets (username, password) are never shown here.
-        </p>
-
-        {smtpStatusQuery.isPending && (
-          <LoadingState label="Loading SMTP status…" />
-        )}
-
-        {smtpStatusQuery.isError && (
-          <ErrorState
-            title="Could not load SMTP status"
-            description={getErrorDescription(smtpStatusQuery.error)}
-          />
-        )}
-
-        {smtpStatusQuery.isSuccess && smtpStatusQuery.data.configured && (
-          <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-muted-foreground">Host</dt>
-              <dd className="font-medium">{smtpStatusQuery.data.host}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Sender name</dt>
-              <dd className="font-medium">{smtpStatusQuery.data.senderName}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">From address</dt>
-              <dd className="font-medium">{smtpStatusQuery.data.adminEmail}</dd>
-            </div>
-          </dl>
-        )}
-
-        {smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured && (
-          <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
-            <p className="font-medium">SMTP not configured</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Set the following environment variables to enable email delivery,
-              then redeploy the <code>send-email</code> edge function:
-            </p>
-            <ul className="mt-2 list-inside list-disc text-xs">
-              {smtpStatusQuery.data.missing.map((name) => (
-                <li key={name} className="font-mono">
-                  {name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-4"
-          disabled={
-            testMutation.isPending ||
-            (smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured)
-          }
-          onClick={handleSendTest}
-        >
-          Send test email to me
-        </Button>
-      </div>
 
       <SmtpSettingsForm />
 
