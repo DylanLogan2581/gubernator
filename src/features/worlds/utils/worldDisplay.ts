@@ -4,6 +4,7 @@ import {
   resolveTurnCalendarDate,
   worldCalendarConfigSchema,
 } from "@/features/calendar";
+import { formatRelativeTime } from "@/lib/formatDate";
 import type { Tables } from "@/types/database";
 
 import type {
@@ -79,6 +80,27 @@ export function toAccessibleWorld(
     thumbnailPath: world.thumbnail_path ?? null,
     updatedAt: world.updated_at,
   };
+}
+
+export function formatPlayerCharacterCount(count: number): string {
+  if (count <= 0) {
+    return "No player characters";
+  }
+
+  return `${count} player character${count === 1 ? "" : "s"}`;
+}
+
+export function formatLastTurnLabel(
+  lastTransitionAt: string | null,
+  now?: Date,
+): string {
+  if (lastTransitionAt === null) {
+    return "Never";
+  }
+
+  return now === undefined
+    ? formatRelativeTime(lastTransitionAt)
+    : formatRelativeTime(lastTransitionAt, now);
 }
 
 export function createWorldSlug(name: string, id: string): string {

@@ -6590,6 +6590,14 @@ export type Database = {
           world_id: string;
         }[];
       };
+      get_world_list_stats: {
+        Args: never;
+        Returns: {
+          last_transition_at: string;
+          player_character_count: number;
+          world_id: string;
+        }[];
+      };
       grant_nation_resources: {
         Args: {
           p_nation_id: string;

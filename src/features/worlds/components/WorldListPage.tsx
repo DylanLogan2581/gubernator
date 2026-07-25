@@ -68,12 +68,17 @@ import {
   trashWorldMutationOptions,
 } from "../mutations/worldAdminMutations";
 import { importWorldFromTemplateMutationOptions } from "../mutations/worldTemplateMutations";
+import { worldListStatsQueryOptions } from "../queries/worldListStatsQueries";
 import {
   accessibleWorldsQueryOptions,
   trashedWorldsQueryOptions,
 } from "../queries/worldQueries";
 import { parseWorldTemplate } from "../queries/worldTemplateExportQueries";
 import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
+import {
+  formatLastTurnLabel,
+  formatPlayerCharacterCount,
+} from "../utils/worldDisplay";
 import { computeDryRunReport } from "../utils/worldTemplateDryRun";
 
 import { WorldAvatar } from "./WorldAvatar";
@@ -85,7 +90,7 @@ import {
   type WorldTemplateImportButtonHandle,
 } from "./WorldTemplateImportButton";
 
-import type { AccessibleWorld } from "../types/worldTypes";
+import type { AccessibleWorld, WorldListStats } from "../types/worldTypes";
 
 export type WorldListPageAction = "create" | "import" | undefined;
 
@@ -161,6 +166,7 @@ function WorldListContent({
 
   const worldsQuery = useQuery(accessibleWorldsQueryOptions(accessContext));
   const trashedWorldsQuery = useQuery(trashedWorldsQueryOptions(accessContext));
+  const worldStatsQuery = useQuery(worldListStatsQueryOptions());
 
   useEffect(() => {
     // Wait until the world list (and its actions, including the import
@@ -215,6 +221,7 @@ function WorldListContent({
   const effectiveShowTrash = showTrash && accessContext.isSuperAdmin;
   const activeWorlds = worldsQuery.data;
   const trashed = trashedWorldsQuery.data ?? [];
+  const worldStats = worldStatsQuery.data;
 
   return (
     <WorldListFrame>
@@ -245,12 +252,14 @@ function WorldListContent({
             isPending={trashedWorldsQuery.isPending}
             queryClient={queryClient}
             trashed={trashed}
+            worldStats={worldStats}
           />
         ) : (
           <ActiveWorldsSection
             activeWorlds={activeWorlds}
             isSuperAdmin={accessContext.isSuperAdmin}
             queryClient={queryClient}
+            worldStats={worldStats}
           />
         )}
       </div>
@@ -326,12 +335,14 @@ function TrashSection({
   error,
   queryClient,
   trashed,
+  worldStats,
 }: {
   readonly isError: boolean;
   readonly isPending: boolean;
   readonly error: unknown;
   readonly queryClient: QueryClient;
   readonly trashed: readonly AccessibleWorld[];
+  readonly worldStats: ReadonlyMap<string, WorldListStats> | undefined;
 }): JSX.Element {
   return (
     <>
@@ -360,6 +371,7 @@ function TrashSection({
             <TrashedWorldRow
               key={world.id}
               queryClient={queryClient}
+              stats={worldStats?.get(world.id)}
               world={world}
             />
           ))}
@@ -386,10 +398,12 @@ function ActiveWorldsSection({
   activeWorlds,
   isSuperAdmin,
   queryClient,
+  worldStats,
 }: {
   readonly activeWorlds: readonly AccessibleWorld[];
   readonly isSuperAdmin: boolean;
   readonly queryClient: QueryClient;
+  readonly worldStats: ReadonlyMap<string, WorldListStats> | undefined;
 }): JSX.Element {
   if (activeWorlds.length === 0) {
     return (
@@ -410,6 +424,7 @@ function ActiveWorldsSection({
           key={world.id}
           isSuperAdmin={isSuperAdmin}
           queryClient={queryClient}
+          stats={worldStats?.get(world.id)}
           world={world}
         />
       ))}
@@ -458,10 +473,12 @@ function TrashToggleButton({
 function WorldListItem({
   isSuperAdmin,
   queryClient,
+  stats,
   world,
 }: {
   readonly isSuperAdmin: boolean;
   readonly queryClient: QueryClient;
+  readonly stats: WorldListStats | undefined;
   readonly world: AccessibleWorld;
 }): JSX.Element {
   const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
@@ -484,7 +501,7 @@ function WorldListItem({
         params={{ worldId: world.id }}
         className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <WorldCardBody world={world} />
+        <WorldCardBody stats={stats} world={world} />
       </Link>
       {isSuperAdmin ? (
         <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
@@ -528,9 +545,11 @@ function WorldListItem({
 
 function TrashedWorldRow({
   queryClient,
+  stats,
   world,
 }: {
   readonly queryClient: QueryClient;
+  readonly stats: WorldListStats | undefined;
   readonly world: AccessibleWorld;
 }): JSX.Element {
   const restoreMutation = useMutation(
@@ -553,7 +572,7 @@ function TrashedWorldRow({
 
   return (
     <li className="grid gap-3 overflow-hidden rounded-md border border-border bg-card text-card-foreground">
-      <WorldCardBody world={world} trashed />
+      <WorldCardBody stats={stats} world={world} trashed />
       <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
         <Button
           type="button"
@@ -575,9 +594,11 @@ function TrashedWorldRow({
 // variant grays the hero, overlays a trash glyph, mutes the arrow, and swaps
 // the access badge for a "trashed" marker (#1359).
 function WorldCardBody({
+  stats,
   world,
   trashed = false,
 }: {
+  readonly stats: WorldListStats | undefined;
   readonly world: AccessibleWorld;
   readonly trashed?: boolean;
 }): JSX.Element {
@@ -621,10 +642,26 @@ function WorldCardBody({
             aria-hidden="true"
           />
         </div>
-        <dl className="text-xs text-muted-foreground">
+        <dl className="grid gap-2 text-xs text-muted-foreground">
           <div>
             <dt className="font-medium text-foreground">Current Date</dt>
             <dd>{world.inWorldDateLabel}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-foreground">Player characters</dt>
+            <dd>
+              {stats === undefined
+                ? "—"
+                : formatPlayerCharacterCount(stats.playerCharacterCount)}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-foreground">Last turn</dt>
+            <dd>
+              {stats === undefined
+                ? "—"
+                : formatLastTurnLabel(stats.lastTransitionAt)}
+            </dd>
           </div>
         </dl>
       </div>

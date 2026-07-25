@@ -3,7 +3,37 @@ import { describe, expect, it } from "vitest";
 import type { WorldCalendarConfig } from "@/features/calendar";
 import { createAccessContext } from "@/features/permissions";
 
-import { createWorldSlug, toAccessibleWorld } from "./worldDisplay";
+import {
+  createWorldSlug,
+  formatLastTurnLabel,
+  formatPlayerCharacterCount,
+  toAccessibleWorld,
+} from "./worldDisplay";
+
+describe("formatPlayerCharacterCount", () => {
+  it("reports an empty state when there are no player characters", () => {
+    expect(formatPlayerCharacterCount(0)).toBe("No player characters");
+  });
+
+  it("uses the singular noun for a single player character", () => {
+    expect(formatPlayerCharacterCount(1)).toBe("1 player character");
+  });
+
+  it("uses the plural noun for multiple player characters", () => {
+    expect(formatPlayerCharacterCount(4)).toBe("4 player characters");
+  });
+});
+
+describe("formatLastTurnLabel", () => {
+  it("reports an empty state when the world never transitioned", () => {
+    expect(formatLastTurnLabel(null)).toBe("Never");
+  });
+
+  it("formats the last transition as a relative time", () => {
+    const now = new Date("2026-07-25T00:00:00Z");
+    expect(formatLastTurnLabel("2026-07-22T00:00:00Z", now)).toBe("3 days ago");
+  });
+});
 
 describe("createWorldSlug", () => {
   it("creates stable display slugs from world names", () => {

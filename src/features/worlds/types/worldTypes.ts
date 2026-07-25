@@ -33,6 +33,12 @@ export type AccessibleWorld = {
   readonly updatedAt: string;
 };
 
+export type WorldListStats = {
+  readonly worldId: string;
+  readonly playerCharacterCount: number;
+  readonly lastTransitionAt: string | null;
+};
+
 export type WorldShellHeader = {
   readonly archivedAt: string | null;
   readonly currentTurnNumber: number;
