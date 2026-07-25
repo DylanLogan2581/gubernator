@@ -100,7 +100,7 @@ export function NotificationListItem({
           onClick={onMarkRead}
           disabled={isMarkingRead}
           aria-label="Mark as read"
-          className="h-7 shrink-0 px-2 text-xs opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+          className="h-7 shrink-0 px-2 text-xs"
         >
           <Check aria-hidden="true" />
           Mark read

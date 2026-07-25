@@ -38,9 +38,7 @@ describe("NotificationPreferencesSheet", () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
 
     expect(
       await screen.findByRole("button", { name: /turns/i }),
@@ -54,9 +52,7 @@ describe("NotificationPreferencesSheet", () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
 
     const turnsToggleAll = await screen.findByRole("switch", {
       name: "Toggle all Turns notifications",
@@ -73,9 +69,7 @@ describe("NotificationPreferencesSheet", () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
     await user.click(await screen.findByRole("button", { name: /turns/i }));
 
     expect(
@@ -90,9 +84,7 @@ describe("NotificationPreferencesSheet", () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
     await user.click(await screen.findByRole("button", { name: /turns/i }));
     const turnCompletedSwitch = await screen.findByRole("switch", {
       name: /turn completed/i,
@@ -112,9 +104,7 @@ describe("NotificationPreferencesSheet", () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
     const citizensToggleAll = await screen.findByRole("switch", {
       name: /Toggle all Citizens notifications/,
     });

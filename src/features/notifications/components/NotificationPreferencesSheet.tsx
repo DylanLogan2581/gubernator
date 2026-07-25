@@ -47,12 +47,9 @@ export function NotificationPreferencesSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Notification preferences"
-        >
+        <Button variant="outline">
           <Settings aria-hidden="true" />
+          Preferences
         </Button>
       </SheetTrigger>
       <SheetContent>
