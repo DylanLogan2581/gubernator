@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Loader2, Lock } from "lucide-react";
+import { AlertTriangle, Loader2, Lock, Package } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -233,6 +233,12 @@ function StockpilesTable({
         onCloseDetail={() => {
           setSelectedResourceId(null);
         }}
+        emptyState={
+          <EmptyState
+            icon={Package}
+            title="Select a resource to view details"
+          />
+        }
       />
 
       {editingStockpile !== null ? (

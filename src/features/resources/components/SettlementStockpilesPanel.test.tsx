@@ -99,6 +99,30 @@ describe("SettlementStockpilesPanel", () => {
     expect(screen.getByText("250 / 300")).toBeDefined();
   });
 
+  it("shows the detail placeholder until a resource is selected", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [
+          createStockpileRow({ resource_name: "Food", quantity: 100 }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("Select a resource to view details")).toBeDefined();
+
+    await user.click(screen.getByText("Food"));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Select a resource to view details"),
+      ).toBeNull();
+    });
+  });
+
   it("shows system badge for system resources", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
