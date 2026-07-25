@@ -15,6 +15,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { previewWorldDeleteMutationOptions } from "../mutations/superadminMutations";
 import { trashedWorldsForSuperadminQueryOptions } from "../queries/superadminQueries";
+import { superadminQueryKeys } from "../queries/superadminQueryKeys";
 
 import type { PreviewWorldDeleteResult } from "../types/superadminTypes";
 
@@ -56,6 +57,9 @@ export function WorldCascadeDeletePanel(): JSX.Element {
           setPreview(null);
           setConfirmOpen(false);
           setSelectedWorldId("");
+          void queryClient.invalidateQueries({
+            queryKey: superadminQueryKeys.trashedWorlds(),
+          });
           notifyMutationSuccess("World permanently deleted.");
         },
         onError: (error) => {
