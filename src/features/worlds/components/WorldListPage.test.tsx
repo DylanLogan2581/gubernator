@@ -608,7 +608,9 @@ describe("WorldListPage", () => {
     await screen.findByText("No accessible worlds");
     await user.click(screen.getByRole("button", { name: "Trash" }));
     await screen.findByText("Trashed World");
-    await user.click(screen.getByRole("button", { name: "Restore" }));
+    await user.click(
+      screen.getByRole("button", { name: "Restore Trashed World" }),
+    );
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith("restore_world", {

@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Globe2,
   Plus,
+  RotateCcw,
   ShieldCheck,
   Trash2,
   User,
@@ -483,31 +484,7 @@ function WorldListItem({
         params={{ worldId: world.id }}
         className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <WorldCardImage world={world} />
-        <div className="grid gap-3 px-3 pb-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <WorldAvatar
-              className="shrink-0"
-              thumbnailPath={world.thumbnailPath}
-              worldId={world.id}
-              worldName={world.name}
-            />
-            <div className="min-w-0 flex-1 space-y-1">
-              <h2 className="truncate text-base font-medium">{world.name}</h2>
-              <WorldBadge world={world} />
-            </div>
-            <ArrowRight
-              className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </div>
-          <dl className="text-xs text-muted-foreground">
-            <div>
-              <dt className="font-medium text-foreground">Current Date</dt>
-              <dd>{world.inWorldDateLabel}</dd>
-            </div>
-          </dl>
-        </div>
+        <WorldCardBody world={world} />
       </Link>
       {isSuperAdmin ? (
         <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
@@ -575,28 +552,83 @@ function TrashedWorldRow({
   }
 
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
-      <div className="grid gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{world.name}</span>
-          <Badge variant="outline">trashed</Badge>
-        </div>
-        <span className="text-xs text-muted-foreground capitalize">
-          {world.status}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
+    <li className="grid gap-3 overflow-hidden rounded-md border border-border bg-card text-card-foreground">
+      <WorldCardBody world={world} trashed />
+      <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Restore ${world.name}`}
+          title="Restore"
           disabled={restoreMutation.isPending}
           onClick={handleRestore}
         >
-          Restore
+          <RotateCcw aria-hidden="true" />
         </Button>
       </div>
     </li>
+  );
+}
+
+// Shared presentational body for a world card in the /worlds list. The trashed
+// variant grays the hero, overlays a trash glyph, mutes the arrow, and swaps
+// the access badge for a "trashed" marker (#1359).
+function WorldCardBody({
+  world,
+  trashed = false,
+}: {
+  readonly world: AccessibleWorld;
+  readonly trashed?: boolean;
+}): JSX.Element {
+  return (
+    <div className="grid gap-3">
+      <div className="relative">
+        <div className={trashed ? "opacity-60 grayscale" : undefined}>
+          <WorldCardImage world={world} />
+        </div>
+        {trashed ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Trash2
+              className="size-8 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
+        ) : null}
+      </div>
+      <div className="grid gap-3 px-3 pb-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <WorldAvatar
+            className="shrink-0"
+            thumbnailPath={world.thumbnailPath}
+            worldId={world.id}
+            worldName={world.name}
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="truncate text-base font-medium">{world.name}</h2>
+            {trashed ? (
+              <Badge variant="outline">trashed</Badge>
+            ) : (
+              <WorldBadge world={world} />
+            )}
+          </div>
+          <ArrowRight
+            className={
+              trashed
+                ? "size-4 shrink-0 text-muted-foreground/40"
+                : "size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            }
+            aria-hidden="true"
+          />
+        </div>
+        <dl className="text-xs text-muted-foreground">
+          <div>
+            <dt className="font-medium text-foreground">Current Date</dt>
+            <dd>{world.inWorldDateLabel}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
   );
 }
 
