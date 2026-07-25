@@ -160,8 +160,8 @@ export function BuildingRow({
             {building.name ?? building.blueprintName}
           </span>
         </TableCell>
-        <TableCell className="w-12 py-2 pr-4 text-muted-foreground">
-          1
+        <TableCell className="w-12 py-2 pr-4">
+          <Badge variant="secondary">1</Badge>
         </TableCell>
         {showTierColumn ? (
           <TableCell className="py-2 pr-4">
