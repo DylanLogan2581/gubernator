@@ -89,7 +89,7 @@ export function CreatePartnershipForm({
   return (
     <form
       aria-label="Create partnership"
-      className="grid gap-2 rounded-md border border-border bg-background px-3 py-2"
+      className="grid gap-2"
       noValidate
       onSubmit={handleSubmit}
     >

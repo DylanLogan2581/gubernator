@@ -58,11 +58,11 @@ export function SettlementForecastWarningsCard({
           description="Nothing critical expected for this settlement next turn."
         />
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border border-y border-border">
           {warnings.map((warning) => (
             <li
               key={warning.key}
-              className="flex items-center gap-2 rounded-md border border-muted bg-muted/30 p-3 text-sm"
+              className="flex items-center gap-2 py-2 text-sm"
             >
               <AlertTriangle
                 aria-hidden="true"

@@ -29,7 +29,7 @@ export function EventScopeReadOnly({
         </p>
       </div>
 
-      <div className="flex items-center gap-2 rounded-md border bg-muted px-3 py-2">
+      <div className="flex items-center gap-2">
         <EventScopeBadge scopeType={scopeType} />
         <ScopeTargetName
           scopeType={scopeType}

@@ -73,17 +73,17 @@ export function StuckTransitionPanel(): JSX.Element {
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-border p-4">
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="size-4 text-amber-500" aria-hidden="true" />
-        <h2 className="text-base font-semibold">Stuck Transitions</h2>
+    <section className="mt-6">
+      <div className="flex items-center gap-2 border-b border-border pb-2">
+        <AlertTriangle className="size-4 text-seal" aria-hidden="true" />
+        <h2 className="text-base font-semibold text-seal">Stuck Transitions</h2>
         {transitions.length > 0 && (
           <Badge variant="destructive" className="text-xs">
             {transitions.length}
           </Badge>
         )}
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-muted-foreground">
         Turn transitions wedged in running status. Recovering marks the
         transition failed and unlocks the world for a fresh end-turn. Superadmin
         only.
@@ -166,7 +166,7 @@ export function StuckTransitionPanel(): JSX.Element {
           onConfirm={handleConfirmRecover}
         />
       )}
-    </div>
+    </section>
   );
 }
 

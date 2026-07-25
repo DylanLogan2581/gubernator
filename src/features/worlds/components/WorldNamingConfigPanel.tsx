@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -168,19 +169,13 @@ function WorldNamingConfigPanelContent({
           {hasEmptyPool ? (
             <div className="min-h-[52px]">
               {showEmptyPoolWarning ? (
-                <div
-                  role="alert"
-                  className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
-                >
-                  <AlertTriangle
-                    aria-hidden="true"
-                    className="mt-0.5 h-4 w-4 shrink-0"
-                  />
-                  <span>
+                <Alert variant="warning">
+                  <AlertTriangle aria-hidden="true" />
+                  <AlertDescription>
                     One or more name pools are empty. Random NPC names may be
                     blank unless <strong>manual only</strong> is selected.
-                  </span>
-                </div>
+                  </AlertDescription>
+                </Alert>
               ) : null}
             </div>
           ) : null}
@@ -316,7 +311,7 @@ function NamingConfigReadOnlySummary({
   readonly config: WorldListNamingConfig;
 }): JSX.Element {
   return (
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <dl className="grid divide-y divide-border border-y border-border">
       <ReadoutItem
         label="Male given name pool"
         value={
@@ -354,9 +349,9 @@ function ReadoutItem({
   readonly value: string;
 }): JSX.Element {
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{value}</dd>
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="text-right text-sm font-medium">{value}</dd>
     </div>
   );
 }

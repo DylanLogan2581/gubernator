@@ -59,7 +59,10 @@ export function PlayerCharacterChooser({
             "Pick the player character you want to act as in this world."}
         </p>
       </div>
-      <ul className="grid gap-2" aria-label="Selectable player characters">
+      <ul
+        className="divide-y divide-border border-y border-border"
+        aria-label="Selectable player characters"
+      >
         {selectableCharacters.map((citizen) => (
           <PlayerCharacterChooserRow
             key={citizen.id}
@@ -96,7 +99,7 @@ function PlayerCharacterChooserRow({
       <button
         type="button"
         aria-label={`Select ${citizen.name}`}
-        className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border border-border bg-background p-3 text-left transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+        className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 py-3 text-left transition-colors hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={disabled}
         onClick={onSelect}
       >

@@ -130,7 +130,7 @@ function WorldShellContent({
       />
 
       {worldQuery.data.header.isArchived ? (
-        <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           This world is archived and available for review.
         </p>
       ) : null}

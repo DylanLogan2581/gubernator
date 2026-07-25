@@ -55,11 +55,11 @@ export function ResolvedAmendmentsList({
 
   return (
     <>
-      <ul className="grid gap-2">
+      <ul className="divide-y divide-border border-y border-border">
         {amendments.map((amendment) => (
           <li
             key={amendment.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-2"
+            className="flex flex-wrap items-center justify-between gap-2 py-2"
           >
             <span className="text-sm font-medium">{amendment.title}</span>
             <div className="flex items-center gap-2">

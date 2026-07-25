@@ -134,7 +134,7 @@ export function NamesetLibraryPicker({
       </div>
 
       {previewConfig === null ? (
-        <div className="grid gap-2 content-start rounded-md border p-3">
+        <div className="grid content-start gap-2">
           <p className="text-sm text-muted-foreground">
             Select a generator to preview sample names.
           </p>

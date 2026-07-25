@@ -131,73 +131,77 @@ export function ArmyUpkeepForecastCard({
             Loading upkeep forecast…
           </p>
         ) : (
-          armies.map((army) => {
-            const units = (unitsByArmyId.get(army.id) ?? []).flatMap((row) => {
-              const unitType = unitTypeById.get(row.unitTypeId);
-              if (unitType === undefined) return [];
-              return [
-                {
-                  desertionRate: unitType.desertionRate,
-                  soldierCount: row.soldierCount,
-                  unitId: row.unitId,
-                  upkeepCostsJson: unitType.upkeepCostsJson,
+          <div className="divide-y divide-border border-y border-border">
+            {armies.map((army) => {
+              const units = (unitsByArmyId.get(army.id) ?? []).flatMap(
+                (row) => {
+                  const unitType = unitTypeById.get(row.unitTypeId);
+                  if (unitType === undefined) return [];
+                  return [
+                    {
+                      desertionRate: unitType.desertionRate,
+                      soldierCount: row.soldierCount,
+                      unitId: row.unitId,
+                      upkeepCostsJson: unitType.upkeepCostsJson,
+                    },
+                  ];
                 },
-              ];
-            });
+              );
 
-            const requiredByResourceId = computeArmyUpkeepRequirement(units);
-            const availableByResourceId =
-              army.fundingSource === "nation"
-                ? nationAvailableByResourceId
-                : (settlementAvailableByResourceIdBySettlementId.get(
-                    army.stationedSettlementId,
-                  ) ?? new Map<string, number>());
-            const shortfall = isUpkeepShortfall(
-              requiredByResourceId,
-              availableByResourceId,
-            );
-            const projectedDesertions = shortfall
-              ? units.reduce(
-                  (sum, unit) =>
-                    sum +
-                    computeUnitProjectedDesertion(
-                      unit.soldierCount,
-                      unit.desertionRate,
-                    ),
-                  0,
-                )
-              : 0;
+              const requiredByResourceId = computeArmyUpkeepRequirement(units);
+              const availableByResourceId =
+                army.fundingSource === "nation"
+                  ? nationAvailableByResourceId
+                  : (settlementAvailableByResourceIdBySettlementId.get(
+                      army.stationedSettlementId,
+                    ) ?? new Map<string, number>());
+              const shortfall = isUpkeepShortfall(
+                requiredByResourceId,
+                availableByResourceId,
+              );
+              const projectedDesertions = shortfall
+                ? units.reduce(
+                    (sum, unit) =>
+                      sum +
+                      computeUnitProjectedDesertion(
+                        unit.soldierCount,
+                        unit.desertionRate,
+                      ),
+                    0,
+                  )
+                : 0;
 
-            return (
-              <div
-                key={army.id}
-                className={
-                  shortfall
-                    ? "grid gap-1 rounded-lg border border-destructive/60 bg-destructive/5 p-3 text-sm"
-                    : "grid gap-1 rounded-lg border p-3 text-sm"
-                }
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{army.name}</span>
-                  <Badge variant="outline">
-                    {formatArmyFundingSource(army.fundingSource)}
-                  </Badge>
+              return (
+                <div
+                  key={army.id}
+                  className={
+                    shortfall
+                      ? "grid gap-1 py-3 text-sm text-destructive"
+                      : "grid gap-1 py-3 text-sm"
+                  }
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{army.name}</span>
+                    <Badge variant="outline">
+                      {formatArmyFundingSource(army.fundingSource)}
+                    </Badge>
+                    {shortfall ? (
+                      <Badge variant="destructive">Projected shortfall</Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Next-turn upkeep: {formatRequirement(requiredByResourceId)}
+                  </p>
                   {shortfall ? (
-                    <Badge variant="destructive">Projected shortfall</Badge>
+                    <p className="text-xs text-destructive">
+                      Projected desertions: {projectedDesertions} soldier
+                      {projectedDesertions === 1 ? "" : "s"}
+                    </p>
                   ) : null}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Next-turn upkeep: {formatRequirement(requiredByResourceId)}
-                </p>
-                {shortfall ? (
-                  <p className="text-xs text-destructive">
-                    Projected desertions: {projectedDesertions} soldier
-                    {projectedDesertions === 1 ? "" : "s"}
-                  </p>
-                ) : null}
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </CardContent>
     </Card>

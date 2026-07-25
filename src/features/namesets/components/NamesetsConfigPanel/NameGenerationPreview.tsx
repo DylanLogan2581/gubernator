@@ -33,9 +33,9 @@ export function NameGenerationPreview({
   const male = generatePreviewNames(config, rerollSeed, "male");
 
   return (
-    <div className="grid gap-2 content-start rounded-md border p-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">Preview</p>
+    <div className="grid content-start gap-2">
+      <div className="flex items-center justify-between border-b border-border pb-2">
+        <p className="eyebrow">Preview</p>
         <Button
           type="button"
           variant="outline"

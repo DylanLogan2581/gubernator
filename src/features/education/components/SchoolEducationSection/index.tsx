@@ -126,7 +126,7 @@ export function SchoolEducationSection({
           description="Enroll a citizen to start teaching them here."
         />
       ) : (
-        <ul className="grid gap-2">
+        <ul className="divide-y divide-border border-y border-border">
           {enrollments.map((enrollment) => {
             const transitionTurns =
               educationConfig.levels.find(
@@ -144,7 +144,7 @@ export function SchoolEducationSection({
             return (
               <li
                 key={enrollment.id}
-                className="flex flex-col gap-1 rounded-md border border-border p-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               >
                 <div className="flex min-w-0 flex-col gap-1 sm:flex-1">
                   <span className="truncate font-medium">

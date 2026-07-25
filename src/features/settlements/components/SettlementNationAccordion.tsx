@@ -38,7 +38,7 @@ export function SettlementNationAccordion({
   const groups = useMemo(() => groupSettlementsByNation(items), [items]);
 
   return (
-    <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+    <div className="divide-y divide-border border-y border-border">
       {groups.map((group) => (
         <NationAccordionRow
           key={group.nationId}

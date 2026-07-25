@@ -495,7 +495,7 @@ function WorldListItem({
   }
 
   return (
-    <li className="group grid gap-3 overflow-hidden rounded-md border border-border bg-card text-card-foreground">
+    <li className="group grid gap-3 overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10">
       <Link
         to="/worlds/$worldId"
         params={{ worldId: world.id }}
@@ -571,7 +571,7 @@ function TrashedWorldRow({
   }
 
   return (
-    <li className="grid gap-3 overflow-hidden rounded-md border border-border bg-card text-card-foreground">
+    <li className="grid gap-3 overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10">
       <WorldCardBody stats={stats} world={world} trashed />
       <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
         <Button

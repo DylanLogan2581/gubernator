@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -117,17 +118,16 @@ export function GeneratedConfigFields({
   return (
     <div className="grid gap-4">
       {errors.length > 0 ? (
-        <div
-          role="alert"
-          className="grid gap-1 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-        >
-          <p className="font-medium">Fix the following before saving:</p>
-          <ul className="list-disc pl-4">
-            {errors.map((message) => (
-              <li key={message}>{message}</li>
-            ))}
-          </ul>
-        </div>
+        <Alert variant="destructive">
+          <AlertTitle>Fix the following before saving:</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              {errors.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <fieldset className="grid gap-2">
@@ -136,7 +136,7 @@ export function GeneratedConfigFields({
           Named fragment lists referenced by the patterns below. One fragment
           per line; duplicate lines weight that fragment more heavily.
         </p>
-        <div className="grid gap-2">
+        <div className="divide-y divide-border border-y border-border">
           {listNames.map((listName) => {
             const referenced = isListReferenced(config, listName);
             return (
@@ -284,7 +284,7 @@ function PartListEditor({
   const nonBlankCount = entries.filter((entry) => entry.trim() !== "").length;
 
   return (
-    <fieldset className="grid gap-1.5 rounded-md border p-3">
+    <fieldset className="grid gap-1.5 py-3">
       <div className="flex items-center gap-2">
         <Input
           aria-label="List name"
@@ -367,8 +367,10 @@ function PatternBuilder({
   }
 
   return (
-    <fieldset className="grid gap-1.5 rounded-md border p-3">
-      <legend className="text-sm font-medium">{label}</legend>
+    <fieldset className="grid gap-1.5">
+      <legend className="eyebrow w-full border-b border-border pb-1">
+        {label}
+      </legend>
       <p className="text-xs text-muted-foreground">{description}</p>
       <div className="flex min-h-11 flex-wrap items-center gap-1 rounded-md border border-dashed p-2">
         {pattern.length === 0 ? (

@@ -134,7 +134,7 @@ export function OpenAmendmentCard({
   }
 
   return (
-    <li className="grid gap-2 rounded-md border border-border p-3">
+    <li className="grid gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium">{amendment.title}</span>
         <div className="flex items-center gap-2">
@@ -159,13 +159,13 @@ export function OpenAmendmentCard({
       </p>
 
       {votesQuery.isPending || membersQuery.isPending ? null : (
-        <ul className="grid grid-cols-1 gap-2">
+        <ul className="divide-y divide-border border-y border-border">
           {memberIds.map((citizenId) => {
             const vote = voteByVoterCitizenId.get(citizenId) ?? null;
             return (
               <li
                 key={citizenId}
-                className="flex flex-col gap-2 rounded-sm border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between"
               >
                 <span className="truncate text-sm font-medium text-foreground">
                   {nameById.get(citizenId) ?? "Unknown citizen"}

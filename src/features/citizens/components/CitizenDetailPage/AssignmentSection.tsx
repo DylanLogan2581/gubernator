@@ -58,7 +58,7 @@ function CitizenAssignmentSummary({
   }
 
   return (
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <dl className="grid divide-y divide-border border-y border-border">
       <Readout
         label="Type"
         value={assignmentTypeLabel(assignment.assignmentType)}

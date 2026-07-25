@@ -46,12 +46,12 @@ export function NationDeleteSection({
   }
 
   return (
-    <section
-      aria-labelledby="nation-delete-heading"
-      className="grid gap-3 rounded-md border border-destructive/30 bg-card p-4 text-card-foreground"
-    >
-      <div className="space-y-1">
-        <h2 id="nation-delete-heading" className="text-base font-medium">
+    <section aria-labelledby="nation-delete-heading" className="grid gap-3">
+      <div className="space-y-1 border-b border-border pb-3">
+        <h2
+          id="nation-delete-heading"
+          className="text-base font-medium text-seal"
+        >
           Danger zone
         </h2>
         <p className="text-sm text-muted-foreground">

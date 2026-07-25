@@ -400,7 +400,7 @@ function PopulationRulesReadOnlySummary({
   readonly rules: WorldPopulationRules;
 }): JSX.Element {
   return (
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <dl className="grid divide-y divide-border border-y border-border">
       <ReadoutItem
         label="Partnership seek chance"
         value={`${String(Math.round(rules.partnership_seek_chance * 100))}%`}
@@ -457,9 +457,9 @@ function ReadoutItem({
   readonly value: string;
 }): JSX.Element {
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{value}</dd>
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="text-right text-sm font-medium">{value}</dd>
     </div>
   );
 }

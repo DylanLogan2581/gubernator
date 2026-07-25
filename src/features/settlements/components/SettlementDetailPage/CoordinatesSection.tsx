@@ -250,8 +250,8 @@ function CoordinateReadout({
   readonly value: number | null;
 }): JSX.Element {
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+    <div className="grid gap-0.5">
+      <dt className="eyebrow">{label}</dt>
       <dd className="text-base font-medium">
         {value === null ? (
           <span className="italic text-muted-foreground">Not set</span>

@@ -425,7 +425,7 @@ export function EventCreateForecastStep({
 
       <div className="space-y-3">
         <h4 className="font-semibold">Turn-by-turn forecast</h4>
-        <div className="space-y-3">
+        <div className="divide-y divide-border border-y border-border">
           {forecast.turns.map((turnRow) => {
             const dateLabel = dateLabelForTurn(turnRow.turnNumber);
             const memory = memories.find(
@@ -438,10 +438,7 @@ export function EventCreateForecastStep({
               .filter((line): line is string => line !== null);
 
             return (
-              <div
-                key={turnRow.turnOffset}
-                className="space-y-2 rounded-lg border p-3"
-              >
+              <div key={turnRow.turnOffset} className="space-y-2 py-3">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="text-sm font-medium">
                     Turn {turnRow.turnNumber}

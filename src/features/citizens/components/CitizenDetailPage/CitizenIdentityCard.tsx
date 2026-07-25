@@ -95,7 +95,7 @@ export function CitizenIdentityCard({
         <CitizenDetailHeader citizen={citizen} />
       </div>
 
-      <dl className="grid gap-2">
+      <dl className="grid divide-y divide-border border-y border-border">
         <Readout label="Sex" value={citizen.sex} />
         <Readout
           label="Born on turn"
@@ -114,7 +114,7 @@ export function CitizenIdentityCard({
         <Readout label="Partnership" value={partnershipValue} />
       </dl>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <dl className="grid divide-y divide-border border-y border-border">
         <Readout label="Culture">
           {culture === null ? undefined : (
             <CultureReligionChip color={culture.color} name={culture.name} />
@@ -125,19 +125,21 @@ export function CitizenIdentityCard({
             <CultureReligionChip color={religion.color} name={religion.name} />
           )}
         </Readout>
-      </div>
+      </dl>
 
-      <Readout label="Education level">
-        {noEducationSystem ? (
-          <span className="italic text-muted-foreground">
-            No education system configured
-          </span>
-        ) : (
-          <Badge variant={educationLevel === null ? "outline" : "secondary"}>
-            {educationLevel?.name ?? "Uneducated"}
-          </Badge>
-        )}
-      </Readout>
+      <dl className="grid divide-y divide-border border-y border-border">
+        <Readout label="Education level">
+          {noEducationSystem ? (
+            <span className="italic text-muted-foreground">
+              No education system configured
+            </span>
+          ) : (
+            <Badge variant={educationLevel === null ? "outline" : "secondary"}>
+              {educationLevel?.name ?? "Uneducated"}
+            </Badge>
+          )}
+        </Readout>
+      </dl>
     </Card>
   );
 }

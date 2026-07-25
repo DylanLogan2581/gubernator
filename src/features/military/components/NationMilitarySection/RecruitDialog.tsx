@@ -1,6 +1,7 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { useId, useMemo, useState, type JSX } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -306,17 +307,19 @@ export function RecruitDialog({
             </ul>
 
             {shortfalls.length > 0 ? (
-              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-                <p className="font-medium">Insufficient resources:</p>
-                <ul className="grid gap-0.5">
-                  {shortfalls.map((shortfall) => (
-                    <li key={shortfall.resourceId}>
-                      Short {shortfall.shortfall} of resource{" "}
-                      {shortfall.resourceId}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <Alert variant="destructive">
+                <AlertTitle>Insufficient resources</AlertTitle>
+                <AlertDescription>
+                  <ul className="grid gap-0.5">
+                    {shortfalls.map((shortfall) => (
+                      <li key={shortfall.resourceId}>
+                        Short {shortfall.shortfall} of resource{" "}
+                        {shortfall.resourceId}
+                      </li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
             ) : null}
 
             {selectedCount > 0 ? (

@@ -158,7 +158,7 @@ export function CitizenNpcFlavorSection({
         <NpcFlavorLine citizenId={citizen.id} flavor={currentFlavor} />
       )}
       {isChild ? null : (
-        <dl className="flex flex-col gap-2">
+        <dl className="grid divide-y divide-border border-y border-border">
           <Readout label="Trait 1" value={adminDetails?.npcTrait1 ?? null} />
           <Readout label="Trait 2" value={adminDetails?.npcTrait2 ?? null} />
           <Readout label="Goal" value={adminDetails?.npcGoal ?? null} block />

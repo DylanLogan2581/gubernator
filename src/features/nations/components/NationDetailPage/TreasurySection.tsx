@@ -423,7 +423,7 @@ function TaxRateControl({
   }
 
   return (
-    <div className="grid gap-2 rounded-md border p-3">
+    <div className="grid gap-2">
       <div className="flex items-center justify-between gap-2">
         <Label htmlFor="nation-tax-rate-slider">Production tax rate</Label>
         <span className="text-sm font-medium">{sliderValue}%</span>

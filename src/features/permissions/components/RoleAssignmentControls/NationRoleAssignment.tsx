@@ -112,7 +112,10 @@ function NationRoleAssignmentList({
           No settlement managers assigned yet.
         </p>
       ) : (
-        <ul className="grid gap-2" aria-label="Settlement managers">
+        <ul
+          className="divide-y divide-border border-y border-border"
+          aria-label="Settlement managers"
+        >
           {managers.map((citizen) => (
             <NationRoleAssignmentRow
               key={citizen.id}
@@ -127,8 +130,8 @@ function NationRoleAssignmentList({
           ))}
         </ul>
       )}
-      <div className="grid gap-2 rounded-md border border-border bg-background p-3">
-        <span className="text-xs font-medium text-muted-foreground">
+      <div className="grid gap-2">
+        <span className="eyebrow border-b border-border pb-2">
           Assign a settlement manager
         </span>
         <div className="grid gap-1 text-sm">
@@ -169,7 +172,10 @@ function NationRoleAssignmentList({
           </>
         )}
         {selectedCitizen === null ? null : (
-          <ul className="grid gap-2" aria-label="Selected citizen">
+          <ul
+            className="divide-y divide-border border-y border-border"
+            aria-label="Selected citizen"
+          >
             <NationRoleAssignmentRow
               citizen={selectedCitizen}
               existingManager={
@@ -287,7 +293,7 @@ function NationRoleAssignmentRow({
   }
 
   return (
-    <li className="grid gap-2 rounded-md border border-border bg-background p-3">
+    <li className="grid gap-2 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="grid gap-0.5 text-sm">
           <span className="flex items-center gap-2 font-medium">

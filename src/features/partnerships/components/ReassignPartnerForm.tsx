@@ -112,7 +112,7 @@ export function ReassignPartnerForm({
   return (
     <form
       aria-label="Reassign partner"
-      className="grid gap-2 rounded-md border border-border bg-card px-3 py-2"
+      className="grid gap-2"
       noValidate
       onSubmit={handleSubmit}
     >

@@ -59,7 +59,7 @@ export function CharterLawsSection({
 
   return (
     <Frame>
-      <div className="grid gap-3">
+      <div className="divide-y divide-border border-y border-border">
         {activeDocuments.map((document) => (
           <LawDocumentEntry
             key={document.id}
@@ -97,11 +97,8 @@ function LawDocumentEntry({
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
-    <details
-      open
-      className="group rounded-xl border border-border bg-card ring-1 ring-foreground/10"
-    >
-      <summary className="cursor-pointer list-none p-4 [&::-webkit-details-marker]:hidden">
+    <details open className="group">
+      <summary className="cursor-pointer list-none py-3 [&::-webkit-details-marker]:hidden">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">{document.title}</h3>
           <span
@@ -112,7 +109,7 @@ function LawDocumentEntry({
           </span>
         </div>
       </summary>
-      <div className="grid gap-3 px-4 pb-4">
+      <div className="grid gap-3 pb-3">
         {document.preambleMarkdown !== null &&
         document.preambleMarkdown !== "" ? (
           <p className="whitespace-pre-wrap text-sm italic text-muted-foreground">

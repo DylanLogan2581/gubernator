@@ -103,11 +103,9 @@ export function UpkeepMultiplierEditor({
             {effect.buildingBlueprintMode === "all" ||
             effect.buildingBlueprintMode === undefined ||
             effect.buildingBlueprintMode === null ? (
-              <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
-                <p className="text-sm font-medium">
-                  ✓ All {blueprintsQuery.data.length} building types selected
-                </p>
-              </div>
+              <p className="py-2 text-center text-sm text-muted-foreground">
+                ✓ All {blueprintsQuery.data.length} building types selected
+              </p>
             ) : effect.buildingBlueprintMode === "select" ? (
               blueprintsQuery.data.length > 0 && (
                 <SearchableResourcePicker

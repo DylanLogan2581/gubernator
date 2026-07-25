@@ -113,7 +113,7 @@ export function ActiveEventsCard({
           description="No events currently affecting this location."
         />
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-border border-y border-border">
           {displayEvents.map((event) => (
             <EventRow key={event.id} event={event} />
           ))}
@@ -125,7 +125,7 @@ export function ActiveEventsCard({
 
 function EventRow({ event }: { readonly event: EventWithGroup }): JSX.Element {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-muted bg-muted/30 p-3">
+    <div className="flex items-center gap-2 py-3">
       <IconChip
         icon={resolveEventIcon(event.icon)}
         tone={DOMAIN_ICON_CHIPS.events.tone}

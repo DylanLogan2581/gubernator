@@ -119,7 +119,7 @@ function SettlementReadinessListFrame({
   return (
     <section
       aria-labelledby="settlement-readiness-list-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
+      className="grid gap-4"
     >
       {children}
     </section>

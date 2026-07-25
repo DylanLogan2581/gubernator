@@ -297,9 +297,5 @@ function ConfigPanelShell({
 }: {
   readonly children: ReactNode;
 }): JSX.Element {
-  return (
-    <section className="rounded-md border border-border bg-card p-4 text-card-foreground">
-      {children}
-    </section>
-  );
+  return <section className="grid gap-4">{children}</section>;
 }

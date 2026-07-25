@@ -166,7 +166,7 @@ function CitizenRoleAssignmentForm({
   const isPending = assignMutation.isPending || revokeMutation.isPending;
 
   return (
-    <div className="grid gap-2 rounded-md border border-border bg-background px-3 py-2">
+    <div className="grid gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="grid gap-0.5 text-sm">
           <span className="text-xs text-muted-foreground">Role</span>

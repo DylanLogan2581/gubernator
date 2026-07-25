@@ -39,7 +39,7 @@ export function OperationEditor({
   readonly onRemove: () => void;
 }): JSX.Element {
   return (
-    <li className="grid gap-2 rounded-md border border-border p-2">
+    <li className="grid gap-2 py-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted-foreground">
           {OPERATION_LABELS[draft.op]}
@@ -126,8 +126,8 @@ function AddArticleEditor({
         />
       </div>
       {draft.heading.trim() !== "" || draft.bodyMarkdown.trim() !== "" ? (
-        <div className="rounded-md border border-dashed border-border p-2">
-          <p className="text-xs text-muted-foreground">Preview</p>
+        <div className="grid gap-1">
+          <p className="eyebrow">Preview</p>
           <h3 className="text-sm font-medium">
             {draft.heading.trim() === "" ? "(untitled)" : draft.heading}
           </h3>
@@ -188,8 +188,8 @@ function AmendArticleEditor({
         rows={3}
       />
       {original !== undefined ? (
-        <div className="rounded-md border border-dashed border-border p-2">
-          <p className="text-xs text-muted-foreground">Preview</p>
+        <div className="grid gap-1">
+          <p className="eyebrow">Preview</p>
           <ArticleDiffRow
             diff={
               diffArticles(
@@ -249,8 +249,8 @@ function RepealArticleEditor({
         </SelectContent>
       </Select>
       {article !== undefined ? (
-        <div className="rounded-md border border-dashed border-border p-2">
-          <p className="text-xs text-muted-foreground">Preview</p>
+        <div className="grid gap-1">
+          <p className="eyebrow">Preview</p>
           <h3 className="text-sm font-medium text-muted-foreground line-through">
             Article {article.articleNumber}. {article.heading}
           </h3>

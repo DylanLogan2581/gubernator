@@ -87,7 +87,7 @@ export function NationRelationshipRow({
   }
 
   return (
-    <li className="grid gap-3 rounded-md border border-border bg-background p-3">
+    <li className="grid gap-3">
       <div className="text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Current stance:</span>{" "}
         {formatRelationshipStance(currentStance)}

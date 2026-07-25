@@ -111,9 +111,11 @@ export function PruneWorldDataPanel({
   );
 
   return (
-    <div className="mt-6 rounded-lg border border-border p-4">
-      <h2 className="text-base font-semibold">Data Pruning</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <section className="mt-6">
+      <h2 className="border-b border-border pb-2 text-base font-semibold text-seal">
+        Data Pruning
+      </h2>
+      <p className="mt-2 text-sm text-muted-foreground">
         Remove old snapshots and turn logs beyond a retention window. Superadmin
         only. The latest turn and its transition logs are always retained.
       </p>
@@ -179,7 +181,7 @@ export function PruneWorldDataPanel({
       </div>
 
       {preview !== null && (
-        <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
+        <div className="mt-4 text-sm">
           <p className="font-medium">
             Preview for &ldquo;{selectedWorld?.name ?? selectedWorldId}&rdquo;
           </p>
@@ -249,7 +251,7 @@ export function PruneWorldDataPanel({
         isPending={pruneMutation.isPending}
         onConfirm={handleConfirmPrune}
       />
-    </div>
+    </section>
   );
 }
 

@@ -361,7 +361,7 @@ export function EventsList({
                 description="Try adjusting the status, scope, or search filters."
               />
             ) : isMobile ? (
-              <div className="space-y-2">
+              <div className="divide-y divide-border border-y border-border">
                 {paginatedItems.map((item) => {
                   if (item.type === "single") {
                     return (
@@ -535,7 +535,7 @@ function EventCard({
       type="button"
       aria-pressed={isSelected}
       data-state={isSelected ? "selected" : undefined}
-      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=selected]:border-primary"
+      className="relative flex w-full items-center gap-3 py-3 text-left outline-none hover:bg-accent/50 focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=selected]:bg-accent data-[state=selected]:before:absolute data-[state=selected]:before:inset-y-0 data-[state=selected]:before:left-0 data-[state=selected]:before:w-0.5 data-[state=selected]:before:bg-primary"
       onClick={onSelect}
     >
       <IconChip

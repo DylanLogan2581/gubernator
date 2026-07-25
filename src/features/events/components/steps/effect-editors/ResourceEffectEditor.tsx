@@ -90,11 +90,9 @@ export function ResourceEffectEditor({
           </div>
 
           {effect.resourceMode !== "select" ? (
-            <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
-              <p className="text-sm font-medium">
-                ✓ All {resourcesQuery.data.length} resources selected
-              </p>
-            </div>
+            <p className="py-2 text-center text-sm text-muted-foreground">
+              ✓ All {resourcesQuery.data.length} resources selected
+            </p>
           ) : (
             resourcesQuery.data.length > 0 && (
               <SearchableResourcePicker

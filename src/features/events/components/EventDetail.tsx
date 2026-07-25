@@ -175,7 +175,7 @@ export function EventDetail({
         </div>
       )}
 
-      <div className={isPanel ? "" : "rounded-lg border bg-card p-6"}>
+      <div>
         <div className="space-y-4">
           {isPanel ? (
             <div className="flex items-center justify-between gap-2">
@@ -465,7 +465,7 @@ type EffectItemProps = {
 
 function EffectItem({ effect }: EffectItemProps): JSX.Element {
   return (
-    <div className="rounded-md border bg-muted/50 p-3 text-sm space-y-2">
+    <div className="text-sm space-y-2">
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium capitalize">
           {effect.effect_type.replace(/_/g, " ")}

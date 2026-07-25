@@ -116,40 +116,39 @@ export function GarrisonCard({
         <CardTitle className="text-base">Garrison</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        {armies.map((army) => {
-          const soldierCount = soldierCountsQuery.data?.[army.id] ?? 0;
-          const upkeep = formatUpkeep(army);
+        <div className="divide-y divide-border border-y border-border">
+          {armies.map((army) => {
+            const soldierCount = soldierCountsQuery.data?.[army.id] ?? 0;
+            const upkeep = formatUpkeep(army);
 
-          return (
-            <div
-              key={army.id}
-              className="grid gap-1 rounded-lg border p-3 text-sm"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  className="font-medium hover:underline"
-                  params={{ nationId, worldId }}
-                  to="/worlds/$worldId/nations/$nationId/military"
-                >
-                  {army.name}
-                </Link>
-                <Badge variant="secondary">{soldierCount} soldiers</Badge>
-                <Badge variant="outline">
-                  {formatArmyFundingSource(army.fundingSource)}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Adds {soldierCount} citizen{soldierCount === 1 ? "" : "s"} to
-                food demand here.
-              </p>
-              {upkeep !== null ? (
+            return (
+              <div key={army.id} className="grid gap-1 py-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    className="font-medium hover:underline"
+                    params={{ nationId, worldId }}
+                    to="/worlds/$worldId/nations/$nationId/military"
+                  >
+                    {army.name}
+                  </Link>
+                  <Badge variant="secondary">{soldierCount} soldiers</Badge>
+                  <Badge variant="outline">
+                    {formatArmyFundingSource(army.fundingSource)}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Upkeep: {upkeep} drawn from this settlement.
+                  Adds {soldierCount} citizen{soldierCount === 1 ? "" : "s"} to
+                  food demand here.
                 </p>
-              ) : null}
-            </div>
-          );
-        })}
+                {upkeep !== null ? (
+                  <p className="text-xs text-muted-foreground">
+                    Upkeep: {upkeep} drawn from this settlement.
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );

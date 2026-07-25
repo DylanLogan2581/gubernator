@@ -73,11 +73,9 @@ export function ProductionMultiplierEditor({
             </div>
 
             {effect.jobMode === "all" ? (
-              <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
-                <p className="text-sm font-medium">
-                  ✓ All {jobsQuery.data.length} jobs selected
-                </p>
-              </div>
+              <p className="py-2 text-center text-sm text-muted-foreground">
+                ✓ All {jobsQuery.data.length} jobs selected
+              </p>
             ) : (
               jobsQuery.data.length > 0 && (
                 <SearchableResourcePicker

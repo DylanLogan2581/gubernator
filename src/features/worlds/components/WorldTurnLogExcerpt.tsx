@@ -61,12 +61,9 @@ export function WorldTurnLogExcerpt({
             description="Entries appear here after the world's first turn ends."
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-border border-y border-border">
             {turnLogQuery.data.entries.slice(0, EXCERPT_LIMIT).map((entry) => (
-              <li
-                key={entry.id}
-                className="rounded-md border border-border px-3 py-2"
-              >
+              <li key={entry.id} className="py-2">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-medium">
                     {logCategoryLabel(entry.logCategory)}

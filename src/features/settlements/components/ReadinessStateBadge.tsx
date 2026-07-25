@@ -1,3 +1,5 @@
+import { Badge } from "@/components/ui/badge";
+
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
 import { getReadinessStateLabel } from "./SettlementReadinessDisplayText";
@@ -13,11 +15,7 @@ export function ReadinessStateBadge({
   const state = deriveSettlementReadinessState(item);
   const label = getReadinessStateLabel(state);
 
-  return (
-    <span className="inline-flex w-fit rounded-sm border border-border bg-background px-2 py-1 text-xs font-medium text-foreground">
-      {label}
-    </span>
-  );
+  return <Badge variant="outline">{label}</Badge>;
 }
 
 export function ReadOnlyReadinessIndicator({

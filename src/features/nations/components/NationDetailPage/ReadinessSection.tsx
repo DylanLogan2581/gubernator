@@ -152,7 +152,7 @@ export function NationReadinessSection({
             {trueVoteCount}/{eligibleVoterCount} {voterLabel} ready
             {isReady ? " — nation ready" : ""}
           </p>
-          <ul className="grid grid-cols-1 gap-2">
+          <ul className="divide-y divide-border border-y border-border">
             {voters.map((voter) => (
               <NationReadinessVoterRow
                 canVote={canVoteFor(voter.citizenId)}
@@ -184,7 +184,7 @@ function NationReadinessVoterRow({
   readonly voter: NationReadinessVoter;
 }): JSX.Element {
   return (
-    <li className="flex flex-col gap-2 rounded-sm border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
       <span className="truncate text-sm font-medium text-foreground">
         {voter.name ?? "Unknown citizen"}
       </span>

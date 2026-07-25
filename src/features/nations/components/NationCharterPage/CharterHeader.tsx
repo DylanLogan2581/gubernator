@@ -26,17 +26,15 @@ export function CharterHeader({
     ) ?? null;
 
   return (
-    <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center">
+    <header className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-center">
       <NationFlagAvatar
-        className="w-20 shrink-0"
+        className="w-9 shrink-0"
         flagPath={nation.flagPath}
         nationId={nation.id}
       />
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {nation.name}
-          </h1>
+          <h1 className="font-display text-xl leading-tight">{nation.name}</h1>
           <Badge variant="secondary">
             {formatNationGovernmentType(nation.governmentType)}
           </Badge>

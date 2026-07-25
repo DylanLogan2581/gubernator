@@ -327,7 +327,7 @@ export function DryRunSummary({
   ];
 
   return (
-    <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+    <div className="text-sm">
       <p className="mb-2 font-medium">
         Template:{" "}
         <span className="font-normal text-muted-foreground">
@@ -362,11 +362,11 @@ export function DryRunSummary({
 
       {warnings.length > 0 ? (
         <div className="mt-3 space-y-1">
-          <p className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-500">
+          <p className="flex items-center gap-1 font-medium text-warning-foreground">
             <AlertTriangle size={14} aria-hidden="true" />
             Warnings ({warnings.length})
           </p>
-          <ul className="space-y-0.5 text-xs text-amber-600 dark:text-amber-500">
+          <ul className="space-y-0.5 text-xs text-warning-foreground">
             {warnings.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}

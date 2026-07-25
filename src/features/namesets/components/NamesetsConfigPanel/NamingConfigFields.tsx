@@ -2,6 +2,7 @@ import { AlertTriangle } from "lucide-react";
 import { type JSX } from "react";
 
 import { PoolEditor } from "@/components/shared/PoolEditor";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { WorldListNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import { ConventionPicker } from "./ConventionPicker";
@@ -21,18 +22,12 @@ export function NamingConfigFields({
   return (
     <div className="grid gap-4">
       {showEmptyPoolWarning ? (
-        <div
-          role="alert"
-          className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
-        >
-          <AlertTriangle
-            aria-hidden="true"
-            className="mt-0.5 h-4 w-4 shrink-0"
-          />
-          <span>
+        <Alert variant="warning">
+          <AlertTriangle aria-hidden="true" />
+          <AlertDescription>
             One or more name pools are empty. Generated NPC names may be blank.
-          </span>
-        </div>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <PoolEditor

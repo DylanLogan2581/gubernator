@@ -113,7 +113,7 @@ export function NationTreatiesPanel({
           No treaties with {other.name}.
         </p>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="divide-y divide-border border-y border-border">
           {treaties.map((treaty) => (
             <TreatyRow
               key={treaty.id}
@@ -218,7 +218,7 @@ function TreatyRow({
   }
 
   return (
-    <li className="grid gap-2 rounded-md border border-border bg-background p-3 text-xs">
+    <li className="grid gap-2 py-3 text-xs">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 font-medium text-foreground">
           <Icon aria-hidden="true" className="h-3.5 w-3.5" />

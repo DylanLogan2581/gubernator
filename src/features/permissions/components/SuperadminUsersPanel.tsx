@@ -123,13 +123,13 @@ export function SuperadminUsersPanel(): JSX.Element {
       </div>
 
       {filteredUsers.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+        <p className="mt-4 py-8 text-center text-sm text-muted-foreground">
           {searchTrimmed.length > 0
             ? "No users match your search."
             : "No users found."}
-        </div>
+        </p>
       ) : isMobile ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 divide-y divide-border border-y border-border">
           {filteredUsers.map((user) => (
             <UserCard
               key={user.id}
@@ -347,7 +347,7 @@ function UserCard({
   const isSelf = user.id === currentUserId;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+    <div className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">
           {user.username}

@@ -112,7 +112,10 @@ export function NationSettlementsSection({
           description="This nation has no settlements yet."
         />
       ) : (
-        <ul className="grid gap-2" aria-label="Settlements">
+        <ul
+          className="divide-y divide-border border-y border-border"
+          aria-label="Settlements"
+        >
           {settlementsQuery.data.map((settlement) => (
             <NationSettlementListItem
               key={settlement.id}
@@ -221,7 +224,7 @@ function NationSettlementListItem({
   const canDelete = canAdmin && !isArchived;
 
   return (
-    <li className="rounded-md border border-border bg-background p-3">
+    <li className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
           <SettlementFlagAvatar

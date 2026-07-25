@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { TriangleAlert } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,41 +47,44 @@ export function SmtpSettingsForm(): JSX.Element {
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold">SMTP settings</h2>
-          {smtpStatusQuery.isSuccess && smtpStatusQuery.data.configured && (
-            <Badge
-              variant={
-                smtpStatusQuery.data.source === "database"
-                  ? "success"
-                  : "outline"
-              }
-            >
-              {smtpStatusQuery.data.source === "database"
-                ? "Database"
-                : "Environment"}
-            </Badge>
-          )}
-          {smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured && (
-            <Badge variant="outline">Not configured</Badge>
-          )}
+    <section className="mt-6">
+      <div className="border-b border-border pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">SMTP settings</h2>
+            {smtpStatusQuery.isSuccess && smtpStatusQuery.data.configured && (
+              <Badge
+                variant={
+                  smtpStatusQuery.data.source === "database"
+                    ? "success"
+                    : "outline"
+                }
+              >
+                {smtpStatusQuery.data.source === "database"
+                  ? "Database"
+                  : "Environment"}
+              </Badge>
+            )}
+            {smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured && (
+              <Badge variant="outline">Not configured</Badge>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={testMutation.isPending || !isConfigured}
+            onClick={handleSendTest}
+          >
+            Send test email to me
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={testMutation.isPending || !isConfigured}
-          onClick={handleSendTest}
-        >
-          Send test email to me
-        </Button>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Saved settings are stored in the database and take priority over
+          environment variables. The password is write-only and never shown
+          here.
+        </p>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Saved settings are stored in the database and take priority over
-        environment variables. The password is write-only and never shown here.
-      </p>
 
       {smtpStatusQuery.isPending && (
         <LoadingState label="Loading SMTP settings…" />
@@ -93,26 +98,29 @@ export function SmtpSettingsForm(): JSX.Element {
       )}
 
       {smtpStatusQuery.isSuccess && !smtpStatusQuery.data.configured && (
-        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
-          <p className="font-medium">SMTP not configured</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Set the values below, or the equivalent environment variables and
-            redeploy the <code>send-email</code> edge function:
-          </p>
-          <ul className="mt-2 list-inside list-disc text-xs">
-            {smtpStatusQuery.data.missing.map((name) => (
-              <li key={name} className="font-mono">
-                {name}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Alert variant="warning" className="mt-3">
+          <TriangleAlert aria-hidden="true" />
+          <AlertTitle>SMTP not configured</AlertTitle>
+          <AlertDescription>
+            <p>
+              Set the values below, or the equivalent environment variables and
+              redeploy the <code>send-email</code> edge function:
+            </p>
+            <ul className="mt-2 list-inside list-disc text-xs">
+              {smtpStatusQuery.data.missing.map((name) => (
+                <li key={name} className="font-mono">
+                  {name}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       )}
 
       {smtpStatusQuery.isSuccess && (
         <SmtpSettingsFields data={smtpStatusQuery.data} />
       )}
-    </div>
+    </section>
   );
 }
 

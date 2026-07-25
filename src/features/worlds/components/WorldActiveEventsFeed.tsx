@@ -59,11 +59,11 @@ export function WorldActiveEventsFeed({
             description="Nothing is currently affecting this world."
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-border border-y border-border">
             {eventsQuery.data.slice(0, FEED_LIMIT).map((event) => (
               <li
                 key={event.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+                className="flex items-center justify-between gap-3 py-2"
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <IconChip

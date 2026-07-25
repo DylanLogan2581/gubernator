@@ -240,12 +240,9 @@ export function DecreesSection(props: DecreesSectionProps): JSX.Element {
             description="Issue a one-off proclamation for the record."
           />
         ) : (
-          <ul className="grid gap-2">
+          <ul className="divide-y divide-border border-y border-border">
             {decrees.map((decree) => (
-              <li
-                key={decree.id}
-                className="grid gap-1 rounded-md border border-border p-3"
-              >
+              <li key={decree.id} className="grid gap-1 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="grid gap-0.5">
                     <span

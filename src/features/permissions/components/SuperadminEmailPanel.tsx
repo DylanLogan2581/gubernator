@@ -153,12 +153,14 @@ function ManualNotificationForm(): JSX.Element {
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-border p-4">
-      <h2 className="text-base font-semibold">Manual notification sender</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Compose a branded email and send it to a chosen audience. Preview before
-        sending.
-      </p>
+    <section className="mt-6">
+      <div className="border-b border-border pb-3">
+        <h2 className="text-base font-semibold">Manual notification sender</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Compose a branded email and send it to a chosen audience. Preview
+          before sending.
+        </p>
+      </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -358,7 +360,7 @@ function ManualNotificationForm(): JSX.Element {
       </div>
 
       {preview !== null && (
-        <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
+        <div className="mt-4 text-sm">
           <p className="font-medium">
             This will reach <strong>{preview.recipientCount}</strong> recipient
             {preview.recipientCount !== 1 ? "s" : ""}.
@@ -388,6 +390,6 @@ function ManualNotificationForm(): JSX.Element {
         isPending={sendMutation.isPending}
         onConfirm={handleConfirmSend}
       />
-    </div>
+    </section>
   );
 }

@@ -88,9 +88,9 @@ export function NationRelationshipsSection({
   return (
     <section
       aria-labelledby="nation-relationships-heading"
-      className="rounded-md border border-border bg-card p-0 text-card-foreground"
+      className="grid gap-4"
     >
-      <div className="px-4 py-4">
+      <div className="border-b border-border pb-3">
         <h2 id="nation-relationships-heading" className="text-base font-medium">
           Relationships
         </h2>
@@ -99,53 +99,53 @@ export function NationRelationshipsSection({
           side.
         </p>
       </div>
-      <div className="border-t border-border">
+      <div>
         {nationsQuery.isPending ||
         discoveriesQuery.isPending ||
         outgoingQuery.isPending ||
         incomingQuery.isPending ||
         treatiesQuery.isPending ||
         resourcesQuery.isPending ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <LoadingState label="Loading relationships…" />
           </div>
         ) : nationsQuery.isError ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <ErrorState
               title="Relationships could not be loaded"
               description={getErrorDescription(nationsQuery.error)}
             />
           </div>
         ) : discoveriesQuery.isError ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <ErrorState
               title="Relationships could not be loaded"
               description={getErrorDescription(discoveriesQuery.error)}
             />
           </div>
         ) : outgoingQuery.isError ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <ErrorState
               title="Relationships could not be loaded"
               description={getErrorDescription(outgoingQuery.error)}
             />
           </div>
         ) : incomingQuery.isError ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <ErrorState
               title="Relationships could not be loaded"
               description={getErrorDescription(incomingQuery.error)}
             />
           </div>
         ) : treatiesQuery.isError ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <ErrorState
               title="Treaties could not be loaded"
               description={getErrorDescription(treatiesQuery.error)}
             />
           </div>
         ) : resourcesQuery.isError ? (
-          <div className="px-4 pb-4 pt-2">
+          <div>
             <ErrorState
               title="Resources could not be loaded"
               description={getErrorDescription(resourcesQuery.error)}
@@ -201,7 +201,7 @@ function NationRelationshipsList({
 }): JSX.Element {
   if (otherNations.length === 0) {
     return (
-      <div className="px-4 pb-4 pt-2">
+      <div>
         <EmptyState
           title="No nations discovered"
           description={`${nation.name} has not discovered any other nations yet.`}

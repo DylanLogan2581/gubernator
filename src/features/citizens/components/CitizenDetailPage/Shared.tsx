@@ -27,11 +27,11 @@ export function Readout({
 }): JSX.Element {
   return (
     <div
-      className={`rounded-md border border-border bg-background px-3 py-2 ${
-        block === true ? "sm:col-span-2" : ""
+      className={`flex gap-4 py-2.5 ${
+        block === true ? "flex-col" : "items-center justify-between"
       }`}
     >
-      <dt className="flex items-center gap-1 text-xs text-muted-foreground">
+      <dt className="eyebrow flex items-center gap-1">
         {label}
         {tooltip !== undefined ? (
           <Tooltip>
@@ -49,9 +49,9 @@ export function Readout({
         ) : null}
       </dt>
       <dd
-        className={`text-sm ${mono === true ? "font-mono text-xs" : ""} ${
-          block === true ? "whitespace-pre-wrap" : ""
-        }`}
+        className={`text-sm font-medium ${
+          mono === true ? "font-mono text-xs" : ""
+        } ${block === true ? "whitespace-pre-wrap" : "text-right"}`}
       >
         {children !== undefined ? (
           children

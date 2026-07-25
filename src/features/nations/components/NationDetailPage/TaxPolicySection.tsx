@@ -450,7 +450,7 @@ function DefaultRuleEditor({
   }
 
   return (
-    <div className="grid gap-3 rounded-md border p-3">
+    <div className="grid gap-3">
       <TaxPolicyFields
         disabled={!canEdit}
         idPrefix="tax-default"

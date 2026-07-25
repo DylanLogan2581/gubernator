@@ -215,25 +215,25 @@ function CitizenLinkedUserControl({
 
   return (
     <div className="grid gap-2">
-      <dl>
+      <dl className="grid divide-y divide-border border-y border-border">
         {linkedUserState.kind === "pending" ? (
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <dt className="text-xs text-muted-foreground">Linked user</dt>
-            <dd className="mt-1">
+          <div className="flex items-center justify-between gap-4 py-2.5">
+            <dt className="eyebrow">Linked user</dt>
+            <dd>
               <Skeleton className="h-4 w-32" />
             </dd>
           </div>
         ) : linkedUserState.kind === "hidden" ? (
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <dt className="text-xs text-muted-foreground">Linked user</dt>
-            <dd className="mt-1 text-sm italic text-muted-foreground">
+          <div className="flex items-center justify-between gap-4 py-2.5">
+            <dt className="eyebrow">Linked user</dt>
+            <dd className="text-sm italic text-right text-muted-foreground">
               Linked user hidden
             </dd>
           </div>
         ) : linkedUserState.kind === "error" ? (
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <dt className="text-xs text-muted-foreground">Linked user</dt>
-            <dd className="mt-1 flex items-center gap-2 text-sm text-destructive">
+          <div className="flex items-center justify-between gap-4 py-2.5">
+            <dt className="eyebrow">Linked user</dt>
+            <dd className="flex items-center gap-2 text-sm text-destructive">
               <span>Couldn't load linked user.</span>
               <Button
                 type="button"
