@@ -1162,7 +1162,7 @@ describe("SettlementConstructionPanel", () => {
     await screen.findByText("Barracks");
     await user.click(screen.getByRole("button", { name: "Cancel Barracks" }));
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Cancel Barracks?",
     });
     await user.click(
