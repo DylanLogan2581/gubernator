@@ -120,7 +120,7 @@ function WorldShellContent({
   }
 
   return (
-    <WorldShellFrame>
+    <div className="flex flex-col gap-4">
       <WorldDashboardHeroBanner
         inWorldDateLabel={worldQuery.data.header.inWorldDateLabel}
         isArchived={worldQuery.data.header.isArchived}
@@ -170,7 +170,7 @@ function WorldShellContent({
           </div>
         ) : null}
       </div>
-    </WorldShellFrame>
+    </div>
   );
 }
 
