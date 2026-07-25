@@ -4,8 +4,8 @@
 // assignment flow and decree issuance instead of each growing its own
 // combobox variant (see TurnLogCitizenCombobox, which stays separate since
 // its "All citizens" option and undefined-based clearing serve a filter bar
-// rather than a staged selection). The search hook and row rendering live in
-// citizenPickerShared, reused by CitizenMultiPicker.
+// rather than a staged selection). The search hook (useCitizenDirectorySearch)
+// and row rendering (CitizenPickerParts) are reused by CitizenMultiPicker.
 
 import { useQuery } from "@tanstack/react-query";
 import { ChevronsUpDown, X } from "lucide-react";
