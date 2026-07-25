@@ -159,8 +159,9 @@ describe("NationTreasurySection", () => {
       </TestHarness>,
     );
 
+    await user.click(await screen.findByText("Grain"));
     await user.click(
-      await screen.findByRole("button", { name: "Grant resources" }),
+      await screen.findByRole("button", { name: "Grant to settlement" }),
     );
 
     await user.click(screen.getByRole("combobox", { name: "Settlement" }));
@@ -252,6 +253,7 @@ describe("NationTreasurySection", () => {
       </TestHarness>,
     );
 
+    await user.click(await screen.findByText("Grain"));
     await user.click(
       await screen.findByRole("button", { name: "Subsidize construction" }),
     );
@@ -314,6 +316,7 @@ describe("NationTreasurySection", () => {
       </TestHarness>,
     );
 
+    await user.click(await screen.findByText("Grain"));
     await user.click(
       await screen.findByRole("button", { name: "Subsidize construction" }),
     );
@@ -348,7 +351,13 @@ describe("NationTreasurySection", () => {
       resources: [
         { id: "44444444-4444-4444-4444-444444444444", name: "Grain" },
       ],
-      stockpile: [],
+      stockpile: [
+        {
+          resource_id: "66666666-6666-6666-6666-666666666666",
+          quantity: 5,
+          name: "Stone",
+        },
+      ],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -362,6 +371,7 @@ describe("NationTreasurySection", () => {
       </TestHarness>,
     );
 
+    await user.click(await screen.findByText("Stone"));
     await user.click(
       await screen.findByRole("button", { name: "Subsidize construction" }),
     );
@@ -383,7 +393,13 @@ describe("NationTreasurySection", () => {
       settlements: [
         { id: "33333333-3333-3333-3333-333333333333", name: "Ironhaven Keep" },
       ],
-      stockpile: [],
+      stockpile: [
+        {
+          resource_id: "44444444-4444-4444-4444-444444444444",
+          quantity: 0,
+          name: "Grain",
+        },
+      ],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -397,8 +413,9 @@ describe("NationTreasurySection", () => {
       </TestHarness>,
     );
 
+    await user.click(await screen.findByText("Grain"));
     await user.click(
-      await screen.findByRole("button", { name: "Grant resources" }),
+      await screen.findByRole("button", { name: "Grant to settlement" }),
     );
 
     await screen.findByText("The nation does not hold any resources to grant.");

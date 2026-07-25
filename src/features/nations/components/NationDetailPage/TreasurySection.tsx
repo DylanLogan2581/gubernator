@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Coins } from "lucide-react";
 import { Slider as SliderPrimitive } from "radix-ui";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -81,50 +83,27 @@ export function NationTreasurySection({
   );
   const subsidiesQuery = useQuery(nationActiveSubsidiesQueryOptions(nation.id));
 
-  const [isGranting, setIsGranting] = useState(false);
-  const [isSubsidizing, setIsSubsidizing] = useState(false);
+  const canMoveResources = canManage && !isArchived;
 
   return (
-    <>
-      <Card
-        aria-labelledby="nation-treasury-heading"
-        className="grid gap-4 p-4"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <h2 id="nation-treasury-heading" className="text-base font-medium">
-            Treasury
-          </h2>
-          {canManage && !isArchived ? (
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsGranting(true)}
-              >
-                Grant resources
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSubsidizing(true)}
-              >
-                Subsidize construction
-              </Button>
-            </div>
-          ) : null}
-        </div>
+    <Card aria-labelledby="nation-treasury-heading" className="grid gap-4 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="nation-treasury-heading" className="text-base font-medium">
+          Treasury
+        </h2>
+      </div>
 
-        <TaxRateControl
-          canManage={canManage}
-          isArchived={isArchived}
-          nation={nation}
-          queryClient={queryClient}
-          snapshot={snapshotQuery.data ?? null}
-          snapshotIsPending={snapshotQuery.isPending}
-        />
+      <TaxRateControl
+        canManage={canManage}
+        isArchived={isArchived}
+        nation={nation}
+        queryClient={queryClient}
+        snapshot={snapshotQuery.data ?? null}
+        snapshotIsPending={snapshotQuery.isPending}
+      />
 
+      <div className="grid gap-2">
+        <h3 className="text-sm font-medium">Treasury resources</h3>
         {stockpileQuery.isPending ? (
           <LoadingState label="Loading nation stockpile…" />
         ) : stockpileQuery.isError ? (
@@ -138,23 +117,127 @@ export function NationTreasurySection({
             description="This nation does not hold any resources yet."
           />
         ) : (
-          <StockpileTable stockpile={stockpileQuery.data} />
+          <StockpileMasterDetail
+            canManage={canMoveResources}
+            nation={nation}
+            queryClient={queryClient}
+            stockpile={sortStockpile(stockpileQuery.data)}
+          />
         )}
+      </div>
 
-        <ActiveSubsidiesSection
-          error={subsidiesQuery.error}
-          isError={subsidiesQuery.isError}
-          isPending={subsidiesQuery.isPending}
-          subsidies={subsidiesQuery.data ?? []}
-        />
-      </Card>
+      <ActiveSubsidiesSection
+        error={subsidiesQuery.error}
+        isError={subsidiesQuery.isError}
+        isPending={subsidiesQuery.isPending}
+        subsidies={subsidiesQuery.data ?? []}
+      />
+    </Card>
+  );
+}
 
-      {isGranting ? (
+function sortStockpile(
+  stockpile: readonly NationStockpileEntry[],
+): readonly NationStockpileEntry[] {
+  return [...stockpile].sort((a, b) => {
+    if (a.isSystemResource !== b.isSystemResource) {
+      return a.isSystemResource ? -1 : 1;
+    }
+    return a.resourceName.localeCompare(b.resourceName);
+  });
+}
+
+function StockpileMasterDetail({
+  canManage,
+  nation,
+  queryClient,
+  stockpile,
+}: {
+  readonly canManage: boolean;
+  readonly nation: Nation;
+  readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly stockpile: readonly NationStockpileEntry[];
+}): JSX.Element {
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
+    null,
+  );
+  const [isGranting, setIsGranting] = useState(false);
+  const [isSubsidizing, setIsSubsidizing] = useState(false);
+
+  const selected =
+    stockpile.find((entry) => entry.resourceId === selectedResourceId) ?? null;
+
+  const list = (
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="w-full text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Resource</TableHead>
+            <TableHead scope="col" className="text-right tabular-nums">
+              Quantity
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {stockpile.map((entry) => (
+            <TableRow
+              key={entry.resourceId}
+              aria-selected={entry.resourceId === selectedResourceId}
+              className="cursor-pointer"
+              data-state={
+                entry.resourceId === selectedResourceId ? "selected" : undefined
+              }
+              tabIndex={0}
+              onClick={() => setSelectedResourceId(entry.resourceId)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setSelectedResourceId(entry.resourceId);
+                }
+              }}
+            >
+              <TableCell>{entry.resourceName}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {entry.quantity.toLocaleString()}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  return (
+    <>
+      <MasterDetailLayout
+        list={list}
+        detail={
+          selected === null ? null : (
+            <StockpileDetailPanel
+              canManage={canManage}
+              entry={selected}
+              onGrant={() => setIsGranting(true)}
+              onSubsidize={() => setIsSubsidizing(true)}
+            />
+          )
+        }
+        detailTitle={selected?.resourceName ?? ""}
+        onCloseDetail={() => setSelectedResourceId(null)}
+        emptyState={
+          <EmptyState
+            icon={Coins}
+            title="Select a resource to view treasury actions"
+          />
+        }
+      />
+
+      {isGranting && selected !== null ? (
         <GrantResourcesDialog
+          initialResourceId={selected.resourceId}
           nation={nation}
           onClose={() => setIsGranting(false)}
           queryClient={queryClient}
-          stockpile={stockpileQuery.data ?? []}
+          stockpile={stockpile}
         />
       ) : null}
 
@@ -163,37 +246,59 @@ export function NationTreasurySection({
           nation={nation}
           onClose={() => setIsSubsidizing(false)}
           queryClient={queryClient}
-          stockpile={stockpileQuery.data ?? []}
+          stockpile={stockpile}
         />
       ) : null}
     </>
   );
 }
 
-function StockpileTable({
-  stockpile,
+function StockpileDetailPanel({
+  canManage,
+  entry,
+  onGrant,
+  onSubsidize,
 }: {
-  readonly stockpile: readonly NationStockpileEntry[];
+  readonly canManage: boolean;
+  readonly entry: NationStockpileEntry;
+  readonly onGrant: () => void;
+  readonly onSubsidize: () => void;
 }): JSX.Element {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Resource</TableHead>
-          <TableHead className="text-right">Quantity</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {stockpile.map((entry) => (
-          <TableRow key={entry.resourceId}>
-            <TableCell>{entry.resourceName}</TableCell>
-            <TableCell className="text-right">
-              {entry.quantity.toLocaleString()}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="grid gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-y-2">
+        <span className="text-muted-foreground">On hand</span>
+        <span className="text-right tabular-nums">
+          {entry.quantity.toLocaleString()}
+        </span>
+      </div>
+      {canManage ? (
+        <div className="grid gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="justify-self-start"
+            onClick={onGrant}
+          >
+            Grant to settlement
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="justify-self-start"
+            onClick={onSubsidize}
+          >
+            Subsidize construction
+          </Button>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          You do not have permission to move treasury resources.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -318,11 +423,17 @@ function TaxRateControl({
   }
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2 rounded-md border p-3">
       <div className="flex items-center justify-between gap-2">
-        <Label htmlFor="nation-tax-rate-slider">Tax rate</Label>
+        <Label htmlFor="nation-tax-rate-slider">Production tax rate</Label>
         <span className="text-sm font-medium">{sliderValue}%</span>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Each turn the treasury collects this share (0–{TAX_RATE_MAX_PERCENT}%)
+        of every settlement's gross resource production, taken in kind — the
+        taxed resources themselves, not coin. This is not a currency tax;
+        national coin is managed on the Bank page.
+      </p>
       {/*
         Renders SliderPrimitive directly (instead of @/components/ui/slider)
         because that vendored wrapper doesn't forward an accessible name to
@@ -361,11 +472,13 @@ function TaxRateControl({
 }
 
 function GrantResourcesDialog({
+  initialResourceId,
   nation,
   onClose,
   queryClient,
   stockpile,
 }: {
+  readonly initialResourceId?: string;
   readonly nation: Nation;
   readonly onClose: () => void;
   readonly queryClient: ReturnType<typeof useQueryClient>;
@@ -376,11 +489,16 @@ function GrantResourcesDialog({
     grantNationResourcesMutationOptions({ queryClient }),
   );
 
-  const [settlementId, setSettlementId] = useState<string>("");
-  const [resourceId, setResourceId] = useState<string>("");
-  const [quantity, setQuantity] = useState<string>("");
-
   const grantable = stockpile.filter((entry) => entry.quantity > 0);
+
+  const [settlementId, setSettlementId] = useState<string>("");
+  const [resourceId, setResourceId] = useState<string>(() =>
+    initialResourceId !== undefined &&
+    grantable.some((entry) => entry.resourceId === initialResourceId)
+      ? initialResourceId
+      : "",
+  );
+  const [quantity, setQuantity] = useState<string>("");
   const selectedResource = grantable.find(
     (entry) => entry.resourceId === resourceId,
   );
