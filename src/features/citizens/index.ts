@@ -3,6 +3,10 @@
 export { CitizenAvatar } from "./components/CitizenAvatar";
 export { CitizenPicker } from "./components/CitizenPicker";
 export { CitizenMultiPicker } from "./components/CitizenMultiPicker";
+export {
+  CITIZEN_SEARCH_PLACEHOLDER,
+  useCitizenDirectorySearch,
+} from "./hooks/useCitizenDirectorySearch";
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensDirectoryPage } from "./components/CitizensDirectoryPage";
 export { CitizensPanel } from "./components/CitizensPanel";

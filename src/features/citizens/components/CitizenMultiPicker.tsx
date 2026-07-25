@@ -2,10 +2,11 @@
 // server-side name search over citizen_directory_view, but selections
 // accumulate instead of replacing and stay open across picks. Selected
 // citizens render as removable badges below the trigger. Used by the
-// government-bodies "citizens" composition rule.
+// government-bodies "citizens" composition rule. Search and row rendering are
+// shared with CitizenPicker via citizenPickerShared.
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { ChevronsUpDown, X } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,16 +24,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { cn } from "@/lib/utils";
 
-import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
+import {
+  CITIZEN_SEARCH_PLACEHOLDER,
+  useCitizenDirectorySearch,
+  type CitizenTypeFilter,
+} from "../hooks/useCitizenDirectorySearch";
 import { citizensByIdsQueryOptions } from "../queries/citizensQueries";
 
-import type { CitizenStatus, CitizenType } from "../types/citizenTypes";
+import {
+  CitizenOptionRow,
+  CitizenSearchTruncationNote,
+  CitizenTypeFilterToggle,
+} from "./CitizenPickerParts";
 
-type CitizenTypeFilter = "all" | CitizenType;
+import type { CitizenStatus } from "../types/citizenTypes";
 
 type CitizenMultiPickerProps = {
   readonly citizenIds: readonly string[];
@@ -45,9 +51,6 @@ type CitizenMultiPickerProps = {
   readonly worldId: string;
 };
 
-const PAGE_SIZE = 20;
-const SEARCH_PLACEHOLDER = "Search citizens…";
-
 export function CitizenMultiPicker({
   citizenIds,
   id,
@@ -59,34 +62,21 @@ export function CitizenMultiPicker({
   worldId,
 }: CitizenMultiPickerProps): JSX.Element {
   const [open, setOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
   const [typeFilter, setTypeFilter] = useState<CitizenTypeFilter>("all");
-  const debouncedSearch = useDebouncedValue(searchInput, 300);
 
   const selectedQuery = useQuery(citizensByIdsQueryOptions(citizenIds));
   const nameById = new Map(
     (selectedQuery.data ?? []).map((citizen) => [citizen.id, citizen.name]),
   );
 
-  const searchQuery = useQuery({
-    ...citizensDirectoryQueryOptions(
-      worldId,
-      {
-        citizenType: typeFilter === "all" ? undefined : typeFilter,
-        nationId,
-        search: debouncedSearch,
-        settlementId,
-        status: statusFilter,
-      },
-      { pageIndex: 0, pageSize: PAGE_SIZE },
-    ),
-    enabled: open,
-  });
-
-  const options = searchQuery.data?.rows ?? [];
-  const isTruncated =
-    searchQuery.data !== undefined &&
-    searchQuery.data.totalCount > options.length;
+  const { searchInput, setSearchInput, options, isTruncated, isFetching } =
+    useCitizenDirectorySearch(worldId, {
+      citizenType: typeFilter === "all" ? undefined : typeFilter,
+      nationId,
+      open,
+      settlementId,
+      status: statusFilter,
+    });
 
   function toggle(citizenId: string): void {
     onChange(
@@ -130,95 +120,33 @@ export function CitizenMultiPicker({
           <Command shouldFilter={false}>
             <CommandInput
               onValueChange={setSearchInput}
-              placeholder={SEARCH_PLACEHOLDER}
+              placeholder={CITIZEN_SEARCH_PLACEHOLDER}
               value={searchInput}
             />
-            <div className="border-b border-border p-2">
-              <ToggleGroup
-                type="single"
-                value={typeFilter}
-                onValueChange={(value) => {
-                  if (value !== "") {
-                    setTypeFilter(value as CitizenTypeFilter);
-                  }
-                }}
-                className="justify-start"
-              >
-                <ToggleGroupItem
-                  value="all"
-                  aria-label="All citizens"
-                  className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  All
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="player_character"
-                  aria-label="Players only"
-                  className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  Players
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="npc"
-                  aria-label="NPCs only"
-                  className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  NPCs
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
+            <CitizenTypeFilterToggle
+              value={typeFilter}
+              onChange={setTypeFilter}
+            />
             <CommandList>
               <CommandEmpty>
-                {searchQuery.isFetching ? "Searching…" : "No citizens found."}
+                {isFetching ? "Searching…" : "No citizens found."}
               </CommandEmpty>
               <CommandGroup>
-                {options.map((citizen) => {
-                  const checked = citizenIds.includes(citizen.id);
-                  return (
-                    <CommandItem
-                      key={citizen.id}
-                      onSelect={() => toggle(citizen.id)}
-                      value={citizen.id}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 size-4 shrink-0",
-                          checked ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="grid min-w-0 flex-1 gap-0.5">
-                        <span className="flex items-center gap-2 truncate">
-                          {citizen.name ?? "Unnamed citizen"}
-                          <Badge
-                            variant={
-                              citizen.citizenType === "npc"
-                                ? "secondary"
-                                : "outline"
-                            }
-                          >
-                            {citizen.citizenType === "npc" ? "NPC" : "Player"}
-                          </Badge>
-                          {citizen.status === "dead" ? (
-                            <Badge variant="destructive">Dead</Badge>
-                          ) : null}
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                          {citizen.settlementName ?? "No settlement"}
-                          {citizen.officeTypes === null
-                            ? ""
-                            : ` · ${citizen.officeTypes}`}
-                        </span>
-                      </span>
-                    </CommandItem>
-                  );
-                })}
+                {options.map((citizen) => (
+                  <CommandItem
+                    key={citizen.id}
+                    onSelect={() => toggle(citizen.id)}
+                    value={citizen.id}
+                  >
+                    <CitizenOptionRow
+                      citizen={citizen}
+                      isSelected={citizenIds.includes(citizen.id)}
+                    />
+                  </CommandItem>
+                ))}
               </CommandGroup>
             </CommandList>
-            {isTruncated ? (
-              <p className="border-t border-border px-2 py-1.5 text-xs text-muted-foreground">
-                Showing first {PAGE_SIZE} — refine your search
-              </p>
-            ) : null}
+            {isTruncated ? <CitizenSearchTruncationNote /> : null}
           </Command>
         </PopoverContent>
       </Popover>
