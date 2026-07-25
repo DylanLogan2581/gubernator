@@ -58,7 +58,29 @@ All tokens are OKLCH in `src/index.css` (`:root` light, `.dark` dark, exposed vi
 - **Categorical palette** `--category-1..8` (+`-foreground`) is for entity identity
   (cultures, religions, nations) and charts. Tinted backgrounds come from
   `color-mix(... 16%, var(--background))`. Don't use these for status; status uses
-  `success`/`warning`/`destructive` tones.
+  `success`/`warning`/`destructive` tones (see **Status tones** below).
+
+### Status tones
+
+Status = success / warning / destructive, always via the semantic tokens — never
+raw Tailwind palette (`bg-green-100`, `text-red-500`, `bg-amber-100`). The `bg-*`
+tokens are pre-tinted paper-light surfaces and the `-foreground` tokens are the
+readable colored ink; pair them. Recipes:
+
+| Surface     | Success                                        | Warning                                        | Destructive / danger                    |
+| ----------- | ---------------------------------------------- | ---------------------------------------------- | --------------------------------------- |
+| Badge       | `bg-success text-success-foreground`           | `bg-warning text-warning-foreground`           | `bg-destructive/10 text-destructive`    |
+| Inline text | `text-success-foreground`                      | `text-warning-foreground`                      | `text-destructive`                      |
+| Meter / bar | fill `bg-success-foreground`, track `bg-muted` | fill `bg-warning-foreground`, track `bg-muted` | fill `bg-destructive`, track `bg-muted` |
+
+- Use `Badge` (`src/components/ui/badge.tsx`) with these classes for status pills;
+  don't hand-roll a rounded span.
+- Meters and progress bars carry status by fill color only — the track stays
+  `bg-muted`. Keep the tinted `bg-*` token for filled surfaces (badges, callouts),
+  the saturated `-foreground` token for text and thin fills.
+- Neutral/"no status" is `text-muted-foreground`, not a gray palette value.
+- Seal red and `--destructive` are close but distinct: seal is decree/ceremony,
+  destructive is danger/error. Status uses destructive, never seal.
 - Both themes must be styled for every change; dark values live in `.dark` plus the
   `prefers-color-scheme` fallback block. Never hard-code a hex/oklch in a component.
 
@@ -112,6 +134,34 @@ Empty values are `text-sm italic text-muted-foreground` ("Vacant", "Not set",
 "None") — never blank, never a dash alone. Inline edit affordances live on the row.
 List rows (rosters) follow the same ruled pattern with `ul`/`li` semantics kept.
 
+### Data tables
+
+Tables follow the ledger idiom, not a boxed grid. **Default:** a ruled header row
+over `divide-y` body rows, no outer box:
+
+```
+<table class="w-full text-sm">
+  <thead>
+    <tr class="border-b border-border text-left">
+      <th class="eyebrow py-2 font-normal">Name</th>
+      <th class="eyebrow py-2 text-right font-normal">Population</th>
+  <tbody class="divide-y divide-border">
+    <tr>
+      <td class="py-2">…</td>
+      <td class="py-2 text-right font-mono tabular-nums">…</td>
+```
+
+- Column headers are eyebrows; numeric columns are `text-right font-mono
+tabular-nums`. This matches definition rows and stat strips.
+- Do **not** wrap tables in `overflow-x-auto rounded-lg border` as a default. That
+  reads as a box (rule 1) and duplicates enclosure the page doesn't need.
+- **Horizontal overflow is the one sanctioned exception.** When a wide table cannot
+  shed or stack columns at mobile widths, wrap only for scroll — no border, no
+  radius, no background: `<div class="-mx-4 overflow-x-auto px-4">` (negative margin
+  lets the scroll area bleed to the section edge). The frame is a scroll affordance,
+  not a card. Prefer making the table responsive (hide/stack low-priority columns)
+  before reaching for the scroll wrapper.
+
 ### Letterhead headers
 
 - `PageHeader` (`src/components/shared/PageHeader.tsx`): optional eyebrow →
@@ -122,11 +172,107 @@ List rows (rosters) follow the same ruled pattern with `ul`/`li` semantics kept.
   seal/flag is uploaded.
 - Every routed page starts with one of these. Don't invent per-page header layouts.
 
+#### Nested entity headers
+
+`DetailPageHeader` is required for the **routed** entity — the subject of the page.
+A secondary entity surfaced _inside_ a sub-panel (a charter within a nation page, a
+lore entity inside a browser) does **not** get a second `DetailPageHeader`; that
+would imply a second page. Instead give it a plain section head: the entity name in
+`font-display text-lg`/`text-xl` (smaller than the page title) over the section's
+`border-b`, optionally with a small (~32–40px) seal/flag beside it. Reserve the
+double rule and the ~64px seal for the page's own `DetailPageHeader`. Rule of thumb:
+one `rule-double` per page, at the top.
+
+#### Auth and unauthenticated shells
+
+Sign-in, set-password, and other pre-auth pages have no page subject and structurally
+cannot lead with `PageHeader`/`DetailPageHeader` — this is a **sanctioned exception**.
+They use the auth shell: a centered narrow column (`max-w-sm`), the app wordmark or
+entity name in the display face — allowed **larger** here than in-app
+(`font-display text-3xl`/`text-4xl`) since it carries the page alone — a muted
+subtitle, then the form. Close the heading block with a `rule` (single hairline), not
+the double rule, to keep the letterhead motif reserved for routed pages. Tokens and
+type roles otherwise apply unchanged.
+
 ### Master-detail (`src/components/shared/MasterDetailLayout.tsx`)
 
 List 2/3 + detail 1/3; the detail pane is one of the few sanctioned `boxed`
 surfaces (it becomes a Sheet on mobile, so enclosure is consistent across
 breakpoints).
+
+### Selection and active states
+
+Rings mean **elevation** (rule 2), so don't use `ring-1 ring-primary` to mark a
+chosen item — it reads as a floating box and collides with focus rings. A selected
+or active choosable item (tiles, list rows, choosers) uses a filled tint plus an
+inset marker:
+
+```
+data-[selected=true]:bg-accent
+data-[selected=true]:before:absolute before:inset-y-0 before:left-0 before:w-0.5
+data-[selected=true]:before:bg-primary
+```
+
+- `bg-accent` is the quiet selected surface; the 2px inset `bg-primary` bar (or a
+  leading check for multi-select) is the marker. No radius change, no ring.
+- Hover on an unselected item is `hover:bg-accent/50`; keep the focus-visible ring
+  (`focus-visible:ring-2 focus-visible:ring-ring`) intact — that ring is for keyboard
+  focus, distinct from selection.
+- The one place rings still signal selection is inside an already-elevated surface
+  (a popover/command menu), where everything floats and the elevation rule is moot.
+
+## Alerts and callouts
+
+"Alert-like summaries" (rule 2) means the `Alert` primitive
+(`src/components/ui/alert.tsx`) — a bordered callout is sanctioned **in normal page
+flow** because it carries urgency, not because it elevates. Use it; don't hand-roll
+`rounded-md border-destructive/40 bg-destructive/5` or amber notices.
+
+- Variants: `default` (neutral card), `warning` (amber-tinted), `destructive`
+  (destructive ink on card). `AlertTitle` + `AlertDescription` for structure, a
+  leading icon as the first child (the primitive lays out the icon column), optional
+  `AlertAction` top-right.
+- Reach for an alert only for genuine notices — validation summaries, irreversible
+  consequences, degraded state. A calm fact is a definition row or an open section,
+  not a callout. If a page shows more than one or two alerts it's over-boxed.
+
+### Settings and danger panels
+
+Destructive-action panels (prune world data, stuck-transition recovery, SMTP
+settings) are **open sections**, not self-boxed cards. The danger comes from framing,
+not enclosure:
+
+- Title the section with the seal accent (`text-seal`) — a decree-like moment — over
+  the section's `border-b`, describe the consequence in muted text, and put the
+  destructive `Button` (`variant="destructive"`) in the section.
+- When you need to surface an irreversible consequence _within_ that section, that
+  single warning is an `Alert` (`warning`/`destructive`) — the one sanctioned box
+  inside the open danger section, not the section itself.
+- Confirmations that must block use `AlertDialog` (already elevated), not an inline
+  box.
+
+## Heroes, dashboards, and charts
+
+### Image heroes with overlaid text
+
+A full-bleed image hero (world/dashboard banner) is an elevated surface, so it may
+carry radius and its own type treatment. Text sits on the image via a scrim, and
+color comes from tokens, not raw `text-white`:
+
+- Lay a gradient scrim over the image (`bg-gradient-to-t from-background/90
+via-background/40 to-transparent`) and set text in the theme foreground
+  (`text-foreground`) so it stays legible in both themes and never hard-codes white.
+- Title uses the display face; eyebrow/description follow the normal type roles. The
+  hero is the page's letterhead in this case — it replaces `PageHeader`, so don't
+  stack both.
+
+### Charts
+
+- Chart section labels and axis eyebrows use the `.eyebrow` class — don't hand-roll
+  the small-caps/tracking values inline.
+- Series color comes from the categorical palette (`--category-1..8`), status series
+  from status `-foreground` tokens. No raw palette hexes; charts are token-driven
+  like everything else.
 
 ## Radius and spacing
 
@@ -165,9 +311,18 @@ breakpoints).
 - [ ] Numbers in `font-mono tabular-nums`; labels as `.eyebrow`.
 - [ ] Display face only on the page/entity title.
 - [ ] Both themes screenshotted (dev-browser), desktop + mobile widths.
-- [ ] No hard-coded colors; tokens only.
+- [ ] No hard-coded colors; tokens only — status via `success`/`warning`/
+      `destructive` tokens, never raw palette (`bg-green-100`, `text-red-500`).
+- [ ] Tables are ruled header + `divide-y` rows, not `overflow-x-auto rounded-lg
+  border`; scroll wrapper only for genuine horizontal overflow.
+- [ ] Callouts use the `Alert` primitive; selection uses `bg-accent` + inset marker,
+      not `ring-1 ring-primary`.
+- [ ] Image-hero text uses a scrim + `text-foreground`, not `text-white`; chart
+      labels use `.eyebrow`.
+- [ ] One `rule-double` per page (routed header only); nested entity titles and auth
+      shells follow their carve-outs.
 - [ ] Existing primitives (`Card`, `StatStrip`, `PageHeader`, `DetailPageHeader`,
-      definition-row idiom) reused before inventing anything.
+      `Alert`, `Badge`, definition-row idiom) reused before inventing anything.
 
 ## Known deviations (debt)
 
