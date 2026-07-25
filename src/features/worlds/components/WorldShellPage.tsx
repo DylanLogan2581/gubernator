@@ -159,7 +159,7 @@ function WorldShellContent({
         </div>
         <div className="flex flex-col gap-4">
           <WorldActiveEventsFeed worldId={worldId} />
-          <WorldTurnLogExcerpt worldId={worldId} />
+          <WorldTurnLogExcerpt worldId={worldId} className="flex-1" />
         </div>
         {effectiveCanAdmin ? (
           <div className="xl:col-span-2">
