@@ -4,14 +4,6 @@ import { useState, type FormEvent, type JSX } from "react";
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -116,77 +108,57 @@ export function EditNamesetForm({
   }
 
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
+    <form
+      aria-label="Edit nameset"
+      className="grid gap-6"
+      noValidate
+      onSubmit={(e) => {
+        void handleSubmit(e);
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <form
-          aria-label="Edit nameset"
-          className="contents"
-          noValidate
-          onSubmit={(e) => {
-            void handleSubmit(e);
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Edit nameset</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <Label className="grid gap-1 text-sm" htmlFor="edit-nameset-name">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={nameError !== undefined}
-                disabled={isPending}
-                id="edit-nameset-name"
-                maxLength={64}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {nameError !== undefined ? (
-                <p className="text-xs text-destructive">{nameError}</p>
-              ) : null}
-            </Label>
+      <NamesetFormHeader title="Edit nameset" />
+      <div className="grid gap-4">
+        <Label className="grid gap-1 text-sm" htmlFor="edit-nameset-name">
+          <span className="text-muted-foreground">Name</span>
+          <Input
+            aria-invalid={nameError !== undefined}
+            className="sm:max-w-md"
+            disabled={isPending}
+            id="edit-nameset-name"
+            maxLength={64}
+            value={name}
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+            }}
+          />
+          {nameError !== undefined ? (
+            <p className="text-xs text-destructive">{nameError}</p>
+          ) : null}
+        </Label>
 
-            {isGenerated ? (
-              <GeneratedConfigFields
-                config={generatedConfig}
-                onChange={setGeneratedConfig}
-              />
-            ) : (
-              <NamingConfigFields config={config} onChange={setConfig} />
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isPending}
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isPending || generatedErrors.length > 0}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {isGenerated ? (
+          <GeneratedConfigFields
+            config={generatedConfig}
+            onChange={setGeneratedConfig}
+          />
+        ) : (
+          <NamingConfigFields config={config} onChange={setConfig} />
+        )}
+      </div>
+      <NamesetFormFooter
+        isPending={isPending}
+        submitDisabled={isPending || generatedErrors.length > 0}
+        submitLabel="Save"
+        onCancel={onClose}
+      />
+    </form>
   );
 }
 
 type NamesetKind = "generated" | "list";
 type GeneratedSource = "library" | "scratch";
 
-export function CreateNamesetDialog({
+export function CreateNamesetForm({
   isPending,
   onCancel,
   onSubmit,
@@ -234,138 +206,163 @@ export function CreateNamesetDialog({
   }
 
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onCancel();
-      }}
-    >
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <form className="contents" noValidate onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create nameset</DialogTitle>
-            <DialogDescription>
-              Define naming pools and conventions for this nameset.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <Label className="grid gap-1 text-sm" htmlFor="create-nameset-name">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={nameError !== undefined}
-                aria-label="Nameset name"
-                disabled={isPending}
-                id="create-nameset-name"
-                maxLength={64}
-                placeholder="e.g. Norse, Latin, Default"
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {nameError !== undefined ? (
-                <p className="text-xs text-destructive">{nameError}</p>
-              ) : null}
-            </Label>
+    <form className="grid gap-6" noValidate onSubmit={handleSubmit}>
+      <NamesetFormHeader
+        title="Create nameset"
+        description="Define naming pools and conventions for this nameset."
+      />
+      <div className="grid gap-4">
+        <Label className="grid gap-1 text-sm" htmlFor="create-nameset-name">
+          <span className="text-muted-foreground">Name</span>
+          <Input
+            aria-invalid={nameError !== undefined}
+            aria-label="Nameset name"
+            className="sm:max-w-md"
+            disabled={isPending}
+            id="create-nameset-name"
+            maxLength={64}
+            placeholder="e.g. Norse, Latin, Default"
+            value={name}
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+            }}
+          />
+          {nameError !== undefined ? (
+            <p className="text-xs text-destructive">{nameError}</p>
+          ) : null}
+        </Label>
 
+        <fieldset className="grid gap-2">
+          <legend className="text-base font-semibold">Type</legend>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            <NamesetKindOption
+              checked={kind === "list"}
+              description="Enter male, female, and surname pools manually."
+              disabled={isPending}
+              label="List"
+              value="list"
+              onSelect={() => {
+                setKind("list");
+              }}
+            />
+            <NamesetKindOption
+              checked={kind === "generated"}
+              description="Build names from a pattern-based generator."
+              disabled={isPending}
+              label="Generated"
+              value="generated"
+              onSelect={() => {
+                setKind("generated");
+              }}
+            />
+          </div>
+        </fieldset>
+
+        {kind === "list" ? (
+          <NamingConfigFields config={listConfig} onChange={setListConfig} />
+        ) : (
+          <div className="grid gap-3">
             <fieldset className="grid gap-2">
-              <legend className="text-base font-semibold">Type</legend>
+              <legend className="text-sm font-medium">Source</legend>
               <div className="grid gap-1.5 sm:grid-cols-2">
                 <NamesetKindOption
-                  checked={kind === "list"}
-                  description="Enter male, female, and surname pools manually."
+                  checked={generatedSource === "library"}
+                  description="Pick a ready-made generator from the library."
                   disabled={isPending}
-                  label="List"
-                  value="list"
+                  label="From library"
+                  value="library"
                   onSelect={() => {
-                    setKind("list");
+                    setGeneratedSource("library");
                   }}
                 />
                 <NamesetKindOption
-                  checked={kind === "generated"}
-                  description="Build names from a pattern-based generator."
+                  checked={generatedSource === "scratch"}
+                  description="Build a custom generator from part lists and patterns."
                   disabled={isPending}
-                  label="Generated"
-                  value="generated"
+                  label="From scratch"
+                  value="scratch"
                   onSelect={() => {
-                    setKind("generated");
+                    setGeneratedSource("scratch");
+                    setGeneratedConfig(
+                      (current) => current ?? EMPTY_GENERATED_CONFIG,
+                    );
                   }}
                 />
               </div>
             </fieldset>
 
-            {kind === "list" ? (
-              <NamingConfigFields
-                config={listConfig}
-                onChange={setListConfig}
+            {generatedSource === "library" ? (
+              <NamesetLibraryPicker
+                selectedId={libraryEntryId}
+                onSelect={(id, displayName, config) => {
+                  setLibraryEntryId(id);
+                  setGeneratedConfig(config);
+                  if (name.trim().length === 0) {
+                    setName(displayName);
+                  }
+                }}
               />
             ) : (
-              <div className="grid gap-3">
-                <fieldset className="grid gap-2">
-                  <legend className="text-sm font-medium">Source</legend>
-                  <div className="grid gap-1.5 sm:grid-cols-2">
-                    <NamesetKindOption
-                      checked={generatedSource === "library"}
-                      description="Pick a ready-made generator from the library."
-                      disabled={isPending}
-                      label="From library"
-                      value="library"
-                      onSelect={() => {
-                        setGeneratedSource("library");
-                      }}
-                    />
-                    <NamesetKindOption
-                      checked={generatedSource === "scratch"}
-                      description="Build a custom generator from part lists and patterns."
-                      disabled={isPending}
-                      label="From scratch"
-                      value="scratch"
-                      onSelect={() => {
-                        setGeneratedSource("scratch");
-                        setGeneratedConfig(
-                          (current) => current ?? EMPTY_GENERATED_CONFIG,
-                        );
-                      }}
-                    />
-                  </div>
-                </fieldset>
-
-                {generatedSource === "library" ? (
-                  <NamesetLibraryPicker
-                    selectedId={libraryEntryId}
-                    onSelect={(id, displayName, config) => {
-                      setLibraryEntryId(id);
-                      setGeneratedConfig(config);
-                      if (name.trim().length === 0) {
-                        setName(displayName);
-                      }
-                    }}
-                  />
-                ) : (
-                  <GeneratedConfigFields
-                    config={generatedConfig ?? EMPTY_GENERATED_CONFIG}
-                    onChange={setGeneratedConfig}
-                  />
-                )}
-              </div>
+              <GeneratedConfigFields
+                config={generatedConfig ?? EMPTY_GENERATED_CONFIG}
+                onChange={setGeneratedConfig}
+              />
             )}
           </div>
-          <DialogFooter>
-            <Button
-              disabled={isPending}
-              onClick={onCancel}
-              type="button"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button disabled={isPending || !canSubmit} type="submit">
-              Create
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        )}
+      </div>
+      <NamesetFormFooter
+        isPending={isPending}
+        submitDisabled={isPending || !canSubmit}
+        submitLabel="Create"
+        onCancel={onCancel}
+      />
+    </form>
+  );
+}
+
+function NamesetFormHeader({
+  description,
+  title,
+}: {
+  readonly description?: string;
+  readonly title: string;
+}): JSX.Element {
+  return (
+    <div className="grid gap-1">
+      <h1 className="text-xl font-semibold">{title}</h1>
+      {description !== undefined ? (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function NamesetFormFooter({
+  isPending,
+  submitDisabled,
+  submitLabel,
+  onCancel,
+}: {
+  readonly isPending: boolean;
+  readonly submitDisabled: boolean;
+  readonly submitLabel: string;
+  readonly onCancel: () => void;
+}): JSX.Element {
+  return (
+    <div className="flex justify-end gap-2 border-t pt-4">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={isPending}
+        onClick={onCancel}
+      >
+        Cancel
+      </Button>
+      <Button type="submit" disabled={submitDisabled}>
+        {submitLabel}
+      </Button>
+    </div>
   );
 }
 

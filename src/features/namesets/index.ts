@@ -1,5 +1,7 @@
 // Namesets feature — named naming configurations with world/nation/settlement override hierarchy.
 export { NamesetsConfigPanel } from "./components/NamesetsConfigPanel";
+export { NamesetCreatePage } from "./components/NamesetPage/NamesetCreatePage";
+export { NamesetEditPage } from "./components/NamesetPage/NamesetEditPage";
 export {
   NationNamesetCard,
   SettlementNamesetCard,

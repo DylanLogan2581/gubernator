@@ -1,20 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Navigate } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
 
-import {
-  ConfigCrudPanel,
-  handleCrudError,
-} from "@/components/shared/ConfigCrudPanel";
+import { ConfigCrudPanel } from "@/components/shared/ConfigCrudPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { notifyMutationSuccess } from "@/lib/notify";
 
-import { createNamesetMutationOptions } from "../../mutations/namesetsMutations";
 import { namesetsByWorldQueryOptions } from "../../queries/namesetsQueries";
 
-import { CreateNamesetDialog } from "./NamesetForm";
 import { NamesetsTable } from "./NamesetsTable";
-import { formatMutationError } from "./utils/FormatMutationError";
 
 import type { Nameset } from "../../types/namesetTypes";
 
@@ -29,12 +23,8 @@ export function NamesetsConfigPanel({
   isArchived,
   worldId,
 }: NamesetsConfigPanelProps): JSX.Element {
-  const queryClient = useQueryClient();
   const namesetsQuery = useQuery(namesetsByWorldQueryOptions(worldId));
   const canEdit = canAdmin && !isArchived;
-  const createMutation = useMutation(
-    createNamesetMutationOptions({ queryClient }),
-  );
   const [search, setSearch] = useState("");
 
   return (
@@ -50,7 +40,6 @@ export function NamesetsConfigPanel({
         canEdit: canEditProp,
         items,
         queryClient: qc,
-        setShowForm,
         showForm,
         showTrash,
       }) => {
@@ -103,25 +92,9 @@ export function NamesetsConfigPanel({
             ) : null}
 
             {canEditProp && showForm && !showTrash ? (
-              <CreateNamesetDialog
-                isPending={createMutation.isPending}
-                onCancel={() => {
-                  setShowForm(false);
-                }}
-                onSubmit={(name, configJson) => {
-                  createMutation.mutate(
-                    { worldId, name, configJson },
-                    {
-                      onError: (error) => {
-                        handleCrudError(error, formatMutationError(error));
-                      },
-                      onSuccess: () => {
-                        notifyMutationSuccess("Nameset created.");
-                        setShowForm(false);
-                      },
-                    },
-                  );
-                }}
+              <Navigate
+                to="/worlds/$worldId/configuration/namesets/new"
+                params={{ worldId }}
               />
             ) : null}
           </>

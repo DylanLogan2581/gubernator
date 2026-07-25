@@ -1,4 +1,5 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
@@ -33,8 +34,6 @@ import {
   setDefaultNamesetMutationOptions,
   softDeleteNamesetMutationOptions,
 } from "../../mutations/namesetsMutations";
-
-import { EditNamesetForm } from "./NamesetForm";
 
 import type { Nameset } from "../../types/namesetTypes";
 
@@ -195,7 +194,7 @@ export function NamesetsTable({
   readonly worldId: string;
 }): JSX.Element {
   const [sort, setSort] = useState<Sort | null>(null);
-  const [editingNameset, setEditingNameset] = useState<Nameset | null>(null);
+  const navigate = useNavigate();
 
   const sortedNamesets = useMemo(
     () => sortNamesets(namesets, sort),
@@ -203,77 +202,67 @@ export function NamesetsTable({
   );
 
   return (
-    <>
-      <div className="overflow-x-auto rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHead column="name" sort={sort} onSortChange={setSort}>
-                Name
-              </SortableHead>
-              <SortableHead
-                column="convention"
-                sort={sort}
-                onSortChange={setSort}
-              >
-                Type
-              </SortableHead>
-              <SortableHead
-                align="right"
-                column="givenNames"
-                sort={sort}
-                onSortChange={setSort}
-              >
-                Given names
-              </SortableHead>
-              <SortableHead
-                align="right"
-                column="surnames"
-                sort={sort}
-                onSortChange={setSort}
-              >
-                Surnames
-              </SortableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedNamesets.map((nameset) =>
-              showTrash ? (
-                <TrashedNamesetRow
-                  key={nameset.id}
-                  nameset={nameset}
-                  queryClient={queryClient}
-                  worldId={worldId}
-                />
-              ) : (
-                <NamesetRow
-                  key={nameset.id}
-                  canEdit={canEdit}
-                  nameset={nameset}
-                  queryClient={queryClient}
-                  worldId={worldId}
-                  onEdit={() => {
-                    setEditingNameset(nameset);
-                  }}
-                />
-              ),
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {editingNameset !== null ? (
-        <EditNamesetForm
-          nameset={editingNameset}
-          queryClient={queryClient}
-          worldId={worldId}
-          onClose={() => {
-            setEditingNameset(null);
-          }}
-        />
-      ) : null}
-    </>
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortableHead column="name" sort={sort} onSortChange={setSort}>
+              Name
+            </SortableHead>
+            <SortableHead
+              column="convention"
+              sort={sort}
+              onSortChange={setSort}
+            >
+              Type
+            </SortableHead>
+            <SortableHead
+              align="right"
+              column="givenNames"
+              sort={sort}
+              onSortChange={setSort}
+            >
+              Given names
+            </SortableHead>
+            <SortableHead
+              align="right"
+              column="surnames"
+              sort={sort}
+              onSortChange={setSort}
+            >
+              Surnames
+            </SortableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedNamesets.map((nameset) =>
+            showTrash ? (
+              <TrashedNamesetRow
+                key={nameset.id}
+                nameset={nameset}
+                queryClient={queryClient}
+                worldId={worldId}
+              />
+            ) : (
+              <NamesetRow
+                key={nameset.id}
+                canEdit={canEdit}
+                nameset={nameset}
+                queryClient={queryClient}
+                worldId={worldId}
+                onEdit={() => {
+                  void navigate({
+                    to: "/worlds/$worldId/configuration/namesets/$namesetId",
+                    params: { worldId, namesetId: nameset.id },
+                  });
+                }}
+              />
+            ),
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

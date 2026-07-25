@@ -40,6 +40,8 @@ import { Route as WorldsWorldIdEventsEventIdIndexRouteImport } from './routes/wo
 import { Route as WorldsWorldIdNationsNationIdNationRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation'
 import { Route as WorldsWorldIdEventsEventIdEditRouteImport } from './routes/worlds.$worldId.events.$eventId.edit'
 import { Route as WorldsWorldIdConfigurationReligionsReligionIdRouteImport } from './routes/worlds.$worldId.configuration_.religions.$religionId'
+import { Route as WorldsWorldIdConfigurationNamesetsNewRouteImport } from './routes/worlds.$worldId.configuration_.namesets.new'
+import { Route as WorldsWorldIdConfigurationNamesetsNamesetIdRouteImport } from './routes/worlds.$worldId.configuration_.namesets.$namesetId'
 import { Route as WorldsWorldIdConfigurationCulturesCultureIdRouteImport } from './routes/worlds.$worldId.configuration_.cultures.$cultureId'
 import { Route as WorldsWorldIdNationsNationIdNationIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.index'
 import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId'
@@ -230,6 +232,18 @@ const WorldsWorldIdConfigurationReligionsReligionIdRoute =
   WorldsWorldIdConfigurationReligionsReligionIdRouteImport.update({
     id: '/configuration_/religions/$religionId',
     path: '/configuration/religions/$religionId',
+    getParentRoute: () => WorldsWorldIdRoute,
+  } as any)
+const WorldsWorldIdConfigurationNamesetsNewRoute =
+  WorldsWorldIdConfigurationNamesetsNewRouteImport.update({
+    id: '/configuration_/namesets/new',
+    path: '/configuration/namesets/new',
+    getParentRoute: () => WorldsWorldIdRoute,
+  } as any)
+const WorldsWorldIdConfigurationNamesetsNamesetIdRoute =
+  WorldsWorldIdConfigurationNamesetsNamesetIdRouteImport.update({
+    id: '/configuration_/namesets/$namesetId',
+    path: '/configuration/namesets/$namesetId',
     getParentRoute: () => WorldsWorldIdRoute,
   } as any)
 const WorldsWorldIdConfigurationCulturesCultureIdRoute =
@@ -452,6 +466,8 @@ export interface FileRoutesByFullPath {
   '/worlds/$worldId/events/': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/configuration/cultures/$cultureId': typeof WorldsWorldIdConfigurationCulturesCultureIdRoute
+  '/worlds/$worldId/configuration/namesets/$namesetId': typeof WorldsWorldIdConfigurationNamesetsNamesetIdRoute
+  '/worlds/$worldId/configuration/namesets/new': typeof WorldsWorldIdConfigurationNamesetsNewRoute
   '/worlds/$worldId/configuration/religions/$religionId': typeof WorldsWorldIdConfigurationReligionsReligionIdRoute
   '/worlds/$worldId/events/$eventId/edit': typeof WorldsWorldIdEventsEventIdEditRoute
   '/worlds/$worldId/events/$eventId/': typeof WorldsWorldIdEventsEventIdIndexRoute
@@ -504,6 +520,8 @@ export interface FileRoutesByTo {
   '/worlds/$worldId/events': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/configuration/cultures/$cultureId': typeof WorldsWorldIdConfigurationCulturesCultureIdRoute
+  '/worlds/$worldId/configuration/namesets/$namesetId': typeof WorldsWorldIdConfigurationNamesetsNamesetIdRoute
+  '/worlds/$worldId/configuration/namesets/new': typeof WorldsWorldIdConfigurationNamesetsNewRoute
   '/worlds/$worldId/configuration/religions/$religionId': typeof WorldsWorldIdConfigurationReligionsReligionIdRoute
   '/worlds/$worldId/events/$eventId/edit': typeof WorldsWorldIdEventsEventIdEditRoute
   '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdIndexRoute
@@ -561,6 +579,8 @@ export interface FileRoutesById {
   '/worlds/$worldId/events/': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/configuration_/cultures/$cultureId': typeof WorldsWorldIdConfigurationCulturesCultureIdRoute
+  '/worlds/$worldId/configuration_/namesets/$namesetId': typeof WorldsWorldIdConfigurationNamesetsNamesetIdRoute
+  '/worlds/$worldId/configuration_/namesets/new': typeof WorldsWorldIdConfigurationNamesetsNewRoute
   '/worlds/$worldId/configuration_/religions/$religionId': typeof WorldsWorldIdConfigurationReligionsReligionIdRoute
   '/worlds/$worldId/events/$eventId/edit': typeof WorldsWorldIdEventsEventIdEditRoute
   '/worlds/$worldId/nations/$nationId/_nation': typeof WorldsWorldIdNationsNationIdNationRouteWithChildren
@@ -622,6 +642,8 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/configuration/cultures/$cultureId'
+    | '/worlds/$worldId/configuration/namesets/$namesetId'
+    | '/worlds/$worldId/configuration/namesets/new'
     | '/worlds/$worldId/configuration/religions/$religionId'
     | '/worlds/$worldId/events/$eventId/edit'
     | '/worlds/$worldId/events/$eventId/'
@@ -674,6 +696,8 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/configuration/cultures/$cultureId'
+    | '/worlds/$worldId/configuration/namesets/$namesetId'
+    | '/worlds/$worldId/configuration/namesets/new'
     | '/worlds/$worldId/configuration/religions/$religionId'
     | '/worlds/$worldId/events/$eventId/edit'
     | '/worlds/$worldId/events/$eventId'
@@ -730,6 +754,8 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/configuration_/cultures/$cultureId'
+    | '/worlds/$worldId/configuration_/namesets/$namesetId'
+    | '/worlds/$worldId/configuration_/namesets/new'
     | '/worlds/$worldId/configuration_/religions/$religionId'
     | '/worlds/$worldId/events/$eventId/edit'
     | '/worlds/$worldId/nations/$nationId/_nation'
@@ -988,6 +1014,20 @@ declare module '@tanstack/react-router' {
       path: '/configuration/religions/$religionId'
       fullPath: '/worlds/$worldId/configuration/religions/$religionId'
       preLoaderRoute: typeof WorldsWorldIdConfigurationReligionsReligionIdRouteImport
+      parentRoute: typeof WorldsWorldIdRoute
+    }
+    '/worlds/$worldId/configuration_/namesets/new': {
+      id: '/worlds/$worldId/configuration_/namesets/new'
+      path: '/configuration/namesets/new'
+      fullPath: '/worlds/$worldId/configuration/namesets/new'
+      preLoaderRoute: typeof WorldsWorldIdConfigurationNamesetsNewRouteImport
+      parentRoute: typeof WorldsWorldIdRoute
+    }
+    '/worlds/$worldId/configuration_/namesets/$namesetId': {
+      id: '/worlds/$worldId/configuration_/namesets/$namesetId'
+      path: '/configuration/namesets/$namesetId'
+      fullPath: '/worlds/$worldId/configuration/namesets/$namesetId'
+      preLoaderRoute: typeof WorldsWorldIdConfigurationNamesetsNamesetIdRouteImport
       parentRoute: typeof WorldsWorldIdRoute
     }
     '/worlds/$worldId/configuration_/cultures/$cultureId': {
@@ -1365,6 +1405,8 @@ interface WorldsWorldIdRouteChildren {
   WorldsWorldIdCitizensCitizenIdRoute: typeof WorldsWorldIdCitizensCitizenIdRoute
   WorldsWorldIdCitizensIndexRoute: typeof WorldsWorldIdCitizensIndexRoute
   WorldsWorldIdConfigurationCulturesCultureIdRoute: typeof WorldsWorldIdConfigurationCulturesCultureIdRoute
+  WorldsWorldIdConfigurationNamesetsNamesetIdRoute: typeof WorldsWorldIdConfigurationNamesetsNamesetIdRoute
+  WorldsWorldIdConfigurationNamesetsNewRoute: typeof WorldsWorldIdConfigurationNamesetsNewRoute
   WorldsWorldIdConfigurationReligionsReligionIdRoute: typeof WorldsWorldIdConfigurationReligionsReligionIdRoute
 }
 
@@ -1378,6 +1420,10 @@ const WorldsWorldIdRouteChildren: WorldsWorldIdRouteChildren = {
   WorldsWorldIdCitizensIndexRoute: WorldsWorldIdCitizensIndexRoute,
   WorldsWorldIdConfigurationCulturesCultureIdRoute:
     WorldsWorldIdConfigurationCulturesCultureIdRoute,
+  WorldsWorldIdConfigurationNamesetsNamesetIdRoute:
+    WorldsWorldIdConfigurationNamesetsNamesetIdRoute,
+  WorldsWorldIdConfigurationNamesetsNewRoute:
+    WorldsWorldIdConfigurationNamesetsNewRoute,
   WorldsWorldIdConfigurationReligionsReligionIdRoute:
     WorldsWorldIdConfigurationReligionsReligionIdRoute,
 }

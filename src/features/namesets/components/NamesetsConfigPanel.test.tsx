@@ -23,6 +23,20 @@ vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
+const { navigateSpy } = vi.hoisted(() => ({
+  navigateSpy: vi.fn<(options: unknown) => void>(),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigateSpy,
+  // Namesets create/edit live on dedicated routes; the panel renders
+  // <Navigate> to the create route when the Add button is pressed.
+  Navigate: (options: unknown) => {
+    navigateSpy(options);
+    return null;
+  },
+}));
+
 const { toastError, toastSuccess } = vi.hoisted(() => ({
   toastError: vi.fn<(message: string) => void>(),
   toastSuccess:
@@ -45,6 +59,7 @@ describe("NamesetsConfigPanel", () => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    navigateSpy.mockReset();
   });
 
   it("shows empty state when there are no namesets", async () => {
@@ -122,184 +137,23 @@ describe("NamesetsConfigPanel", () => {
     ).toHaveTextContent("Generated");
   });
 
-  it("creates a generated nameset from the library with a live preview", async () => {
+  it("navigates to the create route when Add nameset is pressed", async () => {
     const user = userEvent.setup();
-    let insertedPayload: unknown;
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        namesetRows: [],
-        onInsert: (payload) => {
-          insertedPayload = payload;
-        },
-      }),
-    );
+    requireSupabaseClient.mockReturnValue(createClient({ namesetRows: [] }));
 
     renderPanel({ canAdmin: true, isArchived: false });
 
     await screen.findByText("No namesets yet");
     await user.click(screen.getByRole("button", { name: "Add nameset" }));
 
-    await screen.findByRole("heading", { name: "Create nameset" });
-    await user.click(screen.getByRole("radio", { name: /Generated/ }));
-    await user.click(screen.getByRole("radio", { name: /From library/ }));
-
-    await user.type(
-      screen.getByRole("textbox", { name: "Search name generators" }),
-      "20th Cent",
-    );
-    await user.click(
-      await screen.findByRole("button", { name: "20th Cent. English" }),
-    );
-
-    await screen.findByText("Preview");
-    expect(screen.getByText("Female")).toBeDefined();
-    expect(screen.getByText("Male")).toBeDefined();
-
-    const createButton = screen.getByRole("button", { name: "Create" });
     await waitFor(() => {
-      expect(createButton).toBeEnabled();
-    });
-    await user.click(createButton);
-
-    await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-        "Nameset created.",
-        undefined,
+      expect(navigateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "/worlds/$worldId/configuration/namesets/new",
+          params: { worldId: WORLD_ID },
+        }),
       );
     });
-    expect(toastError).not.toHaveBeenCalled();
-    expect(insertedPayload).toMatchObject({
-      name: "20th Cent. English",
-      config_json: { type: "generated" },
-    });
-  });
-
-  it("creates a generated nameset from scratch via the generator editor", async () => {
-    const user = userEvent.setup();
-    let insertedPayload: unknown;
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        namesetRows: [],
-        onInsert: (payload) => {
-          insertedPayload = payload;
-        },
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByText("No namesets yet");
-    await user.click(screen.getByRole("button", { name: "Add nameset" }));
-    await screen.findByRole("heading", { name: "Create nameset" });
-
-    await user.type(
-      screen.getByRole("textbox", { name: "Nameset name" }),
-      "Dwarven",
-    );
-    await user.click(screen.getByRole("radio", { name: /Generated/ }));
-    await user.click(screen.getByRole("radio", { name: /From scratch/ }));
-
-    await user.type(
-      screen.getByRole("textbox", { name: "New list name" }),
-      "onset",
-    );
-    await user.click(screen.getByRole("button", { name: "Add list" }));
-    await user.type(
-      screen.getByRole("textbox", { name: "Entries for onset" }),
-      "Thor\nGrim",
-    );
-
-    const addListRefSelects = screen.getAllByRole("combobox", {
-      name: "Add list reference",
-    });
-    await user.click(addListRefSelects[0]);
-    await user.click(await screen.findByRole("option", { name: "onset" }));
-    await user.click(addListRefSelects[1]);
-    await user.click(await screen.findByRole("option", { name: "onset" }));
-
-    await screen.findByText("Preview");
-    expect(screen.getByText("Female")).toBeDefined();
-    expect(screen.getByText("Male")).toBeDefined();
-
-    const createButton = screen.getByRole("button", { name: "Create" });
-    await waitFor(() => {
-      expect(createButton).toBeEnabled();
-    });
-    await user.click(createButton);
-
-    await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-        "Nameset created.",
-        undefined,
-      );
-    });
-    expect(toastError).not.toHaveBeenCalled();
-    expect(insertedPayload).toMatchObject({
-      name: "Dwarven",
-      config_json: {
-        type: "generated",
-        parts: { onset: ["Thor", "Grim"] },
-        patterns: {
-          female_given: [["onset"]],
-          male_given: [["onset"]],
-        },
-      },
-    });
-  });
-
-  it("edits a generated nameset's generator and blocks deleting a referenced list", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        namesetRows: [
-          createNamesetRow({
-            name: "20th Cent. English",
-            config_json: {
-              type: "generated",
-              convention: "pool",
-              parts: { nm2: ["Ada"] },
-              patterns: {
-                female_given: [["nm2"]],
-                male_given: [["nm2"]],
-                surname: [["nm2"]],
-              },
-            },
-          }),
-        ],
-        updateResult: {
-          data: createNamesetRow({ name: "20th Cent. English" }),
-          error: null,
-        },
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByText("20th Cent. English");
-    await user.click(screen.getByRole("button", { name: "Edit" }));
-    await screen.findByRole("heading", { name: "Edit nameset" });
-
-    const entriesField = screen.getByRole("textbox", {
-      name: "Entries for nm2",
-    });
-    expect(entriesField).toHaveValue("Ada");
-
-    expect(
-      screen.getByRole("button", { name: "Delete list nm2" }),
-    ).toBeDisabled();
-
-    await user.clear(entriesField);
-    await user.type(entriesField, "Ada\nAstrid");
-
-    await user.click(screen.getByRole("button", { name: "Save" }));
-
-    await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-        "Nameset saved.",
-        undefined,
-      );
-    });
-    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("narrows results via the search input", async () => {
@@ -361,14 +215,10 @@ describe("NamesetsConfigPanel", () => {
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   });
 
-  it("emits a success toast after editing a nameset", async () => {
+  it("navigates to the edit route when a row Edit button is pressed", async () => {
     const user = userEvent.setup();
-    const namesetRow = createNamesetRow({ name: "Norse" });
     requireSupabaseClient.mockReturnValue(
-      createClient({
-        namesetRows: [namesetRow],
-        updateResult: { data: namesetRow, error: null },
-      }),
+      createClient({ namesetRows: [createNamesetRow({ name: "Norse" })] }),
     );
 
     renderPanel({ canAdmin: true, isArchived: false });
@@ -376,20 +226,14 @@ describe("NamesetsConfigPanel", () => {
     await screen.findByText("Norse");
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
-    await screen.findByRole("heading", { name: "Edit nameset" });
-    const nameInput = screen.getByRole("textbox", { name: "Name" });
-    await user.clear(nameInput);
-    await user.type(nameInput, "Norse Clans");
-
-    await user.click(screen.getByRole("button", { name: "Save" }));
-
     await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-        "Nameset saved.",
-        undefined,
+      expect(navigateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "/worlds/$worldId/configuration/namesets/$namesetId",
+          params: { worldId: WORLD_ID, namesetId: NAMESET_ID },
+        }),
       );
     });
-    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("moves a nameset to trash via the inline row button", async () => {
