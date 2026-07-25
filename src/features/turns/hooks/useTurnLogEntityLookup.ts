@@ -14,6 +14,7 @@ import { citizensByIdsQueryOptions } from "@/features/citizens";
 import { jobsByWorldQueryOptions } from "@/features/jobs";
 import { resourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import { entityRoute } from "@/lib/entityRoutes";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingRecoveredPayload,
@@ -191,7 +192,7 @@ export function useTurnLogEntityLookup(
         const citizen = citizenById.get(citizenId);
         return {
           name: citizen?.name ?? null,
-          href: `/worlds/${worldId}/citizens/${citizenId}`,
+          href: entityRoute(worldId, { kind: "citizen", citizenId }),
         };
       },
       building: (buildingId) => {

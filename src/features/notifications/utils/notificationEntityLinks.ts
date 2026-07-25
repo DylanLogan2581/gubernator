@@ -1,3 +1,5 @@
+import { entityRoute } from "@/lib/entityRoutes";
+
 import type { AllNotification } from "../queries/notificationQueries";
 
 export type NotificationEntityLink = {
@@ -23,7 +25,10 @@ export function getNotificationEntityLinks(
     links.push({
       key: "nation",
       label: notification.nationName ?? "Nation",
-      href: `/worlds/${notification.worldId}/nations/${notification.nationId}`,
+      href: entityRoute(notification.worldId, {
+        kind: "nation",
+        nationId: notification.nationId,
+      }),
     });
   }
 
@@ -31,10 +36,11 @@ export function getNotificationEntityLinks(
     links.push({
       key: "settlement",
       label: notification.settlementName ?? "Settlement",
-      href:
-        notification.nationId !== null
-          ? `/worlds/${notification.worldId}/nations/${notification.nationId}/settlements/${notification.settlementId}`
-          : null,
+      href: entityRoute(notification.worldId, {
+        kind: "settlement",
+        nationId: notification.nationId,
+        settlementId: notification.settlementId,
+      }),
     });
   }
 
@@ -42,7 +48,10 @@ export function getNotificationEntityLinks(
     links.push({
       key: "citizen",
       label: notification.citizenName ?? "Citizen",
-      href: `/worlds/${notification.worldId}/citizens/${notification.citizenId}`,
+      href: entityRoute(notification.worldId, {
+        kind: "citizen",
+        citizenId: notification.citizenId,
+      }),
     });
   }
 
@@ -50,7 +59,10 @@ export function getNotificationEntityLinks(
     links.push({
       key: "event",
       label: notification.eventName ?? "Event",
-      href: `/worlds/${notification.worldId}/events/${notification.eventId}`,
+      href: entityRoute(notification.worldId, {
+        kind: "event",
+        eventId: notification.eventId,
+      }),
     });
   }
 
@@ -58,7 +70,11 @@ export function getNotificationEntityLinks(
     links.push({
       key: "trade-route",
       label: notification.tradeRoute.originSettlementName,
-      href: `/worlds/${notification.worldId}/nations/${notification.tradeRoute.originNationId}/settlements/${notification.tradeRoute.originSettlementId}/trade`,
+      href: entityRoute(notification.worldId, {
+        kind: "tradeRoute",
+        nationId: notification.tradeRoute.originNationId,
+        settlementId: notification.tradeRoute.originSettlementId,
+      }),
     });
   } else if (notification.tradeRouteId !== null) {
     links.push({
