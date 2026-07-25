@@ -5,7 +5,6 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { RotateCw, Save, Sparkles } from "lucide-react";
-import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -185,81 +184,59 @@ function WorldNpcFlavorConfigPanelContent({
             noValidate
             onSubmit={handleSubmit}
           >
-            <Tabs.Root defaultValue="traits">
-              <Tabs.List className="flex gap-1 rounded-md border border-border bg-muted p-1">
-                <NpcFlavorTab
-                  value="traits"
-                  label="Traits"
-                  count={draftConfig.traits.length}
-                />
-                <NpcFlavorTab
-                  value="contradictions"
-                  label="Contradictions"
-                  count={draftConfig.contradictions.length}
-                />
-                <NpcFlavorTab
-                  value="goals"
-                  label="Goals"
-                  count={draftConfig.goals.length}
-                />
-                <NpcFlavorTab
-                  value="flaws"
-                  label="Flaws"
-                  count={draftConfig.flaws.length}
-                />
-              </Tabs.List>
-              <Tabs.Content value="traits" className="mt-3">
-                <TagListEditor
-                  label="Traits"
-                  entries={draftConfig.traits}
-                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
-                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
-                  onChange={(traits) => {
-                    setDraftConfig((current) => ({ ...current, traits }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="contradictions" className="mt-3">
-                <TagListEditor
-                  label="Contradictions"
-                  entries={draftConfig.contradictions}
-                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
-                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
-                  onChange={(contradictions) => {
-                    setDraftConfig((current) => ({
-                      ...current,
-                      contradictions,
-                    }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="goals" className="mt-3">
-                <TagListEditor
-                  label="Goals"
-                  entries={draftConfig.goals}
-                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
-                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
-                  onChange={(goals) => {
-                    setDraftConfig((current) => ({ ...current, goals }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="flaws" className="mt-3">
-                <TagListEditor
-                  label="Flaws"
-                  entries={draftConfig.flaws}
-                  maxEntryLength={npcFlavorInputLimits.poolEntryMax}
-                  maxPoolSize={npcFlavorInputLimits.poolSizeMax}
-                  onChange={(flaws) => {
-                    setDraftConfig((current) => ({ ...current, flaws }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-            </Tabs.Root>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <TagListEditor
+                label="Traits"
+                entries={draftConfig.traits}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(traits) => {
+                  setDraftConfig((current) => ({ ...current, traits }));
+                  setIsDirty(true);
+                }}
+              />
+              <TagListEditor
+                label="Contradictions"
+                entries={draftConfig.contradictions}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(contradictions) => {
+                  setDraftConfig((current) => ({
+                    ...current,
+                    contradictions,
+                  }));
+                  setIsDirty(true);
+                }}
+              />
+              <TagListEditor
+                label="Goals"
+                entries={draftConfig.goals}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(goals) => {
+                  setDraftConfig((current) => ({ ...current, goals }));
+                  setIsDirty(true);
+                }}
+              />
+              <TagListEditor
+                label="Flaws"
+                entries={draftConfig.flaws}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(flaws) => {
+                  setDraftConfig((current) => ({ ...current, flaws }));
+                  setIsDirty(true);
+                }}
+              />
+            </div>
 
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saveMutation.isPending}>
@@ -301,28 +278,6 @@ function WorldNpcFlavorConfigPanelContent({
       )}
       {unsavedChangesDialog}
     </div>
-  );
-}
-
-function NpcFlavorTab({
-  count,
-  label,
-  value,
-}: {
-  readonly count: number;
-  readonly label: string;
-  readonly value: string;
-}): JSX.Element {
-  return (
-    <Tabs.Trigger
-      value={value}
-      className="flex-1 rounded px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:text-foreground"
-    >
-      {label}
-      {count > 0 ? (
-        <span className="ml-1 opacity-60">({String(count)})</span>
-      ) : null}
-    </Tabs.Trigger>
   );
 }
 

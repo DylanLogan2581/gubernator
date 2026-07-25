@@ -120,6 +120,72 @@ describe("TagListEditor", () => {
     );
   });
 
+  describe("search", () => {
+    it("does not render a filter input unless searchable", () => {
+      render(
+        <TagListEditor label="Pool" entries={["alpha"]} onChange={vi.fn()} />,
+      );
+      expect(
+        screen.queryByRole("searchbox", { name: "Filter pool entries" }),
+      ).toBeNull();
+    });
+
+    it("filters visible chips to those matching the query", async () => {
+      const user = userEvent.setup();
+      render(
+        <TagListEditor
+          label="Pool"
+          entries={["alpha", "beta", "gamma"]}
+          onChange={vi.fn()}
+          searchable
+        />,
+      );
+      await user.type(
+        screen.getByRole("searchbox", { name: "Filter pool entries" }),
+        "mm",
+      );
+      expect(screen.getByText("gamma")).toBeDefined();
+      expect(screen.queryByText("alpha")).toBeNull();
+      expect(screen.queryByText("beta")).toBeNull();
+    });
+
+    it("shows a no-matches message when the query excludes everything", async () => {
+      const user = userEvent.setup();
+      render(
+        <TagListEditor
+          label="Pool"
+          entries={["alpha"]}
+          onChange={vi.fn()}
+          searchable
+        />,
+      );
+      await user.type(
+        screen.getByRole("searchbox", { name: "Filter pool entries" }),
+        "zzz",
+      );
+      expect(screen.getByText("No matching entries.")).toBeDefined();
+    });
+
+    it("removes the correct entry when the list is filtered", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TagListEditor
+          label="Pool"
+          entries={["alpha", "beta", "gamma"]}
+          onChange={onChange}
+          searchable
+        />,
+      );
+      await user.type(
+        screen.getByRole("searchbox", { name: "Filter pool entries" }),
+        "gamma",
+      );
+      await user.click(screen.getByRole("button", { name: "Remove entry 3" }));
+      expect(onChange).toHaveBeenCalledWith(["alpha", "beta"]);
+    });
+  });
+
   describe("bulk import", () => {
     it("adds newline and comma separated entries, trimmed and deduped", async () => {
       const user = userEvent.setup();

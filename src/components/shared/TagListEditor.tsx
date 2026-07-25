@@ -1,5 +1,5 @@
 import { ClipboardList, Plus, X } from "lucide-react";
-import { useState, type JSX, type KeyboardEvent } from "react";
+import { useState, type JSX, type KeyboardEvent, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { notifyError, notifyMutationSuccess } from "@/lib/notify";
 import { generateLocalId } from "@/lib/uid";
+import { cn } from "@/lib/utils";
 
 import { countBulkPastePieces, parseBulkPaste } from "./PoolEditorUtils";
 
@@ -23,6 +25,13 @@ type TagListEditorProps = {
   readonly maxEntryLength?: number;
   readonly maxPoolSize?: number;
   readonly onChange: (entries: string[]) => void;
+  /** When set, renders a per-list filter input above the entries. */
+  readonly searchable?: boolean;
+  /**
+   * When set, the entry list scrolls internally within a fixed height
+   * (Tailwind height class, e.g. "h-96"). Otherwise the list grows freely.
+   */
+  readonly scrollAreaClassName?: string;
 };
 
 export function TagListEditor({
@@ -31,6 +40,8 @@ export function TagListEditor({
   maxEntryLength,
   maxPoolSize,
   onChange,
+  searchable = false,
+  scrollAreaClassName,
 }: TagListEditorProps): JSX.Element {
   const [entryKeys, setEntryKeys] = useState(() =>
     createEntryKeys(entries.length),
@@ -54,9 +65,21 @@ export function TagListEditor({
   const [newTagValue, setNewTagValue] = useState("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
+  const [searchValue, setSearchValue] = useState("");
 
   const getEntryKey = (index: number): string =>
     entryKeys[index] ?? `pending-${String(index)}`;
+
+  // Filter for display only; keep each entry's original index so edit/remove
+  // operate on the true position in `entries`.
+  const normalizedSearch = searchValue.trim().toLowerCase();
+  const visibleEntries = entries
+    .map((entry, index) => ({ entry, index }))
+    .filter(
+      ({ entry }) =>
+        normalizedSearch === "" ||
+        entry.toLowerCase().includes(normalizedSearch),
+    );
 
   function handleBulkApply(): void {
     const pieceCount = countBulkPastePieces(bulkText);
@@ -169,7 +192,7 @@ export function TagListEditor({
   }
 
   return (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid min-w-0 gap-2">
       <legend className="flex items-baseline gap-1.5 text-sm font-medium">
         {label}
         {entries.length > 0 ? (
@@ -179,12 +202,30 @@ export function TagListEditor({
         ) : null}
       </legend>
 
+      {searchable ? (
+        <Input
+          type="search"
+          aria-label={`Filter ${label.toLowerCase()} entries`}
+          placeholder="Filter…"
+          className="h-8"
+          value={searchValue}
+          onChange={(event) => setSearchValue(event.currentTarget.value)}
+        />
+      ) : null}
+
       {entries.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">No entries yet.</p>
+      ) : visibleEntries.length === 0 ? (
+        <p className="text-sm italic text-muted-foreground">
+          No matching entries.
+        </p>
       ) : (
-        <ul className="flex flex-wrap gap-1.5" aria-label={label}>
-          {entries.map((entry, index) => (
-            <li key={getEntryKey(index)}>
+        <EntryListContainer
+          label={label}
+          scrollAreaClassName={scrollAreaClassName}
+        >
+          {visibleEntries.map(({ entry, index }) => (
+            <li key={getEntryKey(index)} className="max-w-full">
               {editingIndex === index ? (
                 <Input
                   autoFocus
@@ -200,10 +241,11 @@ export function TagListEditor({
               ) : (
                 <Badge
                   variant="secondary"
-                  className="h-7 gap-1 rounded-full px-2.5 text-sm"
+                  className="h-auto min-h-7 max-w-full gap-1 rounded-2xl px-2.5 text-sm whitespace-normal"
                 >
                   <button
                     type="button"
+                    className="min-w-0 break-words text-left"
                     onClick={() => startEditing(index)}
                     aria-label={`Edit ${entry}`}
                   >
@@ -221,14 +263,14 @@ export function TagListEditor({
               )}
             </li>
           ))}
-        </ul>
+        </EntryListContainer>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Input
           aria-label={`Add ${label.toLowerCase()} entry`}
           placeholder="Add entry…"
-          className="h-8 max-w-56"
+          className="h-8 min-w-40 flex-1"
           value={newTagValue}
           onChange={(event) => setNewTagValue(event.currentTarget.value)}
           onKeyDown={handleNewTagKeyDown}
@@ -306,4 +348,32 @@ export function TagListEditor({
 
 function createEntryKeys(count: number): string[] {
   return Array.from({ length: count }, () => generateLocalId());
+}
+
+function EntryListContainer({
+  children,
+  label,
+  scrollAreaClassName,
+}: {
+  readonly children: ReactNode;
+  readonly label: string;
+  readonly scrollAreaClassName?: string;
+}): JSX.Element {
+  const list = (
+    <ul className="flex flex-wrap gap-1.5" aria-label={label}>
+      {children}
+    </ul>
+  );
+
+  if (scrollAreaClassName === undefined) {
+    return list;
+  }
+
+  return (
+    <ScrollArea
+      className={cn("rounded-md border border-border p-2", scrollAreaClassName)}
+    >
+      {list}
+    </ScrollArea>
+  );
 }
