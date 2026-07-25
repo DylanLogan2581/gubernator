@@ -3233,6 +3233,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           primary_culture_id: string | null;
+          seal_path: string | null;
           state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
@@ -3251,6 +3252,7 @@ export type Database = {
           name: string;
           nameset_id?: string | null;
           primary_culture_id?: string | null;
+          seal_path?: string | null;
           state_religion_id?: string | null;
           tax_rate?: number;
           trade_policy?: string;
@@ -3269,6 +3271,7 @@ export type Database = {
           name?: string;
           nameset_id?: string | null;
           primary_culture_id?: string | null;
+          seal_path?: string | null;
           state_religion_id?: string | null;
           tax_rate?: number;
           trade_policy?: string;
@@ -4170,6 +4173,7 @@ export type Database = {
           coord_z: number | null;
           created_at: string;
           description: string | null;
+          flag_path: string | null;
           id: string;
           is_ready_current_turn: boolean;
           last_ready_at: string | null;
@@ -4178,6 +4182,7 @@ export type Database = {
           nation_id: string;
           ready_set_at: string | null;
           ready_set_by_citizen_id: string | null;
+          seal_path: string | null;
           updated_at: string;
         };
         Insert: {
@@ -4186,6 +4191,7 @@ export type Database = {
           coord_z?: number | null;
           created_at?: string;
           description?: string | null;
+          flag_path?: string | null;
           id?: string;
           is_ready_current_turn?: boolean;
           last_ready_at?: string | null;
@@ -4194,6 +4200,7 @@ export type Database = {
           nation_id: string;
           ready_set_at?: string | null;
           ready_set_by_citizen_id?: string | null;
+          seal_path?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -4202,6 +4209,7 @@ export type Database = {
           coord_z?: number | null;
           created_at?: string;
           description?: string | null;
+          flag_path?: string | null;
           id?: string;
           is_ready_current_turn?: boolean;
           last_ready_at?: string | null;
@@ -4210,6 +4218,7 @@ export type Database = {
           nation_id?: string;
           ready_set_at?: string | null;
           ready_set_by_citizen_id?: string | null;
+          seal_path?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -8133,6 +8142,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           primary_culture_id: string | null;
+          seal_path: string | null;
           state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
@@ -8164,6 +8174,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           primary_culture_id: string | null;
+          seal_path: string | null;
           state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
@@ -8191,6 +8202,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           primary_culture_id: string | null;
+          seal_path: string | null;
           state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
@@ -8217,6 +8229,34 @@ export type Database = {
           world_id: string;
         }[];
       };
+      set_nation_seal_path: {
+        Args: { p_nation_id: string; p_seal_path: string };
+        Returns: {
+          capital_settlement_id: string | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
+          founded_turn_number: number | null;
+          government_type: string;
+          id: string;
+          name: string;
+          nameset_id: string | null;
+          primary_culture_id: string | null;
+          seal_path: string | null;
+          state_religion_id: string | null;
+          tax_rate: number;
+          trade_policy: string;
+          treasury_currency: number;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       set_nation_tax_rate: {
         Args: { p_nation_id: string; p_rate: number };
         Returns: {
@@ -8230,6 +8270,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           primary_culture_id: string | null;
+          seal_path: string | null;
           state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
@@ -8257,6 +8298,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           primary_culture_id: string | null;
+          seal_path: string | null;
           state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
@@ -8330,6 +8372,33 @@ export type Database = {
           ready_set_at: string;
         }[];
       };
+      set_settlement_flag_path: {
+        Args: { p_flag_path: string; p_settlement_id: string };
+        Returns: {
+          auto_ready_enabled: boolean;
+          coord_x: number | null;
+          coord_z: number | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
+          id: string;
+          is_ready_current_turn: boolean;
+          last_ready_at: string | null;
+          name: string;
+          nameset_id: string | null;
+          nation_id: string;
+          ready_set_at: string | null;
+          ready_set_by_citizen_id: string | null;
+          seal_path: string | null;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "settlements";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       set_settlement_nameset: {
         Args: {
           p_nameset_id?: string;
@@ -8350,6 +8419,33 @@ export type Database = {
           last_ready_at: string;
           ready_set_at: string;
         }[];
+      };
+      set_settlement_seal_path: {
+        Args: { p_seal_path: string; p_settlement_id: string };
+        Returns: {
+          auto_ready_enabled: boolean;
+          coord_x: number | null;
+          coord_z: number | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
+          id: string;
+          is_ready_current_turn: boolean;
+          last_ready_at: string | null;
+          name: string;
+          nameset_id: string | null;
+          nation_id: string;
+          ready_set_at: string | null;
+          ready_set_by_citizen_id: string | null;
+          seal_path: string | null;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "settlements";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       set_settlement_stockpile_quantity: {
         Args: {
@@ -8431,6 +8527,11 @@ export type Database = {
         Args: { p_resource_id: string; p_settlement_id: string };
         Returns: number;
       };
+      settlement_images_path_settlement_id: {
+        Args: { name: string };
+        Returns: string;
+      };
+      settlement_images_world_id: { Args: { p_name: string }; Returns: string };
       settlement_job_capacity: {
         Args: { p_job_id: string; p_settlement_id: string };
         Returns: number;

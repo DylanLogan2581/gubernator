@@ -9,6 +9,7 @@ import {
   SettlementDemographicsCard,
   SettlementDetailsSection,
   SettlementForecastWarningsCard,
+  SettlementImagerySection,
   SettlementOverviewStatTiles,
   useSettlementDetailContext,
 } from "@/features/settlements";
@@ -28,6 +29,7 @@ function SettlementOverviewRoute(): JSX.Element {
     settlement,
     worldId,
   } = useSettlementDetailContext();
+  const canEditImagery = canManageSettlement && !isArchived;
 
   return (
     <>
@@ -38,6 +40,11 @@ function SettlementOverviewRoute(): JSX.Element {
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
+      />
+
+      <SettlementImagerySection
+        canEdit={canEditImagery}
+        settlement={settlement}
       />
 
       <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />

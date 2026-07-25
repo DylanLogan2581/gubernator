@@ -3,10 +3,12 @@ export type Settlement = {
   readonly coordZ: number | null;
   readonly createdAt: string;
   readonly description: string | null;
+  readonly flagPath: string | null;
   readonly id: string;
   readonly name: string;
   readonly namesetId: string | null;
   readonly nationId: string;
+  readonly sealPath: string | null;
   readonly updatedAt: string;
 };
 
@@ -22,6 +24,7 @@ export type SettlementWithNation = Settlement & {
 };
 
 export type SettlementSummary = {
+  readonly flagPath: string | null;
   readonly id: string;
   readonly name: string;
   readonly nationId: string;

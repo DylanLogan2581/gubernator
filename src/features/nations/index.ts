@@ -7,6 +7,7 @@ export { NationSectionRedirect } from "./components/NationDetailPage/NationSecti
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
 export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
 export { NationFlagSection } from "./components/NationDetailPage/FlagSection";
+export { NationSealSection } from "./components/NationDetailPage/SealSection";
 export {
   NationIdentitySection,
   formatFoundedTurn,
@@ -24,6 +25,7 @@ export { NationSettlementsSection } from "./components/NationDetailPage/Settleme
 export { NationTradePolicySection } from "./components/NationDetailPage/TradePolicySection";
 export { NationTreasurySection } from "./components/NationDetailPage/TreasurySection";
 export { NationFlagAvatar } from "./components/NationFlagAvatar";
+export { NationSealAvatar } from "./components/NationSealAvatar";
 export { NationListPage } from "./components/NationListPage";
 export { NationOverviewCharts } from "./components/NationOverviewCharts";
 export { NationOverviewStatTiles } from "./components/NationOverviewStatTiles";
@@ -67,8 +69,11 @@ export {
 } from "./mutations/currencyMutations";
 export {
   nationFlagPath,
+  nationSealPath,
   removeNationFlagMutationOptions,
+  removeNationSealMutationOptions,
   uploadNationFlagMutationOptions,
+  uploadNationSealMutationOptions,
 } from "./mutations/nationImageMutations";
 export {
   NationRelationshipMutationError,

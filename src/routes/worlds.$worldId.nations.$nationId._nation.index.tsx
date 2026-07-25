@@ -9,6 +9,7 @@ import {
   NationOverviewCharts,
   NationOverviewStatTiles,
   NationReadinessSection,
+  NationSealSection,
   useNationDetailContext,
 } from "@/features/nations";
 
@@ -37,11 +38,19 @@ function NationOverviewRoute(): JSX.Element {
         queryClient={queryClient}
       />
 
-      <NationFlagSection
-        canAdminWorld={effectiveCanAdmin}
-        isArchived={isArchived}
-        nation={nation}
-      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <NationFlagSection
+          canAdminWorld={effectiveCanAdmin}
+          isArchived={isArchived}
+          nation={nation}
+        />
+
+        <NationSealSection
+          canAdminWorld={effectiveCanAdmin}
+          isArchived={isArchived}
+          nation={nation}
+        />
+      </div>
 
       <NationOverviewCharts
         currentTurnNumber={worldAccess.header.currentTurnNumber}

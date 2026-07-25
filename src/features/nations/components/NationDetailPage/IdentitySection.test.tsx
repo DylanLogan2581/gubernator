@@ -169,6 +169,7 @@ function createNation(overrides: Partial<Nation> = {}): Nation {
     name: "Aldoria",
     namesetId: null,
     primaryCultureId: null,
+    sealPath: null,
     stateReligionId: null,
     taxRate: 0,
     tradePolicy: "free",
@@ -214,6 +215,7 @@ function createSettlement(
 ): NationSettlement {
   return {
     autoReadyEnabled: false,
+    flagPath: null,
     id: SETTLEMENT_ID,
     isReadyCurrentTurn: false,
     isReadyForCurrentTurn: false,

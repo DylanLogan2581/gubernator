@@ -6,6 +6,7 @@ import { type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { SettlementFlagAvatar } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
@@ -56,8 +57,14 @@ export function CharterSettlementsSection({
               <Link
                 to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/government"
                 params={{ nationId, settlementId: settlement.id, worldId }}
-                className="text-sm underline-offset-4 hover:underline"
+                className="flex items-center gap-2 text-sm underline-offset-4 hover:underline"
               >
+                <SettlementFlagAvatar
+                  className="w-6 shrink-0"
+                  flagPath={settlement.flagPath}
+                  settlementId={settlement.id}
+                  settlementName={settlement.name}
+                />
                 {settlement.name}
               </Link>
             </li>

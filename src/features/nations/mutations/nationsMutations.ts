@@ -87,6 +87,7 @@ type NationRow = {
   readonly name: string;
   readonly nameset_id: string | null;
   readonly primary_culture_id: string | null;
+  readonly seal_path: string | null;
   readonly state_religion_id: string | null;
   readonly tax_rate: number;
   readonly trade_policy: string;
@@ -100,7 +101,7 @@ export type DeleteNationResult = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,trade_policy,primary_culture_id,state_religion_id,created_at,updated_at";
+  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,seal_path,tax_rate,trade_policy,primary_culture_id,state_religion_id,created_at,updated_at";
 
 export type NationMutationIssue = MutationIssue;
 
@@ -568,6 +569,7 @@ function toNation(row: NationRow): Nation {
     name: row.name,
     namesetId: row.nameset_id,
     primaryCultureId: row.primary_culture_id,
+    sealPath: row.seal_path,
     stateReligionId: row.state_religion_id,
     taxRate: row.tax_rate,
     tradePolicy: row.trade_policy as NationTradePolicy,

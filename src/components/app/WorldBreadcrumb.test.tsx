@@ -73,9 +73,11 @@ function makeSettlement(
     coordZ: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     description: null,
+    flagPath: null,
     id: "settlement-1",
     name: "Amberhold",
     namesetId: null,
+    sealPath: null,
     nation: {
       id: "nation-1",
       name: "Ironmark",

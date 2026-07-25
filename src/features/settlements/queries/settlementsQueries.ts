@@ -27,6 +27,7 @@ type SettlementWithNationRow = {
   readonly coord_z: number | null;
   readonly created_at: string;
   readonly description: string | null;
+  readonly flag_path: string | null;
   readonly id: string;
   readonly name: string;
   readonly nameset_id: string | null;
@@ -37,11 +38,12 @@ type SettlementWithNationRow = {
     readonly nameset_id: string | null;
     readonly world_id: string;
   };
+  readonly seal_path: string | null;
   readonly updated_at: string;
 };
 
 const SETTLEMENT_WITH_NATION_SELECT =
-  "id,nation_id,name,description,nameset_id,coord_x,coord_z,created_at,updated_at,nations!settlements_nation_id_fkey!inner(id,name,nameset_id,world_id)";
+  "id,nation_id,name,description,nameset_id,coord_x,coord_z,flag_path,seal_path,created_at,updated_at,nations!settlements_nation_id_fkey!inner(id,name,nameset_id,world_id)";
 
 export function settlementByIdQueryOptions(
   settlementId: string,
@@ -72,6 +74,7 @@ async function getSettlementById(
 }
 
 type SettlementSummaryRow = {
+  readonly flag_path: string | null;
   readonly id: string;
   readonly name: string;
   readonly nation_id: string;
@@ -79,7 +82,7 @@ type SettlementSummaryRow = {
 };
 
 const SETTLEMENT_SUMMARY_SELECT =
-  "id,nation_id,name,nations!settlements_nation_id_fkey!inner(name)";
+  "id,nation_id,name,flag_path,nations!settlements_nation_id_fkey!inner(name)";
 
 type SettlementsByWorldQueryKey = ReturnType<
   typeof settlementsQueryKeys.byWorld
@@ -123,6 +126,7 @@ async function getSettlementsByWorld(
 
 function toSettlementSummary(row: SettlementSummaryRow): SettlementSummary {
   return {
+    flagPath: row.flag_path,
     id: row.id,
     name: row.name,
     nationId: row.nation_id,
@@ -138,6 +142,7 @@ function toSettlementWithNation(
     coordZ: row.coord_z,
     createdAt: row.created_at,
     description: row.description,
+    flagPath: row.flag_path,
     id: row.id,
     name: row.name,
     namesetId: row.nameset_id,
@@ -148,6 +153,7 @@ function toSettlementWithNation(
       worldId: row.nations.world_id,
     },
     nationId: row.nation_id,
+    sealPath: row.seal_path,
     updatedAt: row.updated_at,
   };
 }

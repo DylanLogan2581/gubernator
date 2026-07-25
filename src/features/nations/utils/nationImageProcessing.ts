@@ -13,6 +13,10 @@ export type { CoverCropRect, ImageTargetSize } from "@/lib/imageProcessing";
 
 export const NATION_FLAG_TARGET = { height: 200, width: 300 } as const;
 
+// Seals are square emblems rather than 3:2 banners, but share the flag's
+// downscale pipeline and the bucket's 2 MiB backstop (#1373).
+export const NATION_SEAL_TARGET = { height: 300, width: 300 } as const;
+
 export type NationImageProcessingErrorCode =
   | "nation_image_decode_failed"
   | "nation_image_encode_failed"

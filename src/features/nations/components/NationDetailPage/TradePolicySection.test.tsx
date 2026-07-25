@@ -180,6 +180,7 @@ function createNation(overrides: Partial<Nation> = {}): Nation {
     name: "Ironhaven",
     namesetId: null,
     primaryCultureId: null,
+    sealPath: null,
     stateReligionId: null,
     taxRate: 0,
     tradePolicy: "free",

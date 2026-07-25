@@ -52,6 +52,7 @@ type NationRow = {
   readonly name: string;
   readonly nameset_id: string | null;
   readonly primary_culture_id: string | null;
+  readonly seal_path: string | null;
   readonly state_religion_id: string | null;
   readonly tax_rate: number;
   readonly trade_policy: string;
@@ -60,6 +61,7 @@ type NationRow = {
 };
 type NationSettlementRow = {
   readonly auto_ready_enabled: boolean;
+  readonly flag_path: string | null;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
   readonly last_ready_at: string | null;
@@ -72,9 +74,9 @@ type NationSettlementRow = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,trade_policy,primary_culture_id,state_religion_id,created_at,updated_at";
+  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,seal_path,tax_rate,trade_policy,primary_culture_id,state_religion_id,created_at,updated_at";
 const NATION_SETTLEMENT_SELECT =
-  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!settlements_nation_id_fkey!inner(name)";
+  "id,name,nation_id,flag_path,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!settlements_nation_id_fkey!inner(name)";
 
 export function nationsListQueryOptions(
   worldId: string,
@@ -195,6 +197,7 @@ function toNation(row: NationRow): Nation {
     name: row.name,
     namesetId: row.nameset_id,
     primaryCultureId: row.primary_culture_id,
+    sealPath: row.seal_path,
     stateReligionId: row.state_religion_id,
     taxRate: row.tax_rate,
     tradePolicy: row.trade_policy as NationTradePolicy,
@@ -215,6 +218,7 @@ function toNationSettlement(
   });
   return {
     autoReadyEnabled: row.auto_ready_enabled,
+    flagPath: row.flag_path,
     id: row.id,
     isReadyCurrentTurn: row.is_ready_current_turn,
     isReadyForCurrentTurn,

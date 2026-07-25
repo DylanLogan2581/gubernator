@@ -288,6 +288,7 @@ function createNation(): Nation {
     name: "Ironhaven",
     namesetId: null,
     primaryCultureId: null,
+    sealPath: null,
     stateReligionId: null,
     taxRate: 0.1,
     tradePolicy: "free",

@@ -30,6 +30,7 @@ import {
   ManualReadinessControl,
   ReadOnlyReadinessIndicator,
   CreateSettlementDialog,
+  SettlementFlagAvatar,
   deleteSettlementMutationOptions,
   setSettlementReadinessMutationOptions,
 } from "@/features/settlements";
@@ -222,40 +223,48 @@ function NationSettlementListItem({
   return (
     <li className="rounded-md border border-border bg-background p-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-            params={{
-              nationId: settlement.nationId,
-              settlementId: settlement.id,
-              worldId,
-            }}
-            search={{}}
-            className="text-sm font-medium underline-offset-4 hover:underline text-left"
-          >
-            {settlement.name}
-          </Link>
-          <span className="text-xs text-muted-foreground">
-            Population: {settlement.population.toLocaleString()}
-          </span>
-          {manager === null ? (
-            <span className="text-xs text-muted-foreground">Unassigned</span>
-          ) : (
+        <div className="flex min-w-0 items-start gap-2">
+          <SettlementFlagAvatar
+            className="mt-0.5 w-8 shrink-0"
+            flagPath={settlement.flagPath}
+            settlementId={settlement.id}
+            settlementName={settlement.name}
+          />
+          <div className="flex min-w-0 flex-col gap-1">
             <Link
-              to="/worlds/$worldId/citizens/$citizenId"
-              params={{ citizenId: manager.id, worldId }}
+              to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+              params={{
+                nationId: settlement.nationId,
+                settlementId: settlement.id,
+                worldId,
+              }}
               search={{}}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:underline"
+              className="text-sm font-medium underline-offset-4 hover:underline text-left"
             >
-              <CitizenAvatar
-                id={manager.id}
-                name={manager.name}
-                profilePhotoUrl={manager.profilePhotoUrl}
-                size="sm"
-              />
-              {manager.name}
+              {settlement.name}
             </Link>
-          )}
+            <span className="text-xs text-muted-foreground">
+              Population: {settlement.population.toLocaleString()}
+            </span>
+            {manager === null ? (
+              <span className="text-xs text-muted-foreground">Unassigned</span>
+            ) : (
+              <Link
+                to="/worlds/$worldId/citizens/$citizenId"
+                params={{ citizenId: manager.id, worldId }}
+                search={{}}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:underline"
+              >
+                <CitizenAvatar
+                  id={manager.id}
+                  name={manager.name}
+                  profilePhotoUrl={manager.profilePhotoUrl}
+                  size="sm"
+                />
+                {manager.name}
+              </Link>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

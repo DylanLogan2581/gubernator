@@ -20,6 +20,9 @@ export { SettlementDeleteSection } from "./components/SettlementDetailPage/Delet
 export { SettlementDemographicsCard } from "./components/SettlementDetailPage/SettlementDemographicsCard";
 export { SettlementDetailsSection } from "./components/SettlementDetailPage/DetailsSection";
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
+export { SettlementImagerySection } from "./components/SettlementDetailPage/ImagerySection";
+export { SettlementFlagAvatar } from "./components/SettlementFlagAvatar";
+export { SettlementSealAvatar } from "./components/SettlementSealAvatar";
 export { SettlementForecastWarningsCard } from "./components/SettlementDetailPage/ForecastWarningsCard";
 export { GarrisonCard } from "./components/SettlementDetailPage/GarrisonCard";
 export { SettlementManagerCard } from "./components/SettlementDetailPage/ManagerCard";
@@ -39,6 +42,15 @@ export {
   updateSettlementCoordinatesMutationOptions,
   updateSettlementDetailsMutationOptions,
 } from "./mutations/settlementsMutations";
+export {
+  removeSettlementFlagMutationOptions,
+  removeSettlementSealMutationOptions,
+  settlementFlagPath,
+  settlementSealPath,
+  uploadSettlementFlagMutationOptions,
+  uploadSettlementSealMutationOptions,
+} from "./mutations/settlementImageMutations";
+export { useSettlementImageSignedUrl } from "./queries/settlementImageQueries";
 export { settlementForecastQueryOptions } from "./queries/settlementForecastQueries";
 export { settlementForecastQueryKeys } from "./queries/settlementForecastQueryKeys";
 export { forecastSnapshotSchema } from "./schemas/forecastSchemas";

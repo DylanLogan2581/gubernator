@@ -32,6 +32,7 @@ export type Nation = {
   readonly name: string;
   readonly namesetId: string | null;
   readonly primaryCultureId: string | null;
+  readonly sealPath: string | null;
   readonly stateReligionId: string | null;
   readonly taxRate: number;
   readonly tradePolicy: NationTradePolicy;
@@ -92,6 +93,7 @@ export function describeNationTradePolicy(
 
 export type NationSettlement = {
   readonly autoReadyEnabled: boolean;
+  readonly flagPath: string | null;
   readonly id: string;
   readonly isReadyCurrentTurn: boolean;
   readonly isReadyForCurrentTurn: boolean;

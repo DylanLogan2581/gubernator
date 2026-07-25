@@ -19,6 +19,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationByIdQueryOptions } from "../../queries/nationsQueries";
 import { NationFlagAvatar } from "../NationFlagAvatar";
+import { NationSealAvatar } from "../NationSealAvatar";
 
 import { NationDetailContext } from "./NationDetailContext";
 import { NationDetailFrame } from "./NationDetailFrame";
@@ -225,6 +226,15 @@ function NationDetailLoaded({
           nationId={nation.id}
           nationName={nation.name}
         />
+        {nation.sealPath !== null ? (
+          <NationSealAvatar
+            className="w-12 shrink-0"
+            interactive
+            nationId={nation.id}
+            nationName={nation.name}
+            sealPath={nation.sealPath}
+          />
+        ) : null}
         <div className="min-w-0 space-y-1">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-normal">

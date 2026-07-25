@@ -19,6 +19,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementByIdQueryOptions } from "../../queries/settlementsQueries";
+import { SettlementFlagAvatar } from "../SettlementFlagAvatar";
 
 import { SettlementDetailContext } from "./SettlementDetailContext";
 import { SettlementDetailFrame } from "./SettlementDetailFrame";
@@ -256,15 +257,24 @@ function SettlementDetailLoaded({
       backLabel={`Back to ${settlement.nation.name}`}
     >
       <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {settlement.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Settlement in{" "}
-            <span className="font-medium">{settlement.nation.name}</span>,{" "}
-            <span className="font-medium">{worldAccess.header.name}</span>.
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <SettlementFlagAvatar
+            className="w-16 shrink-0"
+            flagPath={settlement.flagPath}
+            interactive
+            settlementId={settlement.id}
+            settlementName={settlement.name}
+          />
+          <div className="min-w-0 space-y-1">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {settlement.name}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Settlement in{" "}
+              <span className="font-medium">{settlement.nation.name}</span>,{" "}
+              <span className="font-medium">{worldAccess.header.name}</span>.
+            </p>
+          </div>
         </div>
       </header>
 

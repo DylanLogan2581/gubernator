@@ -563,6 +563,7 @@ function createNation(): Nation {
     name: "Aurelia",
     namesetId: null,
     primaryCultureId: null,
+    sealPath: null,
     stateReligionId: null,
     taxRate: 0,
     tradePolicy: "free",
