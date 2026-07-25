@@ -108,7 +108,7 @@ function RootErrorBoundary({ error }: ErrorComponentProps): JSX.Element | null {
   return (
     <ErrorState
       title="Something went wrong"
-      description="An unexpected error occurred. Try again or return to the home page."
+      description="An unexpected error occurred. Try again or return to sign in."
       action={
         <div className="flex gap-2">
           <Button
@@ -121,7 +121,7 @@ function RootErrorBoundary({ error }: ErrorComponentProps): JSX.Element | null {
             Try again
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link to="/">Go to home</Link>
+            <Link to="/">Go to sign in</Link>
           </Button>
         </div>
       }
@@ -137,7 +137,7 @@ function NotFoundPage(): JSX.Element {
       description="The page you're looking for doesn't exist or may have moved."
       action={
         <Button asChild variant="outline" size="sm">
-          <Link to="/">Go to home</Link>
+          <Link to="/">Go to sign in</Link>
         </Button>
       }
     />

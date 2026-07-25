@@ -78,7 +78,7 @@ describe("not-found route", () => {
   it("provides a link back to home", async () => {
     renderAt("/another-missing-route");
     await screen.findByText("Page not found");
-    expect(screen.getByRole("link", { name: "Go to home" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Go to sign in" })).toBeDefined();
   });
 
   it("does not render template copy on the fallback", async () => {
@@ -121,7 +121,7 @@ describe("app shell auth controls", () => {
   it("does not expose sign-out when no user is authenticated", async () => {
     renderAt("/");
 
-    await screen.findByRole("heading", { name: "Gubernator" });
+    await screen.findByRole("heading", { name: "Sign in" });
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 
@@ -342,7 +342,7 @@ describe("root error boundary", () => {
 
       await screen.findByText("Something went wrong");
       expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
-      expect(screen.getByRole("link", { name: "Go to home" })).toBeDefined();
+      expect(screen.getByRole("link", { name: "Go to sign in" })).toBeDefined();
     } finally {
       restoreConsole();
     }

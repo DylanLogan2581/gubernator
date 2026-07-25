@@ -90,35 +90,36 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-3.5rem)] w-full items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background">
-      <div className="mx-auto grid w-full max-w-5xl items-center gap-8 px-4 py-10 lg:grid-cols-2 lg:gap-16 lg:py-16">
-        <section
-          aria-hidden="true"
-          className="hidden flex-col justify-center gap-6 rounded-xl bg-gradient-to-br from-primary/15 via-card to-card p-10 ring-1 ring-foreground/10 lg:flex"
-        >
-          <div className="flex size-20 items-center justify-center rounded-full bg-primary/10 p-4">
-            <img src="/logo.png" alt="" className="size-full object-contain" />
-          </div>
-          <div className="flex flex-col gap-3">
-            <h2 className="text-3xl font-semibold tracking-tight text-balance">
-              Gubernator
-            </h2>
-            <p className="max-w-sm text-muted-foreground text-balance">
-              A turn-based world simulation game: found nations, grow
-              settlements, and steer generations of citizens through the outcome
-              of every turn.
-            </p>
-          </div>
-        </section>
+    <div className="grid min-h-[calc(100dvh-3.5rem)] w-full lg:grid-cols-2">
+      <section
+        aria-hidden="true"
+        className="relative hidden flex-col justify-center overflow-hidden bg-gradient-to-br from-primary/25 via-primary/10 to-background p-12 lg:flex"
+      >
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40"
+          style={{ backgroundImage: "url(/sign-in-hero.jpg)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+        <div className="relative flex flex-col gap-4">
+          <h2 className="text-4xl font-semibold tracking-tight text-balance">
+            Gubernator
+          </h2>
+          <p className="max-w-md text-lg text-muted-foreground text-balance">
+            Found nations, grow settlements, and steer generations of citizens
+            through the outcome of every turn.
+          </p>
+        </div>
+      </section>
 
-        <section className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm sm:p-8">
-          <div className="mb-6 flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
+      <section className="flex items-center justify-center px-4 py-10 sm:px-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex flex-col gap-3">
             <div className="flex items-center gap-2 lg:hidden">
               <img src="/logo.png" alt="" className="size-6" />
               <span className="font-semibold">Gubernator</span>
             </div>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
               <p
                 id={formDescriptionId}
                 className="mt-2 text-sm text-muted-foreground"
@@ -218,8 +219,8 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
               {isSubmitting ? "Signing in…" : ""}
             </p>
           </form>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
