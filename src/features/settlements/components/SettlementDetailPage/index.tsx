@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
+import { DetailPageHeader } from "@/components/shared/DetailPageHeader";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
@@ -256,8 +257,8 @@ function SettlementDetailLoaded({
       worldId={worldId}
       backLabel={`Back to ${settlement.nation.name}`}
     >
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
+      <DetailPageHeader
+        media={
           <SettlementFlagAvatar
             className="w-16 shrink-0"
             flagPath={settlement.flagPath}
@@ -265,18 +266,16 @@ function SettlementDetailLoaded({
             settlementId={settlement.id}
             settlementName={settlement.name}
           />
-          <div className="min-w-0 space-y-1">
-            <h1 className="text-2xl font-semibold tracking-normal">
-              {settlement.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Settlement in{" "}
-              <span className="font-medium">{settlement.nation.name}</span>,{" "}
-              <span className="font-medium">{worldAccess.header.name}</span>.
-            </p>
-          </div>
-        </div>
-      </header>
+        }
+        title={settlement.name}
+        context={
+          <>
+            Settlement in{" "}
+            <span className="font-medium">{settlement.nation.name}</span>,{" "}
+            <span className="font-medium">{worldAccess.header.name}</span>.
+          </>
+        }
+      />
 
       <SettlementDetailContext
         value={{
