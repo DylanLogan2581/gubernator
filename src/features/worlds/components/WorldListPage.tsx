@@ -368,6 +368,19 @@ function TrashSection({
   );
 }
 
+function activeWorldsLayoutClassName(count: number): string {
+  if (count === 1) {
+    // Single world: large full-width showcase card.
+    return "grid gap-3";
+  }
+  if (count <= 4) {
+    // 2-4 worlds: prominent two-column layout with larger cards.
+    return "grid gap-3 sm:grid-cols-2";
+  }
+  // 5+ worlds: original dense grid.
+  return "grid gap-3 sm:grid-cols-2 lg:grid-cols-3";
+}
+
 function ActiveWorldsSection({
   activeWorlds,
   isSuperAdmin,
@@ -388,7 +401,7 @@ function ActiveWorldsSection({
 
   return (
     <ul
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      className={activeWorldsLayoutClassName(activeWorlds.length)}
       aria-label="Accessible worlds"
     >
       {activeWorlds.map((world) => (

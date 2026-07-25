@@ -176,18 +176,63 @@ describe("WorldListPage", () => {
     );
   });
 
-  it("uses a responsive card grid for the world list", async () => {
+  it("renders a single world as a full-width showcase card", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         isSuperAdmin: true,
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ name: "Grid World" })],
+        worldRows: [createWorldRow({ name: "Solo World" })],
       }),
     );
 
     renderWorldListPage();
 
-    await screen.findByText("Grid World");
+    await screen.findByText("Solo World");
+    const list = screen.getByRole("list", { name: "Accessible worlds" });
+    expect(list).toHaveClass("grid");
+    expect(list).not.toHaveClass("sm:grid-cols-2");
+    expect(list).not.toHaveClass("lg:grid-cols-3");
+  });
+
+  it("renders 2-4 worlds in a prominent two-column layout", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: Array.from({ length: 3 }, (_, index) =>
+          createWorldRow({
+            id: `00000000-0000-0000-0000-00000000030${index}`,
+            name: `Two Col World ${index}`,
+          }),
+        ),
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Two Col World 0");
+    const list = screen.getByRole("list", { name: "Accessible worlds" });
+    expect(list).toHaveClass("sm:grid-cols-2");
+    expect(list).not.toHaveClass("lg:grid-cols-3");
+  });
+
+  it("uses the dense responsive grid for 5+ worlds", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: Array.from({ length: 5 }, (_, index) =>
+          createWorldRow({
+            id: `00000000-0000-0000-0000-00000000050${index}`,
+            name: `Grid World ${index}`,
+          }),
+        ),
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Grid World 0");
     expect(screen.getByRole("list", { name: "Accessible worlds" })).toHaveClass(
       "sm:grid-cols-2",
       "lg:grid-cols-3",
