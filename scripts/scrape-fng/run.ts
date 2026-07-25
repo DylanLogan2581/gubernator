@@ -30,7 +30,11 @@ import { buildReport, formatReportSummary } from "./report.ts";
 import type { FlagRecord, LibraryEntry, SkipRecord } from "./types.ts";
 import type { Browser } from "@playwright/test";
 
-const INCLUDED_CATEGORIES = new Set(["Real Names", "Fantasy & Folklore"]);
+const INCLUDED_CATEGORIES = new Set([
+  "Real Names",
+  "Fantasy & Folklore",
+  "Pop Culture",
+]);
 const CONCURRENCY = 8;
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -49,15 +53,25 @@ async function main(): Promise<void> {
   const browser = await launchBrowser();
   try {
     const categories = await crawlCategoryLinks(browser);
-    const targets = collectTargets(categories);
-    console.info(`discovered ${targets.length} person-name generator targets`);
 
+    // Additive crawl: generators already written to the library are kept as-is
+    // (they are hand-verified and re-fetching them risks losing files to
+    // transient Cloudflare failures). Only newly-discovered generators — e.g.
+    // the Pop Culture category added on top of Real Names / Fantasy & Folklore
+    // — are fetched and added.
     fs.mkdirSync(libraryDir, { recursive: true });
-    for (const entry of fs.readdirSync(libraryDir)) {
-      if (entry.endsWith(".json") && entry !== "index.json") {
-        fs.rmSync(path.join(libraryDir, entry));
-      }
-    }
+    const existingIds = new Set(
+      fs
+        .readdirSync(libraryDir)
+        .filter((name) => name.endsWith(".json") && name !== "index.json")
+        .map((name) => name.replace(/\.json$/, "")),
+    );
+
+    const targets = collectTargets(categories, existingIds);
+    console.info(
+      `discovered ${targets.length} new person-name generator targets ` +
+        `(${existingIds.size} already in library, skipped)`,
+    );
 
     const entries: LibraryEntry[] = [];
     const flagged: FlagRecord[] = [];
@@ -95,6 +109,7 @@ async function main(): Promise<void> {
 
 function collectTargets(
   categories: { category: string; items: { href: string; text: string }[] }[],
+  existingIds: ReadonlySet<string>,
 ): Target[] {
   const seen = new Set<string>();
   const targets: Target[] = [];
@@ -104,6 +119,7 @@ function collectTargets(
       if (!/^[a-z0-9-]+\.php$/.test(item.href)) continue;
       if (seen.has(item.href)) continue;
       if (isExcludedGenerator(item.href)) continue;
+      if (existingIds.has(slugFromHref(item.href))) continue;
       seen.add(item.href);
       targets.push({
         href: item.href,
@@ -159,14 +175,34 @@ async function processTarget(
   );
 }
 
+type IndexEntry = { id: string; displayName: string; category: string };
+
 function writeIndex(entries: LibraryEntry[]): void {
-  const index = entries
-    .map((entry) => ({
+  // Merge freshly-crawled entries with the existing index so previously
+  // written generators (kept on disk by the additive crawl) stay listed.
+  const indexPath = path.join(libraryDir, "index.json");
+  const byId = new Map<string, IndexEntry>();
+  if (fs.existsSync(indexPath)) {
+    const existing = JSON.parse(
+      fs.readFileSync(indexPath, "utf8"),
+    ) as IndexEntry[];
+    for (const entry of existing) {
+      // Drop stale index rows whose definition file no longer exists.
+      if (fs.existsSync(path.join(libraryDir, `${entry.id}.json`))) {
+        byId.set(entry.id, entry);
+      }
+    }
+  }
+  for (const entry of entries) {
+    byId.set(entry.id, {
       id: entry.id,
       displayName: entry.displayName,
       category: entry.category,
-    }))
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+    });
+  }
+  const index = [...byId.values()].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName),
+  );
   fs.writeFileSync(
     path.join(libraryDir, "index.json"),
     JSON.stringify(index, null, 2) + "\n",

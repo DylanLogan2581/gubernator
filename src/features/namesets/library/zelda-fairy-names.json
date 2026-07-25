@@ -1,0 +1,84 @@
+{
+  "id": "zelda-fairy-names",
+  "displayName": "Fairies",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/zelda-fairy-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "none",
+    "parts": {
+      "nm1": [
+        "B",
+        "C",
+        "D",
+        "F",
+        "G",
+        "H",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "S",
+        "T",
+        "V",
+        "W",
+        "Z"
+      ],
+      "nm4": [
+        "a",
+        "e",
+        "i",
+        "o",
+        "u",
+        "ie",
+        "ia",
+        "ea",
+        "ae",
+        "io",
+        "eo",
+        "ai"
+      ],
+      "nm5": [
+        "w",
+        "r",
+        "t",
+        "l",
+        "k",
+        "h",
+        "g",
+        "f",
+        "d",
+        "s",
+        "m",
+        "n",
+        "v",
+        "c"
+      ],
+      "nm6": ["a", "e", "i", "o", "u"],
+      "nm7": ["t", "h", "s", "l", "n", "m"],
+      "nm2": [
+        "ea",
+        "ae",
+        "ai",
+        "ao",
+        "aa",
+        "au",
+        "ei",
+        "ee",
+        "ia",
+        "ie",
+        "io",
+        "oo",
+        "oa"
+      ],
+      "nm3": ["f", "k", "l", "m", "n", "r", "s"]
+    },
+    "patterns": {
+      "female_given": [["nm1"], ["nm4"], ["nm5"], ["nm6"], ["nm7"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"]],
+      "surname": []
+    }
+  }
+}

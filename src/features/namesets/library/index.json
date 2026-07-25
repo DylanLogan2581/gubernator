@@ -10,6 +10,11 @@
     "category": "Real Names"
   },
   {
+    "id": "stargate-abydonian-names",
+    "displayName": "Abydonian",
+    "category": "Pop Culture"
+  },
+  {
     "id": "african-american-names",
     "displayName": "African-American Names",
     "category": "Real Names"
@@ -40,6 +45,11 @@
     "category": "Real Names"
   },
   {
+    "id": "altmer-names",
+    "displayName": "Altmer",
+    "category": "Pop Culture"
+  },
+  {
     "id": "amish-names",
     "displayName": "Amish Names",
     "category": "Real Names"
@@ -50,6 +60,16 @@
     "category": "Real Names"
   },
   {
+    "id": "the-dark-eye-andergast-names",
+    "displayName": "Andergast",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "star-trek-andorian-names",
+    "displayName": "Andorian",
+    "category": "Pop Culture"
+  },
+  {
     "id": "anglo-saxon-names",
     "displayName": "Anglo-Saxon Names",
     "category": "Real Names"
@@ -58,6 +78,11 @@
     "id": "anthousai-names",
     "displayName": "Anthousai Names",
     "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "sw-anzati-names",
+    "displayName": "Anzati",
+    "category": "Pop Culture"
   },
   {
     "id": "muslim-names",
@@ -75,9 +100,24 @@
     "category": "Real Names"
   },
   {
+    "id": "argonian-names",
+    "displayName": "Argonian",
+    "category": "Pop Culture"
+  },
+  {
     "id": "armenian-names",
     "displayName": "Armenian Names",
     "category": "Real Names"
+  },
+  {
+    "id": "bleach-arrancar-names",
+    "displayName": "Arrancar",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "stargate-asgard-names",
+    "displayName": "Asgard",
+    "category": "Pop Culture"
   },
   {
     "id": "assamese-names",
@@ -93,6 +133,11 @@
     "id": "asturian-names",
     "displayName": "Asturian Names",
     "category": "Real Names"
+  },
+  {
+    "id": "asura-names",
+    "displayName": "Asura",
+    "category": "Pop Culture"
   },
   {
     "id": "australian-names",
@@ -115,9 +160,19 @@
     "category": "Real Names"
   },
   {
+    "id": "star-trek-bajoran-names",
+    "displayName": "Bajoran",
+    "category": "Pop Culture"
+  },
+  {
     "id": "balochi-names",
     "displayName": "Balochi Names",
     "category": "Real Names"
+  },
+  {
+    "id": "bleach-bankai-names",
+    "displayName": "Bankai",
+    "category": "Pop Culture"
   },
   {
     "id": "bashkir-names",
@@ -135,6 +190,11 @@
     "category": "Real Names"
   },
   {
+    "id": "batarian-names",
+    "displayName": "Batarian",
+    "category": "Pop Culture"
+  },
+  {
     "id": "belarusian-names",
     "displayName": "Belarusian Names",
     "category": "Real Names"
@@ -150,14 +210,54 @@
     "category": "Real Names"
   },
   {
+    "id": "star-trek-benzite-names",
+    "displayName": "Benzite",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "beorning-lotro-names",
+    "displayName": "Beorning",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "lotr-beorning-woodmen-names",
+    "displayName": "Beorning & Woodmen",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "star-trek-betazoid-names",
+    "displayName": "Betazoid",
+    "category": "Pop Culture"
+  },
+  {
     "id": "biblical-names",
     "displayName": "Biblical Names",
     "category": "Real Names"
   },
   {
+    "id": "star-trek-bolian-names",
+    "displayName": "Bolian",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "bosmer-names",
+    "displayName": "Bosmer",
+    "category": "Pop Culture"
+  },
+  {
     "id": "bosniak-names",
     "displayName": "Bosniak Names",
     "category": "Real Names"
+  },
+  {
+    "id": "breton-names",
+    "displayName": "Breton",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "warhammer-bretonnia-names",
+    "displayName": "Bretonnia",
+    "category": "Pop Culture"
   },
   {
     "id": "bulgarian-names",
@@ -195,6 +295,11 @@
     "category": "Real Names"
   },
   {
+    "id": "pathfinder-catfolk-names",
+    "displayName": "Catfolk",
+    "category": "Pop Culture"
+  },
+  {
     "id": "celtic-breton-names",
     "displayName": "Celtic (Breton) Names",
     "category": "Real Names"
@@ -215,9 +320,29 @@
     "category": "Real Names"
   },
   {
+    "id": "pathfinder-centaur-names",
+    "displayName": "Centaur",
+    "category": "Pop Culture"
+  },
+  {
     "id": "centaur-names",
     "displayName": "Centaur Names",
     "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "fallout-character-names",
+    "displayName": "Characters",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "naruto-character-names",
+    "displayName": "Characters",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "charr-names",
+    "displayName": "Charr",
+    "category": "Pop Culture"
   },
   {
     "id": "chechen-names",
@@ -245,6 +370,11 @@
     "category": "Real Names"
   },
   {
+    "id": "creepypasta-names",
+    "displayName": "Creepypasta Names",
+    "category": "Pop Culture"
+  },
+  {
     "id": "croatian-names",
     "displayName": "Croatian Names",
     "category": "Real Names"
@@ -270,6 +400,11 @@
     "category": "Real Names"
   },
   {
+    "id": "dunmer-names",
+    "displayName": "Dunmer",
+    "category": "Pop Culture"
+  },
+  {
     "id": "dutch-renaissance-names",
     "displayName": "Dutch",
     "category": "Real Names"
@@ -278,6 +413,11 @@
     "id": "dutch-names",
     "displayName": "Dutch Names",
     "category": "Real Names"
+  },
+  {
+    "id": "narnia-dwarf-names",
+    "displayName": "Dwarf",
+    "category": "Pop Culture"
   },
   {
     "id": "dwarf-names",
@@ -300,9 +440,24 @@
     "category": "Real Names"
   },
   {
+    "id": "elf-lotro-names",
+    "displayName": "Elf",
+    "category": "Pop Culture"
+  },
+  {
     "id": "elizabethan-names",
     "displayName": "Elizabethan Names",
     "category": "Real Names"
+  },
+  {
+    "id": "runescape-elf-names",
+    "displayName": "Elves",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "warhammer-empire-names",
+    "displayName": "Empire",
+    "category": "Pop Culture"
   },
   {
     "id": "english-renaissance-names",
@@ -320,6 +475,11 @@
     "category": "Real Names"
   },
   {
+    "id": "zelda-fairy-names",
+    "displayName": "Fairies",
+    "category": "Pop Culture"
+  },
+  {
     "id": "fairy-names",
     "displayName": "Fairy Names",
     "category": "Fantasy & Folklore"
@@ -330,6 +490,11 @@
     "category": "Real Names"
   },
   {
+    "id": "star-trek-ferengi-names",
+    "displayName": "Ferengi",
+    "category": "Pop Culture"
+  },
+  {
     "id": "fijian-names",
     "displayName": "Fijian Names",
     "category": "Real Names"
@@ -338,6 +503,21 @@
     "id": "finnish-names",
     "displayName": "Finnish Names",
     "category": "Real Names"
+  },
+  {
+    "id": "fire-emblem-names",
+    "displayName": "Fire Emblem Names",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "grishaverse-fjerdan-names",
+    "displayName": "Fjerdan",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "forsaken-wow-names",
+    "displayName": "Forsaken",
+    "category": "Pop Culture"
   },
   {
     "id": "frankish-names",
@@ -365,6 +545,11 @@
     "category": "Real Names"
   },
   {
+    "id": "dr-who-gallifreyan-names",
+    "displayName": "Gallifreyan",
+    "category": "Pop Culture"
+  },
+  {
     "id": "georgian-names",
     "displayName": "Georgian Names",
     "category": "Real Names"
@@ -373,6 +558,11 @@
     "id": "german-renaissance-names",
     "displayName": "German",
     "category": "Real Names"
+  },
+  {
+    "id": "zelda-gerudo-names",
+    "displayName": "Gerudo",
+    "category": "Pop Culture"
   },
   {
     "id": "goblin-names",
@@ -398,6 +588,11 @@
     "id": "haitian-names",
     "displayName": "Haitian Names",
     "category": "Real Names"
+  },
+  {
+    "id": "the-witcher-halfling-names",
+    "displayName": "Halfling",
+    "category": "Pop Culture"
   },
   {
     "id": "hausa-names",
@@ -445,9 +640,54 @@
     "category": "Real Names"
   },
   {
+    "id": "destiny-hive-names",
+    "displayName": "Hive",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "lotr-hobbit-names",
+    "displayName": "Hobbit",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "hobbit-lotro-names",
+    "displayName": "Hobbit",
+    "category": "Pop Culture"
+  },
+  {
     "id": "hobbit-names",
     "displayName": "Hobbit Names",
     "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "dragonage-human-names",
+    "displayName": "Human",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "human-gw-names",
+    "displayName": "Human",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "human-lotro-names",
+    "displayName": "Human",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "pathfinder-human-names",
+    "displayName": "Human",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "human-wow-names",
+    "displayName": "Human",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "zelda-human-names",
+    "displayName": "Humans",
+    "category": "Pop Culture"
   },
   {
     "id": "hungarian-names",
@@ -455,9 +695,19 @@
     "category": "Real Names"
   },
   {
+    "id": "hyborian-names",
+    "displayName": "Hyborian Names",
+    "category": "Pop Culture"
+  },
+  {
     "id": "icelandic-names",
     "displayName": "Icelandic Names",
     "category": "Real Names"
+  },
+  {
+    "id": "pathfinder-ifrit-names",
+    "displayName": "Ifrit",
+    "category": "Pop Culture"
   },
   {
     "id": "modern-irish-names",
@@ -480,6 +730,11 @@
     "category": "Real Names"
   },
   {
+    "id": "grishaverse-kaelish-names",
+    "displayName": "Kaelish",
+    "category": "Pop Culture"
+  },
+  {
     "id": "kannada-names",
     "displayName": "Kannada Names",
     "category": "Real Names"
@@ -488,6 +743,11 @@
     "id": "kazakh-names",
     "displayName": "Kazakh Names",
     "category": "Real Names"
+  },
+  {
+    "id": "grishaverse-kerch-names",
+    "displayName": "Kerch",
+    "category": "Pop Culture"
   },
   {
     "id": "khmer-names",
@@ -505,9 +765,19 @@
     "category": "Fantasy & Folklore"
   },
   {
+    "id": "star-trek-klingon-names",
+    "displayName": "Klingon",
+    "category": "Pop Culture"
+  },
+  {
     "id": "korean-names",
     "displayName": "Korean Names",
     "category": "Real Names"
+  },
+  {
+    "id": "zelda-korok-kokiri-names",
+    "displayName": "Korok & Kokiri",
+    "category": "Pop Culture"
   },
   {
     "id": "kurdish-names",
@@ -580,6 +850,11 @@
     "category": "Real Names"
   },
   {
+    "id": "maze-runner-names",
+    "displayName": "Maze Runner Names",
+    "category": "Pop Culture"
+  },
+  {
     "id": "medieval-names",
     "displayName": "Medieval Names",
     "category": "Fantasy & Folklore"
@@ -588,6 +863,26 @@
     "id": "mermaid-names",
     "displayName": "Merfolk Names",
     "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "league-of-legends-minotaur-names",
+    "displayName": "Minotaur",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "pathfinder-minotaur-names",
+    "displayName": "Minotaur",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "narnia-minotaur-names",
+    "displayName": "Minotaur",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "miraluka-names",
+    "displayName": "Miraluka",
+    "category": "Pop Culture"
   },
   {
     "id": "moldovan-names",
@@ -630,9 +925,19 @@
     "category": "Real Names"
   },
   {
+    "id": "nord-names",
+    "displayName": "Nord",
+    "category": "Pop Culture"
+  },
+  {
     "id": "norman-names",
     "displayName": "Norman Names",
     "category": "Real Names"
+  },
+  {
+    "id": "norn-names",
+    "displayName": "Norn",
+    "category": "Pop Culture"
   },
   {
     "id": "norwegian-names",
@@ -645,9 +950,24 @@
     "category": "Real Names"
   },
   {
+    "id": "orc-es-names",
+    "displayName": "Orc",
+    "category": "Pop Culture"
+  },
+  {
     "id": "orc-names",
     "displayName": "Orc Names",
     "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "pathfinder-oread-names",
+    "displayName": "Oread",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "star-trek-orion-names",
+    "displayName": "Orion",
+    "category": "Pop Culture"
   },
   {
     "id": "oriya-names",
@@ -735,6 +1055,31 @@
     "category": "Real Names"
   },
   {
+    "id": "bleach-quincy-names",
+    "displayName": "Quincy",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "rattataki-names",
+    "displayName": "Rattataki",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "grishaverse-ravka-names",
+    "displayName": "Ravkan",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "redguard-names",
+    "displayName": "Redguard",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "star-trek-rigelian-names",
+    "displayName": "Rigelian",
+    "category": "Pop Culture"
+  },
+  {
     "id": "roman-names",
     "displayName": "Roman Names",
     "category": "Real Names"
@@ -743,6 +1088,11 @@
     "id": "romanian-names",
     "displayName": "Romanian Names",
     "category": "Real Names"
+  },
+  {
+    "id": "star-trek-romulan-names",
+    "displayName": "Romulan",
+    "category": "Pop Culture"
   },
   {
     "id": "posh-names",
@@ -770,6 +1120,11 @@
     "category": "Real Names"
   },
   {
+    "id": "halo-sangheili-names",
+    "displayName": "Sangheili",
+    "category": "Pop Culture"
+  },
+  {
     "id": "sanskrit-names",
     "displayName": "Sanskrit Names",
     "category": "Real Names"
@@ -778,6 +1133,11 @@
     "id": "sarmatian-names",
     "displayName": "Sarmatian Names",
     "category": "Real Names"
+  },
+  {
+    "id": "narnia-satyr-names",
+    "displayName": "Satyr",
+    "category": "Pop Culture"
   },
   {
     "id": "modern-scottish-names",
@@ -800,6 +1160,11 @@
     "category": "Real Names"
   },
   {
+    "id": "bleach-shinigami-names",
+    "displayName": "Shinigami",
+    "category": "Pop Culture"
+  },
+  {
     "id": "shona-names",
     "displayName": "Shona Names",
     "category": "Real Names"
@@ -810,6 +1175,11 @@
     "category": "Real Names"
   },
   {
+    "id": "dr-who-silurian-names",
+    "displayName": "Silurian",
+    "category": "Pop Culture"
+  },
+  {
     "id": "sindhi-names",
     "displayName": "Sindhi Names",
     "category": "Real Names"
@@ -818,6 +1188,11 @@
     "id": "sinhalese-names",
     "displayName": "Sinhalese Names",
     "category": "Real Names"
+  },
+  {
+    "id": "sith-names",
+    "displayName": "Sith Pureblood",
+    "category": "Pop Culture"
   },
   {
     "id": "slavic-names",
@@ -870,6 +1245,11 @@
     "category": "Real Names"
   },
   {
+    "id": "got-summer-islander-names",
+    "displayName": "Summer Islanders",
+    "category": "Pop Culture"
+  },
+  {
     "id": "sundanese-names",
     "displayName": "Sundanese Names",
     "category": "Real Names"
@@ -890,6 +1270,21 @@
     "category": "Real Names"
   },
   {
+    "id": "pathfinder-sylph-names",
+    "displayName": "Sylph",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "sylvari-names",
+    "displayName": "Sylvari",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "dnd-tabaxi-names",
+    "displayName": "Tabaxi",
+    "category": "Pop Culture"
+  },
+  {
     "id": "tahitian-names",
     "displayName": "Tahitian Names",
     "category": "Real Names"
@@ -908,6 +1303,11 @@
     "id": "tatar-names",
     "displayName": "Tatar Names",
     "category": "Real Names"
+  },
+  {
+    "id": "star-trek-tellarite-names",
+    "displayName": "Tellarite",
+    "category": "Pop Culture"
   },
   {
     "id": "telugu-names",
@@ -955,6 +1355,11 @@
     "category": "Real Names"
   },
   {
+    "id": "twilek-names",
+    "displayName": "Twi'lek",
+    "category": "Pop Culture"
+  },
+  {
     "id": "ukrainian-names",
     "displayName": "Ukrainian Names",
     "category": "Real Names"
@@ -973,6 +1378,11 @@
     "id": "uzbek-names",
     "displayName": "Uzbek Names",
     "category": "Real Names"
+  },
+  {
+    "id": "warhammer-vampire-count-names",
+    "displayName": "Vampire Count",
+    "category": "Pop Culture"
   },
   {
     "id": "vampire-names",
@@ -1003,6 +1413,16 @@
     "id": "witch-names",
     "displayName": "Witch Names",
     "category": "Fantasy & Folklore"
+  },
+  {
+    "id": "warhammer-wood-elf-names",
+    "displayName": "Wood Elf",
+    "category": "Pop Culture"
+  },
+  {
+    "id": "worgen-wow-names",
+    "displayName": "Worgen",
+    "category": "Pop Culture"
   },
   {
     "id": "xhosa-names",
