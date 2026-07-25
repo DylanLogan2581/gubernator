@@ -379,7 +379,7 @@ export function CommandPalette({
       label: world.name,
       leading: (
         <WorldAvatar
-          className="absolute left-2 size-5 translate-y-1/2"
+          className="size-5 shrink-0"
           size="sm"
           thumbnailPath={world.thumbnailPath}
           worldId={world.id}
@@ -503,7 +503,7 @@ export function CommandPalette({
         </DialogDescription>
         <Command
           shouldFilter={false}
-          className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]:overflow-hidden [&_[cmdk-group]]:px-2 [&_[cmdk-group]]:py-1.5 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:absolute [&_[cmdk-item]_svg]:left-2 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:translate-y-1/2 [&_[cmdk-item]]:pl-8 [&_[cmdk-item]]:aria-selected:bg-accent [&_[cmdk-item]]:aria-selected:text-accent-foreground [&_[cmdk-empty]]:px-2 [&_[cmdk-empty]]:py-6 [&_[cmdk-empty]]:text-center [&_[cmdk-empty]]:text-sm [&_[cmdk-empty]]:text-muted-foreground"
+          className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]:overflow-hidden [&_[cmdk-group]]:px-2 [&_[cmdk-group]]:py-1.5 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:gap-2 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:shrink-0 [&_[cmdk-item]]:aria-selected:bg-accent [&_[cmdk-item]]:aria-selected:text-accent-foreground [&_[cmdk-empty]]:px-2 [&_[cmdk-empty]]:py-6 [&_[cmdk-empty]]:text-center [&_[cmdk-empty]]:text-sm [&_[cmdk-empty]]:text-muted-foreground"
         >
           <CommandInput
             onValueChange={setSearch}
