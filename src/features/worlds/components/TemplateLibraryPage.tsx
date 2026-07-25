@@ -67,14 +67,14 @@ function BundledScenarioCard({
   }
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           {scenario.name}
         </CardTitle>
         <CardDescription>{scenario.description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
           {summaryItems.map(([label, count]) => (
             <li key={label} className="flex justify-between">
