@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Baby, Download, Skull, Users } from "lucide-react";
 import { useState, type JSX } from "react";
 
+import { StatStrip } from "@/components/shared/StatStrip";
 import { StatTile } from "@/components/shared/StatTile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,7 @@ function SettlementReportStatTiles({
   const totalDeaths = rows.reduce((sum, r) => sum + r.death_count, 0);
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <StatStrip className="lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-border lg:[&>*]:px-4 lg:[&>*:first-child]:pl-0 lg:[&>*:last-child]:pr-0">
       <StatTile
         icon={Users}
         label="Latest population"
@@ -173,7 +174,7 @@ function SettlementReportStatTiles({
         context="At latest snapshot"
         isLoading={isLoading}
       />
-    </div>
+    </StatStrip>
   );
 }
 

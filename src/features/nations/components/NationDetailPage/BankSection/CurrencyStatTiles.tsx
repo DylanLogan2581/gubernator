@@ -1,6 +1,7 @@
 import { Coins, Landmark, PiggyBank, ShieldCheck } from "lucide-react";
 import { type JSX } from "react";
 
+import { StatStrip } from "@/components/shared/StatStrip";
 import { StatTile } from "@/components/shared/StatTile";
 import {
   ForecastResourceSparkline,
@@ -73,7 +74,7 @@ export function CurrencyStatTiles({
     : null;
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <StatStrip className="md:grid-cols-4 md:gap-x-0 md:divide-x md:divide-border md:[&>*]:px-4 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
       <StatTile
         icon={Coins}
         label="Money supply"
@@ -134,6 +135,6 @@ export function CurrencyStatTiles({
           />
         )}
       </StatTile>
-    </div>
+    </StatStrip>
   );
 }

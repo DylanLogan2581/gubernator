@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { type JSX, useState } from "react";
 
+import { StatStrip } from "@/components/shared/StatStrip";
 import { StatTile } from "@/components/shared/StatTile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ function NationReportStatTiles({
   const totalDeaths = summaries.reduce((sum, s) => sum + s.totalDeaths, 0);
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <StatStrip className="lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-border lg:[&>*]:px-4 lg:[&>*:first-child]:pl-0 lg:[&>*:last-child]:pr-0">
       <StatTile
         icon={Users}
         label="Total population"
@@ -111,7 +112,7 @@ function NationReportStatTiles({
         context="Births minus deaths in range"
         isLoading={isLoading}
       />
-    </div>
+    </StatStrip>
   );
 }
 

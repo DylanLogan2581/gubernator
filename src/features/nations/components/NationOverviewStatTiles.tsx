@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Coins, Users, Zap } from "lucide-react";
 
+import { StatStrip } from "@/components/shared/StatStrip";
 import { StatTile } from "@/components/shared/StatTile";
 import { activeNationEventsQueryOptions } from "@/features/events";
 
@@ -39,7 +40,7 @@ export function NationOverviewStatTiles({
   const currency = currencyQuery.data ?? null;
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <StatStrip className="md:grid-cols-4 md:gap-x-0 md:divide-x md:divide-border md:[&>*]:px-4 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
       <StatTile
         icon={Building2}
         label="Settlements"
@@ -76,6 +77,6 @@ export function NationOverviewStatTiles({
         context="Currently affecting this nation"
         isLoading={activeEventsQuery.isPending}
       />
-    </div>
+    </StatStrip>
   );
 }

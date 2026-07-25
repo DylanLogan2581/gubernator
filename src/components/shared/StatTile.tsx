@@ -1,6 +1,5 @@
-import { IconChip } from "@/components/shared/IconChip";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 import type { LucideIcon } from "lucide-react";
 import type { JSX, ReactNode } from "react";
@@ -17,9 +16,19 @@ type StatTileProps = {
   readonly children?: ReactNode;
 };
 
+const TONE_VALUE_CLASSNAMES: Record<StatTileTone, string> = {
+  default: "text-foreground",
+  success: "text-success-foreground",
+  warning: "text-warning-foreground",
+  destructive: "text-destructive",
+};
+
 /**
- * Compact dashboard tile: icon chip, value, one-line context.
- * Purely presentational — callers own querying, loading state, and tone.
+ * Ledger-style stat figure: a small-caps eyebrow label above a big figure set
+ * in the figures font with tabular numerals (so figures align across the
+ * strip), an optional one-line context, and an optional trailing slot for
+ * interactive controls. Purely presentational — callers own querying, loading
+ * state, and tone. Meant to sit inside a `StatStrip`, not a card.
  */
 export function StatTile({
   icon,
@@ -30,27 +39,32 @@ export function StatTile({
   isLoading = false,
   children,
 }: StatTileProps): JSX.Element {
+  const Icon = icon;
+
   return (
-    <Card className="h-full gap-2 p-4">
-      <div className="flex items-center gap-3">
-        <IconChip icon={icon} tone={tone} />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm leading-tight text-muted-foreground">{label}</p>
-          {isLoading ? (
-            <Skeleton className="mt-1 h-7 w-16" />
-          ) : (
-            <p className="text-base leading-tight font-semibold break-words sm:text-xl md:text-2xl">
-              {value}
-            </p>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span className="eyebrow flex items-center gap-1.5">
+        <Icon aria-hidden="true" className="size-3.5" />
+        {label}
+      </span>
+      {isLoading ? (
+        <Skeleton className="h-8 w-20" />
+      ) : (
+        <span
+          className={cn(
+            "font-mono text-2xl leading-none font-semibold tabular-nums break-words",
+            TONE_VALUE_CLASSNAMES[tone],
           )}
-        </div>
-      </div>
+        >
+          {value}
+        </span>
+      )}
       {isLoading ? (
         <Skeleton className="h-3 w-28" />
       ) : context !== undefined ? (
-        <p className="text-xs text-muted-foreground">{context}</p>
+        <span className="text-xs text-muted-foreground">{context}</span>
       ) : null}
       {!isLoading && children !== undefined ? children : null}
-    </Card>
+    </div>
   );
 }
