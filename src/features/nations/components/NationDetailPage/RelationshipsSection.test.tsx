@@ -200,7 +200,7 @@ describe("NationRelationshipAccordionRow", () => {
     renderSection();
 
     const badge = await screen.findByText("Hostile");
-    expect(badge.className).toContain("orange");
+    expect(badge.className).toContain("warning");
   });
 
   it("shows pending proposal count on the collapsed row", async () => {

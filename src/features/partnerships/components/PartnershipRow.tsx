@@ -67,7 +67,7 @@ export function PartnershipRow({
           {isCrossSettlement ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center rounded-sm bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
+                <span className="inline-flex items-center rounded-sm bg-warning px-2 py-0.5 text-xs text-warning-foreground">
                   Cross-settlement
                 </span>
               </TooltipTrigger>

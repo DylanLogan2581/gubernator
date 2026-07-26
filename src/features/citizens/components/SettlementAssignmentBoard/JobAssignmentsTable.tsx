@@ -698,8 +698,8 @@ function CapacityDisplay({
       <span
         className={cn(
           "tabular-nums",
-          isEmpty && "font-medium text-amber-600 dark:text-amber-500",
-          isOverCapacity && "font-medium text-sky-600 dark:text-sky-400",
+          isEmpty && "font-medium text-warning-foreground",
+          isOverCapacity && "font-medium text-primary",
         )}
       >
         {current} / {capacity}
@@ -709,8 +709,8 @@ function CapacityDisplay({
         aria-label={`${current.toString()} of ${capacity.toString()}${suffix} filled`}
         className={cn(
           "h-1.5",
-          isEmpty && "bg-amber-100 dark:bg-amber-950",
-          isOverCapacity && "bg-sky-100 dark:bg-sky-950",
+          isEmpty && "bg-warning",
+          isOverCapacity && "bg-primary/10",
         )}
         value={fillPct}
       />

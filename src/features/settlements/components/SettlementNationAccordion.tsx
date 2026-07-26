@@ -73,9 +73,7 @@ function NationAccordionRow({
 }: NationAccordionRowProps): JSX.Element {
   const allReady = group.readyCount === group.totalCount;
   const noneReady = group.readyCount === 0;
-  const bgColor = allReady
-    ? "group-data-[state=closed]:bg-green-50 dark:group-data-[state=closed]:bg-green-950/30"
-    : "";
+  const bgColor = allReady ? "group-data-[state=closed]:bg-success" : "";
 
   return (
     <Collapsible className="group">
@@ -114,12 +112,12 @@ function NationAccordionRow({
             {allReady ? (
               <Check
                 aria-hidden="true"
-                className="w-4 h-4 text-green-600 dark:text-green-500"
+                className="w-4 h-4 text-success-foreground"
               />
             ) : noneReady ? (
               <AlertCircle
                 aria-hidden="true"
-                className="w-4 h-4 text-red-600 dark:text-red-500"
+                className="w-4 h-4 text-destructive"
               />
             ) : null}
           </div>

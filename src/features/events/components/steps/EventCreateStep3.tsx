@@ -160,7 +160,7 @@ export function EventCreateStep3({
           The event will activate after this turn number completes
         </p>
         {activationTurn < currentTurnNumber && activationTurn > 0 && (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-warning-foreground">
             Activation turn must be ≥ current turn (turn {currentTurnNumber})
           </p>
         )}

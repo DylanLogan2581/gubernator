@@ -367,9 +367,9 @@ function CapacityBar({
   const fillPercent = Math.min(100, Math.max(0, ratio * 100));
   const fillColorClass =
     ratio >= 1
-      ? "bg-red-600 dark:bg-red-500"
+      ? "bg-destructive"
       : ratio > 0.8
-        ? "bg-amber-500 dark:bg-amber-400"
+        ? "bg-warning-foreground"
         : "bg-primary";
 
   return (
@@ -428,7 +428,7 @@ function ForecastValue({
   }
   if (forecastDelta > 0) {
     return (
-      <span className="text-green-700 dark:text-green-500">
+      <span className="text-success-foreground">
         +{formatInt(forecastDelta)}
       </span>
     );
@@ -436,7 +436,7 @@ function ForecastValue({
   if (forecastDelta < 0) {
     return (
       <Link
-        className="text-red-700 underline underline-offset-2 hover:no-underline dark:text-red-500"
+        className="text-destructive underline underline-offset-2 hover:no-underline"
         params={{ nationId, settlementId, worldId }}
         to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
         onClick={(e) => {

@@ -109,7 +109,7 @@ export function SchoolEducationSection({
         <span
           className={cn(
             "flex items-center gap-1",
-            understaffed && "font-medium text-amber-600 dark:text-amber-500",
+            understaffed && "font-medium text-warning-foreground",
           )}
         >
           {understaffed ? (

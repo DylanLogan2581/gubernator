@@ -453,8 +453,10 @@ describe("SettlementStockpilesPanel", () => {
 
     await screen.findByText("Food");
     const bars = screen.getAllByRole("progressbar");
-    expect(bars[0]?.firstElementChild?.className).toContain("bg-amber-500");
-    expect(bars[1]?.firstElementChild?.className).toContain("bg-red-600");
+    expect(bars[0]?.firstElementChild?.className).toContain(
+      "bg-warning-foreground",
+    );
+    expect(bars[1]?.firstElementChild?.className).toContain("bg-destructive");
   });
 
   it("shows — for resources not in forecast snapshot", async () => {

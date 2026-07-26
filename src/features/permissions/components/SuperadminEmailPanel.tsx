@@ -369,7 +369,7 @@ function ManualNotificationForm(): JSX.Element {
             <iframe
               title="Email preview"
               srcDoc={preview.renderedHtml}
-              className="mt-3 h-96 w-full rounded border border-border bg-white"
+              className="mt-3 h-96 w-full rounded border border-border bg-card"
               sandbox=""
             />
           )}

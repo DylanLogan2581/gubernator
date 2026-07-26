@@ -953,12 +953,12 @@ const ASSIGNMENT_SEGMENT_COLORS: Record<
   CitizenAssignmentType | "unassigned",
   string
 > = {
-  standard_job: "bg-[#2a78d6] dark:bg-[#3987e5]",
-  construction_project: "bg-[#1baf7a] dark:bg-[#199e70]",
-  deposit: "bg-[#eda100] dark:bg-[#c98500]",
-  husbandry: "bg-[#008300] dark:bg-[#008300]",
-  culling: "bg-[#4a3aa7] dark:bg-[#9085e9]",
-  trade_route: "bg-[#e87ba4] dark:bg-[#d55181]",
+  standard_job: "bg-category-1-foreground",
+  construction_project: "bg-category-2-foreground",
+  deposit: "bg-category-3-foreground",
+  husbandry: "bg-category-4-foreground",
+  culling: "bg-category-5-foreground",
+  trade_route: "bg-category-7-foreground",
   unassigned: "bg-muted-foreground/40",
 };
 

@@ -37,17 +37,17 @@ export function getTreatyStatusBadgeClassName(
 ): string {
   switch (status) {
     case "proposed":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300";
+      return "bg-warning text-warning-foreground";
     case "active":
-      return "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300";
+      return "bg-success text-success-foreground";
     case "declined":
-      return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300";
+      return "bg-destructive/10 text-destructive";
     case "withdrawn":
       return "bg-muted text-muted-foreground";
     case "expired":
       return "bg-muted text-muted-foreground";
     case "broken":
-      return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300";
+      return "bg-destructive/10 text-destructive";
     default:
       return "bg-muted text-muted-foreground";
   }
