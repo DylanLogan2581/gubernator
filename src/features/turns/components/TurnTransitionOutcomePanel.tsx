@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
+import { StatStrip } from "@/components/shared/StatStrip";
 import {
   Accordion,
   AccordionContent,
@@ -78,14 +79,14 @@ function TurnTransitionOutcomeSkeleton(): JSX.Element {
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-4 w-48" />
       </div>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-4 sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-border sm:[&>*]:px-4 sm:[&>*:first-child]:pl-0 sm:[&>*:last-child]:pr-0">
+      <StatStrip className="sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-border sm:[&>*]:px-4 sm:[&>*:first-child]:pl-0 sm:[&>*:last-child]:pr-0">
         {SKELETON_METRIC_LABELS.map((label) => (
           <div key={label} className="flex min-w-0 flex-col gap-1.5">
             <Skeleton className="h-3 w-20" />
             <Skeleton className="h-6 w-12" />
           </div>
         ))}
-      </div>
+      </StatStrip>
     </OutcomePanelFrame>
   );
 }
@@ -213,7 +214,10 @@ export function TurnTransitionOutcomeContent({
           </p>
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-4 sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-border sm:[&>*]:px-4 sm:[&>*:first-child]:pl-0 sm:[&>*:last-child]:pr-0">
+        <StatStrip
+          as="dl"
+          className="sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-border sm:[&>*]:px-4 sm:[&>*:first-child]:pl-0 sm:[&>*:last-child]:pr-0"
+        >
           <MetricTile label="Births" value={deltas.births} />
           <MetricTile label="Deaths" value={deltas.deaths} />
           <MetricTile
@@ -224,7 +228,7 @@ export function TurnTransitionOutcomeContent({
             label="Deposits Depleted"
             value={deltas.depositsDepleted}
           />
-        </dl>
+        </StatStrip>
 
         {notificationGroups.length > 0 ? (
           <div className="space-y-3">

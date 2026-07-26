@@ -398,7 +398,7 @@ export function JobAssignmentsTable({
     <div>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded-md border border-border bg-muted/30 px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold tabular-nums">
+          <span className="text-2xl font-mono font-semibold tabular-nums">
             {liveUnassignedCount}
           </span>
           <span className="text-sm text-muted-foreground">unassigned</span>

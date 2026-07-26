@@ -97,7 +97,7 @@ export function ActiveProjectsTable({
   return (
     <>
       <div className="mb-3 flex items-baseline gap-2 rounded-md border border-border bg-muted/30 px-4 py-3">
-        <span className="text-2xl font-semibold tabular-nums">
+        <span className="text-2xl font-mono font-semibold tabular-nums">
           {unallocatedPoolCount}
         </span>
         <span className="text-sm text-muted-foreground">

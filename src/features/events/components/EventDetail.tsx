@@ -199,9 +199,7 @@ export function EventDetail({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Scope
-              </p>
+              <p className="eyebrow">Scope</p>
               <div className="mt-1 flex items-center gap-2">
                 <EventScopeBadge scopeType={event.scope_type} />
                 <ScopeDisplay
@@ -213,9 +211,7 @@ export function EventDetail({
             </div>
 
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Duration
-              </p>
+              <p className="eyebrow">Duration</p>
               <p className="mt-1 font-medium">
                 {event.duration_type === "sustained"
                   ? `Sustained (${event.remaining_transitions}/${event.duration_transitions} turns)`
@@ -224,9 +220,7 @@ export function EventDetail({
             </div>
 
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Activation Turn
-              </p>
+              <p className="eyebrow">Activation Turn</p>
               <p className="mt-1 font-medium">
                 After turn {event.activate_on_transition_after_turn_number}
               </p>
@@ -235,9 +229,7 @@ export function EventDetail({
 
           {event.duration_type === "sustained" && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Progress
-              </p>
+              <p className="eyebrow">Progress</p>
               <Progress value={progressPercent} className="h-2" />
               <p className="text-xs text-muted-foreground">
                 {event.remaining_transitions} of {event.duration_transitions}{" "}
@@ -248,9 +240,7 @@ export function EventDetail({
 
           {event.memories.length > 0 && (
             <div className="space-y-2 rounded-md bg-muted p-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Citizen Memories
-              </p>
+              <p className="eyebrow">Citizen Memories</p>
               <div className="space-y-2">
                 {event.memories.map((memory) => (
                   <div key={memory.id}>
@@ -266,9 +256,7 @@ export function EventDetail({
 
           {event.effects.length > 0 && (
             <div className="space-y-3 border-t pt-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Effects
-              </p>
+              <p className="eyebrow">Effects</p>
               <div className="space-y-2">
                 {event.effects.map((effect) => (
                   <EffectItem key={effect.id} effect={effect} />

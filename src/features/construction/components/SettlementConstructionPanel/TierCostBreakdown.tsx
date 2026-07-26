@@ -56,9 +56,7 @@ export function TierCostBreakdown({
             >
               <span className="font-medium">Tier {tier.tierNumber}</span>
               {alreadyBuilt ? (
-                <span className="text-xs uppercase tracking-wide">
-                  already built
-                </span>
+                <span className="eyebrow">already built</span>
               ) : null}
               <span className="flex flex-wrap gap-x-3 gap-y-0.5">
                 {tier.constructionCostsJson.length > 0 ? (

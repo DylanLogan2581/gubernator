@@ -113,9 +113,7 @@ export function ResourceTrendChart({
       ) : (
         <>
           <div>
-            <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Stockpile (end of turn)
-            </h4>
+            <h4 className="mb-2 eyebrow">Stockpile (end of turn)</h4>
             <ChartContainer
               config={resourceChartConfig}
               className="h-40 w-full"
@@ -157,9 +155,7 @@ export function ResourceTrendChart({
           </div>
 
           <div>
-            <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Flows per turn
-            </h4>
+            <h4 className="mb-2 eyebrow">Flows per turn</h4>
             <ChartContainer
               config={resourceChartConfig}
               className="h-40 w-full"

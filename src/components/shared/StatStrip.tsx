@@ -5,6 +5,11 @@ import type { JSX, ReactNode } from "react";
 type StatStripProps = {
   readonly className?: string;
   readonly children: ReactNode;
+  /**
+   * Element to render as. Defaults to `div`; pass `dl` when the strip holds
+   * `dt`/`dd`-based figures so the definition-list semantics stay valid.
+   */
+  readonly as?: "div" | "dl";
 };
 
 /**
@@ -19,15 +24,17 @@ type StatStripProps = {
 export function StatStrip({
   className,
   children,
+  as = "div",
 }: StatStripProps): JSX.Element {
+  const Component = as;
   return (
-    <div
+    <Component
       className={cn(
         "grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-4 [&>*]:min-w-0",
         className,
       )}
     >
       {children}
-    </div>
+    </Component>
   );
 }

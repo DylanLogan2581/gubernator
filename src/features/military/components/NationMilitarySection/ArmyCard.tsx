@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -113,127 +113,133 @@ export function ArmyCard({
     settlementNameById.get(army.stationedSettlementId) ?? "Unknown settlement";
 
   return (
-    <Card className="grid gap-3 p-4">
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <CollapsibleTrigger asChild>
-              <Button
-                aria-label={isExpanded ? "Collapse army" : "Expand army"}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <ChevronDown
-                  aria-hidden="true"
-                  className={
-                    isExpanded
-                      ? "rotate-180 transition-transform"
-                      : "transition-transform"
-                  }
-                />
-              </Button>
-            </CollapsibleTrigger>
-            <h3 className="text-sm font-medium">{army.name}</h3>
-            <Badge variant="outline">{settlementName}</Badge>
-            <Badge variant="outline">
-              {formatArmyFundingSource(army.fundingSource)}
-            </Badge>
-            <Badge variant="secondary">{soldierCount} soldiers</Badge>
-            {latestSnapshot !== undefined ? (
-              <Badge
-                variant={latestSnapshot.upkeepPaid ? "success" : "destructive"}
-              >
-                {latestSnapshot.upkeepPaid ? "Upkeep paid" : "Upkeep unpaid"}
+    <Card>
+      <CardContent className="grid gap-3">
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <CollapsibleTrigger asChild>
+                <Button
+                  aria-label={isExpanded ? "Collapse army" : "Expand army"}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={
+                      isExpanded
+                        ? "rotate-180 transition-transform"
+                        : "transition-transform"
+                    }
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <h3 className="text-sm font-medium">{army.name}</h3>
+              <Badge variant="outline">{settlementName}</Badge>
+              <Badge variant="outline">
+                {formatArmyFundingSource(army.fundingSource)}
               </Badge>
+              <Badge variant="secondary">{soldierCount} soldiers</Badge>
+              {latestSnapshot !== undefined ? (
+                <Badge
+                  variant={
+                    latestSnapshot.upkeepPaid ? "success" : "destructive"
+                  }
+                >
+                  {latestSnapshot.upkeepPaid ? "Upkeep paid" : "Upkeep unpaid"}
+                </Badge>
+              ) : null}
+            </div>
+
+            {canManage ? (
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  aria-label="Rename army"
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsRenaming(true)}
+                >
+                  <Pencil aria-hidden="true" />
+                </Button>
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsMoving(true)}
+                >
+                  Move
+                </Button>
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddingGroup(true)}
+                >
+                  <Plus aria-hidden="true" /> Add group
+                </Button>
+                <Button
+                  aria-label="Delete army"
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsDeleting(true)}
+                >
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              </div>
             ) : null}
           </div>
 
-          {canManage ? (
-            <div className="flex flex-wrap gap-1">
-              <Button
-                aria-label="Rename army"
-                size="icon"
-                type="button"
-                variant="ghost"
-                onClick={() => setIsRenaming(true)}
-              >
-                <Pencil aria-hidden="true" />
-              </Button>
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() => setIsMoving(true)}
-              >
-                Move
-              </Button>
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() => setIsAddingGroup(true)}
-              >
-                <Plus aria-hidden="true" /> Add group
-              </Button>
-              <Button
-                aria-label="Delete army"
-                size="icon"
-                type="button"
-                variant="ghost"
-                onClick={() => setIsDeleting(true)}
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
-            </div>
-          ) : null}
-        </div>
-
-        <CollapsibleContent className="grid gap-2 pt-2">
-          {groupsQuery.isPending || unitsQuery.isPending ? (
-            <p className="text-xs text-muted-foreground">Loading army tree…</p>
-          ) : groupsQuery.error !== null || unitsQuery.error !== null ? (
-            <p className="text-xs text-destructive">
-              {getErrorDescription(groupsQuery.error ?? unitsQuery.error)}
-            </p>
-          ) : rootGroups.length === 0 && rootUnits.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              This army has no groups or units yet.
-            </p>
-          ) : (
-            <div className="grid gap-2">
-              {rootGroups.map((group) => (
-                <ArmyTreeNode
-                  key={group.id}
-                  armyFundingSource={army.fundingSource}
-                  armyId={army.id}
-                  armyStationedSettlementId={army.stationedSettlementId}
-                  canManage={canManage}
-                  group={group}
-                  groups={groups}
-                  nationId={nationId}
-                  queryClient={queryClient}
-                  units={units}
-                  worldId={worldId}
-                />
-              ))}
-              {rootUnits.map((unit) => (
-                <UnitNode
-                  key={unit.id}
-                  armyFundingSource={army.fundingSource}
-                  armyId={army.id}
-                  armyStationedSettlementId={army.stationedSettlementId}
-                  canManage={canManage}
-                  nationId={nationId}
-                  queryClient={queryClient}
-                  unit={unit}
-                  worldId={worldId}
-                />
-              ))}
-            </div>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
+          <CollapsibleContent className="grid gap-2 pt-2">
+            {groupsQuery.isPending || unitsQuery.isPending ? (
+              <p className="text-xs text-muted-foreground">
+                Loading army tree…
+              </p>
+            ) : groupsQuery.error !== null || unitsQuery.error !== null ? (
+              <p className="text-xs text-destructive">
+                {getErrorDescription(groupsQuery.error ?? unitsQuery.error)}
+              </p>
+            ) : rootGroups.length === 0 && rootUnits.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                This army has no groups or units yet.
+              </p>
+            ) : (
+              <div className="grid gap-2">
+                {rootGroups.map((group) => (
+                  <ArmyTreeNode
+                    key={group.id}
+                    armyFundingSource={army.fundingSource}
+                    armyId={army.id}
+                    armyStationedSettlementId={army.stationedSettlementId}
+                    canManage={canManage}
+                    group={group}
+                    groups={groups}
+                    nationId={nationId}
+                    queryClient={queryClient}
+                    units={units}
+                    worldId={worldId}
+                  />
+                ))}
+                {rootUnits.map((unit) => (
+                  <UnitNode
+                    key={unit.id}
+                    armyFundingSource={army.fundingSource}
+                    armyId={army.id}
+                    armyStationedSettlementId={army.stationedSettlementId}
+                    canManage={canManage}
+                    nationId={nationId}
+                    queryClient={queryClient}
+                    unit={unit}
+                    worldId={worldId}
+                  />
+                ))}
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
 
       {isRenaming ? (
         <RenameArmyDialog

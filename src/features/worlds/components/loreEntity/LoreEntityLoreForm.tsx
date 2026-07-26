@@ -9,7 +9,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
@@ -117,54 +123,58 @@ export function LoreEntityLoreForm<
 
   return (
     <>
-      <Card className="grid gap-3 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-medium">Lore</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle>Lore</CardTitle>
           {canEdit ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!isDirty || updateMutation.isPending}
-              onClick={() => {
-                void handleSave();
-              }}
-            >
-              <Save aria-hidden="true" />
-              {updateMutation.isPending ? "Saving…" : "Save changes"}
-            </Button>
+            <CardAction>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!isDirty || updateMutation.isPending}
+                onClick={() => {
+                  void handleSave();
+                }}
+              >
+                <Save aria-hidden="true" />
+                {updateMutation.isPending ? "Saving…" : "Save changes"}
+              </Button>
+            </CardAction>
           ) : null}
-        </div>
-        <Accordion type="multiple" defaultValue={defaultOpenSections}>
-          {loreSections.map((section) => (
-            <AccordionItem key={section.title} value={section.title}>
-              <AccordionTrigger>{section.title}</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid gap-3">
-                  {section.fields.map((field) => (
-                    <div key={field.key} className="grid gap-1 text-sm">
-                      <Label htmlFor={`${labels.singular}-lore-${field.key}`}>
-                        {field.label}
-                      </Label>
-                      <Textarea
-                        disabled={!canEdit || updateMutation.isPending}
-                        id={`${labels.singular}-lore-${field.key}`}
-                        maxLength={cultureReligionInputLimits.loreFieldMax}
-                        value={values[field.key]}
-                        onChange={(event) => {
-                          const newValue = event.currentTarget.value;
-                          setValues((current) => ({
-                            ...current,
-                            [field.key]: newValue,
-                          }));
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <Accordion type="multiple" defaultValue={defaultOpenSections}>
+            {loreSections.map((section) => (
+              <AccordionItem key={section.title} value={section.title}>
+                <AccordionTrigger>{section.title}</AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid gap-3">
+                    {section.fields.map((field) => (
+                      <div key={field.key} className="grid gap-1 text-sm">
+                        <Label htmlFor={`${labels.singular}-lore-${field.key}`}>
+                          {field.label}
+                        </Label>
+                        <Textarea
+                          disabled={!canEdit || updateMutation.isPending}
+                          id={`${labels.singular}-lore-${field.key}`}
+                          maxLength={cultureReligionInputLimits.loreFieldMax}
+                          value={values[field.key]}
+                          onChange={(event) => {
+                            const newValue = event.currentTarget.value;
+                            setValues((current) => ({
+                              ...current,
+                              [field.key]: newValue,
+                            }));
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
       </Card>
       {unsavedChangesDialog}
     </>

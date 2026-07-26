@@ -205,9 +205,7 @@ export function TemplateLibraryPage(): JSX.Element {
 
         {/* Bundled scenarios */}
         <section aria-label="Bundled scenarios">
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Bundled scenarios
-          </h2>
+          <h2 className="mb-3 eyebrow">Bundled scenarios</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {BUNDLED_SCENARIOS.map((scenario) => (
               <BundledScenarioCard

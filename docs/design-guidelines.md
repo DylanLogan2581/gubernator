@@ -115,8 +115,8 @@ between figures are `divide-x`, supplied by the strip's grid — tiles have no
 borders or backgrounds of their own. Interactive controls (e.g. readiness toggles)
 go in a tile's trailing slot, not a special box. Mobile wraps 2-up.
 
-Use `StatStrip` — don't hand-roll its grid (one legacy hand-rolled copy exists in
-`TurnTransitionOutcomePanel`; treat it as debt, not precedent).
+Use `StatStrip` — don't hand-roll its grid. Pass `as="dl"` when the strip holds
+`dt`/`dd` figures so the definition-list semantics stay valid.
 
 ### Definition rows
 
@@ -314,7 +314,7 @@ via-background/40 to-transparent`) and set text in the theme foreground
 - [ ] No hard-coded colors; tokens only — status via `success`/`warning`/
       `destructive` tokens, never raw palette (`bg-green-100`, `text-red-500`).
 - [ ] Tables are ruled header + `divide-y` rows, not `overflow-x-auto rounded-lg
-  border`; scroll wrapper only for genuine horizontal overflow.
+border`; scroll wrapper only for genuine horizontal overflow.
 - [ ] Callouts use the `Alert` primitive; selection uses `bg-accent` + inset marker,
       not `ring-1 ring-primary`.
 - [ ] Image-hero text uses a scrim + `text-foreground`, not `text-white`; chart
@@ -326,6 +326,5 @@ via-background/40 to-transparent`) and set text in the theme foreground
 
 ## Known deviations (debt)
 
-- `TurnTransitionOutcomePanel` hand-rolls the StatStrip grid.
 - Several sections still use bare `<Card className="grid gap-4 p-4">` with manual
   padding instead of Card's slot components.

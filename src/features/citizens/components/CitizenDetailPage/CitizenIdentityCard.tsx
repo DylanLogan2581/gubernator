@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { culturesByWorldQueryOptions } from "@/features/cultures";
 import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activePartnershipForCitizenQueryOptions } from "@/features/partnerships";
@@ -82,52 +82,59 @@ export function CitizenIdentityCard({
     educationLevelsQuery.isSuccess && educationLevels.length === 0;
 
   return (
-    <Card className="grid gap-4 p-4">
-      <dl className="grid divide-y divide-border border-y border-border">
-        <Readout label="Sex" value={citizen.sex} />
-        <Readout
-          label="Born on turn"
-          tooltip={bornOnTurn.tooltip}
-          value={bornOnTurn.value}
-        />
-        {roleScope === null ? null : (
+    <Card>
+      <CardContent className="grid gap-4">
+        <dl className="grid divide-y divide-border border-y border-border">
+          <Readout label="Sex" value={citizen.sex} />
           <Readout
-            label="Role"
-            value={
-              roleScope === "nation" ? "Nation manager" : "Settlement manager"
-            }
+            label="Born on turn"
+            tooltip={bornOnTurn.tooltip}
+            value={bornOnTurn.value}
           />
-        )}
-        <Readout label="Home settlement" value={settlement?.name ?? null} />
-        <Readout label="Partnership" value={partnershipValue} />
-      </dl>
+          {roleScope === null ? null : (
+            <Readout
+              label="Role"
+              value={
+                roleScope === "nation" ? "Nation manager" : "Settlement manager"
+              }
+            />
+          )}
+          <Readout label="Home settlement" value={settlement?.name ?? null} />
+          <Readout label="Partnership" value={partnershipValue} />
+        </dl>
 
-      <dl className="grid divide-y divide-border border-y border-border">
-        <Readout label="Culture">
-          {culture === null ? undefined : (
-            <CultureReligionChip color={culture.color} name={culture.name} />
-          )}
-        </Readout>
-        <Readout label="Religion">
-          {religion === null ? undefined : (
-            <CultureReligionChip color={religion.color} name={religion.name} />
-          )}
-        </Readout>
-      </dl>
+        <dl className="grid divide-y divide-border border-y border-border">
+          <Readout label="Culture">
+            {culture === null ? undefined : (
+              <CultureReligionChip color={culture.color} name={culture.name} />
+            )}
+          </Readout>
+          <Readout label="Religion">
+            {religion === null ? undefined : (
+              <CultureReligionChip
+                color={religion.color}
+                name={religion.name}
+              />
+            )}
+          </Readout>
+        </dl>
 
-      <dl className="grid divide-y divide-border border-y border-border">
-        <Readout label="Education level">
-          {noEducationSystem ? (
-            <span className="italic text-muted-foreground">
-              No education system configured
-            </span>
-          ) : (
-            <Badge variant={educationLevel === null ? "outline" : "secondary"}>
-              {educationLevel?.name ?? "Uneducated"}
-            </Badge>
-          )}
-        </Readout>
-      </dl>
+        <dl className="grid divide-y divide-border border-y border-border">
+          <Readout label="Education level">
+            {noEducationSystem ? (
+              <span className="italic text-muted-foreground">
+                No education system configured
+              </span>
+            ) : (
+              <Badge
+                variant={educationLevel === null ? "outline" : "secondary"}
+              >
+                {educationLevel?.name ?? "Uneducated"}
+              </Badge>
+            )}
+          </Readout>
+        </dl>
+      </CardContent>
     </Card>
   );
 }
