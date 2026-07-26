@@ -5,6 +5,7 @@ import { useEffect, useMemo } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { BuildingsConfigPanel } from "@/features/buildings";
@@ -186,7 +187,7 @@ export function WorldConfigurationPage({
           Back to world
         </Link>
       </Button>
-      <h1 className="text-2xl font-semibold tracking-normal">Configuration</h1>
+      <PageHeader title="Configuration" />
 
       {/* Mobile select — one-tap switching below md breakpoint; desktop
           navigation lives in the sidebar submenu. */}

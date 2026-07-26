@@ -1,3 +1,7 @@
+import { DetailPageHeader } from "@/components/shared/DetailPageHeader";
+
+import { CitizenAvatar } from "../CitizenAvatar";
+
 import { DeathCategoryChip, StatusChip, TypeChip } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -8,28 +12,39 @@ export function CitizenDetailHeader({
 }: {
   readonly citizen: Citizen;
 }): JSX.Element {
+  const description =
+    citizen.citizenType === "npc"
+      ? "Non-player character."
+      : "Player character.";
+
   return (
-    <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-normal">
-          {citizen.name}
-        </h1>
-        <div className="flex flex-wrap items-center gap-2">
+    <DetailPageHeader
+      media={
+        <CitizenAvatar
+          id={citizen.id}
+          name={citizen.name}
+          profilePhotoUrl={citizen.profilePhotoUrl}
+          size="lg"
+        />
+      }
+      title={citizen.name}
+      context={
+        <span className="flex flex-col gap-1">
+          <span>{description}</span>
+          {citizen.status === "dead" && citizen.deathCause !== null ? (
+            <span>{citizen.deathCause}</span>
+          ) : null}
+        </span>
+      }
+      actions={
+        <>
           <StatusChip status={citizen.status} />
           <TypeChip citizenType={citizen.citizenType} />
           {citizen.status === "dead" && citizen.deathCauseCategory !== null ? (
             <DeathCategoryChip category={citizen.deathCauseCategory} />
           ) : null}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {citizen.citizenType === "npc"
-            ? "Non-player character."
-            : "Player character."}
-        </p>
-        {citizen.status === "dead" && citizen.deathCause !== null ? (
-          <p className="text-sm text-muted-foreground">{citizen.deathCause}</p>
-        ) : null}
-      </div>
-    </header>
+        </>
+      }
+    />
   );
 }

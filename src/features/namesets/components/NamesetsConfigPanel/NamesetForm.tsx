@@ -2,6 +2,7 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -328,14 +329,7 @@ function NamesetFormHeader({
   readonly description?: string;
   readonly title: string;
 }): JSX.Element {
-  return (
-    <div className="grid gap-1">
-      <h1 className="text-xl font-semibold">{title}</h1>
-      {description !== undefined ? (
-        <p className="text-sm text-muted-foreground">{description}</p>
-      ) : null}
-    </div>
-  );
+  return <PageHeader title={title} description={description} />;
 }
 
 function NamesetFormFooter({

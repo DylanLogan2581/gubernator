@@ -11,11 +11,9 @@ import { worldPopulationRulesQueryOptions } from "@/features/worlds";
 
 import { citizenByIdQueryOptions } from "../../queries/citizensQueries";
 import { managerScopeLabel } from "../../utils/citizenRoles";
-import { CitizenAvatar } from "../CitizenAvatar";
 
 import { bornOnTurnReadout } from "./BornOnTurnReadout";
 import { citizenAgeTurns, isBelowPartnershipAge } from "./CitizenAge";
-import { CitizenDetailHeader } from "./Header";
 import { CultureReligionChip, Readout } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -85,16 +83,6 @@ export function CitizenIdentityCard({
 
   return (
     <Card className="grid gap-4 p-4">
-      <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
-        <CitizenAvatar
-          id={citizen.id}
-          name={citizen.name}
-          profilePhotoUrl={citizen.profilePhotoUrl}
-          size="lg"
-        />
-        <CitizenDetailHeader citizen={citizen} />
-      </div>
-
       <dl className="grid divide-y divide-border border-y border-border">
         <Readout label="Sex" value={citizen.sex} />
         <Readout

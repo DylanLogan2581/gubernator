@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { DetailPageFrame } from "@/components/shared/DetailPageFrame";
+import { DetailPageHeader } from "@/components/shared/DetailPageHeader";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
@@ -352,17 +353,17 @@ function LoreEntityDetailLoaded<
     >
       <AdminPausedHint canAdmin={rawCanAdmin} />
 
-      <div className="flex items-center gap-2">
-        <span
-          aria-hidden="true"
-          className="size-4 shrink-0 rounded-full"
-          style={{ backgroundColor: entity.color }}
-        />
-        <h1 className="text-xl font-semibold">{entity.name}</h1>
-      </div>
-      {entity.description !== null ? (
-        <p className="text-sm text-muted-foreground">{entity.description}</p>
-      ) : null}
+      <DetailPageHeader
+        media={
+          <span
+            aria-hidden="true"
+            className="size-12 shrink-0 rounded-md"
+            style={{ backgroundColor: entity.color }}
+          />
+        }
+        title={entity.name}
+        context={entity.description ?? undefined}
+      />
 
       <LoreEntityLoreForm
         canEdit={canEdit}

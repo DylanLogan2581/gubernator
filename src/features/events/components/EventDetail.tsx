@@ -10,8 +10,8 @@ import {
 import { useState, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
-import { IconChip } from "@/components/shared/IconChip";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,6 @@ import { managedPopulationTypeByIdQueryOptions } from "@/features/managed-popula
 import { nationByIdQueryOptions } from "@/features/nations";
 import { resourceByIdQueryOptions } from "@/features/resources";
 import { settlementByIdQueryOptions } from "@/features/settlements";
-import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -190,25 +189,12 @@ export function EventDetail({
               <EventStatusBadge status={event.status} />
             </div>
           ) : (
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <IconChip
-                  icon={resolveEventIcon(event.icon)}
-                  tone={DOMAIN_ICON_CHIPS.events.tone}
-                />
-                <div>
-                  <h1 className="text-2xl font-semibold">
-                    {event.group?.name}
-                  </h1>
-                  {event.group?.description !== null ? (
-                    <p className="mt-2 text-muted-foreground">
-                      {event.group?.description}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-              <EventStatusBadge status={event.status} />
-            </div>
+            <PageHeader
+              icon={resolveEventIcon(event.icon)}
+              title={event.group?.name ?? ""}
+              description={event.group?.description ?? undefined}
+              actions={<EventStatusBadge status={event.status} />}
+            />
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type JSX } from "react";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { jobsByWorldQueryOptions } from "@/features/jobs";
 import { nationsListQueryOptions } from "@/features/nations";
@@ -589,14 +590,10 @@ export function EventCreateWizard({
   return (
     <>
       <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {isEditMode ? "Edit Event" : "Create Event"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Step {state.step} of {totalSteps}
-          </p>
-        </div>
+        <PageHeader
+          title={isEditMode ? "Edit Event" : "Create Event"}
+          description={`Step ${state.step} of ${totalSteps}`}
+        />
 
         <div className="space-y-6">
           {state.step === 1 && (

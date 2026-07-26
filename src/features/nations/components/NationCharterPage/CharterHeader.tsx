@@ -34,7 +34,7 @@ export function CharterHeader({
       />
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-xl leading-tight">{nation.name}</h1>
+          <h2 className="font-display text-xl leading-tight">{nation.name}</h2>
           <Badge variant="secondary">
             {formatNationGovernmentType(nation.governmentType)}
           </Badge>
