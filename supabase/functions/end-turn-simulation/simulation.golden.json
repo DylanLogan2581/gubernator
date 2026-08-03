@@ -1,0 +1,1164 @@
+{
+  "simulation": {
+    "armyTurnSnapshots": [
+      {
+        "armyId": "a-north",
+        "soldierCountTotal": 2,
+        "soldiersByUnitTypeJson": {
+          "ut-spear": 2
+        },
+        "turnNumber": 42,
+        "upkeepPaid": true
+      }
+    ],
+    "assignmentClears": [
+      {
+        "citizenId": "c-012",
+        "reason": "citizen_died"
+      },
+      {
+        "citizenId": "c-013",
+        "reason": "citizen_died"
+      }
+    ],
+    "buildingStateChanges": [],
+    "buildingTierUpgrades": [],
+    "buildingsCreated": [],
+    "citizenBirths": [
+      {
+        "npcFlaw": null,
+        "npcGoal": null,
+        "npcSecretContradiction": null,
+        "npcTrait1": null,
+        "npcTrait2": null,
+        "cultureId": null,
+        "educationLevelId": null,
+        "givenName": "",
+        "namesetId": null,
+        "parentACitizenId": "c-001",
+        "parentBCitizenId": "c-002",
+        "religionId": null,
+        "sex": "male",
+        "settlementId": "s-alpha",
+        "surname": null
+      }
+    ],
+    "citizenDeaths": [
+      {
+        "category": "starvation",
+        "citizenId": "c-012",
+        "detail": "Died of starvation on turn 42 — Gamma ran out of fresh water (had 6.8 food and 3 water for 6 food and 6 water required)."
+      },
+      {
+        "category": "homeless",
+        "citizenId": "c-013",
+        "detail": "cap: 0, alive: 5"
+      }
+    ],
+    "citizenEducationPatches": [
+      {
+        "citizenId": "c-013",
+        "educationLevelId": "el-basic"
+      }
+    ],
+    "citizenPatches": [],
+    "constructionUpdates": [
+      {
+        "progressWorkerTurnsDelta": 0,
+        "projectId": "cp-gamma-granary",
+        "settlementId": "s-gamma",
+        "toStatus": "paused"
+      }
+    ],
+    "depositUpdates": [
+      {
+        "depositInstanceId": "d-ironvein",
+        "resourceDeltas": [
+          {
+            "delta": -3,
+            "resourceId": "r-iron"
+          }
+        ],
+        "toStatus": null
+      }
+    ],
+    "deceasedSoldierIds": [],
+    "desertedSoldiers": [],
+    "disbandedUnits": [],
+    "enrollmentGraduations": [],
+    "enrollmentProgressUpdates": [
+      {
+        "enrollmentId": "ee-gamma-basic",
+        "progressTurns": 0,
+        "targetLevelId": "el-advanced"
+      }
+    ],
+    "eventStatusPatches": [
+      {
+        "eventId": "ev-bounty",
+        "fromStatus": "active",
+        "remainingTransitions": 1,
+        "toStatus": "active"
+      }
+    ],
+    "logEntries": [
+      {
+        "category": "standard_job.processed",
+        "nationId": "n-north",
+        "payload": {
+          "inputsConsumed": {
+            "r-water": 2
+          },
+          "jobId": "j-farm",
+          "outputsProduced": {
+            "r-food": 8
+          },
+          "scale": 1,
+          "settlementId": "s-alpha",
+          "workerCount": 2
+        },
+        "phase": "standardJobs",
+        "settlementId": "s-alpha"
+      },
+      {
+        "category": "standard_job.processed",
+        "nationId": "n-north",
+        "payload": {
+          "inputsConsumed": {},
+          "jobId": "j-woodcutter",
+          "outputsProduced": {
+            "r-wood": 3
+          },
+          "scale": 1,
+          "settlementId": "s-beta",
+          "workerCount": 1
+        },
+        "phase": "standardJobs",
+        "settlementId": "s-beta"
+      },
+      {
+        "category": "standard_job.processed",
+        "nationId": "n-south",
+        "payload": {
+          "inputsConsumed": {
+            "r-water": 1
+          },
+          "jobId": "j-farm",
+          "outputsProduced": {
+            "r-food": 4
+          },
+          "scale": 1,
+          "settlementId": "s-gamma",
+          "workerCount": 1
+        },
+        "phase": "standardJobs",
+        "settlementId": "s-gamma"
+      },
+      {
+        "category": "standard_job.processed",
+        "nationId": "n-south",
+        "payload": {
+          "inputsConsumed": {},
+          "jobId": "j-teacher",
+          "outputsProduced": {},
+          "scale": 1,
+          "settlementId": "s-gamma",
+          "workerCount": 1
+        },
+        "phase": "standardJobs",
+        "settlementId": "s-gamma"
+      },
+      {
+        "category": "deposit.processed",
+        "payload": {
+          "depositId": "d-ironvein",
+          "extractedByResource": {
+            "r-iron": 3
+          },
+          "inputsConsumed": {
+            "r-food": 1
+          },
+          "perJob": [
+            {
+              "extraction": 3,
+              "inputShortfallScale": 1,
+              "jobId": "j-miner",
+              "workers": 1
+            }
+          ],
+          "settlementId": "s-beta",
+          "totalExtraction": 3,
+          "workers": 1
+        },
+        "phase": "depositExtraction"
+      },
+      {
+        "category": "construction.paused",
+        "payload": {
+          "projectId": "cp-gamma-granary",
+          "workers": 1
+        },
+        "phase": "construction",
+        "settlementId": "s-gamma"
+      },
+      {
+        "category": "education.graduated",
+        "payload": {
+          "combos": [
+            "Basic@@School"
+          ],
+          "count": 1
+        },
+        "phase": "education",
+        "settlementId": "s-gamma"
+      },
+      {
+        "category": "passive_effect.applied",
+        "payload": {
+          "amount": 2,
+          "buildingId": "sb-gamma-school",
+          "resourceId": "r-wool",
+          "settlementId": "s-gamma",
+          "tierId": "bt-school-1"
+        },
+        "phase": "passiveEffects"
+      },
+      {
+        "category": "trade_route.paused",
+        "payload": {
+          "destinationSettlementId": "s-beta",
+          "pauseReason": "insufficient_origin_space",
+          "quantityPerTransition": 4,
+          "resourceId": "r-iron",
+          "tradeRouteId": "tr-alpha-beta"
+        },
+        "phase": "tradeRoutes",
+        "settlementId": "s-alpha"
+      },
+      {
+        "category": "economy",
+        "nationId": "n-north",
+        "payload": {
+          "bySettlement": [
+            {
+              "amount": 0.8,
+              "resourceId": "r-food",
+              "settlementId": "s-alpha"
+            },
+            {
+              "amount": 0.3,
+              "resourceId": "r-iron",
+              "settlementId": "s-beta"
+            },
+            {
+              "amount": 0.3,
+              "resourceId": "r-wood",
+              "settlementId": "s-beta"
+            }
+          ],
+          "totalsByResource": {
+            "r-food": 0.8,
+            "r-iron": 0.3,
+            "r-wood": 0.3
+          }
+        },
+        "phase": "nationalEconomy"
+      },
+      {
+        "category": "economy",
+        "nationId": "n-south",
+        "payload": {
+          "bySettlement": [
+            {
+              "amount": 2.2,
+              "resourceId": "r-food",
+              "settlementId": "s-gamma"
+            }
+          ],
+          "totalsByResource": {
+            "r-food": 2.2
+          }
+        },
+        "phase": "nationalEconomy"
+      },
+      {
+        "category": "nation.treaty_expired",
+        "nationId": "n-south",
+        "payload": {
+          "proposerNationId": "n-south",
+          "responderNationId": "n-north",
+          "treatyId": "t-marriage",
+          "treatyType": "royal_marriage"
+        },
+        "phase": "treaties"
+      },
+      {
+        "category": "nation.tribute_transferred",
+        "nationId": "n-north",
+        "payload": {
+          "payeeNationId": "n-south",
+          "payerNationId": "n-north",
+          "quantityTransferred": 5,
+          "resourceId": "r-iron",
+          "treatyId": "t-tribute"
+        },
+        "phase": "treaties",
+        "resourceId": "r-iron"
+      },
+      {
+        "category": "managed_population.declining",
+        "payload": {
+          "husbandryCoverage": 0.8333333333333334,
+          "maintenanceCoverage": 0.9833333333333334,
+          "managedPopulationInstanceId": "mp-sheep",
+          "name": "Alpha Flock"
+        },
+        "phase": "managedPopulations",
+        "settlementId": "s-alpha"
+      },
+      {
+        "category": "citizen.consumed_food_water",
+        "payload": {
+          "aliveCount": 7,
+          "foodConsumed": 7,
+          "foodRequired": 7,
+          "foodStock": 18,
+          "settlementId": "s-alpha",
+          "waterConsumed": 7,
+          "waterRequired": 7,
+          "waterStock": 23
+        },
+        "phase": "citizenConsumption"
+      },
+      {
+        "category": "citizen.consumed_food_water",
+        "payload": {
+          "aliveCount": 7,
+          "foodConsumed": 7,
+          "foodRequired": 7,
+          "foodStock": 11,
+          "settlementId": "s-beta",
+          "waterConsumed": 7,
+          "waterRequired": 7,
+          "waterStock": 8
+        },
+        "phase": "citizenConsumption"
+      },
+      {
+        "category": "citizen.consumed_food_water",
+        "payload": {
+          "aliveCount": 6,
+          "foodConsumed": 6,
+          "foodRequired": 6,
+          "foodStock": 6.8,
+          "settlementId": "s-gamma",
+          "waterConsumed": 3,
+          "waterRequired": 6,
+          "waterStock": 3
+        },
+        "phase": "citizenConsumption"
+      },
+      {
+        "category": "citizen.starved",
+        "citizenId": "c-012",
+        "payload": {
+          "deathDetail": "Died of starvation on turn 42 — Gamma ran out of fresh water (had 6.8 food and 3 water for 6 food and 6 water required)."
+        },
+        "phase": "citizenConsumption",
+        "settlementId": "s-gamma"
+      },
+      {
+        "category": "partnership.formed",
+        "payload": {
+          "citizenAId": "c-017",
+          "citizenBId": "c-004"
+        },
+        "phase": "partnerships",
+        "settlementId": "s-alpha"
+      },
+      {
+        "category": "citizen.born",
+        "payload": {
+          "parentACitizenId": "c-001",
+          "parentBCitizenId": "c-002"
+        },
+        "phase": "partnerships",
+        "settlementId": "s-alpha"
+      },
+      {
+        "category": "partnership.formed",
+        "payload": {
+          "citizenAId": "c-011",
+          "citizenBId": "c-018"
+        },
+        "phase": "partnerships",
+        "settlementId": "s-beta"
+      },
+      {
+        "category": "citizen.died_homeless",
+        "citizenId": "c-013",
+        "payload": {
+          "deathDetail": "cap: 0, alive: 5"
+        },
+        "phase": "homelessness",
+        "settlementId": "s-gamma"
+      },
+      {
+        "category": "event.production_multiplier",
+        "payload": {
+          "eventId": "ev-bounty",
+          "jobId": "j-farm",
+          "multiplier": 1.5,
+          "settlementId": "s-alpha"
+        },
+        "phase": "events"
+      },
+      {
+        "category": "stockpile.changed",
+        "payload": {
+          "changeAmount": 1,
+          "changeMode": "flat",
+          "delta": 1,
+          "post": 31,
+          "pre": 30,
+          "resourceId": "r-wool",
+          "settlementId": "s-alpha"
+        },
+        "phase": "resourceDecay"
+      },
+      {
+        "category": "nation.treaty_marriage_death_note",
+        "nationId": "n-south",
+        "payload": {
+          "deceasedCitizenIds": [
+            "c-012"
+          ],
+          "proposerNationId": "n-south",
+          "responderNationId": "n-north",
+          "treatyId": "t-marriage"
+        },
+        "phase": "treaties"
+      }
+    ],
+    "managedPopulationUpdates": [
+      {
+        "countDelta": -6,
+        "managedPopulationInstanceId": "mp-sheep",
+        "toStatus": null
+      }
+    ],
+    "nationCurrencySnapshots": [
+      {
+        "burned": 20,
+        "confidence": 0.9015217391304349,
+        "currencyId": "cur-north",
+        "minted": 100,
+        "moneySupply": 1000,
+        "nationId": "n-north",
+        "reserveQuantity": 0
+      },
+      {
+        "burned": 0,
+        "confidence": 1,
+        "currencyId": "cur-south",
+        "minted": 0,
+        "moneySupply": 400,
+        "nationId": "n-south",
+        "reserveQuantity": 250
+      }
+    ],
+    "nationCurrencyUpdates": [
+      {
+        "confidence": 0.9015217391304349,
+        "currencyId": "cur-north",
+        "isInDefault": false
+      },
+      {
+        "confidence": 1,
+        "currencyId": "cur-south",
+        "isInDefault": false
+      }
+    ],
+    "nationStockpileDeltas": [
+      {
+        "delta": 0.8,
+        "nationId": "n-north",
+        "resourceId": "r-food"
+      },
+      {
+        "delta": 0.3,
+        "nationId": "n-north",
+        "resourceId": "r-iron"
+      },
+      {
+        "delta": 0.3,
+        "nationId": "n-north",
+        "resourceId": "r-wood"
+      },
+      {
+        "delta": 2.2,
+        "nationId": "n-south",
+        "resourceId": "r-food"
+      },
+      {
+        "delta": -5,
+        "nationId": "n-north",
+        "resourceId": "r-iron"
+      },
+      {
+        "delta": 5,
+        "nationId": "n-south",
+        "resourceId": "r-iron"
+      },
+      {
+        "delta": -4,
+        "nationId": "n-north",
+        "resourceId": "r-food"
+      }
+    ],
+    "nationTurnSnapshots": [
+      {
+        "nationId": "n-north",
+        "taxCollectedByResource": {
+          "r-food": 0.8,
+          "r-iron": 0.3,
+          "r-wood": 0.3
+        },
+        "tributePaidByResource": {
+          "r-iron": 5
+        },
+        "tributeReceivedByResource": {}
+      },
+      {
+        "nationId": "n-south",
+        "taxCollectedByResource": {
+          "r-food": 2.2
+        },
+        "tributePaidByResource": {},
+        "tributeReceivedByResource": {
+          "r-iron": 5
+        }
+      }
+    ],
+    "notifications": [
+      {
+        "messageText": "A construction project in \"Gamma\" was paused due to insufficient resources.",
+        "notificationType": "construction.paused",
+        "scope": "settlement",
+        "settlementId": "s-gamma"
+      },
+      {
+        "messageText": "1 citizen completed Basic at the School.",
+        "notificationType": "education.graduated",
+        "scope": "settlement",
+        "settlementId": "s-gamma"
+      },
+      {
+        "messageText": "Population \"Alpha Flock\" is declining due to insufficient maintenance or husbandry.",
+        "notificationType": "managed_population.declining",
+        "scope": "settlement",
+        "settlementId": "s-alpha"
+      },
+      {
+        "messageText": "1 citizen(s) starved in Gamma.",
+        "notificationType": "settlement.starvation_occurred",
+        "scope": "settlement",
+        "settlementId": "s-gamma"
+      },
+      {
+        "messageText": "A new partnership formed in Alpha.",
+        "notificationType": "partnership.formed",
+        "scope": "settlement",
+        "settlementId": "s-alpha"
+      },
+      {
+        "messageText": "A new partnership formed in Beta.",
+        "notificationType": "partnership.formed",
+        "scope": "settlement",
+        "settlementId": "s-beta"
+      },
+      {
+        "messageText": "1 citizen(s) died from homelessness in Gamma.",
+        "notificationType": "settlement.homelessness_occurred",
+        "scope": "settlement",
+        "settlementId": "s-gamma"
+      }
+    ],
+    "partnershipChanges": [
+      {
+        "citizenAId": "c-017",
+        "citizenBId": "c-004",
+        "type": "formed"
+      },
+      {
+        "citizenAId": "c-011",
+        "citizenBId": "c-018",
+        "type": "formed"
+      }
+    ],
+    "readinessSummary": {
+      "notReadySettlementCount": 1,
+      "readyPercentage": 66.66666666666666,
+      "readySettlementCount": 2,
+      "totalSettlementCount": 3
+    },
+    "resourceSnapshots": [
+      {
+        "consumed": 55,
+        "produced": 26,
+        "quantityAfter": 11,
+        "quantityBefore": 40,
+        "resourceId": "r-food",
+        "settlementId": "s-alpha",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 9,
+        "produced": 0,
+        "quantityAfter": 16,
+        "quantityBefore": 25,
+        "resourceId": "r-water",
+        "settlementId": "s-alpha",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 3,
+        "produced": 0,
+        "quantityAfter": 27,
+        "quantityBefore": 30,
+        "resourceId": "r-wood",
+        "settlementId": "s-alpha",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 0,
+        "produced": 20,
+        "quantityAfter": 31,
+        "quantityBefore": 10,
+        "resourceId": "r-wool",
+        "settlementId": "s-alpha",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 8,
+        "produced": 0,
+        "quantityAfter": 4,
+        "quantityBefore": 12,
+        "resourceId": "r-food",
+        "settlementId": "s-beta",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 7,
+        "produced": 0,
+        "quantityAfter": 1,
+        "quantityBefore": 8,
+        "resourceId": "r-water",
+        "settlementId": "s-beta",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 1.3,
+        "produced": 3,
+        "quantityAfter": 19.7,
+        "quantityBefore": 18,
+        "resourceId": "r-wood",
+        "settlementId": "s-beta",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 0.3,
+        "produced": 3,
+        "quantityAfter": 7.7,
+        "quantityBefore": 5,
+        "resourceId": "r-iron",
+        "settlementId": "s-beta",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 9.2,
+        "produced": 4,
+        "quantityAfter": 0.7999999999999998,
+        "quantityBefore": 6,
+        "resourceId": "r-food",
+        "settlementId": "s-gamma",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 4,
+        "produced": 0,
+        "quantityAfter": 0,
+        "quantityBefore": 4,
+        "resourceId": "r-water",
+        "settlementId": "s-gamma",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 0,
+        "produced": 0,
+        "quantityAfter": 14,
+        "quantityBefore": 14,
+        "resourceId": "r-wood",
+        "settlementId": "s-gamma",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      },
+      {
+        "consumed": 0,
+        "produced": 0,
+        "quantityAfter": 9,
+        "quantityBefore": 9,
+        "resourceId": "r-stone",
+        "settlementId": "s-gamma",
+        "tradeIn": 0,
+        "tradeOut": 0,
+        "turnNumber": 42
+      }
+    ],
+    "settlementSnapshots": [
+      {
+        "aliveNpc": 8,
+        "alivePc": 0,
+        "aliveTotal": 8,
+        "birthCount": 1,
+        "buildingSummary": {
+          "active": 2,
+          "auto_deconstructed": 0,
+          "manually_deconstructed": 0,
+          "suspended": 0
+        },
+        "deathCount": 0,
+        "educationSummary": {
+          "countsByLevelId": {},
+          "graduationsThisTurn": 0
+        },
+        "homelessDeathsCount": 0,
+        "managedPopulationSummary": [
+          {
+            "currentCount": 18,
+            "instanceId": "mp-sheep"
+          }
+        ],
+        "partnershipsFormedCount": 1,
+        "populationCap": 13,
+        "settlementId": "s-alpha",
+        "starvationDeathsCount": 0,
+        "tradeSummary": [
+          {
+            "delivered": false,
+            "quantityTransferred": 0,
+            "tradeRouteId": "tr-alpha-beta"
+          }
+        ],
+        "turnNumber": 42,
+        "warnings": {
+          "depletedDepositIds": [],
+          "pausedProjectIds": []
+        }
+      },
+      {
+        "aliveNpc": 7,
+        "alivePc": 0,
+        "aliveTotal": 7,
+        "birthCount": 0,
+        "buildingSummary": {
+          "active": 1,
+          "auto_deconstructed": 0,
+          "manually_deconstructed": 0,
+          "suspended": 0
+        },
+        "deathCount": 0,
+        "educationSummary": {
+          "countsByLevelId": {},
+          "graduationsThisTurn": 0
+        },
+        "homelessDeathsCount": 0,
+        "managedPopulationSummary": [],
+        "partnershipsFormedCount": 1,
+        "populationCap": 8,
+        "settlementId": "s-beta",
+        "starvationDeathsCount": 0,
+        "tradeSummary": [
+          {
+            "delivered": false,
+            "quantityTransferred": 0,
+            "tradeRouteId": "tr-alpha-beta"
+          }
+        ],
+        "turnNumber": 42,
+        "warnings": {
+          "depletedDepositIds": [],
+          "pausedProjectIds": []
+        }
+      },
+      {
+        "aliveNpc": 4,
+        "alivePc": 0,
+        "aliveTotal": 4,
+        "birthCount": 0,
+        "buildingSummary": {
+          "active": 1,
+          "auto_deconstructed": 0,
+          "manually_deconstructed": 0,
+          "suspended": 0
+        },
+        "deathCount": 2,
+        "educationSummary": {
+          "countsByLevelId": {
+            "el-advanced": 1
+          },
+          "graduationsThisTurn": 1
+        },
+        "homelessDeathsCount": 1,
+        "managedPopulationSummary": [],
+        "partnershipsFormedCount": 0,
+        "populationCap": 0,
+        "settlementId": "s-gamma",
+        "starvationDeathsCount": 1,
+        "tradeSummary": [],
+        "turnNumber": 42,
+        "warnings": {
+          "depletedDepositIds": [],
+          "pausedProjectIds": []
+        }
+      }
+    ],
+    "stockpileDeltas": [
+      {
+        "delta": -2,
+        "resourceId": "r-water",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": 8,
+        "resourceId": "r-food",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": 3,
+        "resourceId": "r-wood",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -1,
+        "resourceId": "r-water",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": 4,
+        "resourceId": "r-food",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": -1,
+        "resourceId": "r-food",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": 3,
+        "resourceId": "r-iron",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -2,
+        "resourceId": "r-wood",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": -1,
+        "resourceId": "r-wood",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": -1,
+        "resourceId": "r-wood",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -1,
+        "resourceId": "r-food",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": 2,
+        "resourceId": "r-wool",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": -0.8,
+        "resourceId": "r-food",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": -0.3,
+        "resourceId": "r-iron",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -0.3,
+        "resourceId": "r-wood",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -2.2,
+        "resourceId": "r-food",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": -47.2,
+        "resourceId": "r-food",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": 20,
+        "resourceId": "r-wool",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": 18,
+        "resourceId": "r-food",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": -7,
+        "resourceId": "r-food",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": -7,
+        "resourceId": "r-water",
+        "settlementId": "s-alpha"
+      },
+      {
+        "delta": -7,
+        "resourceId": "r-food",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -7,
+        "resourceId": "r-water",
+        "settlementId": "s-beta"
+      },
+      {
+        "delta": -6,
+        "resourceId": "r-food",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": -3,
+        "resourceId": "r-water",
+        "settlementId": "s-gamma"
+      },
+      {
+        "delta": 1,
+        "resourceId": "r-wool",
+        "settlementId": "s-alpha"
+      }
+    ],
+    "tradeRouteOutcomes": [
+      {
+        "delivered": false,
+        "pauseReason": "insufficient_origin_space",
+        "quantityTransferred": 0,
+        "tradeRouteId": "tr-alpha-beta"
+      }
+    ],
+    "treatyStatusChanges": [
+      {
+        "toStatus": "expired",
+        "treatyId": "t-marriage"
+      }
+    ]
+  },
+  "forecast": {
+    "bySettlement": {
+      "s-alpha": {
+        "settlementId": "s-alpha",
+        "resourceDeltas": [
+          {
+            "resourceId": "r-food",
+            "produced": 26,
+            "consumed": 55,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -29,
+            "quantityBefore": 40,
+            "quantityAfter": 11
+          },
+          {
+            "resourceId": "r-water",
+            "produced": 0,
+            "consumed": 9,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -9,
+            "quantityBefore": 25,
+            "quantityAfter": 16
+          },
+          {
+            "resourceId": "r-wood",
+            "produced": 0,
+            "consumed": 3,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -3,
+            "quantityBefore": 30,
+            "quantityAfter": 27
+          },
+          {
+            "resourceId": "r-wool",
+            "produced": 20,
+            "consumed": 0,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": 21,
+            "quantityBefore": 10,
+            "quantityAfter": 31
+          }
+        ],
+        "deathsBy": {
+          "starvation": 0,
+          "homelessness": 0,
+          "other": 0
+        },
+        "completedProjects": [],
+        "buildingUpkeepFailures": [],
+        "tradeChanges": [
+          {
+            "tradeRouteId": "tr-alpha-beta",
+            "delivered": false,
+            "pauseReason": "insufficient_origin_space",
+            "quantityTransferred": 0
+          }
+        ]
+      },
+      "s-beta": {
+        "settlementId": "s-beta",
+        "resourceDeltas": [
+          {
+            "resourceId": "r-food",
+            "produced": 0,
+            "consumed": 8,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -8,
+            "quantityBefore": 12,
+            "quantityAfter": 4
+          },
+          {
+            "resourceId": "r-water",
+            "produced": 0,
+            "consumed": 7,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -7,
+            "quantityBefore": 8,
+            "quantityAfter": 1
+          },
+          {
+            "resourceId": "r-wood",
+            "produced": 3,
+            "consumed": 1.3,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": 1.6999999999999993,
+            "quantityBefore": 18,
+            "quantityAfter": 19.7
+          },
+          {
+            "resourceId": "r-iron",
+            "produced": 3,
+            "consumed": 0.3,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": 2.7,
+            "quantityBefore": 5,
+            "quantityAfter": 7.7
+          }
+        ],
+        "deathsBy": {
+          "starvation": 0,
+          "homelessness": 0,
+          "other": 0
+        },
+        "completedProjects": [],
+        "buildingUpkeepFailures": [],
+        "tradeChanges": []
+      },
+      "s-gamma": {
+        "settlementId": "s-gamma",
+        "resourceDeltas": [
+          {
+            "resourceId": "r-food",
+            "produced": 4,
+            "consumed": 9.2,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -5.2,
+            "quantityBefore": 6,
+            "quantityAfter": 0.7999999999999998
+          },
+          {
+            "resourceId": "r-water",
+            "produced": 0,
+            "consumed": 4,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": -4,
+            "quantityBefore": 4,
+            "quantityAfter": 0
+          },
+          {
+            "resourceId": "r-wood",
+            "produced": 0,
+            "consumed": 0,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": 0,
+            "quantityBefore": 14,
+            "quantityAfter": 14
+          },
+          {
+            "resourceId": "r-stone",
+            "produced": 0,
+            "consumed": 0,
+            "tradeIn": 0,
+            "tradeOut": 0,
+            "netDelta": 0,
+            "quantityBefore": 9,
+            "quantityAfter": 9
+          }
+        ],
+        "deathsBy": {
+          "starvation": 1,
+          "homelessness": 1,
+          "other": 0
+        },
+        "completedProjects": [],
+        "buildingUpkeepFailures": [],
+        "tradeChanges": []
+      }
+    }
+  }
+}

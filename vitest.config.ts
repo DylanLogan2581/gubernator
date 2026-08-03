@@ -43,6 +43,7 @@ export default mergeConfig(
           "src/**/*.test.{ts,tsx}",
           "supabase/functions/_shared/simulation/**/*.test.ts",
           "supabase/functions/_shared/simulation/phases/testFixtures.ts",
+          "supabase/functions/_shared/simulation/goldenWorldFixture.ts",
         ],
         thresholds: {
           // Repo-wide floor — set just below measured baseline (2026-06-20):
