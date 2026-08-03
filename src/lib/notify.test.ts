@@ -79,6 +79,34 @@ describe("resolveMutationErrorMessage", () => {
     expect(resolveMutationErrorMessage(new Error("Boom"))).toBe("Boom");
   });
 
+  it("explains a write blocked by a running turn transition", () => {
+    expect(
+      resolveMutationErrorMessage({
+        hint: "world_turn_in_progress",
+        message: "world turn in progress",
+      }),
+    ).toBe("The turn is advancing — your change was not saved.");
+  });
+
+  it("explains a running turn transition on a thrown error carrying the hint", () => {
+    const error = Object.assign(new Error("world turn in progress"), {
+      hint: "world_turn_in_progress",
+    });
+
+    expect(resolveMutationErrorMessage(error)).toBe(
+      "The turn is advancing — your change was not saved.",
+    );
+  });
+
+  it("leaves other hints untouched", () => {
+    expect(
+      resolveMutationErrorMessage(
+        { hint: "world_archived", message: "nope" },
+        "fallback",
+      ),
+    ).toBe("fallback");
+  });
+
   it("returns the fallback for non-Error values when provided", () => {
     expect(resolveMutationErrorMessage("string error", "fallback")).toBe(
       "fallback",

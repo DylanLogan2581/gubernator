@@ -6,12 +6,14 @@ import type { AuthErrorDetails } from "../types/authTypes";
 
 export class AuthUiError extends Error {
   readonly code?: string;
+  readonly hint?: string;
   readonly status?: number;
 
-  constructor({ code, message, status }: AuthErrorDetails) {
+  constructor({ code, hint, message, status }: AuthErrorDetails) {
     super(message);
     this.name = "AuthUiError";
     this.code = code;
+    this.hint = hint;
     this.status = status;
   }
 }
@@ -39,6 +41,7 @@ export function normalizeSupabaseError(error: unknown): AuthUiError {
   if (isPostgrestLikeError(error)) {
     return new AuthUiError({
       code: error.code,
+      hint: error.hint,
       message: error.message,
     });
   }
@@ -52,7 +55,7 @@ export function normalizeSupabaseError(error: unknown): AuthUiError {
 
 function isPostgrestLikeError(
   error: unknown,
-): error is { code?: string; message: string } {
+): error is { code?: string; hint?: string; message: string } {
   return (
     typeof error === "object" &&
     error !== null &&

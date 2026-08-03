@@ -6,6 +6,14 @@ import { getErrorDescription } from "./errorUtils";
 // without importing sonner directly (see the no-restricted-imports gate).
 export { Toaster };
 
+// Postgres hint raised by the database guard that rejects gameplay writes while
+// a world turn transition is running. Duplicated here rather than imported from
+// the turns feature: src/lib must not depend on a feature module.
+const WORLD_TURN_IN_PROGRESS_HINT = "world_turn_in_progress";
+
+const WORLD_TURN_IN_PROGRESS_MESSAGE =
+  "The turn is advancing — your change was not saved.";
+
 export type NotifyMutationOptions = {
   readonly description?: string;
 };
@@ -37,6 +45,9 @@ export function resolveMutationErrorMessage(
   error: unknown,
   fallback?: string,
 ): string {
+  if (hasWorldTurnInProgressHint(error)) {
+    return WORLD_TURN_IN_PROGRESS_MESSAGE;
+  }
   // Unwrap validation issues from typed errors like {issues: [{message: string}]}
   if (error !== null && typeof error === "object" && "issues" in error) {
     const errorWithIssues = error as Record<string, unknown>;
@@ -63,4 +74,13 @@ export function resolveMutationErrorMessage(
     return fallback;
   }
   return getErrorDescription(error);
+}
+
+function hasWorldTurnInProgressHint(error: unknown): boolean {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "hint" in error &&
+    (error as { hint?: unknown }).hint === WORLD_TURN_IN_PROGRESS_HINT
+  );
 }

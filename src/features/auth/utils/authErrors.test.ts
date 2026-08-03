@@ -41,6 +41,20 @@ describe("normalizeSupabaseError", () => {
     });
   });
 
+  it("preserves the hint on PostgREST-shaped errors", () => {
+    const error = normalizeSupabaseError({
+      code: "P0004",
+      hint: "world_turn_in_progress",
+      message: "world turn in progress",
+    });
+
+    expect(error).toMatchObject({
+      code: "P0004",
+      hint: "world_turn_in_progress",
+      message: "world turn in progress",
+    });
+  });
+
   it("normalizes Supabase configuration errors", () => {
     const error = normalizeSupabaseError(
       new SupabaseConfigurationError({

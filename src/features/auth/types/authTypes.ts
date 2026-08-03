@@ -14,6 +14,7 @@ export type SignInWithPasswordInput = {
 
 export type AuthErrorDetails = {
   readonly code?: string;
+  readonly hint?: string;
   readonly message: string;
   readonly status?: number;
 };
