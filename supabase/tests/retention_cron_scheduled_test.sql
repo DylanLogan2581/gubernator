@@ -2,7 +2,9 @@
 -- Covers:
 --   1. public.run_scheduled_retention() exists, loops every world, and prunes
 --      each one via internal_prune_world_retention (proven with two worlds).
---   2. A cron.job row named 'nightly-retention' exists -- guarded: skipped
+--   2. It locks each world row `for update` before pruning it, matching the
+--      manual prune path.
+--   3. A cron.job row named 'nightly-retention' exists -- guarded: skipped
 --      when pg_cron is not loaded in this environment (e.g. some CI images),
 --      so the suite passes whether or not pg_cron is available.
 --
@@ -12,7 +14,7 @@
 begin;
 
 select
-  plan (6);
+  plan (7);
 
 -- ---------------------------------------------------------------------------
 -- Setup: one user (turn_transitions.initiated_by_user_id is not null), two
@@ -167,6 +169,26 @@ select
     ),
     0::bigint,
     'World B: old turn_log_entries row pruned by run_scheduled_retention'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test: the sweep locks each world row before pruning it, matching the manual
+-- prune path (public.prune_old_snapshots_and_logs).
+-- ---------------------------------------------------------------------------
+select
+  matches (
+    (
+      select
+        p.prosrc
+      from
+        pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+      where
+        n.nspname = 'public'
+        and p.proname = 'run_scheduled_retention'
+    ),
+    'from public\.worlds w where w\.id = v_world\.id for update',
+    'run_scheduled_retention locks each world row for update before pruning'
   );
 
 -- ---------------------------------------------------------------------------
