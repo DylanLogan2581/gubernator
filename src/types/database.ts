@@ -7084,6 +7084,15 @@ export type Database = {
         Args: { p_partition: unknown };
         Returns: undefined;
       };
+      internal_turn_guard_classification: {
+        Args: never;
+        Returns: {
+          bucket: string;
+          key_column: string;
+          resolver_sql: string;
+          table_name: string;
+        }[];
+      };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
       is_empty: { Args: { "": string }; Returns: string };
