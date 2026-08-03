@@ -600,7 +600,7 @@ describe("EndTurnControl", () => {
     ).toBeEnabled();
   });
 
-  it("shows background progress and blocks a second run while a turn is running", async () => {
+  it("blocks a second run while a turn is running", async () => {
     // The turn runs in a background worker (#1278): the running state comes
     // from the transition poll, not from an in-flight request.
     const clientFixture = createClientFixture({
@@ -616,12 +616,11 @@ describe("EndTurnControl", () => {
 
     await screen.findByText("Current turn");
 
-    expect(await screen.findByText("Advancing to turn 8")).toBeDefined();
-    expect(screen.getByText("simulating the turn")).toBeDefined();
     expect(
-      screen.getByRole("progressbar", { name: "Turn transition progress" }),
-    ).toHaveAttribute("aria-valuenow", "70");
-    expect(screen.getByRole("button", { name: "Running..." })).toBeDisabled();
+      await screen.findByRole("button", { name: "Running..." }),
+    ).toBeDisabled();
+    // Running progress now belongs to WorldTurnPauseOverlay, not this panel.
+    expect(screen.queryByText("Advancing to turn 8")).toBeNull();
     expect(
       screen.getByText(
         "End-turn transition is running in the background (simulating the turn).",

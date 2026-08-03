@@ -12,6 +12,7 @@ import {
   useActivePlayerCharacter,
   type AccessContext,
 } from "@/features/permissions";
+import { WorldTurnPauseOverlay } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
@@ -120,14 +121,20 @@ function WorldEntryWorldGate({
   // ActivePlayerCharacterProvider now mounts above the app shell (see
   // AppShellProviders) so the sidebar's character card shares this exact
   // context — this gate only consumes it via useActivePlayerCharacter.
+  // The overlay sits here, not in the layout route: the world must resolve and
+  // be accessible before we poll its transition status, and this single
+  // position covers every entry path the decision below can take.
   return (
-    <WorldEntryDecision
-      accessContext={accessContext}
-      worldAccess={worldQuery.data}
-      worldId={worldId}
-    >
-      {children}
-    </WorldEntryDecision>
+    <>
+      <WorldTurnPauseOverlay worldId={worldId} />
+      <WorldEntryDecision
+        accessContext={accessContext}
+        worldAccess={worldQuery.data}
+        worldId={worldId}
+      >
+        {children}
+      </WorldEntryDecision>
+    </>
   );
 }
 

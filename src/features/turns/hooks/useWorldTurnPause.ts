@@ -17,6 +17,11 @@ export type WorldTurnPauseState =
   | { readonly kind: "acknowledge"; readonly toTurnNumber: number }
   | { readonly kind: "failed"; readonly toTurnNumber: number };
 
+// The shared status query only polls once a run is already known, which never
+// fires for a client that was idle when the turn started. The overlay has to
+// appear for those clients too, so it polls unconditionally.
+const WORLD_TURN_PAUSE_POLL_MS = 3000;
+
 export type UseWorldTurnPauseResult = {
   readonly acknowledge: () => void;
   readonly state: WorldTurnPauseState;
@@ -24,7 +29,13 @@ export type UseWorldTurnPauseResult = {
 
 export function useWorldTurnPause(worldId: string): UseWorldTurnPauseResult {
   const queryClient = useQueryClient();
-  const statusQuery = useQuery(latestTurnTransitionStatusQueryOptions(worldId));
+  const statusQuery = useQuery({
+    ...latestTurnTransitionStatusQueryOptions(worldId),
+    refetchInterval: WORLD_TURN_PAUSE_POLL_MS,
+    // Background tabs stop polling, so returning to one must refetch on focus
+    // rather than trust the app-wide 60 s staleTime.
+    staleTime: 0,
+  });
   const transition = statusQuery.data ?? null;
 
   // Session-local: a client that never saw the run does not get an

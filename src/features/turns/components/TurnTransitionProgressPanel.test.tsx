@@ -22,8 +22,8 @@ describe("TurnTransitionProgressPanel", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("reports the worker stage and progress while the turn runs", () => {
-    render(
+  it("renders nothing while the turn runs — the pause overlay covers it", () => {
+    const { container } = render(
       <TurnTransitionProgressPanel
         transition={createTransition({
           isRunning: true,
@@ -33,24 +33,7 @@ describe("TurnTransitionProgressPanel", () => {
       />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent("Advancing to turn 8");
-    expect(screen.getByText("simulating the turn")).toBeDefined();
-    expect(
-      screen.getByRole("progressbar", { name: "Turn transition progress" }),
-    ).toHaveAttribute("aria-valuenow", "70");
-  });
-
-  it("falls back to a waiting label before the worker claims the job", () => {
-    render(
-      <TurnTransitionProgressPanel
-        transition={createTransition({ isRunning: true, state: "running" })}
-      />,
-    );
-
-    expect(screen.getByText("waiting to start")).toBeDefined();
-    expect(
-      screen.getByRole("progressbar", { name: "Turn transition progress" }),
-    ).toHaveAttribute("aria-valuenow", "10");
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("surfaces a failed background run", () => {

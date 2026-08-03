@@ -9,6 +9,33 @@ import { useWorldTurnPause } from "./useWorldTurnPause";
 
 import type { LatestTurnTransitionStatus } from "../types/turnTransitionStatusTypes";
 
+// Structural shape of the mocked module — avoids an `import()` type, which
+// the repo's eslint config forbids.
+type LatestStatusQueriesModule = {
+  readonly latestTurnTransitionStatusQueryOptions: (
+    worldId: string,
+  ) => Record<string, unknown>;
+};
+
+const { statusQueryFn } = vi.hoisted(() => ({
+  statusQueryFn: vi.fn<() => Promise<unknown>>(),
+}));
+
+// Keep the real options (notably their conditional refetchInterval) but swap
+// the queryFn so the poll can be counted without a Supabase client.
+vi.mock("../queries/latestTurnTransitionStatusQueries", async () => {
+  const actual = await vi.importActual<LatestStatusQueriesModule>(
+    "../queries/latestTurnTransitionStatusQueries",
+  );
+  return {
+    ...actual,
+    latestTurnTransitionStatusQueryOptions: (worldId: string) => ({
+      ...actual.latestTurnTransitionStatusQueryOptions(worldId),
+      queryFn: statusQueryFn,
+    }),
+  };
+});
+
 const WORLD_ID = "11111111-1111-1111-1111-111111111111";
 const STATUS_KEY = turnQueryKeys.latestTransitionStatus(WORLD_ID);
 
@@ -94,6 +121,35 @@ describe("useWorldTurnPause", () => {
       expect(result.current.state.kind).toBe("idle");
     });
     expect(invalidate).toHaveBeenCalled();
+  });
+
+  // Regression guard: a client that was idle when the turn started must still
+  // learn about it, so the poll cannot be conditional on a known running run.
+  it("keeps polling the status while no transition is running", async () => {
+    vi.useFakeTimers();
+    statusQueryFn.mockReset();
+    statusQueryFn.mockResolvedValue(createStatus({}));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    renderHook(() => useWorldTurnPause(WORLD_ID), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await vi.waitFor(() => {
+      expect(statusQueryFn).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3100);
+    });
+
+    expect(statusQueryFn.mock.calls.length).toBeGreaterThan(1);
+
+    queryClient.clear();
+    vi.useRealTimers();
   });
 
   it("reports failed while a transition ended in failure", async () => {

@@ -109,6 +109,55 @@ describe("WorldEntryGate", () => {
     expect(await screen.findByText("No character in this world")).toBeDefined();
   });
 
+  it("shows the turn pause overlay while the world's turn runs", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
+        playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
+        activeRow: {
+          citizen_id: PC_ID_A,
+          updated_at: "2026-05-01T00:00:00.000Z",
+          user_id: USER_ID,
+          world_id: WORLD_ID,
+        },
+        turnTransitionRow: createTurnTransitionRow({
+          progress_stage: "simulating",
+          status: "running",
+        }),
+      }),
+    );
+
+    renderGate();
+
+    expect(await screen.findByText("Advancing to turn 8")).toBeDefined();
+    expect(screen.getByRole("dialog")).toBeDefined();
+  });
+
+  it("does not show the overlay when no transition is running", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
+        playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
+        activeRow: {
+          citizen_id: PC_ID_A,
+          updated_at: "2026-05-01T00:00:00.000Z",
+          user_id: USER_ID,
+          world_id: WORLD_ID,
+        },
+        turnTransitionRow: createTurnTransitionRow(),
+      }),
+    );
+
+    renderGate();
+
+    expect(await screen.findByText("ENTERED")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+  });
+
   it("auto-selects the only player character and writes the active row", async () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
@@ -562,6 +611,7 @@ type ClientOptions = {
   readonly deleteActiveRow?: () => void;
   readonly pcWorldIds?: readonly string[];
   readonly playerCharacters?: readonly CitizenRowFixture[];
+  readonly turnTransitionRow?: TurnTransitionRowFixture | null;
   readonly upsertActiveRow?: UpsertActiveRowFn;
   readonly userStatus?: "active" | "inactive";
   readonly worldRows?: readonly TestWorldRow[];
@@ -573,6 +623,7 @@ function createClient({
   deleteActiveRow,
   pcWorldIds = [],
   playerCharacters = [],
+  turnTransitionRow = null,
   upsertActiveRow,
   userStatus = "active",
   worldRows = [createWorldRow()],
@@ -629,6 +680,9 @@ function createClient({
       if (table === "worlds") {
         return createWorldsBuilder(worldRows);
       }
+      if (table === "turn_transitions") {
+        return createTurnTransitionsBuilder(turnTransitionRow);
+      }
       if (table === "settlements") {
         return createSettlementsBuilder();
       }
@@ -650,6 +704,49 @@ function createClient({
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
+  };
+}
+
+type TurnTransitionRowFixture = {
+  readonly finished_at: string | null;
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly progress_stage: string | null;
+  readonly started_at: string;
+  readonly status: string;
+  readonly to_turn_number: number;
+  readonly world_id: string;
+};
+
+function createTurnTransitionRow(
+  overrides: Partial<TurnTransitionRowFixture> = {},
+): TurnTransitionRowFixture {
+  return {
+    finished_at: "2026-05-01T00:01:00.000Z",
+    from_turn_number: 7,
+    id: "00000000-0000-0000-0000-0000000000f1",
+    progress_stage: null,
+    started_at: "2026-05-01T00:00:00.000Z",
+    status: "completed",
+    to_turn_number: 8,
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
+function createTurnTransitionsBuilder(
+  row: TurnTransitionRowFixture | null,
+): unknown {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        order: vi.fn(() => ({
+          limit: vi.fn(() => ({
+            maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
+          })),
+        })),
+      })),
+    })),
   };
 }
 
