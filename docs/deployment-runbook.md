@@ -129,6 +129,11 @@ cd docker && docker compose up -d --build
 - Edge function changes are picked up from the checkout; if a function was
   already warm, restart it: `docker compose restart functions`.
 - App changes are rebuilt into the `app` image by `--build`.
+- The two Phase 1 partitioning migrations
+  (`20261125000000_partition_settlement_turn_resource_snapshots.sql`,
+  `20261126000000_partition_turn_log_entries.sql`) recreate live tables under an
+  `ACCESS EXCLUSIVE` lock. On a database with real turn history, follow
+  `docs/partition-migration-runbook.md` instead of a plain `up -d --build`.
 
 ### Operations
 
