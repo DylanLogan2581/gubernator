@@ -42,7 +42,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing) group-data-[variant=boxed]/card:rounded-t-xl group-data-[variant=open]/card:border-b group-data-[variant=open]/card:px-0",
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] group-data-[variant=boxed]/card:rounded-t-xl group-data-[variant=open]/card:border-b group-data-[variant=open]/card:px-0 group-data-[variant=open]/card:pb-(--card-spacing)",
         className
       )}
       {...props}
@@ -50,12 +50,12 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
-    <div
+    <h3
       data-slot="card-title"
       className={cn(
-        "text-base leading-snug font-medium group-data-[size=sm]/card:text-sm group-data-[variant=open]/card:text-[0.6875rem] group-data-[variant=open]/card:leading-none group-data-[variant=open]/card:font-semibold group-data-[variant=open]/card:tracking-[0.12em] group-data-[variant=open]/card:text-muted-foreground group-data-[variant=open]/card:uppercase",
+        "text-base leading-snug font-medium group-data-[size=sm]/card:text-sm group-data-[variant=open]/card:font-semibold",
         className
       )}
       {...props}

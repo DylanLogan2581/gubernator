@@ -83,7 +83,7 @@ export function WorldReportsSection({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Turn range</CardTitle>
+          <CardTitle>Turn range</CardTitle>
         </CardHeader>
         <CardContent>
           <TurnRangeSelector
@@ -96,7 +96,7 @@ export function WorldReportsSection({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">World population history</CardTitle>
+          <CardTitle>World population history</CardTitle>
         </CardHeader>
         <CardContent>
           {worldPopQuery.isPending ? (
@@ -123,7 +123,7 @@ export function WorldReportsSection({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Nation comparison</CardTitle>
+          <CardTitle>Nation comparison</CardTitle>
         </CardHeader>
         <CardContent>
           <VitalStatsComparisonTable
