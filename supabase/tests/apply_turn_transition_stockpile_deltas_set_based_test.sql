@@ -11,6 +11,14 @@
 --   b7500000 = settlements  b7600000 = resources
 begin;
 
+-- This file's fixtures create a running turn transition and then write
+-- world-scoped tables directly, which the turn-write guard added in
+-- 20261223000000 rejects. Take the guard's escape hatch for the whole
+-- transaction: the guard itself is covered by
+-- reject_writes_during_turn_transition_test.sql.
+set
+  local "app.applying_turn" = 'on';
+
 select
   plan (8);
 
