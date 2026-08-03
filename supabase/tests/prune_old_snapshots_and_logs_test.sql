@@ -48,13 +48,12 @@ set
 
 -- World with current_turn_number = 110
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'c4200000-0000-0000-0000-000000000001',
     'Prune Test World',
     110,
-    'private',
     'active'
   );
 
@@ -334,13 +333,12 @@ select
 -- Test 4: Edge case - retention_turns > current_turn (no pruning)
 -- ---------------------------------------------------------------------------
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'c4200000-0000-0000-0000-000000000002',
     'Young World',
     5,
-    'private',
     'active'
   );
 

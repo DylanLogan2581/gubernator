@@ -14,6 +14,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { CitizenPicker } from "@/features/citizens";
+import {
+  nationRelationshipPairQueryOptions,
+  nationsListQueryOptions,
+} from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -21,6 +26,11 @@ import { sortByName } from "@/lib/sortUtils";
 import { generateLocalId } from "@/lib/uid";
 
 import { proposeTradeRouteMutationOptions } from "../../mutations/proposeTradeRouteMutations";
+
+import {
+  describeForeignTradeBlock,
+  describeStanceTradeBlock,
+} from "./TradeRouteHelpers";
 
 type LegDraft = {
   direction: "send" | "receive";
@@ -38,10 +48,12 @@ type LegErrors = {
 type FormErrors = {
   destinationSettlementId?: string;
   legs?: LegErrors[];
+  proposingCitizenId?: string;
 };
 
 type ProposeTradeRouteDialogProps = {
-  readonly activeCharacterId: string;
+  readonly activeCharacterId: string | null;
+  readonly canManageNation: boolean;
   readonly onClose: () => void;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
@@ -62,6 +74,7 @@ function createLegDraft(
 
 export function ProposeTradeRouteDialog({
   activeCharacterId,
+  canManageNation,
   onClose,
   queryClient,
   settlementId,
@@ -69,6 +82,7 @@ export function ProposeTradeRouteDialog({
 }: ProposeTradeRouteDialogProps): JSX.Element {
   const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
   const mutation = useMutation(
     proposeTradeRouteMutationOptions({ queryClient, worldId }),
   );
@@ -76,11 +90,61 @@ export function ProposeTradeRouteDialog({
   const [destinationSettlementId, setDestinationSettlementId] = useState("");
   const [legs, setLegs] = useState<LegDraft[]>(() => [createLegDraft()]);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [pickedCitizenId, setPickedCitizenId] = useState<string | null>(null);
 
-  const settlements = (settlementsQuery.data ?? []).filter(
-    (s) => s.id !== settlementId,
-  );
+  const proposingCitizenId = activeCharacterId ?? pickedCitizenId;
+
+  const allSettlements = settlementsQuery.data ?? [];
+  const settlements = allSettlements.filter((s) => s.id !== settlementId);
   const resources = resourcesQuery.data ?? [];
+  const nations = nationsQuery.data ?? [];
+
+  // Trade policy (#1087): preview the propose_trade_route policy gate for
+  // the selected destination so the proposer sees why submission is blocked
+  // (and can't waste a round-trip) instead of only finding out from the RPC
+  // error after clicking Propose. Internal (same-nation) routes are never
+  // blocked, per describeForeignTradeBlock's contract.
+  const originSettlement = allSettlements.find((s) => s.id === settlementId);
+  const destinationSettlement = settlements.find(
+    (s) => s.id === destinationSettlementId,
+  );
+  const originNation = nations.find((n) => n.id === originSettlement?.nationId);
+  const destinationNation = nations.find(
+    (n) => n.id === destinationSettlement?.nationId,
+  );
+  const isInternational =
+    destinationSettlement !== undefined &&
+    originSettlement !== undefined &&
+    destinationSettlement.nationId !== originSettlement.nationId;
+
+  // Diplomacy consequences (#1088): preview the propose_trade_route stance
+  // gate (hostile/at_war blocks) alongside the trade policy gate above.
+  const relationshipPairQuery = useQuery({
+    ...nationRelationshipPairQueryOptions(
+      originNation?.id ?? "",
+      destinationNation?.id ?? "",
+    ),
+    enabled:
+      isInternational &&
+      originNation !== undefined &&
+      destinationNation !== undefined,
+  });
+
+  const foreignTradeBlockReason =
+    isInternational &&
+    originNation !== undefined &&
+    destinationNation !== undefined
+      ? (describeForeignTradeBlock({
+          canManageOriginNation: canManageNation,
+          destinationNation,
+          originNation,
+        }) ??
+        describeStanceTradeBlock({
+          destinationNation,
+          originNation,
+          stance: relationshipPairQuery.data?.currentStance ?? null,
+        }))
+      : null;
 
   function addLeg(): void {
     setLegs((prev) => [...prev, createLegDraft()]);
@@ -102,6 +166,12 @@ export function ProposeTradeRouteDialog({
 
     if (destinationSettlementId === "") {
       newErrors.destinationSettlementId = "Select a destination settlement.";
+    } else if (foreignTradeBlockReason !== null) {
+      newErrors.destinationSettlementId = foreignTradeBlockReason;
+    }
+
+    if (proposingCitizenId === null) {
+      newErrors.proposingCitizenId = "Select a proposing citizen.";
     }
 
     const legErrors: LegErrors[] = legs.map((leg) => {
@@ -118,7 +188,7 @@ export function ProposeTradeRouteDialog({
       newErrors.legs = legErrors;
     }
 
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(newErrors).length > 0 || proposingCitizenId === null) {
       setErrors(newErrors);
       return;
     }
@@ -132,7 +202,7 @@ export function ProposeTradeRouteDialog({
           resourceId: leg.resourceId,
         })),
         originSettlementId: settlementId,
-        proposingCitizenId: activeCharacterId,
+        proposingCitizenId,
       },
       {
         onError: (error) => {
@@ -163,6 +233,25 @@ export function ProposeTradeRouteDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
+            {activeCharacterId === null ? (
+              <div className="grid gap-1">
+                <Label htmlFor="propose-trade-route-citizen">
+                  Proposing citizen
+                </Label>
+                <CitizenPicker
+                  citizenId={pickedCitizenId}
+                  id="propose-trade-route-citizen"
+                  onChange={setPickedCitizenId}
+                  settlementId={settlementId}
+                  worldId={worldId}
+                />
+                {errors.proposingCitizenId !== undefined ? (
+                  <p className="text-xs text-destructive">
+                    {errors.proposingCitizenId}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
                 Destination settlement
@@ -197,6 +286,10 @@ export function ProposeTradeRouteDialog({
               {errors.destinationSettlementId !== undefined ? (
                 <p className="text-xs text-destructive">
                   {errors.destinationSettlementId}
+                </p>
+              ) : foreignTradeBlockReason !== null ? (
+                <p className="text-xs text-destructive">
+                  {foreignTradeBlockReason}
                 </p>
               ) : null}
             </Label>
@@ -241,7 +334,10 @@ export function ProposeTradeRouteDialog({
             >
               Cancel
             </Button>
-            <Button disabled={mutation.isPending} type="submit">
+            <Button
+              disabled={mutation.isPending || foreignTradeBlockReason !== null}
+              type="submit"
+            >
               Propose
             </Button>
           </DialogFooter>

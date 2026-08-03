@@ -59,14 +59,14 @@ describe("deriveSettlementForecastWarnings", () => {
     ]);
   });
 
-  it("warns about paused trade routes, including the pause reason when present", () => {
+  it("warns about paused trade routes, mapping the pause reason to its label", () => {
     const warnings = deriveSettlementForecastWarnings(
       createForecast({
         tradeChanges: [
           {
             tradeRouteId: "route-1",
             delivered: false,
-            pauseReason: "no stock",
+            pauseReason: "insufficient_trader_origin",
             quantityTransferred: 0,
           },
           {
@@ -85,8 +85,29 @@ describe("deriveSettlementForecastWarnings", () => {
       }),
     );
     expect(warnings).toEqual([
-      { key: "trade-route-1", label: "Trade route paused — no stock" },
+      {
+        key: "trade-route-1",
+        label: "Trade route paused — Insufficient traders at origin",
+      },
       { key: "trade-route-2", label: "Trade route paused" },
+    ]);
+  });
+
+  it("falls back to the raw pause reason when no label exists", () => {
+    const warnings = deriveSettlementForecastWarnings(
+      createForecast({
+        tradeChanges: [
+          {
+            tradeRouteId: "route-1",
+            delivered: false,
+            pauseReason: "unmapped_reason",
+            quantityTransferred: 0,
+          },
+        ],
+      }),
+    );
+    expect(warnings).toEqual([
+      { key: "trade-route-1", label: "Trade route paused — unmapped_reason" },
     ]);
   });
 });

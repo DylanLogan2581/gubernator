@@ -43,18 +43,16 @@ values
 -- World-alpha is administered by alpha; world-beta is administered by beta.
 -- Alpha has no admin rights in world-beta, making it the cross-world target.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '92000000-0000-0000-0000-000000000001',
     'GF Alpha World',
-    'private',
     'active'
   ),
   (
     '92000000-0000-0000-0000-000000000002',
     'GF Beta World',
-    'private',
     'active'
   );
 
@@ -226,13 +224,11 @@ select
 select
   throws_ok (
     $test$
-    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
+    insert into public.deposit_types (world_id, name, slug)
     values (
       '92000000-0000-0000-0000-000000000002',
       'Alpha Into Beta Deposit',
-      'alpha-into-beta-deposit',
-      '94000000-0000-0000-0000-000000000001',
-      1
+      'alpha-into-beta-deposit'
     )
     $test$,
     '42501',
@@ -244,16 +240,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate
+      world_id, name, slug, growth_rate
     )
     values (
       '92000000-0000-0000-0000-000000000002',
       'Alpha Into Beta Herd',
       'alpha-into-beta-herd',
-      '94000000-0000-0000-0000-000000000002',
-      '94000000-0000-0000-0000-000000000003',
-      1,
       0
     )
     $test$,

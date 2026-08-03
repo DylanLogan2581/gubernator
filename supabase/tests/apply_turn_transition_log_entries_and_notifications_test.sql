@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (13);
+  plan (16);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -121,48 +121,42 @@ where
 --   World 5: retry dedup test
 --   World 6: §C32e overshoot-stamp test
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'b1200000-0000-0000-0000-000000000001',
     'ATLN World 1',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000002',
     'ATLN World 2',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000003',
     'ATLN World 3',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000004',
     'ATLN World 4',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000005',
     'ATLN World 5',
     5,
-    'private',
     'active'
   ),
   (
     'b1200000-0000-0000-0000-000000000006',
     'ATLN World 6',
     5,
-    'private',
     'active'
   );
 
@@ -543,6 +537,41 @@ select
     'settlement-scoped: log entry inserted with settlement_id stamped'
   );
 
+-- Issue #1283: the bulk insert denormalizes from_turn_number/to_turn_number
+-- from the transition onto the row itself, so the turn-log browser can order
+-- without joining turn_transitions.
+select
+  is (
+    (
+      select
+        tle.from_turn_number
+      from
+        public.turn_log_entries tle
+      where
+        tle.world_id = 'b1200000-0000-0000-0000-000000000001'
+        and tle.log_category = 'settlement.starvation_occurred'
+        and tle.settlement_id = 'b1400000-0000-0000-0000-000000000001'
+    ),
+    5,
+    'settlement-scoped: log entry carries its own denormalized from_turn_number'
+  );
+
+select
+  is (
+    (
+      select
+        tle.to_turn_number
+      from
+        public.turn_log_entries tle
+      where
+        tle.world_id = 'b1200000-0000-0000-0000-000000000001'
+        and tle.log_category = 'settlement.starvation_occurred'
+        and tle.settlement_id = 'b1400000-0000-0000-0000-000000000001'
+    ),
+    6,
+    'settlement-scoped: log entry carries its own denormalized to_turn_number'
+  );
+
 -- ===========================================================================
 -- TEST SCENARIO 2: Settlement-scoped notification with no active managers
 -- falls back to world admins only.
@@ -856,6 +885,26 @@ select
     ),
     1,
     '§C32e: non-overshoot entry with null transition_id is not stamped'
+  );
+
+-- Issue #1283: the same stamp backfills from_turn_number/to_turn_number so
+-- the retroactively-transitioned overshoot row also gets a display turn
+-- number instead of staying null forever.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_log_entries
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000006'
+        and log_category = 'manual_deconstruct_overshoot'
+        and from_turn_number = 5
+        and to_turn_number = 6
+    ),
+    1,
+    '§C32e: overshoot entry has from/to turn numbers backfilled after apply_turn_transition'
   );
 
 rollback;

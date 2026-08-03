@@ -50,23 +50,21 @@ where
 
 -- World for trash / restore tests.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'aa200000-0000-0000-0000-000000000001',
     'WL Lifecycle World',
-    'private',
     'active'
   );
 
 -- Pre-trashed world for hard_delete happy-path and denied tests.
 insert into
-  public.worlds (id, name, visibility, status, is_trashed)
+  public.worlds (id, name, status, is_trashed)
 values
   (
     'aa200000-0000-0000-0000-000000000002',
     'WL Trashed World',
-    'private',
     'active',
     true
   );
@@ -89,7 +87,7 @@ select
       select
         w.name
       from
-        public.create_world ('WL Created World', 'public') as w
+        public.create_world ('WL Created World') as w
     ),
     'WL Created World',
     'create_world returns a row with the supplied name'

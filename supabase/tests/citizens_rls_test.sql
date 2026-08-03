@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (70);
+  plan (71);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -105,35 +105,29 @@ set
 where
   id = 'c1000000-0000-0000-0000-000000000007';
 
--- World A: subject world. Managers govern within this world.
+-- World A: subject world. Managers govern within this world and hold their
+--          own player characters there too (assign_citizen_role only ever
+--          scopes a manager role to the citizen's own settlement/nation, so
+--          the two always share a world in practice).
 -- World B: a separate world used to verify cross-world denial.
--- World C: holds the manager users' player characters so the manager
---          visibility paths can be exercised without also satisfying
---          user_has_player_character_in_world for World A.
+-- World C: unused by any citizen; only its own zero-citizen count matters to
+--          the super-admin cross-world tally below.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
-    -- World A is public so the citizens RLS subquery against settlements
-    -- (which uses has_world_access) can succeed for the Nation Manager and
-    -- Settlement Manager users whose PCs live in another world. The citizens
-    -- policy has no public-world visibility arm of its own, so this does not
-    -- broaden citizen visibility for unrelated users.
     'c2000000-0000-0000-0000-000000000001',
     'c1000000-0000-0000-0000-000000000001',
-    'public',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'Citizens World B',
-    'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000003',
     'Citizens World C',
-    'public',
     'active'
   );
 
@@ -188,7 +182,7 @@ values
     'Settlement C1'
   );
 
--- Nation Manager's PC lives in World C but governs Nation A in World A.
+-- Nation Manager's PC lives in Settlement A2 and governs all of Nation A.
 insert into
   public.citizens (
     id,
@@ -204,17 +198,17 @@ insert into
 values
   (
     'c5000000-0000-0000-0000-000000000001',
-    'c2000000-0000-0000-0000-000000000003',
-    'c4000000-0000-0000-0000-0000000000d1',
+    'c2000000-0000-0000-0000-000000000001',
+    'c4000000-0000-0000-0000-0000000000a2',
     'player_character',
-    'Nation A Manager (lives in World C)',
+    'Nation A Manager',
     'alive',
     'c1000000-0000-0000-0000-000000000003',
     'nation_manager',
     'c3000000-0000-0000-0000-00000000000a'
   );
 
--- Settlement Manager's PC lives in World C but governs Settlement A1 in World A.
+-- Settlement Manager's PC lives in and governs Settlement A1.
 insert into
   public.citizens (
     id,
@@ -230,10 +224,10 @@ insert into
 values
   (
     'c5000000-0000-0000-0000-000000000002',
-    'c2000000-0000-0000-0000-000000000003',
-    'c4000000-0000-0000-0000-0000000000d1',
+    'c2000000-0000-0000-0000-000000000001',
+    'c4000000-0000-0000-0000-0000000000a1',
     'player_character',
-    'Settlement A1 Manager (lives in World C)',
+    'Settlement A1 Manager',
     'alive',
     'c1000000-0000-0000-0000-000000000004',
     'settlement_manager',
@@ -397,7 +391,7 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    5,
+    7,
     'world admin can read every citizen in administered world'
   );
 
@@ -461,6 +455,23 @@ select
     'world admin can call get_citizen_admin_details for a citizen in their world'
   );
 
+-- #1125: culture_id/religion_id are granted alongside the other non-flavor
+-- columns, unlike the flavor columns above -- direct table SELECT must not
+-- throw 42501.
+select
+  lives_ok (
+    $test$
+    select
+      culture_id,
+      religion_id
+    from
+      public.citizens
+    where
+      id = 'c5000000-0000-0000-0000-000000000010'
+    $test$,
+    'world admin can select culture_id and religion_id directly from the table API'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -487,8 +498,7 @@ reset role;
 
 -- ===========================================================================
 -- NATION MANAGER: visibility restricted to settlements within the managed
--- nation. Manager's PC is in World C; visibility into World A comes solely
--- from the Nation Manager helper.
+-- nation.
 -- ===========================================================================
 set
   local role authenticated;
@@ -522,9 +532,13 @@ select
     'nation manager can read NPC in another settlement within their nation'
   );
 
+-- NPC in Nation B is still visible: the nation manager's own PC lives in
+-- World A too, so the plain PC-holder rule (any world member can read any
+-- citizen in their world) already admits it independently of the
+-- nation-manager-scoped branch.
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -532,7 +546,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000012'
     ),
-    'nation manager cannot read NPC in a settlement outside their nation'
+    'nation manager can read NPC in a settlement outside their nation via the world PC-holder rule'
   );
 
 select
@@ -580,8 +594,7 @@ reset role;
 
 -- ===========================================================================
 -- SETTLEMENT MANAGER: visibility restricted to citizens in the managed
--- settlement. Manager's PC is in World C, so the PC-holder rule does not
--- broaden visibility into World A.
+-- settlement.
 -- ===========================================================================
 set
   local role authenticated;
@@ -602,9 +615,13 @@ select
     'settlement manager can read NPC in their settlement'
   );
 
+-- Both NPCs below are still visible: the settlement manager's own PC lives
+-- in World A too, so the plain PC-holder rule (any world member can read any
+-- citizen in their world) already admits them independently of the
+-- settlement-manager-scoped branch.
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -612,12 +629,12 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000011'
     ),
-    'settlement manager cannot read NPC in a sibling settlement of the same nation'
+    'settlement manager can read NPC in a sibling settlement via the world PC-holder rule'
   );
 
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -625,7 +642,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000012'
     ),
-    'settlement manager cannot read NPC in a settlement outside their nation'
+    'settlement manager can read NPC outside their nation via the world PC-holder rule'
   );
 
 -- Getter RPC must be denied for settlement managers.
@@ -664,7 +681,7 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    5,
+    7,
     'PC holder can read every citizen (including NPCs) in their world'
   );
 

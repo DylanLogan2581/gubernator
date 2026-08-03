@@ -1,16 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useCallback } from "react";
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
-  redirectAuthenticatedRoute,
+  SignInPage,
   SIGN_IN_DEFAULT_RETURN_PATH,
+  redirectAuthenticatedRoute,
 } from "@/features/auth";
-import { HomePage } from "@/features/home";
 
 import type { JSX } from "react";
 
 function HomeRoute(): JSX.Element {
-  return <HomePage />;
+  const router = useRouter();
+  const handleSignInSuccess = useCallback(async () => {
+    await router.navigate({ href: SIGN_IN_DEFAULT_RETURN_PATH });
+  }, [router]);
+
+  return <SignInPage onSignInSuccess={handleSignInSuccess} />;
 }
 
 export const Route = createFileRoute("/")({

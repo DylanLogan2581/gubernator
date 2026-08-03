@@ -19,9 +19,13 @@ const RESOURCE_ID_2 = "00000000-0000-0000-0000-000000000002";
 function createResource(overrides: Partial<Resource> = {}): Resource {
   return {
     baseStockpileCap: 1000,
+    category: null,
+    categoryId: null,
+    changeAmount: 0,
+    changeMode: "percent",
     createdAt: "2026-01-01T00:00:00.000Z",
-    decayRate: 0,
     icon: null,
+    iconColor: null,
     id: RESOURCE_ID_1,
     isTrashed: false,
     isSystemResource: false,

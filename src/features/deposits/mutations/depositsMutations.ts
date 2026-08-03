@@ -19,6 +19,7 @@ import {
   softDeleteDepositTypeInputSchema,
   updateDepositTypeInputSchema,
   type CreateDepositTypeInput,
+  type DepositTypeJobValues,
   type HardDeleteDepositTypeInput,
   type RestoreDepositTypeInput,
   type SoftDeleteDepositTypeInput,
@@ -30,7 +31,6 @@ import type {
   HardDeleteDepositTypeResult,
   RestoreDepositTypeResult,
   SoftDeleteDepositTypeResult,
-  WorkerInputEntry,
 } from "../types/depositTypes";
 import type { z } from "zod";
 
@@ -43,21 +43,29 @@ type DepositTypeMutationErrorCode =
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
 type DepositTypeInsertPayload = {
   icon?: string | null;
-  job_id: string;
+  icon_color?: number | null;
   name: string;
-  output_units_per_worker: number;
   slug: string;
-  worker_inputs_json?: Json;
   world_id: string;
 };
 
 type DepositTypeUpdatePayload = {
   icon?: string | null;
-  job_id?: string;
+  icon_color?: number | null;
   name?: string;
-  output_units_per_worker?: number;
   slug?: string;
+};
+
+// world_id is redundant with deposit_type_id (a BEFORE INSERT trigger would
+// derive it if omitted) but the generated Supabase types require it on
+// insert, so it's passed through explicitly from the parent mutation's
+// worldId.
+type DepositTypeJobInsertPayload = {
+  deposit_type_id: string;
+  job_id: string;
+  output_units_per_worker: number;
   worker_inputs_json?: Json;
+  world_id: string;
 };
 
 export type DepositTypeMutationIssue = MutationIssue;
@@ -125,43 +133,36 @@ async function createDepositType(
 
   const insertPayload: DepositTypeInsertPayload = {
     icon: values.icon ?? null,
-    job_id: values.jobId,
+    icon_color: values.iconColor ?? null,
     name: values.name.trim(),
-    output_units_per_worker: values.outputUnitsPerWorker,
     slug: values.slug.trim(),
     world_id: values.worldId,
   };
 
-  if (values.workerInputsJson !== undefined) {
-    insertPayload.worker_inputs_json = toWorkerInputsJson(
-      values.workerInputsJson,
-    );
-  }
-
-  const { data, error } = await client
+  const { data: insertedRow, error: insertError } = await client
     .from("deposit_types")
     .insert(insertPayload)
-    .select(DEPOSIT_TYPE_SELECT)
-    .maybeSingle<DepositTypeRow>();
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
-  if (error !== null) {
-    if (isActiveJobIdConflict(error)) {
-      throw new DepositTypeMutationError({
-        code: "deposit_type_job_already_linked",
-        message: "This job is already linked to another active deposit type.",
-      });
-    }
-    throw normalizeSupabaseError(error);
+  if (insertError !== null) {
+    throw normalizeSupabaseError(insertError);
   }
-
-  if (data === null) {
+  if (insertedRow === null) {
     throw new DepositTypeMutationError({
       code: "deposit_type_not_found",
       message: "Deposit type could not be created.",
     });
   }
 
-  return toDepositType(data);
+  await insertDepositTypeJobs(
+    client,
+    insertedRow.id,
+    values.worldId,
+    values.jobs,
+  );
+
+  return fetchDepositTypeById(client, insertedRow.id);
 }
 
 async function updateDepositType(
@@ -178,43 +179,130 @@ async function updateDepositType(
   if (values.slug !== undefined) {
     updatePayload.slug = values.slug.trim();
   }
-  if (values.jobId !== undefined) {
-    updatePayload.job_id = values.jobId;
-  }
-  if (values.outputUnitsPerWorker !== undefined) {
-    updatePayload.output_units_per_worker = values.outputUnitsPerWorker;
-  }
-  if (values.workerInputsJson !== undefined) {
-    updatePayload.worker_inputs_json = toWorkerInputsJson(
-      values.workerInputsJson,
-    );
-  }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;
   }
+  if (values.iconColor !== undefined) {
+    updatePayload.icon_color = values.iconColor;
+  }
 
-  const { data, error } = await client
-    .from("deposit_types")
-    .update(updatePayload)
-    .eq("id", values.depositTypeId)
-    .eq("world_id", values.worldId)
-    .select(DEPOSIT_TYPE_SELECT)
-    .maybeSingle<DepositTypeRow>();
+  if (Object.keys(updatePayload).length > 0) {
+    const { data, error } = await client
+      .from("deposit_types")
+      .update(updatePayload)
+      .eq("id", values.depositTypeId)
+      .eq("world_id", values.worldId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error !== null) {
+      throw normalizeSupabaseError(error);
+    }
+    if (data === null) {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_not_found",
+        message: "Deposit type could not be updated.",
+      });
+    }
+  } else {
+    const { data, error } = await client
+      .from("deposit_types")
+      .select("id")
+      .eq("id", values.depositTypeId)
+      .eq("world_id", values.worldId)
+      .maybeSingle<{ id: string }>();
+
+    if (error !== null) {
+      throw normalizeSupabaseError(error);
+    }
+    if (data === null) {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_not_found",
+        message: "Deposit type could not be updated.",
+      });
+    }
+  }
+
+  if (values.jobs !== undefined) {
+    await replaceDepositTypeJobs(
+      client,
+      values.depositTypeId,
+      values.worldId,
+      values.jobs,
+    );
+  }
+
+  return fetchDepositTypeById(client, values.depositTypeId);
+}
+
+// No DB transaction wraps the delete+insert below: deposit_type_jobs
+// mutations are admin-only, low-frequency, and RLS-gated, so a client-side
+// sequential replace is an acceptable trade-off for the join-table shape
+// (see issue #1246).
+async function replaceDepositTypeJobs(
+  client: GubernatorSupabaseClient,
+  depositTypeId: string,
+  worldId: string,
+  jobs: readonly DepositTypeJobValues[],
+): Promise<void> {
+  const { error: deleteError } = await client
+    .from("deposit_type_jobs")
+    .delete()
+    .eq("deposit_type_id", depositTypeId);
+
+  if (deleteError !== null) {
+    throw normalizeSupabaseError(deleteError);
+  }
+
+  await insertDepositTypeJobs(client, depositTypeId, worldId, jobs);
+}
+
+async function insertDepositTypeJobs(
+  client: GubernatorSupabaseClient,
+  depositTypeId: string,
+  worldId: string,
+  jobs: readonly DepositTypeJobValues[],
+): Promise<void> {
+  const insertPayload: DepositTypeJobInsertPayload[] = jobs.map((job) => ({
+    deposit_type_id: depositTypeId,
+    job_id: job.jobId,
+    output_units_per_worker: job.outputUnitsPerWorker,
+    worker_inputs_json: toWorkerInputsJson(job.workerInputsJson),
+    world_id: worldId,
+  }));
+
+  const { error } = await client
+    .from("deposit_type_jobs")
+    .insert(insertPayload);
 
   if (error !== null) {
-    if (isActiveJobIdConflict(error)) {
+    if (isDuplicateJobInDepositTypeConflict(error)) {
       throw new DepositTypeMutationError({
         code: "deposit_type_job_already_linked",
-        message: "This job is already linked to another active deposit type.",
+        message: "Each job may only be linked once per deposit type.",
       });
     }
     throw normalizeSupabaseError(error);
   }
+}
 
+async function fetchDepositTypeById(
+  client: GubernatorSupabaseClient,
+  depositTypeId: string,
+): Promise<DepositType> {
+  const { data, error } = await client
+    .from("deposit_types")
+    .select(DEPOSIT_TYPE_SELECT)
+    .eq("id", depositTypeId)
+    .maybeSingle<DepositTypeRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
   if (data === null) {
     throw new DepositTypeMutationError({
       code: "deposit_type_not_found",
-      message: "Deposit type could not be updated.",
+      message: "Deposit type could not be found.",
     });
   }
 
@@ -320,7 +408,9 @@ async function hardDeleteDepositType(
   return { depositTypeId: data.id, worldId: data.world_id };
 }
 
-function toWorkerInputsJson(entries: readonly WorkerInputEntry[]): Json {
+function toWorkerInputsJson(
+  entries: DepositTypeJobValues["workerInputsJson"],
+): Json {
   return toSnakeCaseEntries(entries, {
     amountPerWorker: "amount_per_worker",
     resourceId: "resource_id",
@@ -343,12 +433,16 @@ function parseInput<TSchema extends z.ZodTypeAny>(
   );
 }
 
-function isActiveJobIdConflict(error: {
+// deposit_type_jobs_unique is scoped per deposit type only (deposit_type_id,
+// job_id), unlike the old world-wide-unique deposit_types_unique_active_job_id
+// constraint — a job can now be linked to multiple deposit types. This only
+// fires as a defensive backstop; the form/schema already reject duplicate
+// jobIds within a single submission.
+function isDuplicateJobInDepositTypeConflict(error: {
   code: string;
   message: string;
 }): boolean {
   return (
-    error.code === "23505" &&
-    error.message.includes("deposit_types_unique_active_job_id")
+    error.code === "23505" && error.message.includes("deposit_type_jobs_unique")
   );
 }

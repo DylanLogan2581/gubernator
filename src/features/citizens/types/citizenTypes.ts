@@ -1,3 +1,5 @@
+import type { PartnershipStatus } from "@/features/partnerships";
+
 export type CitizenType = "npc" | "player_character";
 export type CitizenStatus = "alive" | "dead";
 export type CitizenRoleType = "none" | "nation_manager" | "settlement_manager";
@@ -19,8 +21,10 @@ export type Citizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: CitizenType;
   readonly createdAt: string;
+  readonly cultureId: string | null;
   readonly deathCause: string | null;
   readonly deathCauseCategory: DeathCauseCategory | null;
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly id: string;
   readonly name: string;
@@ -28,6 +32,7 @@ export type Citizen = {
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
   readonly profilePhotoUrl: string | null;
+  readonly religionId: string | null;
   readonly roleNationId: string | null;
   readonly roleSettlementId: string | null;
   readonly roleType: CitizenRoleType;
@@ -58,9 +63,45 @@ export type CitizenAssignmentTypeBreakdown = Readonly<
 
 export type CitizenAggregateStats = {
   readonly assignmentTypeBreakdown: CitizenAssignmentTypeBreakdown;
+  // Alive, unassigned citizens who can never be given a job because they're
+  // a labor-excluded nation office-holder, an education enrollee, or a
+  // soldier (mirrors phaseStandardJobs.ts's eligibility exclusions, #1322).
+  // Counted separately from unassignedNpcCount/unassignedPcCount so the
+  // "unassigned" figure only reflects citizens an admin can actually assign.
+  readonly ineligibleIdleNpcCount: number;
+  readonly ineligibleIdlePcCount: number;
   readonly statusBreakdown: CitizenStatusBreakdown;
   readonly total: number;
   readonly typeBreakdown: CitizenTypeBreakdown;
   readonly unassignedNpcCount: number;
   readonly unassignedPcCount: number;
+};
+
+export type FamilyTreeDirection =
+  | "self"
+  | "ancestor"
+  | "descendant"
+  | "partner"
+  | "unknown";
+
+export type FamilyTreeNode = {
+  readonly citizenId: string | null;
+  readonly direction: FamilyTreeDirection;
+  readonly generation: number;
+  readonly name: string | null;
+  readonly nodePath: string;
+  readonly parentACitizenId: string | null;
+  readonly parentBCitizenId: string | null;
+  readonly parentPath: string | null;
+  readonly partnershipStatus: PartnershipStatus | null;
+  readonly status: CitizenStatus | null;
+};
+
+// Sentinel key for citizens with no culture_id / religion_id assigned —
+// matches neither a valid uuid nor any real culture/religion id.
+export const UNASSIGNED_CULTURE_RELIGION_KEY = "unassigned";
+
+export type CultureReligionComposition = {
+  readonly byCultureId: Readonly<Record<string, number>>;
+  readonly byReligionId: Readonly<Record<string, number>>;
 };

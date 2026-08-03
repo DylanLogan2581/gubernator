@@ -95,18 +95,13 @@ describe("endTurnTransitionMutationOptions", () => {
     });
 
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["worlds"] });
-    expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["turns", "current-turn-state", "world-1"],
-    });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["turns"] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["calendar"] });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["settlements", "readiness", "list", "world-1"],
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["settlements", "readiness", "summary", "world-1"],
-    });
-    expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["turns", "latest-transition-status", "world-1"],
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["notifications"],

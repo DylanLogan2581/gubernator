@@ -3,7 +3,37 @@ import { describe, expect, it } from "vitest";
 import type { WorldCalendarConfig } from "@/features/calendar";
 import { createAccessContext } from "@/features/permissions";
 
-import { createWorldSlug, toAccessibleWorld } from "./worldDisplay";
+import {
+  createWorldSlug,
+  formatLastTurnLabel,
+  formatPlayerCharacterCount,
+  toAccessibleWorld,
+} from "./worldDisplay";
+
+describe("formatPlayerCharacterCount", () => {
+  it("reports an empty state when there are no player characters", () => {
+    expect(formatPlayerCharacterCount(0)).toBe("No player characters");
+  });
+
+  it("uses the singular noun for a single player character", () => {
+    expect(formatPlayerCharacterCount(1)).toBe("1 player character");
+  });
+
+  it("uses the plural noun for multiple player characters", () => {
+    expect(formatPlayerCharacterCount(4)).toBe("4 player characters");
+  });
+});
+
+describe("formatLastTurnLabel", () => {
+  it("reports an empty state when the world never transitioned", () => {
+    expect(formatLastTurnLabel(null)).toBe("Never");
+  });
+
+  it("formats the last transition as a relative time", () => {
+    const now = new Date("2026-07-25T00:00:00Z");
+    expect(formatLastTurnLabel("2026-07-22T00:00:00Z", now)).toBe("3 days ago");
+  });
+});
 
 describe("createWorldSlug", () => {
   it("creates stable display slugs from world names", () => {
@@ -40,7 +70,6 @@ describe("toAccessibleWorld", () => {
       inWorldDateLabel: "Firstday, Ember 1, 100 AG",
       inWorldDateLabelShort: "2/1/100",
       isArchived: false,
-      isHidden: true,
       nextInWorldDateLabel: "Secondday, Ember 2, 100 AG",
       nextTurnNumber: 4,
       planningTurnNumber: 3,
@@ -91,11 +120,11 @@ describe("toAccessibleWorld", () => {
     ).toBe("Calendar unavailable");
   });
 
-  it("marks archived public worlds for display", () => {
+  it("marks archived worlds for display", () => {
     const accessContext = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
-      worldAdminWorldIds: [],
+      worldAdminWorldIds: ["world-2"],
     });
 
     const world = toAccessibleWorld(
@@ -104,15 +133,13 @@ describe("toAccessibleWorld", () => {
         id: "world-2",
         name: "Archived World",
         status: "archived",
-        visibility: "public",
       }),
       accessContext,
     );
 
     expect(world.isArchived).toBe(true);
-    expect(world.isHidden).toBe(false);
     expect(world.canAccess).toBe(true);
-    expect(world.canManage).toBe(false);
+    expect(world.canManage).toBe(true);
   });
 });
 
@@ -128,7 +155,6 @@ function createWorldRow(
     readonly name: string;
     readonly status: string;
     readonly updated_at: string;
-    readonly visibility: string;
   }> = {},
 ): {
   readonly archived_at: string | null;
@@ -141,7 +167,6 @@ function createWorldRow(
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 } {
   return {
     archived_at: null,
@@ -154,7 +179,6 @@ function createWorldRow(
     name: "Verdant Reach",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "private",
     ...overrides,
   };
 }

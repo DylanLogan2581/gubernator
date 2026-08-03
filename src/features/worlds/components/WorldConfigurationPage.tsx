@@ -5,23 +5,29 @@ import { useEffect, useMemo } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
+import { CulturesConfigPanel } from "@/features/cultures";
 import { DepositsConfigPanel } from "@/features/deposits";
+import { EducationConfigPanel } from "@/features/education";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
+import { MilitaryConfigPanel } from "@/features/military";
 import { NamesetsConfigPanel } from "@/features/namesets";
+import { NationDiscoveryConfigPanel } from "@/features/nations";
 import {
   AdminSuppressedNotice,
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
 } from "@/features/permissions";
+import { ReligionsConfigPanel } from "@/features/religions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
-import { getVisibleConfigTabs } from "../configTabs";
+import { CONFIG_TAB_IDS, getVisibleConfigTabs } from "../configTabs";
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
 import { WorldImagesPanel } from "./WorldImagesPanel";
@@ -31,17 +37,103 @@ import { WorldSettingsPanel } from "./WorldSettingsPanel";
 import { WorldTemplateExportButton } from "./WorldTemplateExportButton";
 
 import type { ConfigTabId } from "../configTabs";
+import type { WorldRouteAccess } from "../types/worldTypes";
 import type { JSX, ReactNode } from "react";
+
+// ---------------------------------------------------------------------------
+// Panel lookup table — companion to `getVisibleConfigTabs` / CONFIG_TABS in
+// ../configTabs. Every ConfigTabId must map to a renderer (Record enforces
+// exhaustiveness).
+// ---------------------------------------------------------------------------
+
+type PanelRenderProps = {
+  readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
+  readonly canAdmin: boolean;
+  readonly header: WorldRouteAccess["header"];
+  readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly worldId: string;
+};
+
+function basePanelProps({ canAdmin, header, worldId }: PanelRenderProps): {
+  readonly canAdmin: boolean;
+  readonly isArchived: boolean;
+  readonly worldId: string;
+} {
+  return { canAdmin, isArchived: header.isArchived, worldId };
+}
+
+const CONFIG_PANEL_RENDERERS: Record<
+  ConfigTabId,
+  (props: PanelRenderProps) => JSX.Element | null
+> = {
+  resources: (p) => <ResourcesConfigPanel {...basePanelProps(p)} />,
+  jobs: (p) => <JobsConfigPanel {...basePanelProps(p)} />,
+  buildings: (p) => <BuildingsConfigPanel {...basePanelProps(p)} />,
+  deposits: (p) => <DepositsConfigPanel {...basePanelProps(p)} />,
+  "managed-populations": (p) => (
+    <ManagedPopulationsConfigPanel {...basePanelProps(p)} />
+  ),
+  cultures: (p) => (
+    <ConfigPanelShell>
+      <CulturesConfigPanel {...basePanelProps(p)} />
+    </ConfigPanelShell>
+  ),
+  religions: (p) => (
+    <ConfigPanelShell>
+      <ReligionsConfigPanel {...basePanelProps(p)} />
+    </ConfigPanelShell>
+  ),
+  education: (p) => <EducationConfigPanel {...basePanelProps(p)} />,
+  military: (p) => <MilitaryConfigPanel {...basePanelProps(p)} />,
+  calendar: (p) => (
+    <WorldCalendarConfigPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+    />
+  ),
+  namesets: (p) => <NamesetsConfigPanel {...basePanelProps(p)} />,
+  discovery: (p) => <NationDiscoveryConfigPanel {...basePanelProps(p)} />,
+  "npc-flavor": (p) => (
+    <WorldNpcFlavorConfigPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+    />
+  ),
+  "population-rules": (p) => (
+    <WorldPopulationRulesConfigPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+    />
+  ),
+  images: (p) => (
+    <WorldImagesPanel
+      accessContext={p.accessContext}
+      {...basePanelProps(p)}
+      worldName={p.header.name}
+    />
+  ),
+  "world-settings": (p) =>
+    p.accessContext.isSuperAdmin ? (
+      <WorldSettingsPanel
+        currentTurnNumber={p.header.currentTurnNumber}
+        queryClient={p.queryClient}
+        worldId={p.worldId}
+        worldName={p.header.name}
+      />
+    ) : null,
+};
+
+function isConfigTabId(id: string): id is ConfigTabId {
+  return (CONFIG_TAB_IDS as readonly string[]).includes(id);
+}
 
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
-  readonly selectedBlueprintId?: string;
   readonly worldId: string;
 };
 
 export function WorldConfigurationPage({
   activeTab,
-  selectedBlueprintId,
   worldId,
 }: WorldConfigurationPageProps): JSX.Element {
   const queryClient = useQueryClient();
@@ -95,7 +187,7 @@ export function WorldConfigurationPage({
           Back to world
         </Link>
       </Button>
-      <h1 className="text-2xl font-semibold tracking-normal">Configuration</h1>
+      <PageHeader title="Configuration" />
 
       {/* Mobile select — one-tap switching below md breakpoint; desktop
           navigation lives in the sidebar submenu. */}
@@ -127,7 +219,6 @@ export function WorldConfigurationPage({
             accessContext={accessContextQuery.data}
             activeTab={activeTab}
             queryClient={queryClient}
-            selectedBlueprintId={selectedBlueprintId}
             worldId={worldId}
           />
         )}
@@ -140,13 +231,11 @@ function WorldConfigurationContent({
   accessContext,
   activeTab,
   queryClient,
-  selectedBlueprintId,
   worldId,
 }: {
   readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
   readonly activeTab: string;
   readonly queryClient: ReturnType<typeof useQueryClient>;
-  readonly selectedBlueprintId?: string;
   readonly worldId: string;
 }): JSX.Element | null {
   const worldQuery = useQuery(
@@ -181,152 +270,6 @@ function WorldConfigurationContent({
     return <AdminSuppressedNotice />;
   }
 
-  function renderPanel(): JSX.Element | null {
-    if (activeTab === "resources") {
-      return (
-        <ConfigPanelShell>
-          <ResourcesConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "jobs") {
-      return (
-        <ConfigPanelShell>
-          <JobsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "buildings") {
-      return (
-        <ConfigPanelShell>
-          <BuildingsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            selectedBlueprintId={selectedBlueprintId}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "deposits") {
-      return (
-        <ConfigPanelShell>
-          <DepositsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "managed-populations") {
-      return (
-        <ConfigPanelShell>
-          <ManagedPopulationsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "calendar") {
-      return (
-        <ConfigPanelShell>
-          <WorldCalendarConfigPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "namesets") {
-      return (
-        <ConfigPanelShell>
-          <NamesetsConfigPanel
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "npc-flavor") {
-      return (
-        <ConfigPanelShell>
-          <WorldNpcFlavorConfigPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "population-rules") {
-      return (
-        <ConfigPanelShell>
-          <WorldPopulationRulesConfigPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "images") {
-      return (
-        <ConfigPanelShell>
-          <WorldImagesPanel
-            accessContext={accessContext}
-            canAdmin={canAdmin}
-            isArchived={header.isArchived}
-            worldId={worldId}
-            worldName={header.name}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    if (activeTab === "world-settings") {
-      if (!accessContext.isSuperAdmin) {
-        return null;
-      }
-      return (
-        <ConfigPanelShell>
-          <WorldSettingsPanel
-            currentTurnNumber={header.currentTurnNumber}
-            queryClient={queryClient}
-            worldId={worldId}
-            worldName={header.name}
-          />
-        </ConfigPanelShell>
-      );
-    }
-
-    return null;
-  }
-
   return (
     <>
       {canAdmin && (
@@ -337,7 +280,15 @@ function WorldConfigurationContent({
           />
         </div>
       )}
-      {renderPanel()}
+      {isConfigTabId(activeTab)
+        ? CONFIG_PANEL_RENDERERS[activeTab]({
+            accessContext,
+            canAdmin,
+            header,
+            queryClient,
+            worldId,
+          })
+        : null}
     </>
   );
 }
@@ -347,9 +298,5 @@ function ConfigPanelShell({
 }: {
   readonly children: ReactNode;
 }): JSX.Element {
-  return (
-    <section className="rounded-md border border-border bg-card p-4 text-card-foreground">
-      {children}
-    </section>
-  );
+  return <section className="grid gap-4">{children}</section>;
 }

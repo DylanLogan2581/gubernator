@@ -9,6 +9,8 @@ import { TurnLogCitizenCombobox } from "./TurnLogCitizenCombobox";
 
 const searchFn = vi.fn();
 
+// The shared search hook (useCitizenDirectorySearch) queries the directory
+// module directly, so mock that source rather than the feature barrel.
 vi.mock("@/features/citizens", async () => {
   const actual = await vi.importActual<typeof CitizensModule>(
     "@/features/citizens",
@@ -22,26 +24,29 @@ vi.mock("@/features/citizens", async () => {
           citizenId === "citizen-1" ? { id: citizenId, name: "Alice" } : null,
         ),
     }),
-    citizensDirectoryQueryOptions: (
-      _worldId: string,
-      filters: { readonly search?: string },
-    ) => ({
-      queryKey: ["citizens-directory", filters.search],
-      queryFn: () => {
-        searchFn(filters.search);
-        const rows = [
-          { id: "citizen-1", name: "Alice" },
-          { id: "citizen-2", name: "Bob" },
-        ].filter((row) =>
-          filters.search !== undefined && filters.search !== ""
-            ? row.name.toLowerCase().includes(filters.search.toLowerCase())
-            : true,
-        );
-        return Promise.resolve({ rows, totalCount: rows.length });
-      },
-    }),
   };
 });
+
+vi.mock("@/features/citizens/queries/citizenDirectoryQueries", () => ({
+  citizensDirectoryQueryOptions: (
+    _worldId: string,
+    filters: { readonly search?: string },
+  ) => ({
+    queryKey: ["citizens-directory", filters.search],
+    queryFn: () => {
+      searchFn(filters.search);
+      const rows = [
+        { id: "citizen-1", name: "Alice" },
+        { id: "citizen-2", name: "Bob" },
+      ].filter((row) =>
+        filters.search !== undefined && filters.search !== ""
+          ? row.name.toLowerCase().includes(filters.search.toLowerCase())
+          : true,
+      );
+      return Promise.resolve({ rows, totalCount: rows.length });
+    },
+  }),
+}));
 
 function renderCombobox(
   citizenId: string | undefined,

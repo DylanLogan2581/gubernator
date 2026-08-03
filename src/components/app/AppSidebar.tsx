@@ -2,33 +2,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   AlertTriangle,
-  ArrowLeftRight,
-  Bell,
   BookOpen,
-  Briefcase,
-  Building2,
   Clock,
-  FileText,
-  Gem,
   Globe2,
-  HardHat,
-  Handshake,
   Landmark,
   LayoutDashboard,
   Mail,
   MapPin,
-  Package,
-  PawPrint,
-  Settings,
   ShieldCheck,
-  TrendingUp,
-  UserCircle2,
   Users,
   Zap,
 } from "lucide-react";
 
-import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
-import { unreadNotificationsCountQueryOptions } from "@/features/notifications";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarRail,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+import { lawAmendmentsAwaitingMyVoteCountQueryOptions } from "@/features/law-amendments";
 import {
   useActivePlayerCharacter,
   useEffectiveCanAdmin,
@@ -38,13 +31,18 @@ import { CharacterCard } from "./sidebar/CharacterCard";
 import { ConfigurationNavItem } from "./sidebar/ConfigurationNavItem";
 import { NationScopeSwitcher } from "./sidebar/NationScopeSwitcher";
 import { NavGroup, type NavGroupItem } from "./sidebar/NavGroup";
+import {
+  buildNationSectionItems,
+  buildSettlementSectionItems,
+  NATION_SECTION_SEGMENTS,
+  SETTLEMENT_SECTION_SEGMENTS,
+} from "./sidebar/SectionConfig";
+import { sectionFromPathname } from "./sidebar/SectionRouting";
 import { SettlementScopeSwitcher } from "./sidebar/SettlementScopeSwitcher";
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
 import { WorldHeaderCard } from "./sidebar/WorldHeaderCard";
 import { useWorldScope } from "./sidebar/WorldScopeContext";
 
-import type { NationSection } from "./sidebar/NationScopeSwitcher";
-import type { SettlementSection } from "./sidebar/SettlementScopeSwitcher";
 import type { JSX } from "react";
 
 // Renders nothing for signed-out visitors (marketing/sign-in pages) — the
@@ -66,7 +64,6 @@ export function AppSidebar(): JSX.Element | null {
     sidebarTurnLabel: turnLabel,
     sidebarWorldId: worldId,
     sidebarWorldName: worldName,
-    userId,
   } = useAppShellWorldContext();
   const { activeCharacter } = useActivePlayerCharacter();
   const { nationId, settlementId } = useWorldScope();
@@ -75,10 +72,26 @@ export function AppSidebar(): JSX.Element | null {
   // is: an active PC means the viewer is playing, not administering.
   const effectiveIsSuperAdmin = useEffectiveCanAdmin(isSuperAdmin);
 
-  const unreadCountQuery = useQuery(
-    unreadNotificationsCountQueryOptions(userId),
-  );
-  const unreadCount = unreadCountQuery.data ?? 0;
+  // "Awaiting your vote" badges (#1120) -- only for a viewer with an active
+  // player character (admins with no PC don't get a personal vote badge).
+  // Two separate queries/counts since the NATION and SETTLEMENT groups link
+  // to different government tabs.
+  const nationAwaitingMyVoteQuery = useQuery({
+    ...lawAmendmentsAwaitingMyVoteCountQueryOptions(
+      { nationId, settlementId: null },
+      activeCharacter?.id ?? "",
+    ),
+    enabled: nationId !== null && activeCharacter !== null,
+  });
+  const settlementAwaitingMyVoteQuery = useQuery({
+    ...lawAmendmentsAwaitingMyVoteCountQueryOptions(
+      { nationId: null, settlementId },
+      activeCharacter?.id ?? "",
+    ),
+    enabled: settlementId !== null && activeCharacter !== null,
+  });
+  const nationAwaitingMyVoteCount = nationAwaitingMyVoteQuery.data ?? 0;
+  const settlementAwaitingMyVoteCount = settlementAwaitingMyVoteQuery.data ?? 0;
 
   if (!isAuthenticated) {
     return null;
@@ -155,7 +168,7 @@ export function AppSidebar(): JSX.Element | null {
         <WorldHeaderCard turnLabel={null} worldId={null} worldName={null} />
         <SidebarContent>
           <NavGroup
-            label="PLAY"
+            label="WORLD"
             items={[
               {
                 key: "worlds",
@@ -168,20 +181,9 @@ export function AppSidebar(): JSX.Element | null {
                   </Link>
                 ),
               },
-              {
-                key: "notifications",
-                label: "Notifications",
-                isActive: location.pathname === "/notifications",
-                badge: unreadCount,
-                link: (
-                  <Link to="/notifications">
-                    <Bell aria-hidden="true" />
-                    <span>Notifications</span>
-                  </Link>
-                ),
-              },
             ]}
           />
+          {adminItems.length > 0 ? <SidebarSeparator /> : null}
           <NavGroup label="Superadmin" items={adminItems} />
         </SidebarContent>
         <SidebarRail />
@@ -205,7 +207,10 @@ export function AppSidebar(): JSX.Element | null {
       location.pathname.startsWith(`${settlementBasePath}/`));
   const currentSection =
     isOnSettlementPage && settlementBasePath !== null
-      ? sectionFromPathname(location.pathname, settlementBasePath)
+      ? sectionFromPathname(location.pathname, settlementBasePath, {
+          fallback: "overview",
+          segments: SETTLEMENT_SECTION_SEGMENTS,
+        })
       : null;
 
   // Mirrors the SETTLEMENT guard above, one level up: only read a NATION
@@ -218,186 +223,55 @@ export function AppSidebar(): JSX.Element | null {
       location.pathname.startsWith(`${nationBasePath}/`));
   const currentNationSection =
     isOnNationPage && nationBasePath !== null
-      ? nationSectionFromPathname(location.pathname, nationBasePath)
+      ? sectionFromPathname(location.pathname, nationBasePath, {
+          fallback: "overview",
+          nullSubtreePrefix: "settlements/",
+          segments: NATION_SECTION_SEGMENTS,
+        })
       : null;
-  const isAliveNationManagerHere =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nationId &&
-    activeCharacter.status === "alive";
-
-  const playItems: NavGroupItem[] = [
-    {
-      key: "dashboard",
-      label: "Dashboard",
-      isActive: location.pathname === `/worlds/${worldId}`,
-      link: (
-        <Link to="/worlds/$worldId" params={{ worldId }}>
-          <LayoutDashboard aria-hidden="true" />
-          <span>Dashboard</span>
-        </Link>
-      ),
-    },
-    ...(activeCharacter === null
-      ? []
-      : [
-          {
-            key: "my-character",
-            label: "My Character",
-            isActive:
-              location.pathname ===
-              `/worlds/${worldId}/citizens/${activeCharacter.id}`,
-            link: (
-              <Link
-                to="/worlds/$worldId/citizens/$citizenId"
-                params={{ citizenId: activeCharacter.id, worldId }}
-              >
-                <UserCircle2 aria-hidden="true" />
-                <span>My Character</span>
-              </Link>
-            ),
-          },
-        ]),
-    {
-      key: "events",
-      label: "Events",
-      isActive: location.pathname.startsWith(`/worlds/${worldId}/events`),
-      link: (
-        <Link to="/worlds/$worldId/events" params={{ worldId }}>
-          <Zap aria-hidden="true" />
-          <span>Events</span>
-        </Link>
-      ),
-    },
-    {
-      key: "notifications",
-      label: "Notifications",
-      isActive: location.pathname === "/notifications",
-      badge: unreadCount,
-      link: (
-        <Link to="/notifications">
-          <Bell aria-hidden="true" />
-          <span>Notifications</span>
-        </Link>
-      ),
-    },
-  ];
-
   // No resolvable scope (fresh admin, no pin, no PC home settlement) ->
-  // collapse to a single entry pointing at the nations list, where a
-  // settlement can be picked (docs/ui-redesign.md §3.2).
+  // collapse to a single entry pointing at a settlement listing: the current
+  // nation's Settlements page when a nation is scoped, otherwise the world
+  // nations list where a nation (and then a settlement) can be picked
+  // (docs/ui-redesign.md §3.2).
   const settlementItems: NavGroupItem[] =
     settlementId === null || nationId === null
       ? [
-          {
-            key: "settlement-choose",
-            label: "Choose a settlement…",
-            isActive: false,
-            link: (
-              <Link to="/worlds/$worldId/nations" params={{ worldId }}>
-                <MapPin aria-hidden="true" />
-                <span>Choose a settlement…</span>
-              </Link>
-            ),
-          },
+          nationId !== null
+            ? {
+                key: "settlement-choose",
+                label: "Choose a settlement…",
+                isActive: false,
+                link: (
+                  <Link
+                    to="/worlds/$worldId/nations/$nationId/settlements"
+                    params={{ nationId, worldId }}
+                  >
+                    <MapPin aria-hidden="true" />
+                    <span>Choose a settlement…</span>
+                  </Link>
+                ),
+              }
+            : {
+                key: "settlement-choose",
+                label: "Choose a nation…",
+                isActive: false,
+                link: (
+                  <Link to="/worlds/$worldId/nations" params={{ worldId }}>
+                    <MapPin aria-hidden="true" />
+                    <span>Choose a nation…</span>
+                  </Link>
+                ),
+              },
         ]
-      : [
-          settlementSectionItem("overview", {
-            isActive: currentSection === "overview",
-            label: "Overview",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("citizens", {
-            isActive: currentSection === "citizens",
-            label: "Citizens",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("assignments", {
-            isActive: currentSection === "assignments",
-            label: "Job Assignments",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("populations", {
-            isActive: currentSection === "populations",
-            label: "Populations",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("buildings", {
-            isActive: currentSection === "buildings",
-            label: "Buildings",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("construction", {
-            isActive: currentSection === "construction",
-            label: "Construction",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("stockpiles", {
-            isActive: currentSection === "stockpiles",
-            label: "Stockpiles",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("deposits", {
-            isActive: currentSection === "deposits",
-            label: "Deposits",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("trade", {
-            isActive: currentSection === "trade",
-            label: "Trade",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("forecast", {
-            isActive: currentSection === "forecast",
-            label: "Forecast",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("reports", {
-            isActive: currentSection === "reports",
-            label: "Reports",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          settlementSectionItem("history", {
-            isActive: currentSection === "history",
-            label: "History",
-            nationId,
-            settlementId,
-            worldId,
-          }),
-          ...(effectiveCanAdmin
-            ? [
-                settlementSectionItem("settings", {
-                  isActive: currentSection === "settings",
-                  label: "Settings",
-                  nationId,
-                  settlementId,
-                  worldId,
-                }),
-              ]
-            : []),
-        ];
+      : buildSettlementSectionItems({
+          currentSection,
+          effectiveCanAdmin,
+          governmentBadge: settlementAwaitingMyVoteCount,
+          nationId,
+          settlementId,
+          worldId,
+        });
 
   // No resolvable nation -> collapse to a single entry pointing at the
   // nations list (mirrors settlementItems above).
@@ -416,54 +290,37 @@ export function AppSidebar(): JSX.Element | null {
             ),
           },
         ]
-      : [
-          nationSectionItem("overview", {
-            isActive: currentNationSection === "overview",
-            label: "Overview",
-            nationId,
-            worldId,
-          }),
-          nationSectionItem("settlements", {
-            isActive: currentNationSection === "settlements",
-            label: "Settlements",
-            nationId,
-            worldId,
-          }),
-          nationSectionItem("relationships", {
-            isActive: currentNationSection === "relationships",
-            label: "Relationships",
-            nationId,
-            worldId,
-          }),
-          ...(effectiveCanAdmin || isAliveNationManagerHere
-            ? [
-                nationSectionItem("government", {
-                  isActive: currentNationSection === "government",
-                  label: "Government",
-                  nationId,
-                  worldId,
-                }),
-              ]
-            : []),
-          nationSectionItem("reports", {
-            isActive: currentNationSection === "reports",
-            label: "Reports",
-            nationId,
-            worldId,
-          }),
-          ...(effectiveCanAdmin
-            ? [
-                nationSectionItem("settings", {
-                  isActive: currentNationSection === "settings",
-                  label: "Settings",
-                  nationId,
-                  worldId,
-                }),
-              ]
-            : []),
-        ];
+      : buildNationSectionItems({
+          currentSection: currentNationSection,
+          effectiveCanAdmin,
+          governmentBadge: nationAwaitingMyVoteCount,
+          nationId,
+          worldId,
+        });
 
   const worldItems: NavGroupItem[] = [
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      isActive: location.pathname === `/worlds/${worldId}`,
+      link: (
+        <Link to="/worlds/$worldId" params={{ worldId }}>
+          <LayoutDashboard aria-hidden="true" />
+          <span>Dashboard</span>
+        </Link>
+      ),
+    },
+    {
+      key: "events",
+      label: "Events",
+      isActive: location.pathname.startsWith(`/worlds/${worldId}/events`),
+      link: (
+        <Link to="/worlds/$worldId/events" params={{ worldId }}>
+          <Zap aria-hidden="true" />
+          <span>Events</span>
+        </Link>
+      ),
+    },
     {
       key: "nations",
       label: "Nations",
@@ -506,9 +363,12 @@ export function AppSidebar(): JSX.Element | null {
         worldId={worldId}
         worldName={worldName}
       />
-      <CharacterCard canAdmin={canAdmin} worldId={worldId} />
+      {activeCharacter !== null || canAdmin ? (
+        <SidebarHeader>
+          <CharacterCard canAdmin={canAdmin} worldId={worldId} />
+        </SidebarHeader>
+      ) : null}
       <SidebarContent>
-        <NavGroup label="PLAY" items={playItems} />
         <NavGroup
           label="SETTLEMENT"
           items={settlementItems}
@@ -520,6 +380,7 @@ export function AppSidebar(): JSX.Element | null {
             />
           }
         />
+        <SidebarSeparator />
         <NavGroup
           label="NATION"
           items={nationItems}
@@ -531,6 +392,7 @@ export function AppSidebar(): JSX.Element | null {
             />
           }
         />
+        <SidebarSeparator />
         <NavGroup
           label="WORLD"
           items={worldItems}
@@ -543,427 +405,10 @@ export function AppSidebar(): JSX.Element | null {
             ) : null
           }
         />
+        {adminItems.length > 0 ? <SidebarSeparator /> : null}
         <NavGroup label="Superadmin" items={adminItems} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
   );
-}
-
-const SETTLEMENT_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
-  Exclude<SettlementSection, "overview">
->([
-  "assignments",
-  "buildings",
-  "citizens",
-  "construction",
-  "deposits",
-  "forecast",
-  "history",
-  "populations",
-  "reports",
-  "settings",
-  "stockpiles",
-  "trade",
-]);
-
-function isSettlementSectionSegment(
-  value: string,
-): value is Exclude<SettlementSection, "overview"> {
-  return SETTLEMENT_SECTION_SEGMENTS.has(value);
-}
-
-// Derives the active SETTLEMENT sidebar item from the pathname suffix past
-// the settlement's base route — mirrors the settlement detail child routes
-// 1:1. An unrecognized suffix (e.g. mid-navigation to a not-yet-generated
-// route) falls back to "overview" rather than leaving the group with no
-// active item.
-function sectionFromPathname(
-  pathname: string,
-  settlementBasePath: string,
-): SettlementSection {
-  const suffix = pathname.slice(settlementBasePath.length);
-  const segment = suffix.startsWith("/") ? suffix.slice(1) : suffix;
-  return segment !== "" && isSettlementSectionSegment(segment)
-    ? segment
-    : "overview";
-}
-
-function settlementSectionItem(
-  section: SettlementSection,
-  {
-    isActive,
-    label,
-    nationId,
-    settlementId,
-    worldId,
-  }: {
-    readonly isActive: boolean;
-    readonly label: string;
-    readonly nationId: string;
-    readonly settlementId: string;
-    readonly worldId: string;
-  },
-): NavGroupItem {
-  const icons: Record<SettlementSection, JSX.Element> = {
-    assignments: <Briefcase aria-hidden="true" />,
-    buildings: <Building2 aria-hidden="true" />,
-    citizens: <Users aria-hidden="true" />,
-    construction: <HardHat aria-hidden="true" />,
-    deposits: <Gem aria-hidden="true" />,
-    forecast: <TrendingUp aria-hidden="true" />,
-    history: <Clock aria-hidden="true" />,
-    overview: <LayoutDashboard aria-hidden="true" />,
-    populations: <PawPrint aria-hidden="true" />,
-    reports: <FileText aria-hidden="true" />,
-    settings: <Settings aria-hidden="true" />,
-    stockpiles: <Package aria-hidden="true" />,
-    trade: <ArrowLeftRight aria-hidden="true" />,
-  };
-
-  switch (section) {
-    case "assignments":
-      return {
-        key: "settlement-assignments",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "overview":
-      return {
-        key: "settlement-overview",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "citizens":
-      return {
-        key: "settlement-citizens",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "populations":
-      return {
-        key: "settlement-populations",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "buildings":
-      return {
-        key: "settlement-buildings",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "construction":
-      return {
-        key: "settlement-construction",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "stockpiles":
-      return {
-        key: "settlement-stockpiles",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "deposits":
-      return {
-        key: "settlement-deposits",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "trade":
-      return {
-        key: "settlement-trade",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "forecast":
-      return {
-        key: "settlement-forecast",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "reports":
-      return {
-        key: "settlement-reports",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "history":
-      return {
-        key: "settlement-history",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/history"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "settings":
-      return {
-        key: "settlement-settings",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings"
-            params={{ nationId, settlementId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-  }
-}
-
-const NATION_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
-  Exclude<NationSection, "overview">
->(["government", "relationships", "reports", "settings", "settlements"]);
-
-function isNationSectionSegment(
-  value: string,
-): value is Exclude<NationSection, "overview"> {
-  return NATION_SECTION_SEGMENTS.has(value);
-}
-
-// Derives the active NATION sidebar item from the pathname suffix past the
-// nation's base route — mirrors sectionFromPathname (SETTLEMENT), one level
-// up. Unlike SETTLEMENT (the deepest scope), NATION has a real subtree below
-// it that isn't one of its own sections — the settlement-detail routes
-// (`/settlements/$settlementId/...`) — so a `settlements/<id>` suffix must
-// return null (no NATION item active) rather than falling back to
-// "overview"; only a genuinely unrecognized suffix falls back that way.
-function nationSectionFromPathname(
-  pathname: string,
-  nationBasePath: string,
-): NationSection | null {
-  const suffix = pathname.slice(nationBasePath.length);
-  const segment = suffix.startsWith("/") ? suffix.slice(1) : suffix;
-  if (segment.startsWith("settlements/")) {
-    return null;
-  }
-  return segment !== "" && isNationSectionSegment(segment)
-    ? segment
-    : "overview";
-}
-
-function nationSectionItem(
-  section: NationSection,
-  {
-    isActive,
-    label,
-    nationId,
-    worldId,
-  }: {
-    readonly isActive: boolean;
-    readonly label: string;
-    readonly nationId: string;
-    readonly worldId: string;
-  },
-): NavGroupItem {
-  const icons: Record<NationSection, JSX.Element> = {
-    government: <ShieldCheck aria-hidden="true" />,
-    overview: <LayoutDashboard aria-hidden="true" />,
-    relationships: <Handshake aria-hidden="true" />,
-    reports: <FileText aria-hidden="true" />,
-    settings: <Settings aria-hidden="true" />,
-    settlements: <Building2 aria-hidden="true" />,
-  };
-
-  switch (section) {
-    case "overview":
-      return {
-        key: "nation-overview",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId"
-            params={{ nationId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "settlements":
-      return {
-        key: "nation-settlements",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements"
-            params={{ nationId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "relationships":
-      return {
-        key: "nation-relationships",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/relationships"
-            params={{ nationId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "government":
-      return {
-        key: "nation-government",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/government"
-            params={{ nationId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "reports":
-      return {
-        key: "nation-reports",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/reports"
-            params={{ nationId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-    case "settings":
-      return {
-        key: "nation-settings",
-        label,
-        isActive,
-        link: (
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settings"
-            params={{ nationId, worldId }}
-          >
-            {icons[section]}
-            <span>{label}</span>
-          </Link>
-        ),
-      };
-  }
 }

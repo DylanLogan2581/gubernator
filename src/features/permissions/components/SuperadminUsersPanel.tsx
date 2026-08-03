@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { currentAppUserQueryOptions } from "@/features/auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { formatDate, formatRelativeTime } from "@/lib/formatDate";
 
@@ -54,6 +55,7 @@ export function SuperadminUsersPanel(): JSX.Element {
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery(currentAppUserQueryOptions());
   const usersQuery = useQuery(allUsersForSuperadminQueryOptions());
+  const isMobile = useIsMobile();
 
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -120,49 +122,66 @@ export function SuperadminUsersPanel(): JSX.Element {
         </Button>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-border">
-        <Table className="w-full text-sm">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="px-4 py-3 text-left">User</TableHead>
-              <TableHead className="px-4 py-3 text-left">Status</TableHead>
-              <TableHead className="px-4 py-3 text-left">Superadmin</TableHead>
-              <TableHead className="px-4 py-3 text-left">Joined</TableHead>
-              <TableHead className="px-4 py-3 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.length === 0 && (
+      {filteredUsers.length === 0 ? (
+        <p className="mt-4 py-8 text-center text-sm text-muted-foreground">
+          {searchTrimmed.length > 0
+            ? "No users match your search."
+            : "No users found."}
+        </p>
+      ) : isMobile ? (
+        <div className="mt-4 divide-y divide-border border-y border-border">
+          {filteredUsers.map((user) => (
+            <UserCard
+              key={user.id}
+              currentUserId={currentUser.id}
+              user={user}
+              onToggleSuperadmin={() => {
+                setDialog({ kind: "toggle-superadmin", user });
+              }}
+              onManageWorldAdmin={() => {
+                setDialog({ kind: "world-admin", user });
+              }}
+              onManageActivePlayerCharacter={() => {
+                setDialog({ kind: "active-player-character", user });
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+          <Table className="w-full text-sm">
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="px-4 py-8 text-center text-sm text-muted-foreground"
-                >
-                  {searchTrimmed.length > 0
-                    ? "No users match your search."
-                    : "No users found."}
-                </TableCell>
+                <TableHead className="px-4 py-3 text-left">User</TableHead>
+                <TableHead className="px-4 py-3 text-left">Status</TableHead>
+                <TableHead className="px-4 py-3 text-left">
+                  Superadmin
+                </TableHead>
+                <TableHead className="px-4 py-3 text-left">Joined</TableHead>
+                <TableHead className="px-4 py-3 text-right">Actions</TableHead>
               </TableRow>
-            )}
-            {filteredUsers.map((user) => (
-              <UserRow
-                key={user.id}
-                currentUserId={currentUser.id}
-                user={user}
-                onToggleSuperadmin={() => {
-                  setDialog({ kind: "toggle-superadmin", user });
-                }}
-                onManageWorldAdmin={() => {
-                  setDialog({ kind: "world-admin", user });
-                }}
-                onManageActivePlayerCharacter={() => {
-                  setDialog({ kind: "active-player-character", user });
-                }}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <UserRow
+                  key={user.id}
+                  currentUserId={currentUser.id}
+                  user={user}
+                  onToggleSuperadmin={() => {
+                    setDialog({ kind: "toggle-superadmin", user });
+                  }}
+                  onManageWorldAdmin={() => {
+                    setDialog({ kind: "world-admin", user });
+                  }}
+                  onManageActivePlayerCharacter={() => {
+                    setDialog({ kind: "active-player-character", user });
+                  }}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {dialog.kind === "create-user" && (
         <CreateUserDialog
@@ -259,38 +278,105 @@ function UserRow({
       </TableCell>
       <TableCell className="px-4 py-3 text-xs text-muted-foreground">
         <span title={user.created_at}>{formatDate(user.created_at)}</span>
-        <span className="block text-muted-foreground/70">
+        <span className="block text-muted-foreground">
           {formatRelativeTime(user.created_at)}
         </span>
       </TableCell>
       <TableCell className="px-4 py-3 text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={`Actions for ${user.username}`}
-            >
-              <MoreHorizontal className="size-4" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={onManageWorldAdmin}>
-              <Globe2 aria-hidden="true" />
-              Manage world admin
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onManageActivePlayerCharacter}>
-              <UserCog aria-hidden="true" />
-              Manage active PC
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onToggleSuperadmin}>
-              <Shield aria-hidden="true" />
-              {user.is_super_admin ? "Remove superadmin" : "Grant superadmin"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <UserActionsMenu
+          user={user}
+          onManageActivePlayerCharacter={onManageActivePlayerCharacter}
+          onManageWorldAdmin={onManageWorldAdmin}
+          onToggleSuperadmin={onToggleSuperadmin}
+        />
       </TableCell>
     </TableRow>
+  );
+}
+
+type UserActionsMenuProps = {
+  readonly onManageActivePlayerCharacter: () => void;
+  readonly onManageWorldAdmin: () => void;
+  readonly onToggleSuperadmin: () => void;
+  readonly user: SuperadminUser;
+};
+
+function UserActionsMenu({
+  onManageActivePlayerCharacter,
+  onManageWorldAdmin,
+  onToggleSuperadmin,
+  user,
+}: UserActionsMenuProps): JSX.Element {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`Actions for ${user.username}`}
+        >
+          <MoreHorizontal className="size-4" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={onManageWorldAdmin}>
+          <Globe2 aria-hidden="true" />
+          Manage world admin
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onManageActivePlayerCharacter}>
+          <UserCog aria-hidden="true" />
+          Manage active PC
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onToggleSuperadmin}>
+          <Shield aria-hidden="true" />
+          {user.is_super_admin ? "Remove superadmin" : "Grant superadmin"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function UserCard({
+  currentUserId,
+  onManageActivePlayerCharacter,
+  onManageWorldAdmin,
+  onToggleSuperadmin,
+  user,
+}: UserRowProps): JSX.Element {
+  const isSelf = user.id === currentUserId;
+
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">
+          {user.username}
+          {isSelf && (
+            <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>
+          )}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <Badge variant={user.status === "active" ? "outline" : "destructive"}>
+            {user.status}
+          </Badge>
+          {user.is_super_admin && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+              <Shield className="size-3" aria-hidden="true" />
+              Superadmin
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Joined {formatDate(user.created_at)}
+        </p>
+      </div>
+      <UserActionsMenu
+        user={user}
+        onManageActivePlayerCharacter={onManageActivePlayerCharacter}
+        onManageWorldAdmin={onManageWorldAdmin}
+        onToggleSuperadmin={onToggleSuperadmin}
+      />
+    </div>
   );
 }

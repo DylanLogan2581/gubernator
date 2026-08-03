@@ -2,6 +2,9 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import type { TierEducationConfig } from "../education/index.ts";
+import type { GovernmentType } from "../government/index.ts";
+import type { NamingConfig } from "../naming/index.ts";
 import type { TurnCalendarConfig } from "../turnCalendarPrimitives.ts";
 
 // ---------------------------------------------------------------------------
@@ -46,6 +49,145 @@ export type WorldPopulationRules = {
   readonly waterConsumptionPerCitizen: number;
 };
 
+export type SimNationTradePolicy = "free" | "state_controlled" | "closed";
+
+export type SimNation = {
+  readonly governmentType: GovernmentType;
+  readonly id: string;
+  readonly name: string;
+  readonly taxRate: number;
+  readonly tradePolicy: SimNationTradePolicy;
+};
+
+export type SimNationOffice = {
+  readonly citizenId: string;
+  readonly excludesFromLabor: boolean;
+};
+
+export type SimUnitSoldier = {
+  readonly citizenId: string;
+  readonly homeSettlementId: string | null;
+  readonly id: string;
+  readonly unitId: string;
+};
+
+export type SimUnitType = {
+  readonly desertionRate: number;
+  readonly id: string;
+  readonly upkeepCostsJson: readonly SimTierCostEntry[];
+};
+
+export type SimArmy = {
+  readonly fundingSource: "nation" | "host_settlement";
+  readonly id: string;
+  readonly name: string;
+  readonly nationId: string;
+  readonly stationedSettlementId: string;
+};
+
+export type SimArmyUnit = {
+  readonly armyId: string;
+  readonly id: string;
+  readonly unitTypeId: string;
+};
+
+export type SimEducationLevel = {
+  readonly id: string;
+  readonly worldId: string;
+  // Deviation from the original spec (which listed id/worldId/rank only):
+  // name is needed to compose human-readable graduation notification text
+  // ("N citizens completed <name> at the <building>"), so it's included
+  // here rather than re-deriving it via an extra lookup table.
+  readonly name: string;
+  readonly naturalBornPercent: number;
+  readonly rank: number;
+};
+
+export type SimEducationEnrollment = {
+  readonly id: string;
+  readonly worldId: string;
+  readonly settlementBuildingId: string;
+  readonly citizenId: string;
+  readonly targetLevelId: string;
+  readonly progressTurns: number;
+  readonly enrolledTurnNumber: number;
+};
+
+export type SimNationRelationship = {
+  readonly currentStance: string;
+  readonly fromNationId: string;
+  readonly toNationId: string;
+};
+
+// #1094: nation currency state (fiat confidence dynamics, resource-backed
+// default checks). currencyType narrows which fields are meaningful:
+// backingResourceId/backingRatio are set only for "resource_backed".
+export type SimCurrencyType = "fiat" | "resource_backed";
+
+export type SimNationCurrency = {
+  readonly backingRatio: number | null;
+  readonly backingResourceId: string | null;
+  readonly confidence: number;
+  readonly currencyType: SimCurrencyType;
+  readonly id: string;
+  readonly isInDefault: boolean;
+  readonly moneySupply: number;
+  readonly name: string;
+  readonly nationId: string;
+  readonly reserveQuantity: number;
+};
+
+// #1094: a mint/burn/deposit/redeem row from nation_currency_ledger for the
+// turn being processed. Only "mint"/"burn" carry `amount`; the phase sums
+// these to derive this turn's minted/burned totals per currency.
+export type SimCurrencyLedgerAction = "mint" | "burn" | "deposit" | "redeem";
+
+export type SimCurrencyLedgerEntry = {
+  readonly action: SimCurrencyLedgerAction;
+  readonly amount: number | null;
+  readonly currencyId: string;
+};
+
+// #1090: active treaty terms are narrowed to the fields each treaty_type's
+// simulation effect needs (tribute payer/resource/quantity, royal_marriage
+// citizen pair). trade_agreement and currency_exchange carry no simulation
+// effect yet, so their type-specific fields stay null.
+export type SimTreatyType = "tribute" | "trade_agreement" | "royal_marriage" | "currency_exchange";
+
+export type SimTreaty = {
+  readonly endsTurnNumber: number | null;
+  readonly id: string;
+  readonly marriageCitizenAId: string | null;
+  readonly marriageCitizenBId: string | null;
+  readonly proposerNationId: string;
+  readonly responderNationId: string;
+  readonly treatyType: SimTreatyType;
+  readonly tributePayer: "proposer" | "responder" | null;
+  readonly tributeQuantityPerTurn: number | null;
+  readonly tributeResourceId: string | null;
+};
+
+export type SimNationStockpile = {
+  readonly nationId: string;
+  readonly quantity: number;
+  readonly resourceId: string;
+};
+
+export type SimTaxMethod = "percent_production" | "percent_stockpile" | "flat";
+
+export type SimNationTaxPolicy = {
+  readonly exempt: boolean;
+  readonly flatAmount: number;
+  readonly method: SimTaxMethod;
+  readonly minStockpileFloor: number;
+  readonly nationId: string;
+  readonly rate: number;
+  // null => the nation's default rule; otherwise a per-settlement override.
+  readonly settlementId: string | null;
+  // null => applies to all resources; otherwise only these resource ids.
+  readonly taxedResourceIds: readonly string[] | null;
+};
+
 export type SimSettlement = {
   readonly autoReadyEnabled?: boolean;
   readonly id: string;
@@ -83,6 +225,7 @@ export type SimJob = {
   readonly linkedManagedPopulationTypeId: string | null;
   readonly name: string;
   readonly outputsJson: readonly SimJobIoEntry[];
+  readonly requiredEducationLevelId: string | null;
   readonly traderCapacityPerWorker: number | null;
 };
 
@@ -110,7 +253,10 @@ export type SimTierEffect =
   | {
     readonly amount: number;
     readonly type: "population_cap_increase";
-  };
+  }
+  | ({
+    readonly type: "education";
+  } & TierEducationConfig);
 
 export type SimBuildingBlueprint = {
   readonly gracePeriodTurns: number;
@@ -161,6 +307,9 @@ export type SimConstructionProject = {
   readonly settlementId: string;
   readonly status: SimConstructionStatus;
   readonly targetTierId: string;
+  // When set, this project upgrades the referenced settlement_building in place
+  // instead of creating a new building; null for direct-build projects (#1372).
+  readonly upgradeSettlementBuildingId: string | null;
   readonly workerTurnsRequired: number;
 };
 
@@ -190,8 +339,13 @@ export type SimWorkerInputEntry = {
 
 export type SimDepositType = {
   readonly id: string;
-  readonly jobId: string;
   readonly name: string;
+};
+
+export type SimDepositTypeJob = {
+  readonly depositTypeId: string;
+  readonly id: string;
+  readonly jobId: string;
   readonly outputUnitsPerWorker: number;
   readonly workerInputsJson: readonly SimWorkerInputEntry[];
 };
@@ -202,15 +356,26 @@ export type SimPopulationResourceEntry = {
 };
 
 export type SimManagedPopulationType = {
-  readonly cullingJobId: string;
   readonly cullingOutputsJson: readonly SimPopulationResourceEntry[];
   readonly growthRate: number;
-  readonly husbandryJobId: string;
-  readonly husbandryWorkersPerNAnimals: number;
   readonly id: string;
   readonly maintenanceRulesJson: readonly SimPopulationResourceEntry[];
   readonly name: string;
   readonly regularOutputsJson: readonly SimPopulationResourceEntry[];
+};
+
+export type SimManagedPopulationHusbandryJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly managedPopulationTypeId: string;
+  readonly workersPerNAnimals: number;
+};
+
+export type SimManagedPopulationCullingJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly managedPopulationTypeId: string;
+  readonly maxCullPerWorker: number;
 };
 
 export type SimManagedPopulationStatus = "active" | "extinct";
@@ -309,25 +474,28 @@ export type NpcFlavorConfig = {
   readonly traits: readonly string[];
 };
 
-export type SimNamingConfig = {
-  readonly convention: string;
-  readonly female_given_names: readonly string[];
-  readonly male_given_names: readonly string[];
-  readonly surnames: readonly string[];
-};
+export type SimNamingConfig = NamingConfig;
 
 export type SimCitizenType = "npc" | "player_character";
 
 export type SimCitizenStatus = "alive" | "dead";
 
+export type SimCitizenRoleType = "none" | "nation_manager" | "settlement_manager";
+
 export type SimCitizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: SimCitizenType;
+  readonly cultureId: string | null;
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly id: string;
   readonly namesetId: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly religionId: string | null;
+  readonly roleNationId: string | null;
+  readonly roleSettlementId: string | null;
+  readonly roleType: SimCitizenRoleType;
   readonly settlementId: string | null;
   readonly sex: string | null;
   readonly status: SimCitizenStatus;
@@ -366,26 +534,42 @@ export type SimPartnership = {
 };
 
 export type SimResource = {
-  readonly decayRate: number;
+  readonly changeAmount: number;
+  readonly changeMode: "percent" | "flat";
   readonly id: string;
 };
 
 export type SimulationInputState = {
+  readonly armies: readonly SimArmy[];
+  readonly armyUnits: readonly SimArmyUnit[];
   readonly buildingBlueprints: readonly SimBuildingBlueprint[];
   readonly buildingTiers: readonly SimBuildingTier[];
   readonly calendarConfig: TurnCalendarConfig;
   readonly citizenAssignments: readonly SimCitizenAssignment[];
   readonly citizens: readonly SimCitizen[];
   readonly constructionProjects: readonly SimConstructionProject[];
+  readonly depositTypeJobs: readonly SimDepositTypeJob[];
   readonly depositTypes: readonly SimDepositType[];
   readonly deposits: readonly SimDeposit[];
+  readonly educationEnrollments: readonly SimEducationEnrollment[];
+  readonly educationLevels: readonly SimEducationLevel[];
   readonly events: readonly SimEvent[];
   readonly isWorldArchived?: boolean;
   readonly jobs: readonly SimJob[];
+  readonly managedPopulationCullingJobs: readonly SimManagedPopulationCullingJob[];
+  readonly managedPopulationHusbandryJobs: readonly SimManagedPopulationHusbandryJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
   readonly fallbackNamesetIdBySettlementId?: Readonly<Record<string, string>>;
   readonly namesetConfigById?: Readonly<Record<string, SimNamingConfig>>;
+  readonly nationCurrencies: readonly SimNationCurrency[];
+  readonly nationCurrencyLedgerEntries: readonly SimCurrencyLedgerEntry[];
+  readonly nationOffices: readonly SimNationOffice[];
+  readonly nationRelationships: readonly SimNationRelationship[];
+  readonly nationResourceStockpiles: readonly SimNationStockpile[];
+  readonly nationTaxPolicies: readonly SimNationTaxPolicy[];
+  readonly nationTreaties: readonly SimTreaty[];
+  readonly nations: readonly SimNation[];
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;
@@ -399,6 +583,8 @@ export type SimulationInputState = {
   };
   readonly tradeRoutes: readonly SimTradeRoute[];
   readonly turnNumber: number;
+  readonly unitSoldiers: readonly SimUnitSoldier[];
+  readonly unitTypes: readonly SimUnitType[];
   readonly worldId: string;
 };
 
@@ -423,6 +609,13 @@ export type BuildingCreated = {
   readonly buildingBlueprintId: string;
   readonly settlementId: string;
   readonly tierId: string;
+};
+
+// #1372: an in-place tier bump of an existing settlement_building when an
+// upgrade construction project completes (no new building row is created).
+export type BuildingTierUpgrade = {
+  readonly settlementBuildingId: string;
+  readonly toTierId: string;
 };
 
 export type BuildingStateChange = {
@@ -473,6 +666,14 @@ export type CitizenBirth = {
   // other than newborn; undefined means "born this transition's turn number"
   // (the historical behavior for partnership births).
   readonly bornOnTurnNumber?: number;
+  // Null for parentless spawns (no parent to inherit from); partnership
+  // births roll 50/50 between parentA/parentB culture, independently for
+  // religion (see pickInheritedFieldId).
+  readonly cultureId: string | null;
+  // Null for parentless spawns and for the remainder of newborns that don't
+  // roll a configured level; weighted-picked from each education level's
+  // natural_born_percent (see pickNaturalBornEducationLevelId).
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly namesetId: string | null;
   readonly npcFlaw: string | null;
@@ -484,6 +685,7 @@ export type CitizenBirth = {
   // always set both.
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly religionId: string | null;
   readonly sex: string;
   readonly settlementId: string;
   readonly surname: string | null;
@@ -512,6 +714,21 @@ export type AssignmentClear = {
   readonly reason: string;
 };
 
+export type CitizenEducationPatch = {
+  readonly citizenId: string;
+  readonly educationLevelId: string;
+};
+
+export type EnrollmentProgressUpdate = {
+  readonly enrollmentId: string;
+  readonly progressTurns: number;
+  readonly targetLevelId: string;
+};
+
+export type EnrollmentGraduation = {
+  readonly enrollmentId: string;
+};
+
 export type SettlementSnapshotManagedPopEntry = {
   readonly currentCount: number;
   readonly instanceId: string;
@@ -535,6 +752,14 @@ export type SettlementSnapshotWarnings = {
   readonly pausedProjectIds: readonly string[];
 };
 
+export type EducationSummary = {
+  // Enrolled student counts by target_level_id, end of turn, this settlement.
+  readonly countsByLevelId: Readonly<Record<string, number>>;
+  // Citizens who completed a level (advanced or fully graduated) at this
+  // settlement this turn.
+  readonly graduationsThisTurn: number;
+};
+
 export type SettlementSnapshot = {
   readonly aliveNpc: number;
   readonly alivePc: number;
@@ -542,6 +767,7 @@ export type SettlementSnapshot = {
   readonly birthCount: number;
   readonly buildingSummary: SettlementSnapshotBuildingStateCounts;
   readonly deathCount: number;
+  readonly educationSummary: EducationSummary;
   readonly homelessDeathsCount: number;
   readonly managedPopulationSummary: readonly SettlementSnapshotManagedPopEntry[];
   readonly partnershipsFormedCount: number;
@@ -565,6 +791,64 @@ export type ResourceSnapshot = {
   readonly turnNumber: number;
 };
 
+export type NationStockpileDelta = {
+  readonly delta: number;
+  readonly nationId: string;
+  readonly resourceId: string;
+};
+
+export type NationTurnSnapshot = {
+  readonly nationId: string;
+  readonly taxCollectedByResource: Readonly<Record<string, number>>;
+  readonly tributePaidByResource: Readonly<Record<string, number>>;
+  readonly tributeReceivedByResource: Readonly<Record<string, number>>;
+};
+
+export type ArmyTurnSnapshot = {
+  readonly armyId: string;
+  readonly soldierCountTotal: number;
+  readonly soldiersByUnitTypeJson: Readonly<Record<string, number>>;
+  readonly turnNumber: number;
+  readonly upkeepPaid: boolean;
+};
+
+export type DesertedSoldier = {
+  readonly citizenId: string;
+  readonly newSettlementId: string;
+  readonly soldierId: string;
+  readonly unitId: string;
+};
+
+export type DisbandedUnit = {
+  readonly armyId: string;
+  readonly unitId: string;
+};
+
+// #1094: per-turn currency snapshot for history/charting, and the resulting
+// confidence (+ default-state) patch to persist back onto nation_currencies.
+export type NationCurrencySnapshot = {
+  readonly burned: number;
+  readonly confidence: number;
+  readonly currencyId: string;
+  readonly minted: number;
+  readonly moneySupply: number;
+  readonly nationId: string;
+  readonly reserveQuantity: number;
+};
+
+export type NationCurrencyUpdate = {
+  readonly confidence: number;
+  readonly currencyId: string;
+  readonly isInDefault: boolean;
+};
+
+// #1090: an active treaty's expiry patch — always "expired" in v1 (breaking
+// happens via break_nation_treaty, not the simulation).
+export type TreatyStatusChange = {
+  readonly toStatus: "expired";
+  readonly treatyId: string;
+};
+
 export type ReadinessSummary = {
   readonly notReadySettlementCount: number;
   readonly readyPercentage: number;
@@ -573,17 +857,29 @@ export type ReadinessSummary = {
 };
 
 export type SimulationResult = {
+  readonly armyTurnSnapshots: readonly ArmyTurnSnapshot[];
   readonly assignmentClears: readonly AssignmentClear[];
   readonly buildingStateChanges: readonly BuildingStateChange[];
+  readonly buildingTierUpgrades: readonly BuildingTierUpgrade[];
   readonly buildingsCreated: readonly BuildingCreated[];
   readonly citizenBirths: readonly CitizenBirth[];
   readonly citizenDeaths: readonly CitizenDeath[];
+  readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
+  readonly deceasedSoldierIds: readonly string[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly desertedSoldiers: readonly DesertedSoldier[];
+  readonly disbandedUnits: readonly DisbandedUnit[];
+  readonly enrollmentGraduations: readonly EnrollmentGraduation[];
+  readonly enrollmentProgressUpdates: readonly EnrollmentProgressUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
+  readonly nationCurrencySnapshots: readonly NationCurrencySnapshot[];
+  readonly nationCurrencyUpdates: readonly NationCurrencyUpdate[];
+  readonly nationStockpileDeltas: readonly NationStockpileDelta[];
+  readonly nationTurnSnapshots: readonly NationTurnSnapshot[];
   readonly notifications: readonly SimulationNotification[];
   readonly partnershipChanges: readonly PartnershipChange[];
   readonly readinessSummary: ReadinessSummary;
@@ -591,6 +887,7 @@ export type SimulationResult = {
   readonly settlementSnapshots: readonly SettlementSnapshot[];
   readonly stockpileDeltas: readonly StockpileDelta[];
   readonly tradeRouteOutcomes: readonly TradeRouteOutcome[];
+  readonly treatyStatusChanges: readonly TreatyStatusChange[];
 };
 
 // ---------------------------------------------------------------------------
@@ -624,6 +921,10 @@ export type SimulationSharedState = {
   readonly pendingManagedPopulationDeltas: Map<string, number>;
   // Deposit instance IDs to mark as removed due to deposit_destroyed effects.
   readonly pendingDepositDestroys: Set<string>;
+  // Running nation resource-stockpile quantities, updated after nation tax
+  // credits (phaseNationalEconomy) and treaty tribute transfers (phaseTreaties)
+  // so a treaty tributed this turn spends from freshly-taxed goods too.
+  readonly pendingNationStockpiles: Map<string, number>;
 };
 
 // ---------------------------------------------------------------------------

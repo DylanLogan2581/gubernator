@@ -186,7 +186,7 @@ export function buildSettlementAssignmentRows(
     rows.push({
       kind: "deposit",
       deposit,
-      jobName: deposit.depositTypeJobName,
+      jobName: deposit.depositTypeName,
       targetId: deposit.id,
       targetName: deposit.name,
     });
@@ -197,7 +197,7 @@ export function buildSettlementAssignmentRows(
     rows.push({
       kind: "husbandry",
       population,
-      jobName: population.husbandryJobName,
+      jobName: population.managedPopulationTypeName,
       targetId: population.id,
       targetName: population.name,
     });
@@ -208,7 +208,7 @@ export function buildSettlementAssignmentRows(
     rows.push({
       kind: "culling",
       population,
-      jobName: population.cullingJobName,
+      jobName: population.managedPopulationTypeName,
       targetId: population.id,
       targetName: population.name,
     });

@@ -44,12 +44,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ab200000-0000-0000-0000-000000000001',
     'RDI World',
-    'private',
     'active'
   );
 
@@ -138,22 +137,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ab500000-0000-0000-0000-000000000001',
     'ab200000-0000-0000-0000-000000000001',
     'RDI Iron Seam',
-    'rdi-iron-seam',
-    'ab800000-0000-0000-0000-000000000001',
-    10
+    'rdi-iron-seam'
   );
 
 -- Deposit instances:

@@ -44,6 +44,7 @@ function createEventRow(
     amount_value: null,
     multiplier_value: null,
     extra_data_jsonb: null,
+    icon: null,
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     group: null,

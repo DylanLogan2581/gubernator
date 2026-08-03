@@ -76,27 +76,24 @@ values
 
 -- Three worlds, one per state condition
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'd7200000-0000-0000-0000-000000000001',
     'SCNS World 1 (building.suspended)',
     5,
-    'private',
     'active'
   ),
   (
     'd7200000-0000-0000-0000-000000000002',
     'SCNS World 2 (managed_population.declining)',
     5,
-    'private',
     'active'
   ),
   (
     'd7200000-0000-0000-0000-000000000003',
     'SCNS World 3 (settlement.starvation_occurred)',
     5,
-    'private',
     'active'
   );
 

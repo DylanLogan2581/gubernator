@@ -7,6 +7,7 @@ import {
   formatIconLabel,
   resolveEntityIcon,
 } from "@/components/shared/iconPicker/CuratedIcons";
+import { GameIconsPanel } from "@/components/shared/iconPicker/GameIconsPanel";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -21,6 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 type IconPickerProps = {
@@ -74,59 +76,81 @@ export function IconPicker({
           <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search icons…" />
-          <CommandList>
-            <CommandEmpty>No icons found.</CommandEmpty>
-            <CommandGroup
-              className={cn(
-                "[&_[cmdk-group-items]]:grid",
-                "[&_[cmdk-group-items]]:grid-cols-6",
-                "[&_[cmdk-group-items]]:gap-1",
-                "[&_[cmdk-group-items]]:p-2",
-              )}
-            >
-              {value !== null && (
-                <CommandItem
-                  value="__clear__ clear no icon"
-                  onSelect={() => {
-                    onChange(null);
-                    setOpen(false);
-                  }}
-                  className="col-span-6 flex items-center justify-center gap-2 text-muted-foreground"
+      <PopoverContent
+        className="w-96 p-0"
+        align="start"
+        side="bottom"
+        avoidCollisions={false}
+      >
+        <Tabs defaultValue="curated">
+          <TabsList className="m-2">
+            <TabsTrigger value="curated">Curated</TabsTrigger>
+            <TabsTrigger value="game-icons">Game Icons</TabsTrigger>
+          </TabsList>
+          <TabsContent value="curated">
+            <Command>
+              <CommandInput placeholder="Search icons…" />
+              <CommandList>
+                <CommandEmpty>No icons found.</CommandEmpty>
+                <CommandGroup
+                  className={cn(
+                    "[&_[cmdk-group-items]]:grid",
+                    "[&_[cmdk-group-items]]:grid-cols-6",
+                    "[&_[cmdk-group-items]]:gap-1",
+                    "[&_[cmdk-group-items]]:p-2",
+                  )}
                 >
-                  Clear icon
-                </CommandItem>
-              )}
-              {CURATED_ICON_NAMES.map((name) => {
-                const label = formatIconLabel(name);
-                const isSelected = value === name;
-                return (
-                  <CommandItem
-                    key={name}
-                    value={`${name} ${label}`}
-                    onSelect={() => {
-                      onChange(name);
-                      setOpen(false);
-                    }}
-                    title={label}
-                    aria-label={label}
-                    className={cn(
-                      "relative col-span-1 flex h-12 items-center justify-center px-0",
-                      isSelected && "bg-accent text-accent-foreground",
-                    )}
-                  >
-                    <IconChip icon={resolveEntityIcon(name)} size="sm" />
-                    {isSelected && (
-                      <Check className="absolute right-0.5 top-0.5 size-3" />
-                    )}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                  {value !== null && (
+                    <CommandItem
+                      value="__clear__ clear no icon"
+                      onSelect={() => {
+                        onChange(null);
+                        setOpen(false);
+                      }}
+                      className="col-span-6 flex items-center justify-center gap-2 text-muted-foreground"
+                    >
+                      Clear icon
+                    </CommandItem>
+                  )}
+                  {CURATED_ICON_NAMES.map((name) => {
+                    const label = formatIconLabel(name);
+                    const isSelected = value === name;
+                    return (
+                      <CommandItem
+                        key={name}
+                        value={`${name} ${label}`}
+                        onSelect={() => {
+                          onChange(name);
+                          setOpen(false);
+                        }}
+                        title={label}
+                        aria-label={label}
+                        className={cn(
+                          "relative col-span-1 flex h-14 items-center justify-center px-0",
+                          isSelected && "bg-accent text-accent-foreground",
+                        )}
+                      >
+                        <IconChip icon={resolveEntityIcon(name)} size="lg" />
+                        {isSelected && (
+                          <Check className="absolute right-0.5 top-0.5 size-3" />
+                        )}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </TabsContent>
+          <TabsContent value="game-icons">
+            <GameIconsPanel
+              value={value}
+              onSelect={(name) => {
+                onChange(name);
+                setOpen(false);
+              }}
+            />
+          </TabsContent>
+        </Tabs>
       </PopoverContent>
     </Popover>
   );

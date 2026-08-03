@@ -2,6 +2,7 @@ import { type JSX } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { type EducationLevel } from "@/features/education";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
 
@@ -14,6 +15,7 @@ import {
 import { CostEditor, EffectsEditor } from "./TierEditorFields";
 
 export function TierDraftFields({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   constructionCosts,
@@ -30,7 +32,9 @@ export function TierDraftFields({
   upkeepCosts,
   workerTurns,
   workerTurnsInputId,
+  worldId,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly constructionCosts: readonly CostRowState[];
@@ -47,6 +51,7 @@ export function TierDraftFields({
   readonly upkeepCosts: readonly CostRowState[];
   readonly workerTurns: string;
   readonly workerTurnsInputId: string;
+  readonly worldId: string;
 }): JSX.Element {
   return (
     <>
@@ -103,11 +108,13 @@ export function TierDraftFields({
         onChange={onUpkeepCostsChange}
       />
       <EffectsEditor
+        activeEducationLevels={activeEducationLevels}
         activeJobs={activeJobs}
         activeResources={activeResources}
         disabled={disabled}
         error={fieldErrors.effectsJson}
         rows={effects}
+        worldId={worldId}
         onChange={onEffectsChange}
       />
     </>

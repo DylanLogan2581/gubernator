@@ -1,22 +1,42 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { type ReactNode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { EducationLevel } from "@/features/education";
 import type { JobDefinition } from "@/features/jobs";
 import type { Resource } from "@/features/resources";
 
 import { CostEditor, EffectsEditor } from "./TierEditorFields";
 
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => <a className={className}>{children}</a>,
+}));
+
+const WORLD_ID = "00000000-0000-0000-0000-000000000005";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000001";
 const JOB_ID = "00000000-0000-0000-0000-000000000002";
+const TEACHER_JOB_ID = "00000000-0000-0000-0000-000000000004";
+const LEVEL_ID = "00000000-0000-0000-0000-000000000003";
 
 const ACTIVE_RESOURCES = [
   { id: RESOURCE_ID, name: "Wood" },
 ] as unknown as Resource[];
 
 const ACTIVE_JOBS = [
-  { id: JOB_ID, name: "Farming" },
+  { id: JOB_ID, jobType: "standard", name: "Farming" },
+  { id: TEACHER_JOB_ID, jobType: "teacher", name: "Teacher" },
 ] as unknown as JobDefinition[];
+
+const ACTIVE_EDUCATION_LEVELS = [
+  { id: LEVEL_ID, name: "Basic" },
+] as unknown as EducationLevel[];
 
 // Simulate a non-secure context by removing crypto.randomUUID before each test
 // and restoring it after. This exercises the getRandomValues fallback path.
@@ -68,10 +88,12 @@ describe("EffectsEditor — Add effect button in non-secure context", () => {
 
     render(
       <EffectsEditor
+        activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
         activeJobs={[...ACTIVE_JOBS]}
         activeResources={[...ACTIVE_RESOURCES]}
         disabled={false}
         rows={rows}
+        worldId={WORLD_ID}
         onChange={(r) => {
           captured = r;
         }}
@@ -86,5 +108,114 @@ describe("EffectsEditor — Add effect button in non-secure context", () => {
     );
     expect(captured[0].effectType).toBe("");
     expect(captured[0].amount).toBe("");
+  });
+});
+
+describe("EffectsEditor — education effect fields", () => {
+  it("shows only teacher-type jobs in the teacher job select", () => {
+    const rows: Parameters<typeof EffectsEditor>[0]["rows"] = [
+      {
+        amount: "",
+        effectType: "education",
+        id: "row-1",
+        jobId: "",
+        levels: [],
+        resourceId: "",
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: "",
+      },
+    ];
+
+    render(
+      <EffectsEditor
+        activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
+        activeJobs={[...ACTIVE_JOBS]}
+        activeResources={[...ACTIVE_RESOURCES]}
+        disabled={false}
+        rows={rows}
+        worldId={WORLD_ID}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("option", { name: "Farming" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Teacher" })).toBeInTheDocument();
+  });
+
+  it("adds a level transition row when Add transition is clicked", async () => {
+    const user = userEvent.setup();
+    const rows: Parameters<typeof EffectsEditor>[0]["rows"] = [
+      {
+        amount: "",
+        effectType: "education",
+        id: "row-1",
+        jobId: "",
+        levels: [],
+        resourceId: "",
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: "",
+      },
+    ];
+    let captured: typeof rows = rows;
+
+    render(
+      <EffectsEditor
+        activeEducationLevels={ACTIVE_EDUCATION_LEVELS}
+        activeJobs={[...ACTIVE_JOBS]}
+        activeResources={[...ACTIVE_RESOURCES]}
+        disabled={false}
+        rows={rows}
+        worldId={WORLD_ID}
+        onChange={(r) => {
+          captured = r;
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add transition" }));
+
+    expect(captured[0].levels).toHaveLength(1);
+    expect(captured[0].levels[0].fromLevelId).toBe("");
+    expect(captured[0].levels[0].toLevelId).toBe("");
+    expect(captured[0].levels[0].turns).toBe("");
+  });
+
+  it("shows a hint linking to Education instead of level transition controls when no education levels exist", () => {
+    const rows: Parameters<typeof EffectsEditor>[0]["rows"] = [
+      {
+        amount: "",
+        effectType: "education",
+        id: "row-1",
+        jobId: "",
+        levels: [],
+        resourceId: "",
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: "",
+      },
+    ];
+
+    render(
+      <EffectsEditor
+        activeEducationLevels={[]}
+        activeJobs={[...ACTIVE_JOBS]}
+        activeResources={[...ACTIVE_RESOURCES]}
+        disabled={false}
+        rows={rows}
+        worldId={WORLD_ID}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByText("Add one in Configuration → Education"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add transition" }),
+    ).not.toBeInTheDocument();
   });
 });

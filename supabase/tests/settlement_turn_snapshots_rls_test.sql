@@ -85,20 +85,18 @@ where
   id = 'd1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'd2000000-0000-0000-0000-000000000001',
     'Snap Private World',
     3,
-    'private',
     'active'
   ),
   (
     'd2000000-0000-0000-0000-000000000002',
     'Snap Outsider World',
     1,
-    'private',
     'active'
   );
 

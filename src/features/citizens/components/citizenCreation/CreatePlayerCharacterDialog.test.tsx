@@ -343,6 +343,7 @@ describe("CreatePlayerCharacterDialog", () => {
     await waitFor(() => {
       expect(toastError).toHaveBeenCalledWith(
         expect.stringContaining("Player character could not be created."),
+        undefined,
       );
     });
     expect(screen.queryByRole("alert")).toBeNull();

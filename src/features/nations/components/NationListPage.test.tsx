@@ -103,20 +103,18 @@ describe("NationListPage", () => {
     expect(await screen.findByText("No nations yet")).toBeDefined();
   });
 
-  it("renders nation rows with a hidden badge when applicable", async () => {
+  it("renders nation rows", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [
           createNationRow({
             description: "A mountain realm.",
             id: "11111111-1111-1111-1111-111111111111",
-            is_hidden: false,
             name: "Highmark",
           }),
           createNationRow({
             description: null,
             id: "22222222-2222-2222-2222-222222222222",
-            is_hidden: true,
             name: "Veilreach",
           }),
         ],
@@ -133,7 +131,6 @@ describe("NationListPage", () => {
     ).toBeDefined();
     expect(screen.getByText("A mountain realm.")).toBeDefined();
     expect(screen.getByRole("heading", { name: "Veilreach" })).toBeDefined();
-    expect(screen.getByText("Hidden")).toBeDefined();
     expect(screen.getByText("No description.")).toBeDefined();
   });
 
@@ -144,7 +141,6 @@ describe("NationListPage", () => {
         nationRows: [
           createNationRow({
             id: nationId,
-            is_hidden: false,
             name: "Highmark",
           }),
         ],
@@ -161,33 +157,6 @@ describe("NationListPage", () => {
       "href",
       `/worlds/${worldId}/nations/${nationId}`,
     );
-  });
-
-  it("links hidden nations to the nation detail page", async () => {
-    const nationId = "22222222-2222-2222-2222-222222222222";
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        nationRows: [
-          createNationRow({
-            id: nationId,
-            is_hidden: true,
-            name: "Veilreach",
-          }),
-        ],
-        session: { user: { id: "user-1" } },
-        adminRows: [{ world_id: worldId }],
-        worldRows: [createWorldRow({ id: worldId })],
-      }),
-    );
-
-    renderPage();
-
-    const link = await screen.findByRole("link", { name: /Veilreach/ });
-    expect(link).toHaveAttribute(
-      "href",
-      `/worlds/${worldId}/nations/${nationId}`,
-    );
-    expect(screen.getByText("Hidden")).toBeDefined();
   });
 
   it("shows the Create nation control for world admins", async () => {
@@ -211,11 +180,11 @@ describe("NationListPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [],
+        pcWorldIds: [worldId],
         session: { user: { id: "user-2" } },
         worldRows: [
           createWorldRow({
             id: worldId,
-            visibility: "public",
           }),
         ],
       }),
@@ -367,8 +336,10 @@ function makePlayerCharacter(): Citizen {
     bornOnTurnNumber: null,
     citizenType: "player_character",
     createdAt: "2026-01-01T00:00:00Z",
+    cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Alice",
     id: "citizen-pc-1",
     name: "Alice Smith",
@@ -376,6 +347,7 @@ function makePlayerCharacter(): Citizen {
     parentACitizenId: null,
     parentBCitizenId: null,
     profilePhotoUrl: null,
+    religionId: null,
     roleNationId: "nation-1",
     roleSettlementId: null,
     roleType: "nation_manager",
@@ -398,8 +370,8 @@ function createQueryClient(): QueryClient {
 type TestNationRow = {
   readonly created_at: string;
   readonly description: string | null;
+  readonly government_type?: string;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -414,7 +386,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 type TestUser = {
@@ -436,12 +407,14 @@ function createClient({
   adminRows = [],
   nationInsertResult,
   nationRows,
+  pcWorldIds = [],
   session,
   worldRows,
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly nationInsertResult?: NationInsertResult;
   readonly nationRows: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: { readonly user: { readonly id: string } };
   readonly worldRows: readonly TestWorldRow[];
 }): unknown {
@@ -469,7 +442,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
@@ -498,7 +471,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "private",
     ...overrides,
   };
 }
@@ -528,8 +500,8 @@ function createNationRow(
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
+    government_type: "monarchy",
     id: "00000000-0000-0000-0000-0000000000aa",
-    is_hidden: false,
     name: "Nation",
     updated_at: "2026-01-02T00:00:00.000Z",
     world_id: worldId,

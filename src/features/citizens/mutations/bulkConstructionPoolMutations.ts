@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { settlementForecastQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -53,9 +54,11 @@ type RpcResultRow = {
 export function setBulkConstructionPoolMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
+  worldId,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): SetBulkConstructionPoolMutationOptions {
   return mutationOptions({
     mutationFn: (input: SetBulkConstructionPoolInput) =>
@@ -86,10 +89,10 @@ export function setBulkConstructionPoolMutationOptions({
           queryKey: citizensQueryKeys.settlementJobCounts(values.settlementId),
         }),
         queryClient.invalidateQueries({
-          queryKey: [
-            ...citizensQueryKeys.all,
-            "current-assignment-for-citizen",
-          ],
+          queryKey: citizensQueryKeys.currentAssignmentAll(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementForecastQueryKeys.byWorld(worldId),
         }),
       ]);
     },

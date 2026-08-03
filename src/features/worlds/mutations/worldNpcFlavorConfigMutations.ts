@@ -10,6 +10,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { worldQueryKeys } from "../queries/worldQueryKeys";
 import {
@@ -32,7 +33,6 @@ type WorldNpcFlavorSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 export type SaveWorldNpcFlavorConfigInput = {
@@ -40,7 +40,7 @@ export type SaveWorldNpcFlavorConfigInput = {
   readonly worldId: string;
 };
 
-const WORLD_NPC_FLAVOR_SAVE_ACCESS_SELECT = "archived_at,id,status,visibility";
+const WORLD_NPC_FLAVOR_SAVE_ACCESS_SELECT = "archived_at,id,status";
 const WORLD_NPC_FLAVOR_SAVE_UPDATE_SELECT = "id";
 
 export class SaveWorldNpcFlavorConfigError extends Error {
@@ -116,13 +116,15 @@ async function saveWorldNpcFlavorConfig(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SaveWorldNpcFlavorConfigError({
-      code: "world_npc_flavor_config_archived",
-      message: "Archived worlds are read-only.",
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SaveWorldNpcFlavorConfigError({
+        code: "world_npc_flavor_config_archived",
+        message: "Archived worlds are read-only.",
+        worldId: input.worldId,
+      }),
+  );
 
   const { data, error } = await client
     .from("worlds")

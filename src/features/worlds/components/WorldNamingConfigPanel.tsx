@@ -11,12 +11,14 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import {
   NAME_CONVENTIONS,
   type NameConvention,
+  type WorldListNamingConfig,
   type WorldNamingConfig,
 } from "@/lib/worldNamingConfigSchemas";
 
@@ -92,8 +94,9 @@ function WorldNamingConfigPanelContent({
       queryClient,
     }),
   );
-  const [draftConfig, setDraftConfig] =
-    useState<WorldNamingConfig>(initialConfig);
+  const [draftConfig, setDraftConfig] = useState<WorldListNamingConfig>(() =>
+    toListNamingConfig(initialConfig),
+  );
 
   const canEdit = canAdmin && !isArchived;
 
@@ -105,7 +108,7 @@ function WorldNamingConfigPanelContent({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    const sanitizedConfig: WorldNamingConfig = {
+    const sanitizedConfig: WorldListNamingConfig = {
       ...draftConfig,
       female_given_names: sanitizePoolEntries(draftConfig.female_given_names),
       male_given_names: sanitizePoolEntries(draftConfig.male_given_names),
@@ -129,7 +132,7 @@ function WorldNamingConfigPanelContent({
   }
 
   function resetDraftConfig(): void {
-    setDraftConfig(initialConfig);
+    setDraftConfig(toListNamingConfig(initialConfig));
   }
 
   return (
@@ -166,19 +169,13 @@ function WorldNamingConfigPanelContent({
           {hasEmptyPool ? (
             <div className="min-h-[52px]">
               {showEmptyPoolWarning ? (
-                <div
-                  role="alert"
-                  className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
-                >
-                  <AlertTriangle
-                    aria-hidden="true"
-                    className="mt-0.5 h-4 w-4 shrink-0"
-                  />
-                  <span>
+                <Alert variant="warning">
+                  <AlertTriangle aria-hidden="true" />
+                  <AlertDescription>
                     One or more name pools are empty. Random NPC names may be
                     blank unless <strong>manual only</strong> is selected.
-                  </span>
-                </div>
+                  </AlertDescription>
+                </Alert>
               ) : null}
             </div>
           ) : null}
@@ -256,6 +253,20 @@ function WorldNamingConfigPanelContent({
   );
 }
 
+// World-level naming config editing predates generated namesets (#1252);
+// generated configs can only be authored via namesets today, so this panel
+// falls back to an empty list config if one is ever set on a world.
+function toListNamingConfig(config: WorldNamingConfig): WorldListNamingConfig {
+  if (config.type === "list") return config;
+  return {
+    type: "list",
+    convention: config.convention,
+    female_given_names: [],
+    male_given_names: [],
+    surnames: [],
+  };
+}
+
 function ConventionLabel({
   convention,
 }: {
@@ -297,10 +308,10 @@ function ConventionLabel({
 function NamingConfigReadOnlySummary({
   config,
 }: {
-  readonly config: WorldNamingConfig;
+  readonly config: WorldListNamingConfig;
 }): JSX.Element {
   return (
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <dl className="grid divide-y divide-border border-y border-border">
       <ReadoutItem
         label="Male given name pool"
         value={
@@ -338,9 +349,9 @@ function ReadoutItem({
   readonly value: string;
 }): JSX.Element {
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{value}</dd>
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="text-right text-sm font-medium">{value}</dd>
     </div>
   );
 }

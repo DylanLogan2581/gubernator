@@ -125,6 +125,16 @@ describe("createDepositInstanceMutationOptions", () => {
         queryKey: depositsQueryKeys.instancesBySettlement(SETTLEMENT_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["deposits", "instances-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["deposits", "instances-by-world"],
+      }),
+    );
   });
 
   it("trims name whitespace before calling RPC", async () => {

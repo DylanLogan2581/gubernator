@@ -62,29 +62,44 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e1000000-0000-0000-0000-000000000001',
     'Bilateral Mirror World',
-    'private',
     'active'
   );
 
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'e2000000-0000-0000-0000-00000000000a',
     'e1000000-0000-0000-0000-000000000001',
-    'Nation A',
-    false
+    'Nation A'
   ),
   (
     'e2000000-0000-0000-0000-00000000000b',
     'e1000000-0000-0000-0000-000000000001',
-    'Nation B',
-    false
+    'Nation B'
+  );
+
+-- guard_bilateral_relationship_propose (#1086) rejects a fresh propose
+-- between nations that have not met, so A and B must have met before the
+-- proposal fixture below.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'e1000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-00000000000a',
+    'e2000000-0000-0000-0000-00000000000b',
+    1
   );
 
 insert into
@@ -135,6 +150,24 @@ values
     'e0000000-0000-0000-0000-000000000002',
     'nation_manager',
     'e2000000-0000-0000-0000-00000000000b'
+  );
+
+-- nation_visible_to_current_user's have-met arm (#1086) resolves the
+-- caller's own nation via their ACTIVE player_character, so both managers
+-- need an active selection for nation_relationships_select_visible (both
+-- from/to visible) to admit the ON CONFLICT upserts below.
+insert into
+  public.user_active_player_characters (user_id, world_id, citizen_id)
+values
+  (
+    'e0000000-0000-0000-0000-000000000001',
+    'e1000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-0000000000a1'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000002',
+    'e1000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-0000000000b1'
   );
 
 -- Seed Nation A's proposal row (table owner bypasses RLS).

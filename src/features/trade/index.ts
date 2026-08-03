@@ -30,11 +30,6 @@ export {
 } from "./mutations/replaceTradeRouteMutations";
 export { tradeRoutesQueryKeys } from "./queries/tradeRoutesQueryKeys";
 export { tradeRoutesForSettlementQueryOptions } from "./queries/tradeRoutesQueries";
-export { approveTradeRouteSideInputSchema } from "./schemas/approveTradeRouteSideSchemas";
-export { cancelTradeRouteInputSchema } from "./schemas/cancelTradeRouteSchemas";
-export { proposeTradeRouteInputSchema } from "./schemas/proposeTradeRouteSchemas";
-export { rejectTradeRouteSideInputSchema } from "./schemas/rejectTradeRouteSideSchemas";
-export { replaceTradeRouteInputSchema } from "./schemas/replaceTradeRouteSchemas";
 
 export type { ApproveTradeRouteSideMutationIssue } from "./mutations/approveTradeRouteSideMutations";
 export type { CancelTradeRouteMutationIssue } from "./mutations/cancelTradeRouteMutations";

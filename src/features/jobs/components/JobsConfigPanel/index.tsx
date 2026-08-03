@@ -10,37 +10,96 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
-import { cn } from "@/lib/utils";
 
 import { createJobMutationOptions } from "../../mutations/jobsMutations";
 import { jobsPageQueryOptions } from "../../queries/jobsQueries";
+import { JOB_TYPE_LABELS } from "../../utils/jobTypeLabels";
 
 import { CreateJobForm } from "./JobForm";
-import { JOB_TYPE_LABELS, JobsTable } from "./JobsTable";
+import { JobsFilters } from "./JobsFilters";
+import { JobsTable } from "./JobsTable";
 
+import type { JobsSortBy } from "../../queries/jobsQueries";
 import type { CreateJobInput } from "../../schemas/jobSchemas";
 import type { JobType } from "../../types/jobTypes";
+import type { SortingState } from "@tanstack/react-table";
 
 const PAGE_SIZE = 25;
 
-const JOB_TYPES: readonly { label: string; value: JobType }[] = [
-  { label: "Standard", value: "standard" },
-  { label: "Construction", value: "construction" },
-  { label: "Deposit", value: "deposit" },
-  { label: "Husbandry", value: "husbandry" },
-  { label: "Culling", value: "culling" },
-  { label: "Trader", value: "trader" },
-];
+// Maps a DataTable column id to the jobs page query's sort column (see
+// jobsQueries.ts), mirroring the resources config panel's pattern.
+const SORT_BY_ID: Record<string, JobsSortBy> = {
+  capacity: "capacity",
+  education: "education",
+  name: "name",
+  tradersPerWorker: "tradersPerWorker",
+  type: "type",
+};
 
 type JobsConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
+
+function JobsEmptyState({
+  debouncedSearch,
+  educationLevelId,
+  onClearFilters,
+  showTrash,
+  typesFilter,
+}: {
+  readonly debouncedSearch: string;
+  readonly educationLevelId: string | null;
+  readonly onClearFilters: () => void;
+  readonly showTrash: boolean;
+  readonly typesFilter: readonly JobType[];
+}): JSX.Element {
+  if (showTrash) {
+    return <EmptyState title="No jobs in trash" />;
+  }
+  const clearFiltersAction = (
+    <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
+      Clear filters
+    </Button>
+  );
+  if (debouncedSearch !== "") {
+    return (
+      <EmptyState
+        title="No matching jobs"
+        description="Try a different search."
+        action={clearFiltersAction}
+      />
+    );
+  }
+  if (typesFilter.length === 1) {
+    return (
+      <EmptyState
+        title={`No ${JOB_TYPE_LABELS[typesFilter[0]].toLowerCase()} jobs`}
+        action={clearFiltersAction}
+      />
+    );
+  }
+  if (typesFilter.length > 1 || educationLevelId !== null) {
+    return (
+      <EmptyState
+        title="No matching jobs"
+        description="Try different filters."
+        action={clearFiltersAction}
+      />
+    );
+  }
+  return (
+    <EmptyState
+      title="No jobs yet"
+      description="Add the first job for this world."
+    />
+  );
+}
 
 export function JobsConfigPanel({
   canAdmin,
@@ -51,23 +110,36 @@ export function JobsConfigPanel({
   const canEdit = canAdmin && !isArchived;
 
   const [search, setSearch] = useState("");
+  const [educationLevelId, setEducationLevelId] = useState<string | null>(null);
+  const [typesFilter, setTypesFilter] = useState<readonly JobType[]>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<JobType | "all">("all");
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
+  const activeSort = sorting[0];
+  const sortBy: JobsSortBy | undefined =
+    activeSort !== undefined ? SORT_BY_ID[activeSort.id] : undefined;
+
   const jobsQuery = useQuery(
     jobsPageQueryOptions(worldId, {
-      jobType: typeFilter === "all" ? undefined : typeFilter,
+      educationLevelId,
+      jobTypes: typesFilter.length > 0 ? typesFilter : undefined,
       page: pageIndex,
       pageSize: PAGE_SIZE,
       search: debouncedSearch,
+      sortBy,
+      sortDirection: activeSort?.desc === true ? "desc" : "asc",
       trash: showTrash,
     }),
   );
   const createMutation = useMutation(createJobMutationOptions({ queryClient }));
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const educationLevels = educationLevelsQuery.data ?? [];
 
   function resetToFirstPage(): void {
     setPageIndex(0);
@@ -79,9 +151,9 @@ export function JobsConfigPanel({
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold tracking-normal">Jobs</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canEdit && !showForm && !showTrash ? (
             <Button
               type="button"
@@ -105,82 +177,46 @@ export function JobsConfigPanel({
         </div>
       </div>
 
-      <div
-        role="group"
-        aria-label="Filter by job type"
-        className="flex flex-wrap gap-1"
-      >
-        <button
-          type="button"
-          className={cn(
-            "rounded px-2 py-1 text-xs font-medium transition-colors",
-            typeFilter === "all"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:bg-muted/80",
-          )}
-          onClick={() => {
-            setTypeFilter("all");
-            resetToFirstPage();
-          }}
-        >
-          All types
-        </button>
-        {JOB_TYPES.map(({ label, value }) => (
-          <button
-            key={value}
-            type="button"
-            className={cn(
-              "rounded px-2 py-1 text-xs font-medium transition-colors",
-              typeFilter === value
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80",
-            )}
-            onClick={() => {
-              setTypeFilter(value);
-              resetToFirstPage();
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <Input
-        aria-label="Search jobs by name"
-        className="sm:w-[280px]"
-        placeholder="Search by name…"
-        value={search}
-        onChange={(event) => {
-          setSearch(event.currentTarget.value);
+      <JobsFilters
+        educationLevelId={educationLevelId}
+        educationLevels={educationLevels}
+        search={search}
+        types={typesFilter}
+        worldId={worldId}
+        onEducationLevelIdChange={(next) => {
+          setEducationLevelId(next);
+          resetToFirstPage();
+        }}
+        onSearchChange={(next) => {
+          setSearch(next);
+          resetToFirstPage();
+        }}
+        onTypesChange={(next) => {
+          setTypesFilter(next);
           resetToFirstPage();
         }}
       />
 
       {jobsQuery.isPending ? (
-        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={5} rowCount={PAGE_SIZE} />
       ) : jobsQuery.isError ? (
         <ErrorState
           title="Jobs could not be loaded"
           description={getErrorDescription(jobsQuery.error)}
         />
       ) : items.length === 0 ? (
-        showTrash ? (
-          <EmptyState title="No jobs in trash" />
-        ) : debouncedSearch !== "" ? (
-          <EmptyState
-            title="No matching jobs"
-            description="Try a different search."
-          />
-        ) : typeFilter !== "all" ? (
-          <EmptyState
-            title={`No ${JOB_TYPE_LABELS[typeFilter].toLowerCase()} jobs`}
-          />
-        ) : (
-          <EmptyState
-            title="No jobs yet"
-            description="Add the first job for this world."
-          />
-        )
+        <JobsEmptyState
+          debouncedSearch={debouncedSearch}
+          educationLevelId={educationLevelId}
+          showTrash={showTrash}
+          typesFilter={typesFilter}
+          onClearFilters={() => {
+            setSearch("");
+            setEducationLevelId(null);
+            setTypesFilter([]);
+            resetToFirstPage();
+          }}
+        />
       ) : (
         <>
           <p className="text-xs text-muted-foreground" role="status">
@@ -191,14 +227,20 @@ export function JobsConfigPanel({
           </p>
           <JobsTable
             canEdit={canEdit}
+            educationLevels={educationLevels}
             isPaginationDisabled={jobsQuery.isFetching}
             jobs={items}
             pageCount={pageCount}
             pageIndex={pageIndex}
             queryClient={queryClient}
             showTrash={showTrash}
+            sorting={sorting}
             worldId={worldId}
             onPageChange={setPageIndex}
+            onSortingChange={(next) => {
+              setSorting(next);
+              resetToFirstPage();
+            }}
           />
         </>
       )}

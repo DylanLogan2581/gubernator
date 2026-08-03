@@ -66,13 +66,12 @@ values
 
 -- public.users rows are auto-created by the on_auth_user_created trigger.
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'c9200000-0000-0000-0000-000000000001',
     'EPB World 1',
     5,
-    'private',
     'active'
   );
 

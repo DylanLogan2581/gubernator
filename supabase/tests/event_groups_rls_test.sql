@@ -81,18 +81,16 @@ where
 
 -- World A: admin-a and member have access; world B: outsider-admin for cross-world guard
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f1200000-0000-0000-0000-000000000001',
     'EG World A',
-    'private',
     'active'
   ),
   (
     'f1200000-0000-0000-0000-000000000002',
     'EG World B',
-    'private',
     'active'
   );
 

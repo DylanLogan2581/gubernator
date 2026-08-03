@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -18,7 +19,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -36,6 +40,7 @@ import type { JobType } from "../../types/jobTypes";
 const JOB_TYPES: readonly { label: string; value: JobType }[] = [
   { label: "Standard", value: "standard" },
   { label: "Construction", value: "construction" },
+  { label: "Teacher", value: "teacher" },
   { label: "Deposit", value: "deposit" },
   { label: "Husbandry", value: "husbandry" },
   { label: "Culling", value: "culling" },
@@ -55,11 +60,17 @@ export function CreateJobForm({
 }): JSX.Element {
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const resources = resourcesQuery.data ?? [];
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const educationLevels = educationLevelsQuery.data ?? [];
   const [selectedType, setSelectedType] = useState<JobType | null>(null);
   const [name, setName] = useState("");
   const [baseCapacity, setBaseCapacity] = useState("0");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
+  const [requiredEducationLevelId, setRequiredEducationLevelId] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
   const { fieldErrors, setFromZod, clear } =
@@ -105,16 +116,21 @@ export function CreateJobForm({
 
     let input: CreateJobInput;
 
+    const requiredEducationLevelIdValue =
+      requiredEducationLevelId !== "" ? requiredEducationLevelId : undefined;
+
     switch (selectedType) {
       case "standard":
         input = {
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           icon,
+          iconColor,
           inputsJson,
           jobType: "standard",
           name,
           outputsJson,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -124,8 +140,23 @@ export function CreateJobForm({
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           icon,
+          iconColor,
           jobType: "construction",
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
+          slug: derivedSlug,
+          worldId,
+        };
+        break;
+      case "teacher":
+        input = {
+          baseCapacity:
+            baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
+          icon,
+          iconColor,
+          jobType: "teacher",
+          name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -133,8 +164,10 @@ export function CreateJobForm({
       case "trader":
         input = {
           icon,
+          iconColor,
           jobType: "trader",
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           traderCapacityPerWorker:
             traderCapacityPerWorker !== ""
@@ -146,9 +179,11 @@ export function CreateJobForm({
       case "deposit":
         input = {
           icon,
+          iconColor,
           jobType: "deposit",
           linkedDepositTypeId: undefined,
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -157,9 +192,11 @@ export function CreateJobForm({
       case "culling":
         input = {
           icon,
+          iconColor,
           jobType: selectedType,
           linkedManagedPopulationTypeId: undefined,
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -245,8 +282,48 @@ export function CreateJobForm({
                   />
                 </Label>
 
+                <Label className="grid gap-1 text-sm">
+                  <span className="text-muted-foreground">Icon color</span>
+                  <PaletteSlotPicker
+                    disabled={isPending}
+                    value={iconColor}
+                    onChange={setIconColor}
+                  />
+                </Label>
+
+                <Label
+                  htmlFor="create-job-required-education"
+                  className="grid gap-1 text-sm"
+                >
+                  <span className="text-muted-foreground">
+                    Required education level
+                  </span>
+                  <NativeSelect
+                    id="create-job-required-education"
+                    className="w-full"
+                    disabled={isPending}
+                    value={requiredEducationLevelId}
+                    onChange={(e) => {
+                      setRequiredEducationLevelId(e.currentTarget.value);
+                    }}
+                  >
+                    <option value="">No requirement</option>
+                    {educationLevels.map((level) => (
+                      <option key={level.id} value={level.id}>
+                        {level.name}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                  {fieldErrors.requiredEducationLevelId !== undefined ? (
+                    <p className="text-xs text-destructive">
+                      {fieldErrors.requiredEducationLevelId}
+                    </p>
+                  ) : null}
+                </Label>
+
                 {selectedType === "standard" ||
-                selectedType === "construction" ? (
+                selectedType === "construction" ||
+                selectedType === "teacher" ? (
                   <Label
                     htmlFor="create-job-basecapacity"
                     className="grid gap-1 text-sm"

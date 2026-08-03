@@ -15,8 +15,6 @@ import type {
 } from "../types/managedPopulationInstanceTypes";
 
 type ManagedPopulationTypeRow = {
-  readonly culling_job: { readonly name: string };
-  readonly husbandry_job: { readonly name: string };
   readonly name: string;
 };
 
@@ -35,7 +33,7 @@ type ManagedPopulationInstanceRow = {
 
 const MANAGED_POPULATION_INSTANCE_SELECT = [
   "id,settlement_id,managed_population_type_id,name,current_count,configured_cull_quantity,status,created_at,updated_at",
-  "managed_population_types(name,husbandry_job:job_definitions!managed_population_types_husbandry_job_fk(name),culling_job:job_definitions!managed_population_types_culling_job_fk(name))",
+  "managed_population_types(name)",
 ].join(",");
 
 type ManagedPopulationInstancesBySettlementQueryKey = ReturnType<
@@ -85,9 +83,7 @@ function toManagedPopulationInstance(
   return {
     configuredCullQuantity: row.configured_cull_quantity,
     createdAt: row.created_at,
-    cullingJobName: row.managed_population_types.culling_job.name,
     currentCount: row.current_count,
-    husbandryJobName: row.managed_population_types.husbandry_job.name,
     id: row.id,
     managedPopulationTypeId: row.managed_population_type_id,
     managedPopulationTypeName: row.managed_population_types.name,

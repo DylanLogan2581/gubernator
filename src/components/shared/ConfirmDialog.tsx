@@ -18,6 +18,7 @@ export type ConfirmDialogProps = {
   description: string | React.ReactNode;
   confirmLabel: string;
   confirmVariant?: "destructive" | "default" | "outline";
+  cancelLabel?: string;
   isPending: boolean;
   onConfirm: () => void | Promise<void>;
 };
@@ -29,6 +30,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   confirmVariant = "destructive",
+  cancelLabel = "Cancel",
   isPending,
   onConfirm,
 }: ConfirmDialogProps): React.JSX.Element {
@@ -40,7 +42,9 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogDescription>{description}</AlertDialogDescription>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            {cancelLabel}
+          </AlertDialogCancel>
           <Button
             disabled={isPending}
             variant={confirmVariant}

@@ -3,11 +3,13 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import { scaleDeficit } from "../decimalMath.ts";
+import { proportionalShare, scaleDeficit } from "../decimalMath.ts";
 
 import type {
   AssignmentClear,
   ManagedPopulationUpdate,
+  SimManagedPopulationCullingJob,
+  SimManagedPopulationHusbandryJob,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -25,9 +27,43 @@ export type PhaseManagedPopulationsOutput = {
 export function phaseManagedPopulations(
   context: SimulationContext,
 ): PhaseManagedPopulationsOutput {
-  const { citizenAssignments, managedPopulationTypes, managedPopulations } = context.input;
+  const {
+    citizenAssignments,
+    managedPopulationCullingJobs,
+    managedPopulationHusbandryJobs,
+    managedPopulationTypes,
+    managedPopulations,
+  } = context.input;
 
   const popTypeById = new Map(managedPopulationTypes.map((t) => [t.id, t]));
+
+  // Group linked jobs by population type, deterministically ordered (id asc)
+  // so the pooled-worker split below is independent of fetch order.
+  const husbandryJobsByTypeId = new Map<string, SimManagedPopulationHusbandryJob[]>();
+  for (const job of managedPopulationHusbandryJobs) {
+    const existing = husbandryJobsByTypeId.get(job.managedPopulationTypeId);
+    if (existing === undefined) {
+      husbandryJobsByTypeId.set(job.managedPopulationTypeId, [job]);
+    } else {
+      existing.push(job);
+    }
+  }
+  for (const jobs of husbandryJobsByTypeId.values()) {
+    jobs.sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  const cullingJobsByTypeId = new Map<string, SimManagedPopulationCullingJob[]>();
+  for (const job of managedPopulationCullingJobs) {
+    const existing = cullingJobsByTypeId.get(job.managedPopulationTypeId);
+    if (existing === undefined) {
+      cullingJobsByTypeId.set(job.managedPopulationTypeId, [job]);
+    } else {
+      existing.push(job);
+    }
+  }
+  for (const jobs of cullingJobsByTypeId.values()) {
+    jobs.sort((a, b) => a.id.localeCompare(b.id));
+  }
 
   // Start from running post-prior-phase totals so upkeep deductions are visible.
   const stockpileQty = new Map(context.shared.pendingStockpiles);
@@ -93,9 +129,23 @@ export function phaseManagedPopulations(
     }
 
     // --- Husbandry coverage ---
+    // Pool the assigned husbandry workers evenly across the type's linked
+    // husbandry jobs (no assignment-level job selection exists yet, mirroring
+    // phaseDepositExtraction's job pooling), then sum each job's
+    // worker-driven animal capacity. Coverage = min(1, capacity / count).
+    const husbandryJobs = husbandryJobsByTypeId.get(type.id) ?? [];
     const husbandryWorkers = husbandryWorkersByPop.get(pop.id)?.length ?? 0;
-    const husbandryNeeded = Math.ceil(currentCount / type.husbandryWorkersPerNAnimals);
-    const husbandryCoverage = scaleDeficit(husbandryNeeded, husbandryWorkers);
+    const husbandryWorkersByJob = proportionalShare(
+      husbandryWorkers,
+      husbandryJobs.map(() => 1),
+    );
+    let husbandryCapacity = 0;
+    for (let j = 0; j < husbandryJobs.length; j++) {
+      const job = husbandryJobs[j];
+      if (job === undefined) continue;
+      husbandryCapacity += (husbandryWorkersByJob[j] ?? 0) * job.workersPerNAnimals;
+    }
+    const husbandryCoverage = scaleDeficit(currentCount, husbandryCapacity);
 
     // --- Regular outputs ---
     // Fulfillment = min of maintenance and husbandry coverage.
@@ -123,9 +173,25 @@ export function phaseManagedPopulations(
     currentCount += growthCountDelta;
 
     // --- Culling ---
-    // Clamp cull quantity to the post-growth count (never negative population).
+    // Actual cull is gated by both the instance's configured quantity and
+    // the linked culling jobs' worker-driven throughput (pooled evenly
+    // across jobs, same as husbandry above), then clamped to the
+    // post-growth count (never negative population).
+    const cullingJobs = cullingJobsByTypeId.get(type.id) ?? [];
+    const cullingWorkers = cullingWorkersByPop.get(pop.id)?.length ?? 0;
+    const cullingWorkersByJob = proportionalShare(
+      cullingWorkers,
+      cullingJobs.map(() => 1),
+    );
+    let cullingCapacity = 0;
+    for (let j = 0; j < cullingJobs.length; j++) {
+      const job = cullingJobs[j];
+      if (job === undefined) continue;
+      cullingCapacity += (cullingWorkersByJob[j] ?? 0) * job.maxCullPerWorker;
+    }
     const cullAmount = Math.min(
       pop.configuredCullQuantity,
+      cullingCapacity,
       Math.max(0, currentCount),
     );
     if (cullAmount > 0) {

@@ -1,12 +1,6 @@
 export type WorldPermissionContext = {
-  readonly canAccessWorld: (world: {
-    readonly id: string;
-    readonly visibility?: string;
-  }) => boolean;
-  readonly canAdminWorld: (world: {
-    readonly id: string;
-    readonly visibility?: string;
-  }) => boolean;
+  readonly canAccessWorld: (world: { readonly id: string }) => boolean;
+  readonly canAdminWorld: (world: { readonly id: string }) => boolean;
   readonly isActiveUser: boolean;
   readonly isAuthenticated: boolean;
   readonly isSuperAdmin: boolean;
@@ -22,12 +16,12 @@ export type AccessibleWorld = {
   readonly canManage: boolean;
   readonly createdAt: string;
   readonly currentTurnNumber: number;
+  readonly heroPath: string | null;
   readonly id: string;
   readonly incestPreventionDepth: number;
   readonly inWorldDateLabel: string;
   readonly inWorldDateLabelShort: string;
   readonly isArchived: boolean;
-  readonly isHidden: boolean;
   readonly isTrashed: boolean;
   readonly name: string;
   readonly nextInWorldDateLabel: string;
@@ -37,7 +31,12 @@ export type AccessibleWorld = {
   readonly status: string;
   readonly thumbnailPath: string | null;
   readonly updatedAt: string;
-  readonly visibility: string;
+};
+
+export type WorldListStats = {
+  readonly worldId: string;
+  readonly playerCharacterCount: number;
+  readonly lastTransitionAt: string | null;
 };
 
 export type WorldShellHeader = {
@@ -52,7 +51,6 @@ export type WorldShellHeader = {
   readonly planningTurnNumber: number;
   readonly slug: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 export type WorldRouteAccess = {

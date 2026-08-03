@@ -74,10 +74,17 @@ export function depositTypeByIdQueryOptions(
   });
 }
 
+// Sorting is limited to name: deposit types can now link 1..n jobs (each
+// with its own output rate), so neither "linked job" nor "output per worker"
+// is a single-valued, sortable column on deposit_types anymore (#1246).
+export type DepositTypesSortBy = "name";
+
 export type DepositTypesPageParams = {
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: DepositTypesSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -128,8 +135,10 @@ async function getDepositTypesPage(
     query = query.ilike("name", `%${search}%`);
   }
 
+  const sortAscending = params.sortDirection !== "desc";
+  query = query.order("name", { ascending: sortAscending });
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<DepositTypeRow[]>();

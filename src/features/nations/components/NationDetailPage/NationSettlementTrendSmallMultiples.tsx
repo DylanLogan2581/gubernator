@@ -98,7 +98,7 @@ export function NationSettlementTrendSmallMultiples({
             {s.settlementName}
           </h4>
           <ChartContainer config={chartConfig} className="h-28 w-full">
-            <LineChart data={[...s.points]}>
+            <LineChart data={[...s.points]} margin={{ right: 24 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="turnLabel"

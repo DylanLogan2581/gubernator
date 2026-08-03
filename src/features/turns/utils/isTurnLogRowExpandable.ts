@@ -60,7 +60,7 @@ export function isTurnLogRowExpandable(
     case "settlement.starvation_occurred":
     case "settlement.homelessness_occurred":
     case "stockpile.clamped":
-    case "stockpile.decayed":
+    case "stockpile.changed":
     case "trade_route.paused":
     case "trade_route.resumed":
       return false;

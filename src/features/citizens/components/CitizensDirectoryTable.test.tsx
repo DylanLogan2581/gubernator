@@ -1,11 +1,23 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { CitizensDirectoryTable } from "./CitizensDirectoryTable";
 
 import type { ReactNode } from "react";
+
+// jsdom lacks pointer capture / scrollIntoView, which Radix Select needs to open.
+/* eslint-disable @typescript-eslint/unbound-method */
+Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
+  return false;
+};
+Element.prototype.setPointerCapture ??= function setPointerCapture() {};
+Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+/* eslint-enable @typescript-eslint/unbound-method */
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -90,13 +102,23 @@ function buildClient({
   return { from };
 }
 
+function setViewportWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
 function renderTable(worldId = "world-1"): ReturnType<typeof render> {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <CitizensDirectoryTable worldId={worldId} />
+      <TooltipProvider>
+        <CitizensDirectoryTable worldId={worldId} />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -104,6 +126,10 @@ function renderTable(worldId = "world-1"): ReturnType<typeof render> {
 describe("CitizensDirectoryTable", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+  });
+
+  afterEach(() => {
+    setViewportWidth(1024);
   });
 
   it("renders directory rows with the required columns", async () => {
@@ -118,6 +144,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Ada",
             nation_id: "nation-1",
             nation_name: "Nation A",
+            office_types: null,
             settlement_id: "settlement-1",
             settlement_name: "Amberhold",
             sex: "female",
@@ -135,7 +162,6 @@ describe("CitizensDirectoryTable", () => {
     expect(screen.getByText("Amberhold")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.getByText("Blacksmith")).toBeDefined();
-    expect(screen.getByText("citizen-1".slice(0, 8))).toBeDefined();
     expect(screen.queryByText("Player")).toBeNull();
     expect(screen.queryByText("Deceased")).toBeNull();
   });
@@ -152,6 +178,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Cora",
             nation_id: null,
             nation_name: null,
+            office_types: null,
             settlement_id: null,
             settlement_name: null,
             sex: null,
@@ -167,6 +194,36 @@ describe("CitizensDirectoryTable", () => {
     expect(await screen.findByText("Cora")).toBeDefined();
     expect(screen.getByText("Player")).toBeDefined();
     expect(screen.getByText("Deceased")).toBeDefined();
+  });
+
+  it("marks an officeholder with an 'In office' badge instead of their assignment label", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [
+          {
+            age_turns: 40,
+            assignment_label: "Blacksmith",
+            citizen_type: "npc",
+            id: "citizen-4",
+            name: "Deka",
+            nation_id: "nation-1",
+            nation_name: "Nation A",
+            office_types: "treasurer",
+            settlement_id: "settlement-1",
+            settlement_name: "Amberhold",
+            sex: "female",
+            status: "alive",
+          },
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderTable();
+
+    expect(await screen.findByText("Deka")).toBeDefined();
+    expect(screen.getByText("In office: Treasurer")).toBeDefined();
+    expect(screen.queryByText("Blacksmith")).toBeNull();
   });
 
   it("renders an empty state when no citizens match", async () => {
@@ -191,6 +248,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Bram",
             nation_id: null,
             nation_name: null,
+            office_types: null,
             settlement_id: null,
             settlement_name: null,
             sex: null,
@@ -209,6 +267,39 @@ describe("CitizensDirectoryTable", () => {
     );
   });
 
+  it("renders a linked card instead of the table on narrow viewports", async () => {
+    setViewportWidth(500);
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [
+          {
+            age_turns: null,
+            assignment_label: null,
+            citizen_type: "player_character",
+            id: "citizen-2",
+            name: "Bram",
+            nation_id: null,
+            nation_name: null,
+            office_types: null,
+            settlement_id: null,
+            settlement_name: null,
+            sex: null,
+            status: "alive",
+          },
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderTable();
+
+    const rowLink = await screen.findByRole("link", { name: /Bram/ });
+    expect(rowLink.getAttribute("href")).toBe(
+      "/worlds/world-1/citizens/citizen-2",
+    );
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+
   it("re-fetches with server-side order when a sortable column header is clicked", async () => {
     const orderSpy = vi.fn();
     requireSupabaseClient.mockReturnValue(
@@ -222,6 +313,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Ada",
             nation_id: null,
             nation_name: null,
+            office_types: null,
             settlement_id: null,
             settlement_name: null,
             sex: null,
@@ -243,5 +335,63 @@ describe("CitizensDirectoryTable", () => {
     await waitFor(() => {
       expect(orderSpy).toHaveBeenCalledWith("age_turns", { ascending: true });
     });
+  });
+
+  it("restricts the settlement options to the selected nation and resets the settlement filter on nation change", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [],
+        nations: [
+          { id: "nation-1", name: "Nation A" },
+          { id: "nation-2", name: "Nation B" },
+        ],
+        settlements: [
+          {
+            id: "settlement-1",
+            name: "Amberhold",
+            nation_id: "nation-1",
+            nations: { name: "Nation A" },
+          },
+          {
+            id: "settlement-2",
+            name: "Ravenshold",
+            nation_id: "nation-2",
+            nations: { name: "Nation B" },
+          },
+        ],
+        totalCount: 0,
+      }),
+    );
+
+    renderTable();
+    await screen.findByText("No citizens found");
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by settlement" }),
+    );
+    expect(
+      await screen.findByRole("option", { name: "Amberhold" }),
+    ).toBeDefined();
+    expect(screen.getByRole("option", { name: "Ravenshold" })).toBeDefined();
+    await user.click(screen.getByRole("option", { name: "Amberhold" }));
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by nation" }),
+    );
+    await user.click(await screen.findByRole("option", { name: "Nation B" }));
+
+    expect(
+      screen.getByRole("combobox", { name: "Filter by settlement" }),
+    ).toHaveTextContent("All settlements");
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by settlement" }),
+    );
+    expect(
+      await screen.findByRole("option", { name: "Ravenshold" }),
+    ).toBeDefined();
+    expect(screen.queryByRole("option", { name: "Amberhold" })).toBeNull();
   });
 });

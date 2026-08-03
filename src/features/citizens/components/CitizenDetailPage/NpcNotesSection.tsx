@@ -92,7 +92,7 @@ export function CitizenNpcNotesSection({
             </Button>
           ) : null}
         </div>
-        <dl className="flex flex-col gap-2">
+        <dl className="grid divide-y divide-border border-y border-border">
           <Readout
             label="Personality"
             value={adminDetails?.personalityText ?? null}

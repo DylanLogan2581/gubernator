@@ -1,6 +1,7 @@
 import { requireSupabaseClient } from "@/lib/supabase";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import {
+  WORLD_TEMPLATE_VERSION,
   worldTemplateSchema,
   type WorldTemplate,
 } from "@/shared/worldTemplateSchema";
@@ -106,6 +107,26 @@ export async function exportWorldTemplate(
   return response.data.data;
 }
 
+const EXPORT_ERROR_MESSAGES: Record<string, string> = {
+  authorization_check_failed:
+    "Could not verify your permissions. Please try again.",
+  forbidden: "You do not have permission to export this world template.",
+  origin_not_allowed:
+    "This app is not allowed to export templates. Contact an administrator.",
+  rate_limit_exceeded:
+    "Too many export attempts. Please wait a moment and try again.",
+  unauthenticated: "Your session has expired. Sign in again and retry.",
+  world_not_found: "World not found.",
+};
+
+export function describeWorldTemplateExportError(error: unknown): string {
+  if (error instanceof WorldTemplateExportError) {
+    const knownMessage = EXPORT_ERROR_MESSAGES[error.code];
+    if (knownMessage !== undefined) return knownMessage;
+  }
+  return "Could not export world template. Please try again.";
+}
+
 export function serializeWorldTemplate(template: WorldTemplate): string {
   return JSON.stringify(template, null, 2);
 }
@@ -127,6 +148,22 @@ export function parseWorldTemplate(jsonText: string): ParseWorldTemplateResult {
     const firstIssue = result.error.issues[0];
     if (firstIssue === undefined) {
       return { ok: false, error: "Invalid template." };
+    }
+    if (
+      firstIssue.path.length === 1 &&
+      firstIssue.path[0] === "template_version"
+    ) {
+      const uploadedVersion =
+        raw !== null && typeof raw === "object" && "template_version" in raw
+          ? (raw as Record<string, unknown>).template_version
+          : undefined;
+      return {
+        ok: false,
+        error:
+          typeof uploadedVersion === "number"
+            ? `Template version ${uploadedVersion} is no longer supported. Export a new template (version ${WORLD_TEMPLATE_VERSION}) to import it.`
+            : `Unsupported template version. Export a new template (version ${WORLD_TEMPLATE_VERSION}) to import it.`,
+      };
     }
     const field =
       firstIssue.path.length > 0 ? firstIssue.path.join(".") : "root";

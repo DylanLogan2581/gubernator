@@ -36,12 +36,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ac200000-0000-0000-0000-000000000001',
     'Auto Exhaust World',
-    'private',
     'active'
   );
 
@@ -95,22 +94,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ac500000-0000-0000-0000-000000000001',
     'ac200000-0000-0000-0000-000000000001',
     'Iron Seam',
-    'iron-seam',
-    'ac800000-0000-0000-0000-000000000001',
-    10
+    'iron-seam'
   );
 
 -- Active deposit for auto-exhaust test

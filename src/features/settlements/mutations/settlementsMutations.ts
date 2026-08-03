@@ -58,10 +58,12 @@ type SettlementRow = {
   readonly coord_z: number | null;
   readonly created_at: string;
   readonly description: string | null;
+  readonly flag_path: string | null;
   readonly id: string;
   readonly name: string;
   readonly nameset_id: string | null;
   readonly nation_id: string;
+  readonly seal_path: string | null;
   readonly updated_at: string;
 };
 
@@ -73,7 +75,7 @@ export type DeleteSettlementResult = {
 export type SettlementMutationIssue = MutationIssue;
 
 const SETTLEMENT_SELECT =
-  "id,nation_id,name,description,nameset_id,coord_x,coord_z,created_at,updated_at";
+  "id,nation_id,name,description,nameset_id,coord_x,coord_z,flag_path,seal_path,created_at,updated_at";
 
 export const {
   ErrorClass: SettlementMutationError,
@@ -95,10 +97,16 @@ export function createSettlementMutationOptions({
     mutationFn: (input: CreateSettlementInput) =>
       createSettlement(client, input),
     mutationKey: [...settlementsQueryKeys.all, "create-settlement"],
-    onSuccess: async (settlement): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: nationsQueryKeys.settlements(settlement.nationId),
-      });
+    onSuccess: async (settlement, input): Promise<void> => {
+      const values = parseInput(createSettlementInputSchema, input);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.settlements(settlement.nationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.byWorld(values.worldId),
+        }),
+      ]);
     },
   });
 }
@@ -157,13 +165,19 @@ export function deleteSettlementMutationOptions({
     mutationFn: (input: DeleteSettlementInput) =>
       deleteSettlement(client, input),
     mutationKey: [...settlementsQueryKeys.all, "delete-settlement"],
-    onSuccess: async (result): Promise<void> => {
+    onSuccess: async (result, input): Promise<void> => {
+      const values = parseInput(deleteSettlementInputSchema, input);
       queryClient.removeQueries({
         queryKey: settlementsQueryKeys.detail(result.settlementId),
       });
-      await queryClient.invalidateQueries({
-        queryKey: nationsQueryKeys.settlements(result.nationId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.settlements(result.nationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settlementsQueryKeys.byWorld(values.worldId),
+        }),
+      ]);
     },
   });
 }
@@ -339,10 +353,12 @@ function toSettlement(row: SettlementRow): Settlement {
     coordZ: row.coord_z,
     createdAt: row.created_at,
     description: row.description,
+    flagPath: row.flag_path,
     id: row.id,
     name: row.name,
     namesetId: row.nameset_id,
     nationId: row.nation_id,
+    sealPath: row.seal_path,
     updatedAt: row.updated_at,
   };
 }

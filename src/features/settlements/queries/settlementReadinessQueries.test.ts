@@ -47,7 +47,7 @@ describe("settlementReadinessListQueryOptions", () => {
         autoReadyEnabled: true,
         id: "settlement-1",
         isReadyCurrentTurn: false,
-        isReadyForCurrentTurn: false,
+        isReadyForCurrentTurn: true,
         lastReadyAt: null,
         name: "Amberhold",
         nationId: "nation-1",
@@ -83,7 +83,7 @@ describe("settlementReadinessListQueryOptions", () => {
     ]);
   });
 
-  it("does not count auto-ready settlements enabled mid-turn as ready yet", async () => {
+  it("counts auto-ready settlements enabled mid-turn as ready", async () => {
     const queryClient = createQueryClient();
 
     const summary = await queryClient.fetchQuery(
@@ -112,9 +112,9 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(summary).toEqual({
-      notReadySettlementCount: 2,
-      readyPercentage: 33.33333333333333,
-      readySettlementCount: 1,
+      notReadySettlementCount: 1,
+      readyPercentage: 66.66666666666666,
+      readySettlementCount: 2,
       totalSettlementCount: 3,
     });
   });
@@ -131,7 +131,7 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(builder.select).toHaveBeenCalledWith(
-      "auto_ready_enabled,is_ready_current_turn,nations!inner()",
+      "auto_ready_enabled,is_ready_current_turn,nations!settlements_nation_id_fkey!inner()",
     );
     expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
     expect(builder.order).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(builder.select).toHaveBeenCalledWith(
-      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(id,name)",
+      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!settlements_nation_id_fkey!inner(id,name)",
     );
     expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
     expect(builder.order).toHaveBeenCalledWith("name", { ascending: true });

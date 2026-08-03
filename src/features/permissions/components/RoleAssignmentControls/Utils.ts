@@ -1,7 +1,4 @@
-
-import { isPlayerCharacterRoleMutationError } from "@/features/citizens";
 import type { Citizen } from "@/features/citizens";
-import { getErrorDescription } from "@/lib/errorUtils";
 
 import { permissionQueryKeys } from "../../queries/permissionQueryKeys";
 
@@ -29,15 +26,4 @@ export function citizenRoleLabel(
         settlementName === null ? "" : ` — ${settlementName}`
       }`;
   }
-}
-
-export function getRoleMutationErrorDescription(error: unknown): string {
-  if (isPlayerCharacterRoleMutationError(error)) {
-    const firstIssue = error.issues[0];
-    if (firstIssue !== undefined) {
-      return firstIssue.message;
-    }
-    return error.message;
-  }
-  return getErrorDescription(error);
 }

@@ -33,12 +33,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ee100000-0000-0000-0000-000000000001',
     'UA Test World',
-    'private',
     'active'
   );
 
@@ -170,100 +169,87 @@ values
   );
 
 -- Deposit types: active (for soft_delete), pre-trashed (for restore).
--- The two rows share a job_id — allowed because the partial unique index
--- only covers rows WHERE NOT is_trashed.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    updated_at
-  )
+  public.deposit_types (id, world_id, name, slug, updated_at)
 values
   (
     'ee500000-0000-0000-0000-000000000001',
     'ee100000-0000-0000-0000-000000000001',
     'UA Coal',
     'ua-coal',
-    'ee300000-0000-0000-0000-000000000003',
-    1,
     '2000-01-01 00:00:00+00'::timestamptz
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed,
-    updated_at
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed, updated_at)
 values
   (
     'ee500000-0000-0000-0000-000000000002',
     'ee100000-0000-0000-0000-000000000001',
     'UA Coal Trashed',
     'ua-coal-trashed',
-    'ee300000-0000-0000-0000-000000000003',
-    1,
     true,
     '2000-01-01 00:00:00+00'::timestamptz
   );
 
 -- Managed population types: active (for soft_delete), pre-trashed (for restore).
--- Shared husbandry/culling job_ids permitted for the same partial-index reason.
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    updated_at
-  )
+  public.managed_population_types (id, world_id, name, slug, updated_at)
 values
   (
     'ee600000-0000-0000-0000-000000000001',
     'ee100000-0000-0000-0000-000000000001',
     'UA Cattle',
     'ua-cattle',
-    'ee300000-0000-0000-0000-000000000004',
-    'ee300000-0000-0000-0000-000000000005',
-    10,
     '2000-01-01 00:00:00+00'::timestamptz
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    is_trashed,
-    updated_at
-  )
+  public.managed_population_types (id, world_id, name, slug, is_trashed, updated_at)
 values
   (
     'ee600000-0000-0000-0000-000000000002',
     'ee100000-0000-0000-0000-000000000001',
     'UA Cattle Trashed',
     'ua-cattle-trashed',
-    'ee300000-0000-0000-0000-000000000004',
-    'ee300000-0000-0000-0000-000000000005',
-    10,
     true,
     '2000-01-01 00:00:00+00'::timestamptz
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'ee600000-0000-0000-0000-000000000001',
+    'ee300000-0000-0000-0000-000000000004',
+    10
+  ),
+  (
+    'ee600000-0000-0000-0000-000000000002',
+    'ee300000-0000-0000-0000-000000000004',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'ee600000-0000-0000-0000-000000000001',
+    'ee300000-0000-0000-0000-000000000005',
+    10
+  ),
+  (
+    'ee600000-0000-0000-0000-000000000002',
+    'ee300000-0000-0000-0000-000000000005',
+    10
   );
 
 -- ===========================================================================

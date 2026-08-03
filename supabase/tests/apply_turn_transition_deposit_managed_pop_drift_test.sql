@@ -52,34 +52,30 @@ where
 -- World 3: managed-pop drift scenario
 -- World 4: managed-pop clean scenario
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f3200000-0000-0000-0000-000000000001',
     'ATDMPD Deposit Drift World',
     3,
-    'private',
     'active'
   ),
   (
     'f3200000-0000-0000-0000-000000000002',
     'ATDMPD Deposit Clean World',
     3,
-    'private',
     'active'
   ),
   (
     'f3200000-0000-0000-0000-000000000003',
     'ATDMPD ManagedPop Drift World',
     3,
-    'private',
     'active'
   ),
   (
     'f3200000-0000-0000-0000-000000000004',
     'ATDMPD ManagedPop Clean World',
     3,
-    'private',
     'active'
   );
 
@@ -205,51 +201,31 @@ values
 
 -- Deposit types
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    worker_inputs_json,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'f3700000-0000-0000-0000-000000000001',
     'f3200000-0000-0000-0000-000000000001',
     'ATDMPD Forest',
-    'atdmpd-forest',
-    'f3700000-0000-0000-0000-000000000020',
-    '[]'::jsonb,
-    1
+    'atdmpd-forest'
   ),
   (
     'f3700000-0000-0000-0000-000000000002',
     'f3200000-0000-0000-0000-000000000002',
     'ATDMPD Quarry',
-    'atdmpd-quarry',
-    'f3700000-0000-0000-0000-000000000021',
-    '[]'::jsonb,
-    1
+    'atdmpd-quarry'
   ),
   (
     'f3700000-0000-0000-0000-000000000003',
     'f3200000-0000-0000-0000-000000000003',
     'ATDMPD Mine',
-    'atdmpd-mine',
-    'f3700000-0000-0000-0000-000000000022',
-    '[]'::jsonb,
-    1
+    'atdmpd-mine'
   ),
   (
     'f3700000-0000-0000-0000-000000000004',
     'f3200000-0000-0000-0000-000000000004',
     'ATDMPD Vault',
-    'atdmpd-vault',
-    'f3700000-0000-0000-0000-000000000023',
-    '[]'::jsonb,
-    1
+    'atdmpd-vault'
   );
 
 -- Job definitions for managed population types (husbandry and culling)
@@ -287,25 +263,13 @@ values
 
 -- Managed population types
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'f3800000-0000-0000-0000-000000000001',
     'f3200000-0000-0000-0000-000000000003',
     'ATDMPD Soldiers',
     'atdmpd-soldiers',
-    'f3700000-0000-0000-0000-000000000010',
-    'f3700000-0000-0000-0000-000000000011',
-    1,
     0.05
   ),
   (
@@ -313,10 +277,43 @@ values
     'f3200000-0000-0000-0000-000000000004',
     'ATDMPD Clerics',
     'atdmpd-clerics',
-    'f3700000-0000-0000-0000-000000000012',
-    'f3700000-0000-0000-0000-000000000013',
-    1,
     0.05
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'f3800000-0000-0000-0000-000000000001',
+    'f3700000-0000-0000-0000-000000000010',
+    1
+  ),
+  (
+    'f3800000-0000-0000-0000-000000000002',
+    'f3700000-0000-0000-0000-000000000012',
+    1
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'f3800000-0000-0000-0000-000000000001',
+    'f3700000-0000-0000-0000-000000000011',
+    10
+  ),
+  (
+    'f3800000-0000-0000-0000-000000000002',
+    'f3700000-0000-0000-0000-000000000013',
+    10
   );
 
 -- Deposit instances for worlds 1 & 2

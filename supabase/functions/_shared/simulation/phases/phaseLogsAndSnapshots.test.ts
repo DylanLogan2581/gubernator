@@ -34,6 +34,7 @@ function makeAccumulator(
     citizenBirths: [],
     consumptionDeltas: [],
     depositUpdates: [],
+    educationSummaryBySettlementId: new Map(),
     managedPopulationUpdates: [],
     partnershipChanges: [],
     pendingStockpiles: new Map(),
@@ -58,6 +59,8 @@ function makeBirth(
   overrides: Partial<CitizenBirth> & { settlementId: string },
 ): CitizenBirth {
   return {
+    cultureId: null,
+    educationLevelId: null,
     givenName: "Newborn",
     namesetId: null,
     npcFlaw: null,
@@ -67,6 +70,7 @@ function makeBirth(
     npcTrait2: null,
     parentACitizenId: "parent-a",
     parentBCitizenId: "parent-b",
+    religionId: null,
     sex: "female",
     surname: null,
     ...overrides,

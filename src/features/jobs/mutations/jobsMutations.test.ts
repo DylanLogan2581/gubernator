@@ -17,9 +17,10 @@ type JobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly inputs_json: ReadonlyArray<unknown>;
   readonly is_trashed: boolean;
@@ -37,7 +38,7 @@ type JobRow = {
 describe("createJobMutationOptions — hasActiveReferences", () => {
   it("returns hasActiveReferences: false when no references exist", async () => {
     const row = createJobRow({
-      deposit_types: [],
+      deposit_type_jobs: [],
       husbandry_mpt: [],
       culling_mpt: [],
     });
@@ -57,7 +58,7 @@ describe("createJobMutationOptions — hasActiveReferences", () => {
 
   it("returns hasActiveReferences: true when a deposit type references the job", async () => {
     const row = createJobRow({
-      deposit_types: [{ id: DEPOSIT_TYPE_ID }],
+      deposit_type_jobs: [{ id: DEPOSIT_TYPE_ID }],
       husbandry_mpt: [],
       culling_mpt: [],
     });
@@ -77,7 +78,7 @@ describe("createJobMutationOptions — hasActiveReferences", () => {
 
   it("returns hasActiveReferences: true when a managed population type references the job via husbandry", async () => {
     const row = createJobRow({
-      deposit_types: [],
+      deposit_type_jobs: [],
       husbandry_mpt: [{ id: MANAGED_POP_TYPE_ID }],
       culling_mpt: [],
     });
@@ -97,7 +98,7 @@ describe("createJobMutationOptions — hasActiveReferences", () => {
 
   it("returns hasActiveReferences: true when a managed population type references the job via culling", async () => {
     const row = createJobRow({
-      deposit_types: [],
+      deposit_type_jobs: [],
       husbandry_mpt: [],
       culling_mpt: [{ id: MANAGED_POP_TYPE_ID }],
     });
@@ -119,7 +120,7 @@ describe("createJobMutationOptions — hasActiveReferences", () => {
 describe("updateJobMutationOptions — hasActiveReferences", () => {
   it("returns hasActiveReferences: false when no references exist", async () => {
     const row = createJobRow({
-      deposit_types: [],
+      deposit_type_jobs: [],
       husbandry_mpt: [],
       culling_mpt: [],
     });
@@ -138,7 +139,7 @@ describe("updateJobMutationOptions — hasActiveReferences", () => {
 
   it("returns hasActiveReferences: true when a deposit type references the job", async () => {
     const row = createJobRow({
-      deposit_types: [{ id: DEPOSIT_TYPE_ID }],
+      deposit_type_jobs: [{ id: DEPOSIT_TYPE_ID }],
       husbandry_mpt: [],
       culling_mpt: [],
     });
@@ -161,9 +162,10 @@ function createJobRow(overrides: Partial<JobRow> = {}): JobRow {
     base_capacity: null,
     created_at: "2026-05-01T00:00:00.000Z",
     culling_mpt: [],
-    deposit_types: [],
+    deposit_type_jobs: [],
     husbandry_mpt: [],
     icon: null,
+    icon_color: null,
     id: JOB_ID,
     inputs_json: [],
     is_trashed: false,

@@ -1,0 +1,40 @@
+{
+  "id": "zelda-human-names",
+  "displayName": "Humans",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/zelda-human-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "none",
+    "parts": {
+      "nm7": ["c", "f", "h", "m", "n", "ph", "r", "s", "sh", "th", "t"],
+      "nm6": ["a", "e", "i", "o"],
+      "nm8": [
+        "f",
+        "l",
+        "m",
+        "mb",
+        "n",
+        "p",
+        "ph",
+        "tr",
+        "ld",
+        "r",
+        "s",
+        "sh",
+        "v"
+      ],
+      "nm9": ["a", "e", "i", "o", "ia", "ei", "ie", "ea"],
+      "nm10": ["l", "m", "n", "s", "sh", "th"],
+      "nm2": ["b", "c", "d", "j", "k", "l", "m", "n", "r", "t", "z"],
+      "nm3": ["a", "i", "o", "u"],
+      "nm4": ["b", "g", "k", "l", "m", "ng", "r", "rr", "ss", "t", "z"],
+      "nm5": ["h", "k", "l", "ll", "lph", "m", "n", "nk", "s"]
+    },
+    "patterns": {
+      "female_given": [["nm7"], ["nm6"], ["nm8"], ["nm9"], ["nm10"]],
+      "male_given": [["nm2"], ["nm3"], ["nm4"], ["nm3"], ["nm5"]],
+      "surname": []
+    }
+  }
+}

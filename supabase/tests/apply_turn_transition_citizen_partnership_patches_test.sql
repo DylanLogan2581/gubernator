@@ -53,69 +53,60 @@ where
 --   World 8: dead-partner guard (raises P0001)
 --   World 9: non-existent citizen death guard (raises P0001)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a9200000-0000-0000-0000-000000000001',
     'ATTCP Birth World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000002',
     'ATTCP Death World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000003',
     'ATTCP PC Death World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000004',
     'ATTCP Assignment Clear World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000005',
     'ATTCP Partnership Form World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000006',
     'ATTCP Partnership Widow World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000007',
     'ATTCP Backfill World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000008',
     'ATTCP Dead Partner World',
     5,
-    'private',
     'active'
   ),
   (
     'a9200000-0000-0000-0000-000000000009',
     'ATTCP Ghost Death World',
     5,
-    'private',
     'active'
   );
 
@@ -345,22 +336,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a9800000-0000-0000-0000-000000000001',
     'a9200000-0000-0000-0000-000000000004',
     'ATTCP Iron Vein 4',
-    'attcp-iron-vein-4',
-    'a9700000-0000-0000-0000-000000000001',
-    10
+    'attcp-iron-vein-4'
   );
 
 insert into

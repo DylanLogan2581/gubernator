@@ -1,10 +1,33 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from "vitest";
 
 import { IconPicker } from "./IconPicker";
 
 describe("IconPicker", () => {
+  // jsdom never lays out elements, so the game-icons grid's
+  // `@tanstack/react-virtual` container measures a 0px viewport and renders
+  // no rows. Stub a real height so its virtualized rows mount for these tests.
+  let offsetHeightSpy: MockInstance<() => number>;
+
+  beforeEach(() => {
+    offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockReturnValue(224);
+  });
+
+  afterEach(() => {
+    offsetHeightSpy.mockRestore();
+  });
+
   it("shows a placeholder when value is null", () => {
     render(<IconPicker value={null} onChange={vi.fn()} />);
     expect(screen.getByRole("combobox")).toHaveTextContent("Choose icon…");
@@ -58,4 +81,56 @@ describe("IconPicker", () => {
     await user.click(screen.getByRole("combobox"));
     expect(screen.queryByText("Clear icon")).toBeNull();
   });
+
+  it("switches to the Game Icons tab and selects a namespaced icon", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<IconPicker value={null} onChange={onChange} />);
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByRole("tab", { name: "Game Icons" }));
+    await user.type(
+      await screen.findByPlaceholderText(
+        "Search game icons…",
+        {},
+        { timeout: 5000 },
+      ),
+      "anvil",
+    );
+
+    const option = await screen.findByRole(
+      "option",
+      { name: "Anvil" },
+      { timeout: 5000 },
+    );
+    await user.click(option);
+
+    expect(onChange).toHaveBeenCalledWith("game:anvil");
+    expect(screen.queryByPlaceholderText("Search icons…")).toBeNull();
+  }, 10000);
+
+  it("shows the formatted label for a namespaced game icon value", () => {
+    render(<IconPicker value="game:anvil" onChange={vi.fn()} />);
+    expect(screen.getByRole("combobox")).toHaveTextContent("Anvil");
+  });
+
+  it("matches game icons by word regardless of query word order", async () => {
+    const user = userEvent.setup();
+    render(<IconPicker value={null} onChange={vi.fn()} />);
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByRole("tab", { name: "Game Icons" }));
+    await user.type(
+      await screen.findByPlaceholderText(
+        "Search game icons…",
+        {},
+        { timeout: 5000 },
+      ),
+      "spear thrown",
+    );
+
+    expect(
+      await screen.findByRole("option", { name: "Thrown Spear" }),
+    ).toBeDefined();
+  }, 10000);
 });

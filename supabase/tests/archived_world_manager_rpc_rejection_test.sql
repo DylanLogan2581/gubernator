@@ -60,12 +60,11 @@ where
 
 -- Archived world
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     'be200000-0000-0000-0000-000000000001',
     'AGMR Archived World',
-    'private',
     'archived',
     now()
   );
@@ -147,22 +146,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'be900000-0000-0000-0000-000000000001',
     'be200000-0000-0000-0000-000000000001',
     'AGMR Iron Seam',
-    'agmr-iron-seam',
-    'be600000-0000-0000-0000-000000000001',
-    10
+    'agmr-iron-seam'
   );
 
 -- Deposit instance (active; archive check fires before status check)

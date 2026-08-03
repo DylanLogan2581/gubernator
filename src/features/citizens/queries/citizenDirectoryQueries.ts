@@ -19,7 +19,10 @@ export type CitizenDirectorySortColumn =
   | "age_turns"
   | "settlement_name"
   | "nation_name"
-  | "status";
+  | "status"
+  | "citizen_type"
+  | "sex"
+  | "education_level_name";
 
 export type CitizenDirectoryOrder = {
   readonly ascending: boolean;
@@ -44,10 +47,12 @@ export type CitizenDirectoryRow = {
   readonly ageTurns: number | null;
   readonly assignmentLabel: string | null;
   readonly citizenType: CitizenType;
+  readonly educationLevelName: string | null;
   readonly id: string;
   readonly name: string | null;
   readonly nationId: string | null;
   readonly nationName: string | null;
+  readonly officeTypes: string | null;
   readonly settlementId: string | null;
   readonly settlementName: string | null;
   readonly sex: string | null;
@@ -71,10 +76,12 @@ type CitizenDirectoryRowData = {
   readonly age_turns: number | null;
   readonly assignment_label: string | null;
   readonly citizen_type: CitizenType;
+  readonly education_level_name: string | null;
   readonly id: string;
   readonly name: string | null;
   readonly nation_id: string | null;
   readonly nation_name: string | null;
+  readonly office_types: string | null;
   readonly settlement_id: string | null;
   readonly settlement_name: string | null;
   readonly sex: string | null;
@@ -82,7 +89,7 @@ type CitizenDirectoryRowData = {
 };
 
 const CITIZEN_DIRECTORY_SELECT =
-  "id,name,sex,status,citizen_type,age_turns,settlement_id,settlement_name,nation_id,nation_name,assignment_label";
+  "id,name,sex,status,citizen_type,age_turns,settlement_id,settlement_name,nation_id,nation_name,assignment_label,office_types,education_level_name";
 
 export function citizensDirectoryQueryOptions(
   worldId: string,
@@ -145,6 +152,50 @@ async function getCitizensDirectory(
   };
 }
 
+type SettlementOfficeholderCountQueryKey = ReturnType<
+  typeof citizensQueryKeys.settlementOfficeholderCount
+>;
+type SettlementOfficeholderCountQueryOptions = UseQueryOptions<
+  number,
+  AuthUiError,
+  number,
+  SettlementOfficeholderCountQueryKey
+>;
+
+// Count of living citizens in `settlementId` who hold at least one nation
+// office (#1081) — they keep their job/deposit/trade assignment row but
+// contribute no output while in office. Used to surface a banner on the
+// settlement assignment board; per-citizen badges live in the directory/
+// panel tables via office_types on CitizenDirectoryRow.
+export function settlementOfficeholderCountQueryOptions(
+  settlementId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementOfficeholderCountQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getSettlementOfficeholderCount(client, settlementId),
+    queryKey: citizensQueryKeys.settlementOfficeholderCount(settlementId),
+  });
+}
+
+async function getSettlementOfficeholderCount(
+  client: GubernatorSupabaseClient,
+  settlementId: string,
+): Promise<number> {
+  const { count, error } = await client
+    .from("citizen_directory_view")
+    .select("id", { count: "exact", head: true })
+    .eq("settlement_id", settlementId)
+    .eq("status", "alive")
+    .not("office_types", "is", null);
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return count ?? 0;
+}
+
 function toCitizenDirectoryRow(
   row: CitizenDirectoryRowData,
 ): CitizenDirectoryRow {
@@ -152,10 +203,12 @@ function toCitizenDirectoryRow(
     ageTurns: row.age_turns,
     assignmentLabel: row.assignment_label,
     citizenType: row.citizen_type,
+    educationLevelName: row.education_level_name,
     id: row.id,
     name: row.name,
     nationId: row.nation_id,
     nationName: row.nation_name,
+    officeTypes: row.office_types,
     settlementId: row.settlement_id,
     settlementName: row.settlement_name,
     sex: row.sex,

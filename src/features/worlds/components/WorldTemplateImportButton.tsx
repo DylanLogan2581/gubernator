@@ -1,7 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Upload } from "lucide-react";
-import { useId, useRef, useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
+import {
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type FormEvent,
+  type JSX,
+  type RefObject,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import {
+  notifyError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
@@ -29,17 +39,29 @@ import {
   type DryRunReport,
 } from "../utils/worldTemplateDryRun";
 
+export type WorldTemplateImportButtonHandle = {
+  readonly openFilePicker: () => void;
+};
+
 // ---------------------------------------------------------------------------
 // Main button
 // ---------------------------------------------------------------------------
 export function WorldTemplateImportButton({
   queryClient,
+  ref,
 }: {
   readonly queryClient: QueryClient;
+  readonly ref?: RefObject<WorldTemplateImportButtonHandle | null>;
 }): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [template, setTemplate] = useState<WorldTemplate | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    openFilePicker: () => {
+      fileInputRef.current?.click();
+    },
+  }));
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
@@ -155,7 +177,7 @@ export function ImportErrorDialog({
 }
 
 // ---------------------------------------------------------------------------
-// Confirm dialog: dry-run report + name/visibility form
+// Confirm dialog: dry-run report + name form
 // ---------------------------------------------------------------------------
 export function ImportConfirmDialog({
   template,
@@ -167,12 +189,10 @@ export function ImportConfirmDialog({
   readonly onClose: () => void;
 }): JSX.Element {
   const nameId = useId();
-  const visibilityId = useId();
 
   const report: DryRunReport = computeDryRunReport(template);
 
   const [name, setName] = useState(template.meta.name);
-  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [nameError, setNameError] = useState<string | undefined>(undefined);
 
   const importMutation = useMutation(
@@ -189,20 +209,20 @@ export function ImportConfirmDialog({
     }
 
     if (report.danglingRefs.length > 0) {
-      toast.error("Template has dangling references", {
+      notifyError("Template has dangling references", {
         description: "Resolve the cross-reference errors before importing.",
       });
       return;
     }
 
-    const input: ImportWorldFromTemplateInput = { name, visibility, template };
+    const input: ImportWorldFromTemplateInput = { name, template };
     importMutation.mutate(input, {
       onError: (error) => {
-        toast.error("Import failed", {
-          description:
-            error instanceof Error
-              ? error.message
-              : "Could not import template.",
+        notifyError("Import failed", {
+          description: resolveMutationErrorMessage(
+            error,
+            "Could not import template.",
+          ),
         });
       },
       onSuccess: () => {
@@ -253,28 +273,6 @@ export function ImportConfirmDialog({
                 <p className="text-xs text-destructive">{nameError}</p>
               ) : null}
             </div>
-
-            {/* Visibility */}
-            <div className="grid gap-1">
-              <Label
-                htmlFor={visibilityId}
-                className="text-sm text-muted-foreground"
-              >
-                Visibility
-              </Label>
-              <NativeSelect
-                id={visibilityId}
-                className="w-full"
-                disabled={importMutation.isPending}
-                value={visibility}
-                onChange={(e) => {
-                  setVisibility(e.currentTarget.value as "public" | "private");
-                }}
-              >
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </NativeSelect>
-            </div>
           </div>
 
           <DialogFooter>
@@ -311,20 +309,25 @@ export function DryRunSummary({
   readonly report: DryRunReport;
   readonly templateName: string;
 }): JSX.Element {
-  const { counts, danglingRefs } = report;
+  const { counts, danglingRefs, warnings } = report;
 
   const entityRows: Array<[string, number]> = [
+    ["Resource categories", counts.resourceCategories],
+    ["Education levels", counts.educationLevels],
+    ["Cultures", counts.cultures],
+    ["Religions", counts.religions],
     ["Resources", counts.resources],
     ["Jobs", counts.jobs],
     ["Blueprints", counts.blueprints],
     ["Blueprint tiers", counts.blueprintTiers],
     ["Deposit types", counts.depositTypes],
     ["Managed pop. types", counts.managedPopulationTypes],
+    ["Unit types", counts.unitTypes],
     ["Namesets", counts.namesets],
   ];
 
   return (
-    <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+    <div className="text-sm">
       <p className="mb-2 font-medium">
         Template:{" "}
         <span className="font-normal text-muted-foreground">
@@ -352,6 +355,20 @@ export function DryRunSummary({
           <ul className="space-y-0.5 text-xs text-destructive">
             {danglingRefs.map((ref) => (
               <li key={ref}>{ref}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {warnings.length > 0 ? (
+        <div className="mt-3 space-y-1">
+          <p className="flex items-center gap-1 font-medium text-warning-foreground">
+            <AlertTriangle size={14} aria-hidden="true" />
+            Warnings ({warnings.length})
+          </p>
+          <ul className="space-y-0.5 text-xs text-warning-foreground">
+            {warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
             ))}
           </ul>
         </div>

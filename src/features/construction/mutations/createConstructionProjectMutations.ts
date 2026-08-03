@@ -82,12 +82,24 @@ async function createConstructionProject(
 ): Promise<CreateConstructionProjectResult> {
   const values = parseInput(createConstructionProjectInputSchema, input);
 
+  // Only pass the upgrade argument when upgrading so a direct build keeps the
+  // original three-argument RPC call shape.
+  const rpcArgs =
+    values.upgradeSettlementBuildingId === undefined
+      ? {
+          p_blueprint_id: values.blueprintId,
+          p_settlement_id: values.settlementId,
+          p_target_tier_id: values.targetTierId,
+        }
+      : {
+          p_blueprint_id: values.blueprintId,
+          p_settlement_id: values.settlementId,
+          p_target_tier_id: values.targetTierId,
+          p_upgrade_settlement_building_id: values.upgradeSettlementBuildingId,
+        };
+
   const { data, error } = await client
-    .rpc("create_construction_project", {
-      p_blueprint_id: values.blueprintId,
-      p_settlement_id: values.settlementId,
-      p_target_tier_id: values.targetTierId,
-    })
+    .rpc("create_construction_project", rpcArgs)
     .maybeSingle<{ readonly id: string; readonly settlement_id: string }>();
 
   if (error !== null) {

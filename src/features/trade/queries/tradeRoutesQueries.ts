@@ -7,6 +7,8 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
+import { parseTradeRouteLegDirection } from "../utils/parseTradeRouteLegDirection";
+
 import { tradeRoutesQueryKeys } from "./tradeRoutesQueryKeys";
 
 import type {
@@ -62,8 +64,8 @@ const TRADE_ROUTE_SELECT = [
   "pause_reason_last_transition",
   "created_at",
   "updated_at",
-  "origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(name,nation:nations(name))",
-  "destination_settlement:settlements!trade_routes_destination_settlement_id_fkey(name,nation:nations(name))",
+  "origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(name,nation:nations!settlements_nation_id_fkey(name))",
+  "destination_settlement:settlements!trade_routes_destination_settlement_id_fkey(name,nation:nations!settlements_nation_id_fkey(name))",
   "trade_route_legs(id,direction,resource_id,quantity_per_transition,resource:resources(name))",
 ].join(",");
 
@@ -135,7 +137,7 @@ function toTradeRoute(row: TradeRouteRow): TradeRoute {
 
 function toLeg(row: TradeRouteLegRow): TradeRouteLeg {
   return {
-    direction: row.direction as TradeRouteLeg["direction"],
+    direction: parseTradeRouteLegDirection(row.direction),
     id: row.id,
     quantityPerTransition: row.quantity_per_transition,
     resourceId: row.resource_id,

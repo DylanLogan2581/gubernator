@@ -10,6 +10,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import type { Json } from "@/types/database";
 
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 import {
@@ -83,13 +84,13 @@ export function createEventGroupMutationOptions({
         });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const { data, error } = await (client.rpc as any)(
+      const { data, error } = await client.rpc(
         "create_event_group_with_events",
         {
           p_world_id: values.worldId,
           p_group_name: values.groupName,
-          p_group_description: values.groupDescription ?? null,
+          // Generated types don't reflect nullable parameters; null is valid.
+          p_group_description: (values.groupDescription ?? null) as string,
           p_effects: values.effects.map((e) => {
             const extraData: Record<string, unknown> = {};
 
@@ -140,23 +141,24 @@ export function createEventGroupMutationOptions({
               managed_population_type_id: e.managedPopulationTypeId,
               deposit_instance_id: e.depositInstanceId,
               settlement_building_id: e.settlementBuildingId,
-              extra_data_jsonb: extraData,
+              extra_data_jsonb: extraData as Json,
             };
           }),
           p_scope_type: values.scopeType,
           p_targets: values.targets,
           p_duration_type: values.durationType,
-          p_duration_transitions:
-            values.durationType === "sustained"
-              ? values.durationTransitions
-              : null,
+          // Generated types don't reflect nullable parameters; null is valid.
+          p_duration_transitions: (values.durationType === "sustained"
+            ? values.durationTransitions
+            : null) as number,
           p_activate_on_transition_after_turn_number: values.activationTurn,
           p_create_citizen_memories: false,
-          p_memory_text: null,
+          p_memory_text: null as unknown as string,
           p_memories: values.memories.map((m) => ({
             memory_text: m.memoryText,
             turn_offset: m.turnOffset,
           })),
+          p_icon: (values.icon ?? null) as string,
         },
       );
 
@@ -194,14 +196,11 @@ export function cancelEventMutationOptions({
     mutationFn: async (input: CancelEventInput) => {
       const values = cancelEventInputSchema.parse(input);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const { data, error } = await (client.rpc as any)(
-        "cancel_event_or_group",
-        {
-          p_event_id: values.eventId,
-          p_group_id: null,
-        },
-      );
+      const { data, error } = await client.rpc("cancel_event_or_group", {
+        p_event_id: values.eventId,
+        // Generated types don't reflect nullable parameters; null is valid.
+        p_group_id: null as unknown as string,
+      });
 
       if (error !== null) {
         const normalized = normalizeSupabaseError(error);
@@ -237,14 +236,11 @@ export function cancelEventGroupMutationOptions({
     mutationFn: async (input: CancelEventGroupInput) => {
       const values = cancelEventGroupInputSchema.parse(input);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const { data, error } = await (client.rpc as any)(
-        "cancel_event_or_group",
-        {
-          p_event_id: null,
-          p_group_id: values.groupId,
-        },
-      );
+      const { data, error } = await client.rpc("cancel_event_or_group", {
+        // Generated types don't reflect nullable parameters; null is valid.
+        p_event_id: null as unknown as string,
+        p_group_id: values.groupId,
+      });
 
       if (error !== null) {
         const normalized = normalizeSupabaseError(error);
@@ -298,13 +294,13 @@ export function editEventGroupMutationOptions({
         });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const { data, error } = await (client.rpc as any)(
+      const { data, error } = await client.rpc(
         "update_event_group_with_events",
         {
           p_group_id: values.groupId,
           p_group_name: values.groupName,
-          p_group_description: values.groupDescription ?? null,
+          // Generated types don't reflect nullable parameters; null is valid.
+          p_group_description: (values.groupDescription ?? null) as string,
           p_effects: values.effects.map((e) => {
             const extraData: Record<string, unknown> = {};
 
@@ -354,21 +350,22 @@ export function editEventGroupMutationOptions({
               managed_population_type_id: e.managedPopulationTypeId,
               deposit_instance_id: e.depositInstanceId,
               settlement_building_id: e.settlementBuildingId,
-              extra_data_jsonb: extraData,
+              extra_data_jsonb: extraData as Json,
             };
           }),
           p_duration_type: values.durationType,
-          p_duration_transitions:
-            values.durationType === "sustained"
-              ? values.durationTransitions
-              : null,
+          // Generated types don't reflect nullable parameters; null is valid.
+          p_duration_transitions: (values.durationType === "sustained"
+            ? values.durationTransitions
+            : null) as number,
           p_activate_on_transition_after_turn_number: values.activationTurn,
           p_create_citizen_memories: false,
-          p_memory_text: null,
+          p_memory_text: null as unknown as string,
           p_memories: values.memories.map((m) => ({
             memory_text: m.memoryText,
             turn_offset: m.turnOffset,
           })),
+          p_icon: (values.icon ?? null) as string,
         },
       );
 
@@ -407,14 +404,11 @@ export function deleteEventMutationOptions({
     mutationFn: async (input: DeleteEventInput) => {
       const values = deleteEventInputSchema.parse(input);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const { data, error } = await (client.rpc as any)(
-        "delete_event_or_group",
-        {
-          p_event_id: values.eventId,
-          p_group_id: null,
-        },
-      );
+      const { data, error } = await client.rpc("delete_event_or_group", {
+        p_event_id: values.eventId,
+        // Generated types don't reflect nullable parameters; null is valid.
+        p_group_id: null as unknown as string,
+      });
 
       if (error !== null) {
         const normalized = normalizeSupabaseError(error);
@@ -451,14 +445,11 @@ export function deleteEventGroupMutationOptions({
     mutationFn: async (input: DeleteEventGroupInput) => {
       const values = deleteEventGroupInputSchema.parse(input);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const { data, error } = await (client.rpc as any)(
-        "delete_event_or_group",
-        {
-          p_event_id: null,
-          p_group_id: values.groupId,
-        },
-      );
+      const { data, error } = await client.rpc("delete_event_or_group", {
+        // Generated types don't reflect nullable parameters; null is valid.
+        p_event_id: null as unknown as string,
+        p_group_id: values.groupId,
+      });
 
       if (error !== null) {
         const normalized = normalizeSupabaseError(error);

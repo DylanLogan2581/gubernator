@@ -4,11 +4,13 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
 import { SlugHint } from "@/components/shared/SlugHint";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,11 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import {
   activeManagedPopulationTypesByWorldQueryOptions,
   type ManagedPopulationType,
 } from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -39,6 +43,7 @@ import {
   updateJobInputSchema,
   type UpdateJobInput,
 } from "../../schemas/jobSchemas";
+import { JOB_TYPE_LABELS } from "../../utils/jobTypeLabels";
 import { validateJobReferencesAgainstWorld } from "../../utils/validateJobReferences";
 
 import { entryToRow, rowToEntry, type FieldErrors } from "./JobFormState";
@@ -67,6 +72,9 @@ export function EditJobForm({
   const managedPopTypesQuery = useQuery(
     activeManagedPopulationTypesByWorldQueryOptions(worldId),
   );
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
 
   const [name, setName] = useState(job.name);
   const [slug, setSlug] = useState(job.slug);
@@ -89,7 +97,13 @@ export function EditJobForm({
   );
   const [linkedManagedPopulationTypeId, setLinkedManagedPopulationTypeId] =
     useState(job.linkedManagedPopulationTypeId ?? "");
+  const [requiredEducationLevelId, setRequiredEducationLevelId] = useState(
+    job.requiredEducationLevelId ?? "",
+  );
   const [icon, setIcon] = useState<string | null>(job.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    job.iconColor as CategoricalSlot | null,
+  );
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>(() =>
     job.inputsJson.map(entryToRow),
   );
@@ -103,14 +117,19 @@ export function EditJobForm({
   const resources = resourcesQuery.data ?? [];
   const activeDepositTypes = depositTypesQuery.data ?? [];
   const allManagedPopTypes = managedPopTypesQuery.data ?? [];
+  const educationLevels = educationLevelsQuery.data ?? [];
 
-  // Scope managed pop type options to types that designate this job in the
-  // corresponding slot (husbandry_job_id or culling_job_id).
+  // Scope managed pop type options to types that link this job in the
+  // corresponding purpose (husbandryJobs or cullingJobs).
   const availableManagedPopTypes: readonly ManagedPopulationType[] =
     job.jobType === "husbandry"
-      ? allManagedPopTypes.filter((mpt) => mpt.husbandryJobId === job.id)
+      ? allManagedPopTypes.filter((mpt) =>
+          mpt.husbandryJobs.some((hj) => hj.jobId === job.id),
+        )
       : job.jobType === "culling"
-        ? allManagedPopTypes.filter((mpt) => mpt.cullingJobId === job.id)
+        ? allManagedPopTypes.filter((mpt) =>
+            mpt.cullingJobs.some((cj) => cj.jobId === job.id),
+          )
         : [];
 
   async function handleSubmit(
@@ -157,12 +176,15 @@ export function EditJobForm({
 
     const updateInput: UpdateJobInput = {
       baseCapacity:
-        job.jobType === "standard" || job.jobType === "construction"
+        job.jobType === "standard" ||
+        job.jobType === "construction" ||
+        job.jobType === "teacher"
           ? baseCapacity !== ""
             ? parseInt(baseCapacity, 10)
             : undefined
           : undefined,
       icon,
+      iconColor,
       inputsJson,
       jobId: job.id,
       linkedDepositTypeId:
@@ -179,6 +201,8 @@ export function EditJobForm({
           : undefined,
       name,
       outputsJson,
+      requiredEducationLevelId:
+        requiredEducationLevelId !== "" ? requiredEducationLevelId : null,
       slug,
       traderCapacityPerWorker:
         job.jobType === "trader"
@@ -231,7 +255,10 @@ export function EditJobForm({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Edit job</DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Edit job</DialogTitle>
+              <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
+            </div>
           </DialogHeader>
           <div className="grid gap-3">
             <Label htmlFor="edit-job-name" className="grid gap-1 text-sm">
@@ -262,7 +289,48 @@ export function EditJobForm({
               />
             </Label>
 
-            {job.jobType === "standard" || job.jobType === "construction" ? (
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon color</span>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
+              />
+            </Label>
+
+            <Label
+              htmlFor="edit-job-required-education"
+              className="grid gap-1 text-sm"
+            >
+              <span className="text-muted-foreground">
+                Required education level
+              </span>
+              <NativeSelect
+                id="edit-job-required-education"
+                className="w-full"
+                disabled={isPending}
+                value={requiredEducationLevelId}
+                onChange={(e) => {
+                  setRequiredEducationLevelId(e.currentTarget.value);
+                }}
+              >
+                <option value="">No requirement</option>
+                {educationLevels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.name}
+                  </option>
+                ))}
+              </NativeSelect>
+              {fieldErrors.requiredEducationLevelId !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.requiredEducationLevelId}
+                </p>
+              ) : null}
+            </Label>
+
+            {job.jobType === "standard" ||
+            job.jobType === "construction" ||
+            job.jobType === "teacher" ? (
               <Label
                 htmlFor="edit-job-basecapacity"
                 className="grid gap-1 text-sm"

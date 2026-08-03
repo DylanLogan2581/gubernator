@@ -21,7 +21,10 @@ type EditEventData = {
   readonly groupId: string;
   readonly groupName: string;
   readonly groupDescription: string | null;
+  readonly icon: string | null;
   readonly scopeType: string;
+  readonly scopeNationId: string | null;
+  readonly scopeSettlementId: string | null;
   readonly durationType: string;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
@@ -104,7 +107,10 @@ export function EventEditPage({
     groupId: event.event_group_id,
     groupName: event.group?.name ?? "",
     groupDescription: event.group?.description ?? null,
+    icon: event.icon,
     scopeType: event.scope_type,
+    scopeNationId: event.scope_nation_id,
+    scopeSettlementId: event.scope_settlement_id,
     durationType: event.duration_type,
     durationTransitions: event.duration_transitions,
     activationTurn: event.activate_on_transition_after_turn_number,

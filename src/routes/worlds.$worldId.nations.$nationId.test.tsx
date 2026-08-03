@@ -115,7 +115,6 @@ type TestNationRow = {
   readonly created_at: string;
   readonly description: string | null;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
   readonly updated_at: string;
@@ -143,6 +142,13 @@ type TestRelationshipRow = {
   readonly pending_status: string | null;
   readonly to_nation_id: string;
   readonly updated_at: string;
+};
+
+type TestDiscoveryRow = {
+  readonly created_by_user_id: string | null;
+  readonly met_at_turn_number: number;
+  readonly nation_a_id: string;
+  readonly nation_b_id: string;
 };
 
 type NationDeleteResult = {
@@ -182,7 +188,6 @@ function createNationRow(
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
     id: NATION_ID,
-    is_hidden: false,
     name: "Highmark",
     nameset_id: null,
     updated_at: "2026-01-02T00:00:00.000Z",
@@ -210,22 +215,24 @@ function createRelationshipRow(
 
 function createClient({
   adminRows = [],
+  discoveryRows = [],
   isSuperAdmin = false,
   nationDeleteResult,
   nationRows,
   outgoingRelationships = [],
+  pcWorldIds = [],
   relationshipsUpsertResult,
   settlementRows = [],
-  worldVisibility = "private",
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly discoveryRows?: readonly TestDiscoveryRow[];
   readonly isSuperAdmin?: boolean;
   readonly nationDeleteResult?: NationDeleteResult;
   readonly nationRows: readonly TestNationRow[];
   readonly outgoingRelationships?: readonly TestRelationshipRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly relationshipsUpsertResult?: UpsertMock;
   readonly settlementRows?: readonly TestSettlementRow[];
-  readonly worldVisibility?: string;
 }): unknown {
   const worldRow = {
     archived_at: null,
@@ -237,7 +244,6 @@ function createClient({
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   const userRow = {
@@ -339,6 +345,61 @@ function createClient({
       if (table === "settlements") {
         return { select: vi.fn(() => settlementsBuilder) };
       }
+      if (table === "nation_offices") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn().mockResolvedValue({ data: [], error: null }),
+              returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            })),
+          })),
+        };
+      }
+      if (table === "citizen_directory_view") {
+        return {
+          select: vi.fn(() => ({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        };
+      }
+      if (table === "resources") {
+        return {
+          select: vi.fn(() => {
+            const builder = {
+              eq: vi.fn(() => builder),
+              order: vi.fn(() => builder),
+              returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+            return builder;
+          }),
+        };
+      }
+      if (table === "nation_discoveries") {
+        return {
+          select: vi.fn(() => {
+            const builder = {
+              eq: vi.fn(() => builder),
+              returns: vi
+                .fn()
+                .mockResolvedValue({ data: discoveryRows, error: null }),
+            };
+            return builder;
+          }),
+        };
+      }
+      if (table === "nation_treaties") {
+        return {
+          select: vi.fn(() => {
+            const builder = {
+              eq: vi.fn(() => builder),
+              or: vi.fn(() => builder),
+              order: vi.fn(() => builder),
+              returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+            return builder;
+          }),
+        };
+      }
       if (table === "nation_relationships") {
         return {
           select: vi.fn(() => {
@@ -431,10 +492,16 @@ function createClient({
     removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
-      if (fn === "settlement_alive_citizen_count") {
-        return Promise.resolve({ data: 10, error: null });
+      if (fn === "settlement_alive_citizen_counts_batch") {
+        return Promise.resolve({
+          data: settlementRows.map((settlement) => ({
+            alive_citizen_count: 10,
+            settlement_id: settlement.id,
+          })),
+          error: null,
+        });
       }
       throw new Error(`Unexpected RPC call: ${fn}`);
     }),
@@ -534,6 +601,14 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
+          discoveryRows: [
+            {
+              created_by_user_id: null,
+              met_at_turn_number: 1,
+              nation_a_id: NATION_ID,
+              nation_b_id: OTHER_NATION_ID,
+            },
+          ],
           nationRows: [
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),
@@ -556,11 +631,19 @@ describe("nation detail route", () => {
     it("hides relationship proposal controls from non-admin viewers at /relationships", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
+          discoveryRows: [
+            {
+              created_by_user_id: null,
+              met_at_turn_number: 1,
+              nation_a_id: NATION_ID,
+              nation_b_id: OTHER_NATION_ID,
+            },
+          ],
           nationRows: [
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),
           ],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       // WorldEntryGate only lets a non-admin past the world gate with a
@@ -617,11 +700,11 @@ describe("nation detail route", () => {
       ).toBeDefined();
     });
 
-    it("redirects /government to the overview for a viewer with no admin or manager authority", async () => {
+    it("shows a read-only government tab for a viewer with no admin or manager authority", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       useActivePlayerCharacterMock.mockReturnValue({
@@ -633,16 +716,18 @@ describe("nation detail route", () => {
       });
       const router = renderAt(`${BASE_PATH}/government`);
 
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe(BASE_PATH);
-      });
+      expect(await screen.findByText("Government offices")).toBeDefined();
+      expect(router.state.location.pathname).toBe(`${BASE_PATH}/government`);
+      // Role assignment stays hidden for a non-manager, non-admin viewer;
+      // only the read-only offices roster is visible to them.
+      expect(screen.queryByText("Settlement Manager assignments")).toBeNull();
     });
 
     it("renders role assignment at /government for that nation's alive nation manager", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       const nationManagerCharacter = {
@@ -666,7 +751,7 @@ describe("nation detail route", () => {
       ).toBeDefined();
     });
 
-    it("renders the hidden toggle, nameset card, and delete section for admins at /settings", async () => {
+    it("renders the nameset card and delete section for admins at /settings", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -676,7 +761,6 @@ describe("nation detail route", () => {
       renderAt(`${BASE_PATH}/settings`);
       await screen.findByRole("heading", { level: 1, name: "Highmark" });
 
-      expect(screen.getByRole("button", { name: /Hide nation/ })).toBeDefined();
       expect(screen.getByTestId("nameset-card")).toBeDefined();
       expect(
         screen.getByRole("button", { name: "Delete nation" }),
@@ -687,7 +771,7 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
-          worldVisibility: "public",
+          pcWorldIds: [WORLD_ID],
         }),
       );
       useActivePlayerCharacterMock.mockReturnValue({
@@ -779,6 +863,14 @@ describe("nation detail route", () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
+          discoveryRows: [
+            {
+              created_by_user_id: null,
+              met_at_turn_number: 1,
+              nation_a_id: NATION_ID,
+              nation_b_id: OTHER_NATION_ID,
+            },
+          ],
           nationRows: [
             createNationRow(),
             createNationRow({ id: OTHER_NATION_ID, name: "Veilreach" }),

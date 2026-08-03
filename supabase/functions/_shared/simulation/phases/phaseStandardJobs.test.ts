@@ -9,7 +9,9 @@ import { phaseStandardJobs } from "./phaseStandardJobs.ts";
 import type {
   SimCitizen,
   SimCitizenAssignment,
+  SimEducationLevel,
   SimJob,
+  SimNationOffice,
   SimSettlement,
   SimulationContext,
 } from "../simulationTypes.ts";
@@ -49,6 +51,7 @@ function makeShared(): SimulationContext["shared"] {
     pendingManagedPopulationDeltas: new Map(),
     pendingPopCapBySettlement: new Map(),
     pendingStockpiles: new Map(),
+    pendingNationStockpiles: new Map(),
   };
 }
 
@@ -56,6 +59,7 @@ function makeJob(
   id: string,
   outputResourceId: string,
   amountPerWorker = 10,
+  requiredEducationLevelId: string | null = null,
 ): SimJob {
   return {
     baseCapacity: null,
@@ -66,19 +70,30 @@ function makeJob(
     linkedManagedPopulationTypeId: null,
     name: id,
     outputsJson: [{ amountPerWorker, resourceId: outputResourceId }],
+    requiredEducationLevelId,
     traderCapacityPerWorker: null,
   };
 }
 
-function makeCitizen(id: string, settlementId: string): SimCitizen {
+function makeCitizen(
+  id: string,
+  settlementId: string,
+  educationLevelId: string | null = null,
+): SimCitizen {
   return {
     bornOnTurnNumber: 1,
     citizenType: "npc",
+    cultureId: null,
+    educationLevelId,
     givenName: id,
     id,
     namesetId: null,
     parentACitizenId: null,
     parentBCitizenId: null,
+    religionId: null,
+    roleNationId: null,
+    roleSettlementId: null,
+    roleType: "none",
     settlementId,
     sex: "male",
     status: "alive",
@@ -108,21 +123,39 @@ function makeContext(
   jobs: SimJob[],
   citizens: SimCitizen[],
   assignments: SimCitizenAssignment[],
+  nationOffices: SimNationOffice[] = [],
+  educationEnrollments: SimulationContext["input"]["educationEnrollments"] = [],
+  educationLevels: SimulationContext["input"]["educationLevels"] = [],
 ): SimulationContext {
   return {
     input: {
+      armies: [],
+      armyUnits: [],
       buildingBlueprints: [],
       buildingTiers: [],
       calendarConfig: CALENDAR_CONFIG,
       citizenAssignments: assignments,
       citizens,
       constructionProjects: [],
+      depositTypeJobs: [],
       depositTypes: [],
       deposits: [],
+      educationEnrollments,
+      educationLevels,
       events: [],
       jobs,
+      managedPopulationCullingJobs: [],
+      managedPopulationHusbandryJobs: [],
       managedPopulationTypes: [],
       managedPopulations: [],
+      nationCurrencies: [],
+      nationCurrencyLedgerEntries: [],
+      nationOffices,
+      nationRelationships: [],
+      nationResourceStockpiles: [],
+      nationTaxPolicies: [],
+      nationTreaties: [],
+      nations: [],
       partnerships: [],
       populationRules: POPULATION_RULES,
       resources: [],
@@ -132,6 +165,8 @@ function makeContext(
       systemResourceIds: { foodId: "food", freshWaterId: "water" },
       tradeRoutes: [],
       turnNumber: 1,
+      unitSoldiers: [],
+      unitTypes: [],
       worldId: "w1",
     },
     shared: makeShared(),
@@ -204,5 +239,149 @@ describe("phaseStandardJobs — log entry scope fields", () => {
       expect(entry.settlementId).toBe("s3");
       expect(entry.nationId).toBe("n3");
     }
+  });
+});
+
+describe("phaseStandardJobs — officeholder exclusion", () => {
+  it("excludes a citizen holding a nation office from job output", () => {
+    const settlement: SimSettlement = { id: "s4", name: "Officetown" };
+    const job = makeJob("j4", "wood");
+    const citizen = makeCitizen("c4", "s4");
+    const assignment = makeAssignment("c4", "j4");
+
+    const withoutOffice = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment]),
+    );
+    const withOffice = phaseStandardJobs(
+      makeContext(
+        [settlement],
+        [job],
+        [citizen],
+        [assignment],
+        [{ citizenId: "c4", excludesFromLabor: true }],
+      ),
+    );
+
+    expect(withoutOffice.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      true,
+    );
+    expect(withOffice.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      false,
+    );
+    expect(withOffice.stockpileDeltas).toHaveLength(0);
+  });
+});
+
+describe("phaseStandardJobs — enrolled citizen exclusion", () => {
+  it("excludes a citizen enrolled in school from job output even while still assigned", () => {
+    const settlement: SimSettlement = { id: "s5", name: "Schooltown" };
+    const job = makeJob("j5", "wood");
+    const citizen = makeCitizen("c5", "s5");
+    const assignment = makeAssignment("c5", "j5");
+
+    const withoutEnrollment = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment]),
+    );
+    const withEnrollment = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment], [], [
+        {
+          citizenId: "c5",
+          enrolledTurnNumber: 1,
+          id: "enr1",
+          progressTurns: 0,
+          settlementBuildingId: "b1",
+          targetLevelId: "lvl1",
+          worldId: "w1",
+        },
+      ]),
+    );
+
+    expect(withoutEnrollment.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      true,
+    );
+    expect(withEnrollment.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      false,
+    );
+    expect(withEnrollment.stockpileDeltas).toHaveLength(0);
+  });
+});
+
+describe("phaseStandardJobs — education requirement enforcement", () => {
+  const BASIC: SimEducationLevel = {
+    id: "lvl-basic",
+    name: "Basic",
+    naturalBornPercent: 0,
+    rank: 1,
+    worldId: "w1",
+  };
+  const SKILLED: SimEducationLevel = {
+    id: "lvl-skilled",
+    name: "Skilled",
+    naturalBornPercent: 0,
+    rank: 2,
+    worldId: "w1",
+  };
+
+  it("produces zero output and one warning log for a stale unqualified assignment", () => {
+    const settlement: SimSettlement = { id: "s6", name: "Mistown", nationId: "n6" };
+    const job = makeJob("j6", "wood", 10, SKILLED.id);
+    const citizen = makeCitizen("c6", "s6", null);
+    const assignment = makeAssignment("c6", "j6");
+
+    const { logs, stockpileDeltas } = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment], [], [], [BASIC, SKILLED]),
+    );
+
+    expect(logs.some((l) => l.category === "standard_job.processed")).toBe(false);
+    expect(stockpileDeltas).toHaveLength(0);
+
+    const warnings = logs.filter((l) => l.category === "standard_job.unqualified_workers");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.payload.message).toBe("1 assigned worker lacks Skilled for j6");
+    expect(warnings[0]?.settlementId).toBe("s6");
+  });
+
+  it("leaves qualified workers unaffected and does not warn for them", () => {
+    const settlement: SimSettlement = { id: "s7", name: "Learnedburg" };
+    const job = makeJob("j7", "wood", 10, BASIC.id);
+    const qualified = makeCitizen("c7a", "s7", BASIC.id);
+    const unqualified = makeCitizen("c7b", "s7", null);
+    const assignments = [
+      makeAssignment("c7a", "j7"),
+      makeAssignment("c7b", "j7"),
+    ];
+
+    const { logs } = phaseStandardJobs(
+      makeContext(
+        [settlement],
+        [job],
+        [qualified, unqualified],
+        assignments,
+        [],
+        [],
+        [BASIC, SKILLED],
+      ),
+    );
+
+    const processed = logs.find((l) => l.category === "standard_job.processed");
+    expect(processed?.payload.workerCount).toBe(1);
+
+    const warnings = logs.filter((l) => l.category === "standard_job.unqualified_workers");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.payload.unqualifiedCount).toBe(1);
+  });
+
+  it("does not require education for jobs without a requirement (regression)", () => {
+    const settlement: SimSettlement = { id: "s8", name: "Plaintown" };
+    const job = makeJob("j8", "wood");
+    const citizen = makeCitizen("c8", "s8", null);
+    const assignment = makeAssignment("c8", "j8");
+
+    const { logs } = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment]),
+    );
+
+    expect(logs.some((l) => l.category === "standard_job.processed")).toBe(true);
+    expect(logs.some((l) => l.category === "standard_job.unqualified_workers")).toBe(false);
   });
 });

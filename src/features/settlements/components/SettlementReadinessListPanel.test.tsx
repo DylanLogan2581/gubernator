@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { createAccessContext } from "@/features/permissions";
 import type { WorldPermissionContext } from "@/features/worlds";
 
@@ -314,7 +315,7 @@ describe("SettlementReadinessListPanel", () => {
     expect(clientFixture.update).not.toHaveBeenCalled();
   });
 
-  it("disables manual readiness for auto-ready settlements enabled mid-turn without showing them as ready yet", async () => {
+  it("disables manual readiness for auto-ready settlements enabled mid-turn and shows them as ready", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       settlementRows: [
@@ -336,7 +337,7 @@ describe("SettlementReadinessListPanel", () => {
     });
 
     expect(switchControl).toBeDisabled();
-    expect(switchControl).not.toBeChecked();
+    expect(switchControl).toBeChecked();
     expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
 
     await user.click(switchControl);
@@ -862,13 +863,15 @@ function renderSettlementReadinessListPanel({
 } = {}): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <SettlementReadinessListPanel
-        accessContext={accessContext}
-        canAdmin={canAdmin}
-        canManage={canManage}
-        isArchived={isArchived}
-        worldId="world-1"
-      />
+      <TooltipProvider>
+        <SettlementReadinessListPanel
+          accessContext={accessContext}
+          canAdmin={canAdmin}
+          canManage={canManage}
+          isArchived={isArchived}
+          worldId="world-1"
+        />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -1075,7 +1078,7 @@ function createSettlementsQueryBuilder({
   const update = vi.fn(() => ({ eq: updateEq }));
   const rootBuilder = {
     select: vi.fn((selection: string) => {
-      if (selection.startsWith("id,nations!inner")) {
+      if (selection.startsWith("id,nations!settlements_nation_id_fkey!inner")) {
         return readBuilder;
       }
 

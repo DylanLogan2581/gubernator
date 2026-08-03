@@ -61,12 +61,11 @@ where
   id = 'ff100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ff200000-0000-0000-0000-000000000001',
     'FFPTB World',
-    'private',
     'active'
   );
 
@@ -148,46 +147,24 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ff700000-0000-0000-0000-000000000001',
     'ff200000-0000-0000-0000-000000000001',
     'FFPTB Ore',
     'ffptb-ore',
-    'ff600000-0000-0000-0000-000000000001',
-    5,
     false
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    is_trashed
-  )
+  public.managed_population_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ff800000-0000-0000-0000-000000000001',
     'ff200000-0000-0000-0000-000000000001',
     'FFPTB Cattle',
     'ffptb-cattle',
-    'ff600000-0000-0000-0000-000000000002',
-    'ff600000-0000-0000-0000-000000000003',
-    10,
     false
   ),
   (
@@ -195,10 +172,43 @@ values
     'ff200000-0000-0000-0000-000000000001',
     'FFPTB Pigs',
     'ffptb-pigs',
-    'ff600000-0000-0000-0000-000000000004',
-    'ff600000-0000-0000-0000-000000000005',
-    10,
     false
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'ff800000-0000-0000-0000-000000000001',
+    'ff600000-0000-0000-0000-000000000002',
+    10
+  ),
+  (
+    'ff800000-0000-0000-0000-000000000002',
+    'ff600000-0000-0000-0000-000000000004',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'ff800000-0000-0000-0000-000000000001',
+    'ff600000-0000-0000-0000-000000000003',
+    10
+  ),
+  (
+    'ff800000-0000-0000-0000-000000000002',
+    'ff600000-0000-0000-0000-000000000005',
+    10
   );
 
 update public.job_definitions

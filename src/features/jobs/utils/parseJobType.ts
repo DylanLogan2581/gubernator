@@ -6,6 +6,7 @@ const JOB_TYPES = new Set<string>([
   "deposit",
   "husbandry",
   "standard",
+  "teacher",
   "trader",
 ]);
 

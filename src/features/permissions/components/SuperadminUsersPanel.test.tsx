@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as AuthModule from "@/features/auth";
 
@@ -54,6 +54,14 @@ function createUser(overrides: Partial<SuperadminUser> = {}): SuperadminUser {
   };
 }
 
+function setViewportWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
 describe("SuperadminUsersPanel", () => {
   beforeEach(() => {
     mockCurrentAppUser.mockReset();
@@ -61,6 +69,10 @@ describe("SuperadminUsersPanel", () => {
     mockCurrentAppUser.mockResolvedValue(
       createUser({ id: "admin-1", is_super_admin: true, username: "admin" }),
     );
+  });
+
+  afterEach(() => {
+    setViewportWidth(1024);
   });
 
   it("shows an access-denied state for a non-superadmin", async () => {
@@ -108,6 +120,22 @@ describe("SuperadminUsersPanel", () => {
 
     expect(
       await screen.findByRole("heading", { name: "Grant superadmin" }),
+    ).toBeDefined();
+  });
+
+  it("renders a card list with a reachable actions menu on narrow viewports", async () => {
+    setViewportWidth(500);
+    mockAllUsers.mockResolvedValue([createUser()]);
+    const user = userEvent.setup();
+
+    renderPanel();
+
+    await screen.findByText("riley");
+    expect(screen.queryByRole("table")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Actions for riley" }));
+    expect(
+      await screen.findByRole("menuitem", { name: "Grant superadmin" }),
     ).toBeDefined();
   });
 

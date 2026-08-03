@@ -12,6 +12,7 @@ export const notificationQueryKeys = {
     worldId: string | null = null,
     nationId: string | null = null,
     settlementId: string | null = null,
+    includeTotal = true,
   ) =>
     [
       ...notificationQueryKeys.all,
@@ -25,6 +26,7 @@ export const notificationQueryKeys = {
       worldId,
       nationId,
       settlementId,
+      includeTotal,
     ] as const,
   preferences: (userId: string | null) =>
     [...notificationQueryKeys.all, "preferences", userId] as const,

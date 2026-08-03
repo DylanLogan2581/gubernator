@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { restoreSettlementBuildingMutationOptions } from "../../mutations/settlementBuildingsMutations";
 
@@ -23,29 +22,9 @@ export function RestoreSettlementBuildingDialog({
   settlementId,
   worldId,
 }: RestoreSettlementBuildingDialogProps): JSX.Element {
-  const restoreMutation = useMutation(
-    restoreSettlementBuildingMutationOptions({ queryClient, settlementId }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await restoreMutation.mutateAsync({
-        settlementBuildingId: building.id,
-        worldId,
-      });
-      notifyMutationSuccess("Building restored.");
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to restore building.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Restore ${building.blueprintName}?`}
       description={
         <>
@@ -58,8 +37,13 @@ export function RestoreSettlementBuildingDialog({
       }
       confirmLabel="Restore"
       confirmVariant="default"
-      isPending={restoreMutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={restoreSettlementBuildingMutationOptions({
+        queryClient,
+        settlementId,
+      })}
+      input={{ settlementBuildingId: building.id, worldId }}
+      successMessage="Building restored."
+      errorFallback="Failed to restore building."
     />
   );
 }

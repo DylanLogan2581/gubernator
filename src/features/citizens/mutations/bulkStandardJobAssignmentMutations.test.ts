@@ -12,6 +12,8 @@ import {
   setBulkStandardJobAssignmentMutationOptions,
 } from "./bulkStandardJobAssignmentMutations";
 
+import type { CitizenAggregateStats } from "../types/citizenTypes";
+
 const JOB_ID = "11111111-1111-1111-1111-111111111111";
 const SETTLEMENT_ID = "22222222-2222-2222-2222-222222222222";
 const CITIZEN_A_ID = "33333333-3333-3333-3333-333333333333";
@@ -138,6 +140,52 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["forecast", "world", WORLD_ID],
     });
+  });
+
+  it("optimistically decrements the unassigned NPC count in the aggregate stats cache", async () => {
+    const row: RpcRow = {
+      after: 3,
+      added_citizen_ids: [CITIZEN_A_ID, CITIZEN_B_ID],
+      before: 1,
+      removed_citizen_ids: [],
+    };
+    const { client } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const initialStats: CitizenAggregateStats = {
+      assignmentTypeBreakdown: {
+        construction_project: 0,
+        culling: 0,
+        deposit: 0,
+        husbandry: 0,
+        standard_job: 1,
+        trade_route: 0,
+        unassigned: 9,
+      },
+      ineligibleIdleNpcCount: 0,
+      ineligibleIdlePcCount: 0,
+      statusBreakdown: { alive: 10, dead: 0 },
+      total: 10,
+      typeBreakdown: { npc: 10, player_character: 0 },
+      unassignedNpcCount: 10,
+      unassignedPcCount: 0,
+    };
+    queryClient.setQueryData(
+      citizensQueryKeys.settlementAggregateStats(SETTLEMENT_ID),
+      initialStats,
+    );
+    const options = setBulkStandardJobAssignmentMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
+
+    await executeMutation(queryClient, options, VALID_INPUT);
+
+    expect(
+      queryClient.getQueryData(
+        citizensQueryKeys.settlementAggregateStats(SETTLEMENT_ID),
+      ),
+    ).toMatchObject({ unassignedNpcCount: 8 });
   });
 
   it("raises bulk_assignment_failed when the RPC returns no row", async () => {

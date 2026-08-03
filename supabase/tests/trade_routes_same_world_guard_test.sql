@@ -95,18 +95,16 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'c2aaaa00-0000-0000-0000-000000000001',
     'World A',
-    'private',
     'active'
   ),
   (
     'c2aaaa00-0000-0000-0000-000000000002',
     'World B',
-    'private',
     'active'
   );
 
@@ -124,25 +122,38 @@ values
 
 -- World A: two nations with settlements
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'c3aaaa00-0000-0000-0000-000000000001',
     'c2aaaa00-0000-0000-0000-000000000001',
-    'World A Nation 1',
-    false
+    'World A Nation 1'
   ),
   (
     'c3aaaa00-0000-0000-0000-000000000002',
     'c2aaaa00-0000-0000-0000-000000000001',
-    'World A Nation 2',
-    false
+    'World A Nation 2'
   ),
   (
     'c3aaaa00-0000-0000-0000-000000000003',
     'c2aaaa00-0000-0000-0000-000000000002',
-    'World B Nation 1',
-    false
+    'World B Nation 1'
+  );
+
+-- propose_trade_route (#1086) rejects endpoints whose nations have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'c2aaaa00-0000-0000-0000-000000000001',
+    'c3aaaa00-0000-0000-0000-000000000001',
+    'c3aaaa00-0000-0000-0000-000000000002',
+    1
   );
 
 -- Settlements: 2 in World A, 1 in World B

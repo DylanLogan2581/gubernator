@@ -78,10 +78,18 @@ export function managedPopulationTypeByIdQueryOptions(
   });
 }
 
+// Sorting is limited to name/growthRate: a population type can now link 1..n
+// husbandry jobs and 1..n culling jobs, so neither "husbandry job", "culling
+// job", nor "husbandry workers per N animals" is a single-valued, sortable
+// column anymore (mirroring the deposit_type_jobs precedent, #1246/#1247).
+export type ManagedPopulationTypesSortBy = "growthRate" | "name";
+
 export type ManagedPopulationTypesPageParams = {
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: ManagedPopulationTypesSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -134,8 +142,17 @@ async function getManagedPopulationTypesPage(
     query = query.ilike("name", `%${search}%`);
   }
 
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "growthRate") {
+    query = query
+      .order("growth_rate", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
+  }
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<ManagedPopulationTypeRow[]>();

@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { SettlementReadinessListItem } from "@/features/settlements";
 
 import { AutoReadyControl } from "./AutoReadyControl";
@@ -28,12 +29,14 @@ describe("ManualReadinessControl", () => {
   it("renders label with fixed-width classes", () => {
     const settlement = createTestSettlement();
     render(
-      <ManualReadinessControl
-        isArchived={false}
-        isPending={false}
-        item={settlement}
-        setReadiness={() => {}}
-      />,
+      <TooltipProvider>
+        <ManualReadinessControl
+          isArchived={false}
+          isPending={false}
+          item={settlement}
+          setReadiness={() => {}}
+        />
+      </TooltipProvider>,
     );
 
     const labelTextSpan = screen.getByText("Ready");
@@ -48,12 +51,14 @@ describe("ManualReadinessControl", () => {
     const settlement = createTestSettlement();
 
     const { rerender } = render(
-      <ManualReadinessControl
-        isArchived={false}
-        isPending={false}
-        item={settlement}
-        setReadiness={handleSetReadiness}
-      />,
+      <TooltipProvider>
+        <ManualReadinessControl
+          isArchived={false}
+          isPending={false}
+          item={settlement}
+          setReadiness={handleSetReadiness}
+        />
+      </TooltipProvider>,
     );
 
     const input = screen.getByRole("switch");
@@ -66,12 +71,14 @@ describe("ManualReadinessControl", () => {
     handleSetReadiness.mockClear();
 
     rerender(
-      <ManualReadinessControl
-        isArchived={false}
-        isPending={false}
-        item={{ ...settlement, isReadyCurrentTurn: true }}
-        setReadiness={handleSetReadiness}
-      />,
+      <TooltipProvider>
+        <ManualReadinessControl
+          isArchived={false}
+          isPending={false}
+          item={{ ...settlement, isReadyCurrentTurn: true }}
+          setReadiness={handleSetReadiness}
+        />
+      </TooltipProvider>,
     );
 
     const labelAfter = screen.getByText("Ready");
@@ -86,17 +93,41 @@ describe("ManualReadinessControl", () => {
     });
 
     render(
-      <ManualReadinessControl
-        isArchived={false}
-        isPending={false}
-        item={settlement}
-        setReadiness={() => {}}
-      />,
+      <TooltipProvider>
+        <ManualReadinessControl
+          isArchived={false}
+          isPending={false}
+          item={settlement}
+          setReadiness={() => {}}
+        />
+      </TooltipProvider>,
     );
 
     const label = screen.getByText("Ready");
     expect(label.className).toContain("min-w-[8rem]");
     expect(label.className).toContain("tabular-nums");
+  });
+
+  it("renders an on, disabled switch when auto-ready is enabled mid-turn", () => {
+    const settlement = createTestSettlement({
+      autoReadyEnabled: true,
+      isReadyCurrentTurn: false,
+    });
+
+    render(
+      <TooltipProvider>
+        <ManualReadinessControl
+          isArchived={false}
+          isPending={false}
+          item={settlement}
+          setReadiness={() => {}}
+        />
+      </TooltipProvider>,
+    );
+
+    const toggle = screen.getByRole("switch");
+    expect(toggle).toBeChecked();
+    expect(toggle).toBeDisabled();
   });
 });
 

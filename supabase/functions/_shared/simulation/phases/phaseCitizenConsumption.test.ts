@@ -46,7 +46,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
       populationRules: RULES,
     });
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     expect(result.stockpileDeltas).toHaveLength(0);
 
@@ -67,6 +67,9 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
       category: "starvation",
       citizenId: "c1",
     });
+    // Human-readable, not the old raw "food: 0/10, water: 0/5" debug string.
+    expect(result.citizenDeaths[0].detail).toMatch(/^Died of starvation on turn 1 —/);
+    expect(result.citizenDeaths[0].detail).not.toMatch(/^[a-z]+: [\d.]+\/[\d.]+/i);
     expect(result.notifications).toHaveLength(1);
     expect(result.notifications[0].notificationType).toBe(
       "settlement.starvation_occurred",
@@ -81,7 +84,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
     setStock(ctx, "s1", "food", 10);
     setStock(ctx, "s1", "water", 5);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     expect(result.stockpileDeltas).toEqual(
       expect.arrayContaining([
@@ -102,7 +105,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
     setStock(ctx, "s1", "food", 1000);
     setStock(ctx, "s1", "water", 1000);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     // Only the required amount is deducted, never the full stock.
     expect(result.stockpileDeltas).toEqual(
@@ -122,7 +125,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
     setStock(ctx, "s1", "food", 4);
     setStock(ctx, "s1", "water", 5);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     const log = result.logs.find((l) => l.category === "citizen.consumed_food_water");
     // foodConsumed = min(10, 4) = 4, not 10 and not negative.
@@ -141,7 +144,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
       populationRules: RULES,
     });
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     expect(result.logs).toHaveLength(0);
     expect(result.stockpileDeltas).toHaveLength(0);
@@ -164,7 +167,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
     setStock(ctx, "s1", "food", 20);
     setStock(ctx, "s1", "water", 10);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     const log = result.logs.find((l) => l.category === "citizen.consumed_food_water");
     expect(log?.payload).toMatchObject({
@@ -196,7 +199,7 @@ describe("phaseCitizenConsumption — starvation selection and PC immunity", () 
     // Required = 3 * 10 = 30. Stock 12 → deficit = 1 - 12/30 = 0.6.
     setStock(ctx, "s1", "food", 12);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     expect(result.citizenDeaths).toHaveLength(3);
   });
@@ -219,7 +222,7 @@ describe("phaseCitizenConsumption — starvation selection and PC immunity", () 
     // → floor(0.7 * 1 * 3) = floor(2.1) = 2 deaths (not all 3).
     setStock(ctx, "s1", "food", 9);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     expect(result.citizenDeaths).toHaveLength(2);
     // Both born on turn 1 (eldest); "alpha" < "zeta" so alpha is picked first,
@@ -245,7 +248,7 @@ describe("phaseCitizenConsumption — starvation selection and PC immunity", () 
     // livingNpcs.length=1 (pc excluded) → floor(1*1*1)=1 death, must be the npc.
     setStock(ctx, "s1", "food", 0);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     const log = result.logs.find((l) => l.category === "citizen.consumed_food_water");
     expect(log?.payload.aliveCount).toBe(2);
@@ -271,7 +274,7 @@ describe("phaseCitizenConsumption — starvation selection and PC immunity", () 
     });
     setStock(ctx, "s1", "food", 0);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     // Raw starvationDeaths = floor(1 * 5 * 1) = 5, but only 1 npc exists to kill.
     expect(result.citizenDeaths).toHaveLength(1);
@@ -300,7 +303,7 @@ describe("phaseCitizenConsumption — multi-settlement isolation", () => {
     setStock(ctx, "s1", "food", 10);
     setStock(ctx, "s2", "food", 0);
 
-    const result = phaseCitizenConsumption(ctx);
+    const result = phaseCitizenConsumption(ctx, new Map());
 
     const s1Delta = result.stockpileDeltas.find((d) => d.settlementId === "s1");
     const s2Delta = result.stockpileDeltas.find((d) => d.settlementId === "s2");
@@ -336,8 +339,8 @@ describe("phaseCitizenConsumption — determinism", () => {
       return ctx;
     }
 
-    const first = phaseCitizenConsumption(buildCtx());
-    const second = phaseCitizenConsumption(buildCtx());
+    const first = phaseCitizenConsumption(buildCtx(), new Map());
+    const second = phaseCitizenConsumption(buildCtx(), new Map());
 
     expect(second).toEqual(first);
   });

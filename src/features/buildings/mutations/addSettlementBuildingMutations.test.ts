@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
+import { settlementsQueryKeys } from "@/features/settlements";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import { buildingsQueryKeys } from "../queries/buildingsQueryKeys";
@@ -111,6 +112,21 @@ describe("addSettlementBuildingMutationOptions", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: buildingsQueryKeys.settlementPopulationCap(SETTLEMENT_ID),
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: settlementsQueryKeys.populationCap(SETTLEMENT_ID),
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["buildings", "settlement-buildings-by-world"],
       }),
     );
   });

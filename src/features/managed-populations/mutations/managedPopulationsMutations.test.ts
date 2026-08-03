@@ -14,16 +14,27 @@ const CULLING_JOB_ID = "33333333-3333-3333-3333-333333333333";
 const REFERENCING_JOB_ID = "44444444-4444-4444-4444-444444444444";
 const WORLD_ID = "55555555-5555-5555-5555-555555555555";
 
+type ManagedPopulationHusbandryJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+type ManagedPopulationCullingJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
+};
+
 type ManagedPopulationTypeRow = {
   readonly created_at: string;
-  readonly culling_job_id: string;
   readonly culling_outputs_json: ReadonlyArray<unknown>;
   readonly growth_rate: number;
-  readonly husbandry_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly maintenance_rules_json: ReadonlyArray<unknown>;
+  readonly managed_population_culling_jobs: readonly ManagedPopulationCullingJobRow[];
+  readonly managed_population_husbandry_jobs: readonly ManagedPopulationHusbandryJobRow[];
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly regular_outputs_json: ReadonlyArray<unknown>;
@@ -35,7 +46,7 @@ type ManagedPopulationTypeRow = {
 describe("createManagedPopulationTypeMutationOptions — hasActiveReferences", () => {
   it("returns hasActiveReferences: false when no jobs reference the managed population type", async () => {
     const row = createMptRow({ referencing_jobs: [] });
-    const { client } = createInsertClient({ data: row, error: null });
+    const { client } = createInsertClient(row);
     const queryClient = createQueryClient();
     const options = createManagedPopulationTypeMutationOptions({
       client,
@@ -43,10 +54,9 @@ describe("createManagedPopulationTypeMutationOptions — hasActiveReferences", (
     });
 
     const result = await executeMutation(queryClient, options, {
-      cullingJobId: CULLING_JOB_ID,
+      cullingJobs: [{ jobId: CULLING_JOB_ID, maxCullPerWorker: 5 }],
       growthRate: 1.05,
-      husbandryJobId: HUSBANDRY_JOB_ID,
-      husbandryWorkersPerNAnimals: 10,
+      husbandryJobs: [{ jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 10 }],
       name: "Cattle",
       slug: "cattle",
       worldId: WORLD_ID,
@@ -59,7 +69,7 @@ describe("createManagedPopulationTypeMutationOptions — hasActiveReferences", (
     const row = createMptRow({
       referencing_jobs: [{ id: REFERENCING_JOB_ID }],
     });
-    const { client } = createInsertClient({ data: row, error: null });
+    const { client } = createInsertClient(row);
     const queryClient = createQueryClient();
     const options = createManagedPopulationTypeMutationOptions({
       client,
@@ -67,10 +77,9 @@ describe("createManagedPopulationTypeMutationOptions — hasActiveReferences", (
     });
 
     const result = await executeMutation(queryClient, options, {
-      cullingJobId: CULLING_JOB_ID,
+      cullingJobs: [{ jobId: CULLING_JOB_ID, maxCullPerWorker: 5 }],
       growthRate: 1.05,
-      husbandryJobId: HUSBANDRY_JOB_ID,
-      husbandryWorkersPerNAnimals: 10,
+      husbandryJobs: [{ jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 10 }],
       name: "Cattle",
       slug: "cattle",
       worldId: WORLD_ID,
@@ -78,12 +87,69 @@ describe("createManagedPopulationTypeMutationOptions — hasActiveReferences", (
 
     expect(result).toMatchObject({ hasActiveReferences: true });
   });
+
+  it("maps multiple linked husbandry and culling jobs onto the created managed population type", async () => {
+    const row = createMptRow({
+      managed_population_culling_jobs: [
+        {
+          id: "culling-job-row-1",
+          job_id: CULLING_JOB_ID,
+          max_cull_per_worker: 5,
+        },
+        {
+          id: "culling-job-row-2",
+          job_id: REFERENCING_JOB_ID,
+          max_cull_per_worker: 7,
+        },
+      ],
+      managed_population_husbandry_jobs: [
+        {
+          id: "husbandry-job-row-1",
+          job_id: HUSBANDRY_JOB_ID,
+          workers_per_n_animals: 10,
+        },
+        {
+          id: "husbandry-job-row-2",
+          job_id: REFERENCING_JOB_ID,
+          workers_per_n_animals: 20,
+        },
+      ],
+    });
+    const { client } = createInsertClient(row);
+    const queryClient = createQueryClient();
+    const options = createManagedPopulationTypeMutationOptions({
+      client,
+      queryClient,
+    });
+
+    const result = await executeMutation(queryClient, options, {
+      cullingJobs: [
+        { jobId: CULLING_JOB_ID, maxCullPerWorker: 5 },
+        { jobId: REFERENCING_JOB_ID, maxCullPerWorker: 7 },
+      ],
+      growthRate: 1.05,
+      husbandryJobs: [
+        { jobId: HUSBANDRY_JOB_ID, workersPerNAnimals: 10 },
+        { jobId: REFERENCING_JOB_ID, workersPerNAnimals: 20 },
+      ],
+      name: "Cattle",
+      slug: "cattle",
+      worldId: WORLD_ID,
+    });
+
+    expect(
+      (result as { husbandryJobs: readonly unknown[] }).husbandryJobs,
+    ).toHaveLength(2);
+    expect(
+      (result as { cullingJobs: readonly unknown[] }).cullingJobs,
+    ).toHaveLength(2);
+  });
 });
 
 describe("updateManagedPopulationTypeMutationOptions — hasActiveReferences", () => {
   it("returns hasActiveReferences: false when no jobs reference the managed population type", async () => {
     const row = createMptRow({ referencing_jobs: [] });
-    const { client } = createUpdateClient({ data: row, error: null });
+    const { client } = createUpdateClient(row);
     const queryClient = createQueryClient();
     const options = updateManagedPopulationTypeMutationOptions({
       client,
@@ -103,7 +169,7 @@ describe("updateManagedPopulationTypeMutationOptions — hasActiveReferences", (
     const row = createMptRow({
       referencing_jobs: [{ id: REFERENCING_JOB_ID }],
     });
-    const { client } = createUpdateClient({ data: row, error: null });
+    const { client } = createUpdateClient(row);
     const queryClient = createQueryClient();
     const options = updateManagedPopulationTypeMutationOptions({
       client,
@@ -125,14 +191,25 @@ function createMptRow(
 ): ManagedPopulationTypeRow {
   return {
     created_at: "2026-05-01T00:00:00.000Z",
-    culling_job_id: CULLING_JOB_ID,
     culling_outputs_json: [],
     growth_rate: 1.05,
-    husbandry_job_id: HUSBANDRY_JOB_ID,
-    husbandry_workers_per_n_animals: 10,
     id: MPT_ID,
     is_trashed: false,
     maintenance_rules_json: [],
+    managed_population_culling_jobs: [
+      {
+        id: "culling-job-row-1",
+        job_id: CULLING_JOB_ID,
+        max_cull_per_worker: 5,
+      },
+    ],
+    managed_population_husbandry_jobs: [
+      {
+        id: "husbandry-job-row-1",
+        job_id: HUSBANDRY_JOB_ID,
+        workers_per_n_animals: 10,
+      },
+    ],
     name: "Cattle",
     referencing_jobs: [],
     regular_outputs_json: [],
@@ -143,30 +220,64 @@ function createMptRow(
   };
 }
 
-type SupabaseError = { readonly code?: string; readonly message: string };
-type SupabaseResult<TData> =
-  | { readonly data: TData; readonly error: null }
-  | { readonly data: null; readonly error: SupabaseError | null };
-
-function createInsertClient(result: SupabaseResult<ManagedPopulationTypeRow>): {
+function createInsertClient(fetchedRow: ManagedPopulationTypeRow): {
   readonly client: GubernatorSupabaseClient;
 } {
-  const maybeSingle = vi.fn().mockResolvedValue(result);
-  const select = vi.fn(() => ({ maybeSingle }));
-  const insert = vi.fn(() => ({ select }));
-  const from = vi.fn(() => ({ insert }));
+  const insertMaybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: { id: MPT_ID }, error: null });
+  const insertSelect = vi.fn(() => ({ maybeSingle: insertMaybeSingle }));
+  const managedPopulationTypesInsert = vi.fn(() => ({ select: insertSelect }));
+
+  const fetchMaybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: fetchedRow, error: null });
+  const fetchEq = vi.fn(() => ({ maybeSingle: fetchMaybeSingle }));
+  const fetchSelect = vi.fn(() => ({ eq: fetchEq }));
+
+  const husbandryJobsInsert = vi.fn().mockResolvedValue({ error: null });
+  const cullingJobsInsert = vi.fn().mockResolvedValue({ error: null });
+
+  const from = vi.fn((table: string) => {
+    if (table === "managed_population_types") {
+      return { insert: managedPopulationTypesInsert, select: fetchSelect };
+    }
+    if (table === "managed_population_husbandry_jobs") {
+      return { insert: husbandryJobsInsert };
+    }
+    if (table === "managed_population_culling_jobs") {
+      return { insert: cullingJobsInsert };
+    }
+    throw new Error(`Unexpected table: ${table}`);
+  });
+
   return { client: { from } as unknown as GubernatorSupabaseClient };
 }
 
-function createUpdateClient(result: SupabaseResult<ManagedPopulationTypeRow>): {
+function createUpdateClient(fetchedRow: ManagedPopulationTypeRow): {
   readonly client: GubernatorSupabaseClient;
 } {
-  const maybeSingle = vi.fn().mockResolvedValue(result);
-  const select = vi.fn(() => ({ maybeSingle }));
-  const eqWorld = vi.fn(() => ({ select }));
-  const eqId = vi.fn(() => ({ eq: eqWorld }));
-  const update = vi.fn(() => ({ eq: eqId }));
-  const from = vi.fn(() => ({ update }));
+  const updateMaybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: { id: MPT_ID }, error: null });
+  const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
+  const updateEqWorld = vi.fn(() => ({ select: updateSelect }));
+  const updateEqId = vi.fn(() => ({ eq: updateEqWorld }));
+  const managedPopulationTypesUpdate = vi.fn(() => ({ eq: updateEqId }));
+
+  const fetchMaybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: fetchedRow, error: null });
+  const fetchEq = vi.fn(() => ({ maybeSingle: fetchMaybeSingle }));
+  const fetchSelect = vi.fn(() => ({ eq: fetchEq }));
+
+  const from = vi.fn((table: string) => {
+    if (table === "managed_population_types") {
+      return { select: fetchSelect, update: managedPopulationTypesUpdate };
+    }
+    throw new Error(`Unexpected table: ${table}`);
+  });
+
   return { client: { from } as unknown as GubernatorSupabaseClient };
 }
 

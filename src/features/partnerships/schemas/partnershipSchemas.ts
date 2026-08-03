@@ -82,6 +82,7 @@ export const reassignPartnerInputSchema = z
     formedOnTurnNumber: turnNumberSchema,
     newPartnerCitizenId: citizenIdSchema,
     oldPartnershipId: partnershipIdSchema,
+    previousPartnerCitizenId: citizenIdSchema,
     retainedCitizenId: citizenIdSchema,
     turnTransitionId: turnTransitionIdSchema,
   })

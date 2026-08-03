@@ -1,11 +1,23 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { CitizensPanel } from "./CitizensPanel";
 
 import type { ReactNode } from "react";
+
+// jsdom lacks pointer capture / scrollIntoView, which Radix Select needs to open.
+/* eslint-disable @typescript-eslint/unbound-method */
+Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
+  return false;
+};
+Element.prototype.setPointerCapture ??= function setPointerCapture() {};
+Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+/* eslint-enable @typescript-eslint/unbound-method */
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -50,6 +62,7 @@ type DirectoryRowFixture = {
   readonly name: string | null;
   readonly nation_id: string | null;
   readonly nation_name: string | null;
+  readonly office_types: string | null;
   readonly settlement_id: string | null;
   readonly settlement_name: string | null;
   readonly sex: string | null;
@@ -57,15 +70,17 @@ type DirectoryRowFixture = {
 };
 
 type AggregateRowFixture = {
-  readonly citizen_assignments: ReadonlyArray<{
-    readonly assignment_type:
-      | "construction_project"
-      | "culling"
-      | "deposit"
-      | "husbandry"
-      | "standard_job"
-      | "trade_route";
-  }> | null;
+  readonly assignment_type:
+    | "construction_project"
+    | "culling"
+    | "deposit"
+    | "husbandry"
+    | "standard_job"
+    | "trade_route"
+    | null;
+  readonly is_labor_excluded_officeholder?: boolean;
+  readonly is_enrolled_in_education?: boolean;
+  readonly is_soldier?: boolean;
   readonly citizen_type: "npc" | "player_character";
   readonly id: string;
   readonly status: "alive" | "dead";
@@ -133,19 +148,74 @@ describe("CitizensPanel", () => {
       }),
     );
 
-    await user.click(screen.getByLabelText("Show deceased"));
+    await user.click(
+      screen.getByRole("combobox", { name: "Filter by status" }),
+    );
+    await user.click(await screen.findByRole("option", { name: "Deceased" }));
 
     expect(await screen.findByText("Cael")).toBeDefined();
     const caelRow = screen.getByText("Cael").closest("tr");
     expect(caelRow).toHaveTextContent("Deceased");
 
-    // Dead toggle shows only dead and hides create buttons
+    // Deceased filter shows only dead and hides create buttons
     expect(screen.queryByText("Aldra")).toBeNull();
     expect(screen.queryByText("Brann")).toBeNull();
     expect(screen.queryByRole("button", { name: "Create NPC" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Create player character" }),
     ).toBeNull();
+  });
+
+  it("filters by name search and citizen type", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        directoryRows: [createDirectoryRow({ id: "c-1", name: "Aldra" })],
+        totalCount: 1,
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderPanel({ canAdmin: true });
+
+    expect(await screen.findByText("Aldra")).toBeDefined();
+
+    await user.type(screen.getByLabelText("Search citizens by name"), "Ald");
+
+    await waitFor(() => {
+      expect(requireSupabaseClient).toHaveBeenCalled();
+    });
+
+    await user.click(screen.getByRole("combobox", { name: "Filter by type" }));
+    await user.click(
+      await screen.findByRole("option", { name: "Player characters" }),
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: "Filter by type" }),
+    ).toHaveTextContent("Player characters");
+  });
+
+  it("marks an officeholder with an 'In office' badge instead of their assignment label", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        directoryRows: [
+          createDirectoryRow({
+            assignment_label: "Brewer",
+            id: "c-1",
+            name: "Aldra",
+            office_types: "treasurer",
+          }),
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderPanel({ canAdmin: true });
+
+    expect(await screen.findByText("Aldra")).toBeDefined();
+    const aldraRow = screen.getByText("Aldra").closest("tr");
+    expect(aldraRow).toHaveTextContent("In office: Treasurer");
+    expect(aldraRow).not.toHaveTextContent("Brewer");
   });
 
   it("exposes Create NPC and Create player character actions for world admins on active worlds", async () => {
@@ -191,25 +261,25 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            assignment_type: "standard_job",
             citizen_type: "player_character",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "husbandry" }],
+            assignment_type: "husbandry",
             citizen_type: "player_character",
             id: "c-2",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: null,
+            assignment_type: null,
             citizen_type: "player_character",
             id: "c-3",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: null,
+            assignment_type: null,
             citizen_type: "player_character",
             id: "c-4",
             status: "dead",
@@ -242,7 +312,7 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            assignment_type: "standard_job",
             id: "c-1",
             status: "alive",
           }),
@@ -266,13 +336,13 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            assignment_type: "standard_job",
             id: "c-1",
             status: "alive",
           }),
           ...Array.from({ length: 3 }, (_unused, index) =>
             createAggregateRow({
-              citizen_assignments: null,
+              assignment_type: null,
               id: `unassigned-${String(index)}`,
               status: "alive",
             }),
@@ -297,17 +367,17 @@ describe("CitizensPanel", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "standard_job" }],
+            assignment_type: "standard_job",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: [{ assignment_type: "husbandry" }],
+            assignment_type: "husbandry",
             id: "c-2",
             status: "alive",
           }),
           createAggregateRow({
-            citizen_assignments: null,
+            assignment_type: null,
             id: "c-3",
             status: "alive",
           }),
@@ -355,7 +425,7 @@ describe("CitizensPanel", () => {
 
     // Wait for data to load, then verify header count paragraph shows count without cap
     await screen.findByText("Living citizens");
-    const heading = screen.getByRole("heading", { name: "Citizens" });
+    const heading = screen.getByRole("heading", { name: "Citizen summary" });
     const headerDiv = heading.parentElement;
     const countEl = headerDiv?.querySelector("p");
     expect(countEl?.textContent).toBe("2");
@@ -430,14 +500,16 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <CitizensPanel
-        canAdmin={canAdmin}
-        incestPreventionDepth={incestPreventionDepth}
-        isArchived={isArchived}
-        nationId="nation-1"
-        settlementId="settlement-1"
-        worldId="world-1"
-      />
+      <TooltipProvider>
+        <CitizensPanel
+          canAdmin={canAdmin}
+          incestPreventionDepth={incestPreventionDepth}
+          isArchived={isArchived}
+          nationId="nation-1"
+          settlementId="settlement-1"
+          worldId="world-1"
+        />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -459,6 +531,7 @@ function createDirectoryRow(
     name: "Citizen",
     nation_id: "nation-1",
     nation_name: "Nation",
+    office_types: null,
     settlement_id: "settlement-1",
     settlement_name: "Settlement",
     sex: null,
@@ -471,7 +544,7 @@ function createAggregateRow(
   overrides: Partial<AggregateRowFixture> = {},
 ): AggregateRowFixture {
   return {
-    citizen_assignments: null,
+    assignment_type: null,
     citizen_type: "npc",
     id: "c-1",
     status: "alive",
@@ -496,18 +569,28 @@ function createClient({
     from: vi.fn((table: string) => {
       if (table === "citizen_directory_view") {
         return {
-          select: vi.fn(() =>
-            chainable({
-              count: totalCount,
-              data: directoryRows,
-              error: directoryError,
-            }),
+          // citizen_directory_view backs the paginated directory query
+          // ({ count: "exact" }), the aggregate stats query (no count
+          // option), and the officeholder count query ({ head: true }) --
+          // dispatch on the select options to route each to its fixture.
+          select: vi.fn(
+            (
+              _columns?: string,
+              opts?: { readonly count?: string; readonly head?: boolean },
+            ) => {
+              if (opts?.head === true) {
+                return chainable({ count: 0, data: [], error: null });
+              }
+              if (opts?.count === "exact") {
+                return chainable({
+                  count: totalCount,
+                  data: directoryRows,
+                  error: directoryError,
+                });
+              }
+              return chainable({ data: aggregates, error: null });
+            },
           ),
-        };
-      }
-      if (table === "citizens") {
-        return {
-          select: vi.fn(() => chainable({ data: aggregates, error: null })),
         };
       }
       throw new Error(`Unexpected table ${table}`);

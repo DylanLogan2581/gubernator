@@ -56,12 +56,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e2000000-0000-0000-0000-100000000001',
     'SCCQ World',
-    'private',
     'active'
   );
 
@@ -137,26 +136,40 @@ values
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'e5000000-0000-0000-0000-100000000001',
     'e2000000-0000-0000-0000-100000000001',
     'SCCQ Sheep',
     'sccq-sheep',
-    'e6000000-0000-0000-0000-100000000001',
-    'e6000000-0000-0000-0000-100000000002',
-    10,
     0.05
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'e5000000-0000-0000-0000-100000000001',
+    'e6000000-0000-0000-0000-100000000001',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'e5000000-0000-0000-0000-100000000001',
+    'e6000000-0000-0000-0000-100000000002',
+    10
   );
 
 -- Managed population instance: current_count=100, configured_cull_quantity=0

@@ -1,18 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type JSX } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Navigate } from "@tanstack/react-router";
+import { useState, type JSX } from "react";
 
-import {
-  ConfigCrudPanel,
-  handleCrudError,
-} from "@/components/shared/ConfigCrudPanel";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { ConfigCrudPanel } from "@/components/shared/ConfigCrudPanel";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-import { createNamesetMutationOptions } from "../../mutations/namesetsMutations";
 import { namesetsByWorldQueryOptions } from "../../queries/namesetsQueries";
 
-import { CreateNamesetDialog } from "./NamesetForm";
-import { NamesetList } from "./NamesetList";
-import { formatMutationError } from "./utils/FormatMutationError";
+import { NamesetsTable } from "./NamesetsTable";
 
 import type { Nameset } from "../../types/namesetTypes";
 
@@ -27,12 +23,9 @@ export function NamesetsConfigPanel({
   isArchived,
   worldId,
 }: NamesetsConfigPanelProps): JSX.Element {
-  const queryClient = useQueryClient();
   const namesetsQuery = useQuery(namesetsByWorldQueryOptions(worldId));
   const canEdit = canAdmin && !isArchived;
-  const createMutation = useMutation(
-    createNamesetMutationOptions({ queryClient }),
-  );
+  const [search, setSearch] = useState("");
 
   return (
     <ConfigCrudPanel<Nameset>
@@ -45,57 +38,68 @@ export function NamesetsConfigPanel({
       isTrashed={(ns) => ns.isTrashed}
       renderContent={({
         canEdit: canEditProp,
-        editingId,
         items,
         queryClient: qc,
-        setEditingId,
-        setShowForm,
         showForm,
         showTrash,
-      }) => (
-        <>
-          <p className="text-sm text-muted-foreground">
-            {canEditProp
-              ? "Namesets bundle naming pools and a convention. Nations and settlements can override the world default."
-              : "Namesets define the naming pools and convention used for random NPC creation."}
-          </p>
+      }) => {
+        const filteredItems = items.filter((ns) =>
+          ns.name.toLowerCase().includes(search.trim().toLowerCase()),
+        );
 
-          {items.length > 0 ? (
-            <NamesetList
-              canEdit={canEditProp}
-              editingNamesetId={editingId}
-              namesets={items}
-              queryClient={qc}
-              showTrash={showTrash}
-              worldId={worldId}
-              onEditingChange={setEditingId}
-            />
-          ) : null}
+        return (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {canEditProp
+                ? "Namesets bundle naming pools and a convention. Nations and settlements can override the world default."
+                : "Namesets define the naming pools and convention used for random NPC creation."}
+            </p>
 
-          {canEditProp && showForm && !showTrash ? (
-            <CreateNamesetDialog
-              isPending={createMutation.isPending}
-              onCancel={() => {
-                setShowForm(false);
-              }}
-              onSubmit={(name, configJson) => {
-                createMutation.mutate(
-                  { worldId, name, configJson },
-                  {
-                    onError: (error) => {
-                      handleCrudError(error, formatMutationError(error));
-                    },
-                    onSuccess: () => {
-                      notifyMutationSuccess("Nameset created.");
-                      setShowForm(false);
-                    },
-                  },
-                );
+            <Input
+              aria-label="Search namesets by name"
+              className="sm:w-[280px]"
+              placeholder="Search by name…"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.currentTarget.value);
               }}
             />
-          ) : null}
-        </>
-      )}
+
+            {filteredItems.length > 0 ? (
+              <NamesetsTable
+                canEdit={canEditProp}
+                namesets={filteredItems}
+                queryClient={qc}
+                showTrash={showTrash}
+                worldId={worldId}
+              />
+            ) : items.length > 0 ? (
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  No matching namesets.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                  }}
+                >
+                  Clear filters
+                </Button>
+              </div>
+            ) : null}
+
+            {canEditProp && showForm && !showTrash ? (
+              <Navigate
+                to="/worlds/$worldId/configuration/namesets/new"
+                params={{ worldId }}
+              />
+            ) : null}
+          </>
+        );
+      }}
     />
   );
 }

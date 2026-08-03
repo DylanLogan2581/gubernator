@@ -2,6 +2,10 @@ import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
 import { AuthUiError } from "@/features/auth";
+import { buildingsQueryKeys } from "@/features/buildings";
+import { depositsQueryKeys } from "@/features/deposits";
+import { jobsQueryKeys } from "@/features/jobs";
+import { managedPopulationsQueryKeys } from "@/features/managed-populations";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import type { Json } from "@/types/database";
 
@@ -18,13 +22,16 @@ const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 
 type ResourceRow = {
   readonly base_stockpile_cap: number;
+  readonly category_id: string | null;
   readonly created_at: string;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: Json;
   readonly name: string;
+  readonly resource_categories: null;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -94,8 +101,11 @@ describe("createResourceMutationOptions", () => {
     expect(calls.from).toHaveBeenCalledWith("resources");
     expect(calls.insert).toHaveBeenCalledWith({
       base_stockpile_cap: 100.5,
-      decay_rate: 0,
+      category_id: null,
+      change_amount: 0,
+      change_mode: "percent",
       icon: null,
+      icon_color: null,
       name: "Iron Ore",
       slug: "iron-ore",
       world_id: WORLD_ID,
@@ -120,7 +130,7 @@ describe("createResourceMutationOptions", () => {
     );
   });
 
-  it("defaults decayRate to 0 when omitted", async () => {
+  it("defaults changeMode/changeAmount to percent/0 when omitted", async () => {
     const row = createResourceRow();
     const { client, calls } = createInsertClient({ data: row, error: null });
     const queryClient = createQueryClient();
@@ -133,25 +143,26 @@ describe("createResourceMutationOptions", () => {
     });
 
     expect(calls.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ decay_rate: 0 }),
+      expect.objectContaining({ change_amount: 0, change_mode: "percent" }),
     );
   });
 
-  it("inserts with provided decayRate", async () => {
+  it("inserts with provided changeMode/changeAmount", async () => {
     const row = createResourceRow();
     const { client, calls } = createInsertClient({ data: row, error: null });
     const queryClient = createQueryClient();
     const options = createResourceMutationOptions({ client, queryClient });
 
     await executeMutation(queryClient, options, {
-      decayRate: "25.50",
+      changeAmount: "-25.50",
+      changeMode: "percent",
       name: "Iron Ore",
       slug: "iron-ore",
       worldId: WORLD_ID,
     });
 
     expect(calls.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ decay_rate: 25.5 }),
+      expect.objectContaining({ change_amount: -25.5, change_mode: "percent" }),
     );
   });
 
@@ -443,6 +454,80 @@ describe("softDeleteResourceMutationOptions", () => {
     ).rejects.toMatchObject({ code: "resource_not_found" });
   });
 
+  it("invalidates jobs, buildings, deposits, and managed-population caches when cleanup cascaded", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: {
+        building_tier_construction_costs_cleaned: 0,
+        building_tier_effects_cleaned: 1,
+        building_tier_upkeep_costs_cleaned: 0,
+        cleaned_at: "2026-05-30T00:00:00.000Z",
+        deposit_types_worker_inputs_cleaned: 2,
+        job_definitions_inputs_cleaned: 3,
+        job_definitions_outputs_cleaned: 0,
+        managed_population_culling_outputs_cleaned: 0,
+        managed_population_maintenance_cleaned: 1,
+      },
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: jobsQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: buildingsQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: depositsQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: managedPopulationsQueryKeys.all,
+    });
+  });
+
+  it("does not invalidate cascade caches when nothing was cleaned up", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: null,
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: jobsQueryKeys.all,
+    });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: buildingsQueryKeys.all,
+    });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: depositsQueryKeys.all,
+    });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: managedPopulationsQueryKeys.all,
+    });
+  });
+
   it("maps 42501 to resource_not_authorized", async () => {
     const { client } = createSoftDeleteClient({
       data: null,
@@ -474,13 +559,16 @@ describe("ResourceMutationError / isResourceMutationError", () => {
 function createResourceRow(overrides: Partial<ResourceRow> = {}): ResourceRow {
   return {
     base_stockpile_cap: 0,
+    category_id: null,
     created_at: "2026-05-01T00:00:00.000Z",
     icon: null,
+    icon_color: null,
     id: RESOURCE_ID,
     is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Iron Ore",
+    resource_categories: null,
     slug: "iron-ore",
     updated_at: "2026-05-01T00:00:00.000Z",
     world_id: WORLD_ID,

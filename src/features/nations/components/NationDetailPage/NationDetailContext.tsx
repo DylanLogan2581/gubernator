@@ -11,7 +11,6 @@ export type NationDetailContextValue = {
   readonly accessContext: WorldPermissionContext;
   readonly canDelete: boolean;
   readonly canEditDetails: boolean;
-  readonly canToggleHidden: boolean;
   readonly effectiveCanAdmin: boolean;
   readonly isArchived: boolean;
   readonly nation: Nation;

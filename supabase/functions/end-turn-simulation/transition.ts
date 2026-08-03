@@ -5,11 +5,21 @@ import { runSimulation, SimulationRejectionError } from "../_shared/simulation/r
 
 import type { EndTurnSimulationErrorResponse } from "./types.ts";
 import type {
+  ArmyTurnSnapshot,
   AssignmentClear,
+  CitizenEducationPatch,
   DeathCauseCategory,
   DepositUpdate,
+  DesertedSoldier,
+  DisbandedUnit,
+  EnrollmentGraduation,
+  EnrollmentProgressUpdate,
   EventStatusPatch,
   ManagedPopulationUpdate,
+  NationCurrencySnapshot,
+  NationCurrencyUpdate,
+  NationStockpileDelta,
+  NationTurnSnapshot,
   ReadinessSummary,
   SettlementSnapshot,
   SimConstructionStatus,
@@ -17,6 +27,7 @@ import type {
   SimulationLogEntry,
   SimulationNotification,
   SimulationResult,
+  TreatyStatusChange,
 } from "../_shared/simulation/simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +65,11 @@ type BuildingStateChangeEntry = {
   readonly state: string;
 };
 
+type BuildingTierUpgradeEntry = {
+  readonly buildingId: string;
+  readonly currentTierId: string;
+};
+
 type TradeRouteOutcomeEntry = {
   readonly pauseReason: string | null;
   readonly toStatus: "active" | "paused";
@@ -62,6 +78,8 @@ type TradeRouteOutcomeEntry = {
 
 type CitizenBirthEntry = {
   readonly bornOnTurnNumber: number;
+  readonly cultureId: string | null;
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly namesetId: string | null;
   readonly npcFlaw: string | null;
@@ -71,6 +89,7 @@ type CitizenBirthEntry = {
   readonly npcTrait2: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly religionId: string | null;
   readonly sex: string;
   readonly settlementId: string;
   readonly surname: string | null;
@@ -95,26 +114,39 @@ type PartnershipChangeEntry = {
 // ---------------------------------------------------------------------------
 
 export type ApplyTurnTransitionPayload = {
+  readonly armyTurnSnapshots: readonly ArmyTurnSnapshot[];
   readonly assignmentClears: readonly AssignmentClear[];
   readonly bornOnTurnBackfill: ReadonlyArray<{
     readonly bornOnTurnNumber: number;
     readonly citizenId: string;
   }>;
   readonly buildingStateChanges: readonly BuildingStateChangeEntry[];
+  readonly buildingTierUpgrades: readonly BuildingTierUpgradeEntry[];
   readonly buildingsCreated: readonly BuildingCreatedEntry[];
   readonly citizenBirths: readonly CitizenBirthEntry[];
   readonly citizenDeaths: readonly CitizenDeathEntry[];
+  readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly constructionUpdates: readonly ConstructionUpdateEntry[];
+  readonly deceasedSoldierIds: readonly string[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly desertedSoldiers: readonly DesertedSoldier[];
+  readonly disbandedUnits: readonly DisbandedUnit[];
+  readonly enrollmentGraduations: readonly EnrollmentGraduation[];
+  readonly enrollmentProgressUpdates: readonly EnrollmentProgressUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
+  readonly nationCurrencySnapshots: readonly NationCurrencySnapshot[];
+  readonly nationCurrencyUpdates: readonly NationCurrencyUpdate[];
+  readonly nationStockpileDeltas: readonly NationStockpileDelta[];
+  readonly nationTurnSnapshots: readonly NationTurnSnapshot[];
   readonly notifications: readonly SimulationNotification[];
   readonly partnershipChanges: readonly PartnershipChangeEntry[];
   readonly readinessSummary: ReadinessSummary;
   readonly settlementSnapshots: readonly SettlementSnapshot[];
   readonly stockpileDeltas: readonly StockpileDeltaEntry[];
   readonly tradeRouteOutcomes: readonly TradeRouteOutcomeEntry[];
+  readonly treatyStatusChanges: readonly TreatyStatusChange[];
 };
 
 // ---------------------------------------------------------------------------
@@ -265,6 +297,15 @@ export function mapSimulationResultToPayload(
     };
   });
 
+  // §C29d: buildingTierUpgrades — rename settlementBuildingId → buildingId,
+  // toTierId → currentTierId (#1372).
+  const buildingTierUpgrades: BuildingTierUpgradeEntry[] = result.buildingTierUpgrades.map(
+    (u) => ({
+      buildingId: u.settlementBuildingId,
+      currentTierId: u.toTierId,
+    }),
+  );
+
   // §C31: tradeRouteOutcomes — derive toStatus from pauseReason.
   const tradeRouteOutcomes: TradeRouteOutcomeEntry[] = result.tradeRouteOutcomes.map((tro) => ({
     pauseReason: tro.pauseReason,
@@ -283,6 +324,8 @@ export function mapSimulationResultToPayload(
   // spawned citizens arrive as adults rather than newborns.
   const citizenBirths: CitizenBirthEntry[] = result.citizenBirths.map((b) => ({
     bornOnTurnNumber: b.bornOnTurnNumber ?? newTurnNumber,
+    cultureId: b.cultureId,
+    educationLevelId: b.educationLevelId,
     givenName: b.givenName,
     namesetId: b.namesetId,
     npcFlaw: b.npcFlaw,
@@ -292,6 +335,7 @@ export function mapSimulationResultToPayload(
     npcTrait2: b.npcTrait2,
     parentACitizenId: b.parentACitizenId ?? null,
     parentBCitizenId: b.parentBCitizenId ?? null,
+    religionId: b.religionId,
     sex: b.sex,
     settlementId: b.settlementId,
     surname: b.surname,
@@ -331,22 +375,35 @@ export function mapSimulationResultToPayload(
   });
 
   return {
+    armyTurnSnapshots: result.armyTurnSnapshots,
     assignmentClears: result.assignmentClears,
     bornOnTurnBackfill,
     buildingStateChanges,
+    buildingTierUpgrades,
     buildingsCreated,
     citizenBirths,
     citizenDeaths,
+    citizenEducationPatches: result.citizenEducationPatches,
     constructionUpdates,
+    deceasedSoldierIds: result.deceasedSoldierIds,
     depositUpdates: result.depositUpdates,
+    desertedSoldiers: result.desertedSoldiers,
+    disbandedUnits: result.disbandedUnits,
+    enrollmentGraduations: result.enrollmentGraduations,
+    enrollmentProgressUpdates: result.enrollmentProgressUpdates,
     eventStatusPatches: result.eventStatusPatches,
     logEntries: result.logEntries,
     managedPopulationUpdates: result.managedPopulationUpdates,
+    nationCurrencySnapshots: result.nationCurrencySnapshots,
+    nationCurrencyUpdates: result.nationCurrencyUpdates,
+    nationStockpileDeltas: result.nationStockpileDeltas,
+    nationTurnSnapshots: result.nationTurnSnapshots,
     notifications: result.notifications,
     partnershipChanges,
     readinessSummary: result.readinessSummary,
     settlementSnapshots: result.settlementSnapshots,
     stockpileDeltas,
     tradeRouteOutcomes,
+    treatyStatusChanges: result.treatyStatusChanges,
   };
 }

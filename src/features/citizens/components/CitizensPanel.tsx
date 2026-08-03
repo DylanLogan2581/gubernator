@@ -1,6 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Skull, UserPlus } from "lucide-react";
+import { GraduationCap, Landmark, UserPlus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { DataTable } from "@/components/shared/DataTable";
@@ -10,13 +10,45 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { culturesByWorldQueryOptions } from "@/features/cultures";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
+import { religionsByWorldQueryOptions } from "@/features/religions";
 import { settlementPopulationCapQueryOptions } from "@/features/settlements";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 
+import {
+  bulkSetCitizenCultureReligionMutationOptions,
+  bulkSetCitizenEducationMutationOptions,
+} from "../mutations/citizensMutations";
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../queries/citizensQueries";
+import { formatOfficeTypesLabel } from "../utils/officeTypesLabel";
 
 import { CreateNpcDialog } from "./citizenCreation/CreateNpcDialog";
 import { CreatePlayerCharacterDialog } from "./citizenCreation/CreatePlayerCharacterDialog";
@@ -32,6 +64,7 @@ import type {
   CitizenStatus,
   CitizenType,
 } from "../types/citizenTypes";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type CitizensPanelProps = {
@@ -61,74 +94,122 @@ const DEFAULT_SORTING: SortingState = [{ id: "name", desc: false }];
 // server-side `.order()` call should use (see citizenDirectoryQueries.ts).
 const SORT_COLUMN_BY_ID: Record<string, CitizenDirectorySortColumn> = {
   age: "age_turns",
+  education: "education_level_name",
   name: "name",
+  sex: "sex",
   status: "status",
+  type: "citizen_type",
 };
 
-const SETTLEMENT_CITIZENS_COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
-  {
-    id: "name",
-    accessorFn: (row) => row.name ?? "—",
-    header: "Name",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.name ?? "—"}</span>
-    ),
-  },
-  {
-    id: "age",
-    accessorFn: (row) => row.ageTurns,
-    header: "Age",
-    cell: ({ row }) => (
-      <span className="tabular-nums text-muted-foreground">
-        {row.original.ageTurns ?? "—"}
-      </span>
-    ),
-  },
-  {
-    id: "sex",
-    enableSorting: false,
-    header: "Sex",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
-    ),
-  },
-  {
-    id: "assignment",
-    enableSorting: false,
-    header: "Job / assignment",
-    cell: ({ row }) => (
-      <Badge
-        variant={
-          row.original.assignmentLabel === null ? "outline" : "secondary"
+function buildSettlementCitizensColumns(
+  hasEducationLevels: boolean,
+): ColumnDef<CitizenDirectoryRow, unknown>[] {
+  return [
+    {
+      id: "name",
+      accessorFn: (row) => row.name ?? "—",
+      header: "Name",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.name ?? "—"}</span>
+      ),
+    },
+    {
+      id: "age",
+      accessorFn: (row) => row.ageTurns,
+      header: "Age",
+      cell: ({ row }) => (
+        <span className="tabular-nums text-muted-foreground">
+          {row.original.ageTurns ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "sex",
+      accessorFn: (row) => row.sex ?? "—",
+      header: "Sex",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
+      ),
+    },
+    {
+      // The displayed value merges two source columns (office_types,
+      // assignment_label), so no single column can drive a server-side sort
+      // that matches what's rendered -- left unsortable.
+      id: "assignment",
+      enableSorting: false,
+      header: "Job / assignment",
+      cell: ({ row }) => {
+        const officeTypes = row.original.officeTypes;
+        if (officeTypes !== null) {
+          const officeLabel = formatOfficeTypesLabel(officeTypes);
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="cursor-default">
+                  In office: {officeLabel}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                Works for the nation this turn — no settlement job output while
+                in office.
+              </TooltipContent>
+            </Tooltip>
+          );
         }
-      >
-        {row.original.assignmentLabel ?? "Unassigned"}
-      </Badge>
-    ),
-  },
-  {
-    id: "type",
-    enableSorting: false,
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="secondary">
-        {CITIZEN_TYPE_LABELS[row.original.citizenType]}
-      </Badge>
-    ),
-  },
-  {
-    id: "status",
-    accessorFn: (row) => row.status,
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant={row.original.status === "alive" ? "secondary" : "destructive"}
-      >
-        {STATUS_LABELS[row.original.status]}
-      </Badge>
-    ),
-  },
-];
+        return (
+          <Badge
+            variant={
+              row.original.assignmentLabel === null ? "outline" : "secondary"
+            }
+          >
+            {row.original.assignmentLabel ?? "Unassigned"}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "type",
+      accessorFn: (row) => row.citizenType,
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {CITIZEN_TYPE_LABELS[row.original.citizenType]}
+        </Badge>
+      ),
+    },
+    {
+      id: "education",
+      accessorFn: (row) => row.educationLevelName ?? "—",
+      header: "Education",
+      cell: ({ row }) =>
+        hasEducationLevels ? (
+          <Badge
+            variant={
+              row.original.educationLevelName === null ? "outline" : "secondary"
+            }
+          >
+            {row.original.educationLevelName ?? "Uneducated"}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "status",
+      accessorFn: (row) => row.status,
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge
+          variant={
+            row.original.status === "alive" ? "secondary" : "destructive"
+          }
+        >
+          {STATUS_LABELS[row.original.status]}
+        </Badge>
+      ),
+    },
+  ];
+}
 
 export function CitizensPanel({
   canAdmin,
@@ -138,7 +219,7 @@ export function CitizensPanel({
   settlementId,
   worldId,
 }: CitizensPanelProps): JSX.Element {
-  const [includeDead, setIncludeDead] = useState(false);
+  const [status, setStatus] = useState<CitizenStatus | "all">("alive");
 
   const aggregateQuery = useQuery(
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
@@ -153,11 +234,14 @@ export function CitizensPanel({
     livingCount !== null && popCap !== null && livingCount >= popCap;
 
   return (
-    <Card aria-labelledby="citizens-panel-heading" className="grid gap-3">
-      <div className="flex items-start justify-between gap-2 px-4 pt-4">
+    <section
+      aria-labelledby="citizens-panel-heading"
+      className="grid min-w-0 grid-cols-1 gap-3"
+    >
+      <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
           <h2 id="citizens-panel-heading" className="text-base font-medium">
-            Citizens
+            {canAdmin ? "Citizens" : "Citizen summary"}
           </h2>
           {livingCount !== null ? (
             <p
@@ -180,39 +264,24 @@ export function CitizensPanel({
           >
             Job assignments →
           </Link>
-          {canAdmin ? (
-            <>
-              {!includeDead ? (
-                <CitizensCreateActions
-                  canAdmin={canAdmin}
-                  incestPreventionDepth={incestPreventionDepth}
-                  isArchived={isArchived}
-                  settlementId={settlementId}
-                  worldId={worldId}
-                />
-              ) : null}
-              <Button
-                aria-label={includeDead ? "Hide deceased" : "Show deceased"}
-                aria-pressed={includeDead}
-                size="icon-sm"
-                title={includeDead ? "Hide deceased" : "Show deceased"}
-                type="button"
-                variant={includeDead ? "secondary" : "ghost"}
-                onClick={() => setIncludeDead(!includeDead)}
-              >
-                <Skull aria-hidden="true" />
-              </Button>
-            </>
+          {canAdmin && status !== "dead" ? (
+            <CitizensCreateActions
+              canAdmin={canAdmin}
+              incestPreventionDepth={incestPreventionDepth}
+              isArchived={isArchived}
+              settlementId={settlementId}
+              worldId={worldId}
+            />
           ) : null}
         </div>
       </div>
 
-      <CardContent>
+      <div>
         {canAdmin ? (
           <CitizensAdminList
-            key={includeDead ? "dead" : "alive"}
-            includeDead={includeDead}
+            onStatusChange={setStatus}
             settlementId={settlementId}
+            status={status}
             worldId={worldId}
           />
         ) : (
@@ -222,8 +291,8 @@ export function CitizensPanel({
             worldId={worldId}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -244,6 +313,9 @@ function CitizensCreateActions({
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<CitizensCreateMode>(null);
+  const [isBulkCultureReligionOpen, setIsBulkCultureReligionOpen] =
+    useState(false);
+  const [isBulkEducationOpen, setIsBulkEducationOpen] = useState(false);
 
   const disabledReason = isArchived
     ? "Creating citizens is disabled because this world is archived."
@@ -276,7 +348,47 @@ function CitizensCreateActions({
           <UserPlus aria-hidden="true" />
           Create player character
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isArchived}
+          title={disabledReason}
+          aria-label="Assign culture/religion to all citizens here"
+          onClick={() => setIsBulkCultureReligionOpen(true)}
+        >
+          <Landmark aria-hidden="true" />
+          Assign culture/religion to all
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isArchived}
+          title={disabledReason}
+          aria-label="Set education level for all citizens here"
+          onClick={() => setIsBulkEducationOpen(true)}
+        >
+          <GraduationCap aria-hidden="true" />
+          Set education level for all
+        </Button>
       </div>
+      {isBulkCultureReligionOpen ? (
+        <BulkAssignCultureReligionDialog
+          onClose={() => setIsBulkCultureReligionOpen(false)}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
+      ) : null}
+      {isBulkEducationOpen ? (
+        <BulkSetEducationDialog
+          onClose={() => setIsBulkEducationOpen(false)}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
+      ) : null}
       {mode === "npc" ? (
         <CreateNpcDialog
           incestPreventionDepth={incestPreventionDepth}
@@ -302,17 +414,238 @@ function CitizensCreateActions({
   );
 }
 
-function CitizensAdminList({
-  includeDead,
+function BulkAssignCultureReligionDialog({
+  onClose,
+  queryClient,
   settlementId,
   worldId,
 }: {
-  readonly includeDead: boolean;
+  readonly onClose: () => void;
+  readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
+  const culturesQuery = useQuery(culturesByWorldQueryOptions(worldId));
+  const religionsQuery = useQuery(religionsByWorldQueryOptions(worldId));
+  const [cultureId, setCultureId] = useState<string | null>(null);
+  const [religionId, setReligionId] = useState<string | null>(null);
+
+  const bulkMutation = useMutation(
+    bulkSetCitizenCultureReligionMutationOptions({ queryClient }),
+  );
+
+  function handleSubmit(): void {
+    bulkMutation.mutate(
+      { cultureId, religionId, settlementId },
+      {
+        onError: (error) => {
+          notifyMutationError(
+            error,
+            "Failed to assign culture/religion to citizens.",
+          );
+        },
+        onSuccess: (citizens) => {
+          notifyMutationSuccess(
+            `Updated ${citizens.length.toString()} citizen(s).`,
+          );
+          onClose();
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Assign culture/religion to all citizens here
+          </DialogTitle>
+          <DialogDescription>
+            Applies to every alive citizen in this settlement. Leaving a field
+            unset leaves that field untouched on each citizen.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Culture</span>
+            <NativeSelect
+              aria-label="Culture"
+              disabled={bulkMutation.isPending}
+              value={cultureId ?? ""}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setCultureId(next === "" ? null : next);
+              }}
+            >
+              <option value="">Leave untouched</option>
+              {culturesQuery.data?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Label>
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Religion</span>
+            <NativeSelect
+              aria-label="Religion"
+              disabled={bulkMutation.isPending}
+              value={religionId ?? ""}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setReligionId(next === "" ? null : next);
+              }}
+            >
+              <option value="">Leave untouched</option>
+              {religionsQuery.data?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Label>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={
+              bulkMutation.isPending ||
+              (cultureId === null && religionId === null)
+            }
+            onClick={handleSubmit}
+          >
+            {bulkMutation.isPending ? "Assigning…" : "Assign"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkSetEducationDialog({
+  onClose,
+  queryClient,
+  settlementId,
+  worldId,
+}: {
+  readonly onClose: () => void;
+  readonly queryClient: QueryClient;
+  readonly settlementId: string;
+  readonly worldId: string;
+}): JSX.Element {
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const educationLevels = educationLevelsQuery.data ?? [];
+  const noEducationSystem =
+    educationLevelsQuery.isSuccess && educationLevels.length === 0;
+  const [educationLevelId, setEducationLevelId] = useState<string | null>(null);
+
+  const bulkMutation = useMutation(
+    bulkSetCitizenEducationMutationOptions({ queryClient }),
+  );
+
+  function handleSubmit(): void {
+    bulkMutation.mutate(
+      { educationLevelId, settlementId },
+      {
+        onError: (error) => {
+          notifyMutationError(
+            error,
+            "Failed to set education level for citizens.",
+          );
+        },
+        onSuccess: (citizens) => {
+          notifyMutationSuccess(
+            `Updated ${citizens.length.toString()} citizen(s).`,
+          );
+          onClose();
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Set education level for all citizens here</DialogTitle>
+          <DialogDescription>
+            Applies to every alive citizen in this settlement.
+          </DialogDescription>
+        </DialogHeader>
+        {noEducationSystem ? (
+          <p className="text-sm italic text-muted-foreground">
+            No education system configured for this world.
+          </p>
+        ) : (
+          <div className="grid gap-3">
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Education level</span>
+              <NativeSelect
+                aria-label="Education level"
+                disabled={bulkMutation.isPending}
+                value={educationLevelId ?? ""}
+                onChange={(event) => {
+                  const next = event.currentTarget.value;
+                  setEducationLevelId(next === "" ? null : next);
+                }}
+              >
+                <option value="">Uneducated</option>
+                {educationLevels.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Label>
+          </div>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={bulkMutation.isPending || noEducationSystem}
+            onClick={handleSubmit}
+          >
+            {bulkMutation.isPending ? "Setting…" : "Set"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CitizensAdminList({
+  onStatusChange,
+  settlementId,
+  status,
+  worldId,
+}: {
+  readonly onStatusChange: (status: CitizenStatus | "all") => void;
+  readonly settlementId: string;
+  readonly status: CitizenStatus | "all";
+  readonly worldId: string;
+}): JSX.Element {
+  const [search, setSearch] = useState("");
+  const [citizenType, setCitizenType] = useState<CitizenType | undefined>(
+    undefined,
+  );
   const [pageIndex, setPageIndex] = useState(0);
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const hasEducationLevels = (educationLevelsQuery.data?.length ?? 0) > 0;
 
   const activeSort = sorting[0];
   const order =
@@ -324,10 +657,16 @@ function CitizensAdminList({
       : undefined;
 
   const filters: CitizenDirectoryFilters = {
+    citizenType,
     order,
+    search: debouncedSearch,
     settlementId,
-    status: includeDead ? "dead" : "alive",
+    status: status === "all" ? undefined : status,
   };
+
+  function resetToFirstPage(): void {
+    setPageIndex(0);
+  }
 
   const citizensQuery = useQuery(
     citizensDirectoryQueryOptions(worldId, filters, {
@@ -340,29 +679,68 @@ function CitizensAdminList({
   const totalCount = citizensQuery.data?.totalCount ?? 0;
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  if (citizensQuery.isPending) {
-    return <TableSkeleton columnCount={6} rowCount={5} />;
-  }
-
-  if (citizensQuery.isError) {
-    return (
-      <ErrorState
-        title="Citizens could not be loaded"
-        description={getErrorDescription(citizensQuery.error)}
-      />
-    );
-  }
-
   return (
     <div className="grid gap-3">
-      {rows.length === 0 ? (
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Input
+          aria-label="Search citizens by name"
+          className="sm:w-[220px]"
+          placeholder="Search by name…"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.currentTarget.value);
+            resetToFirstPage();
+          }}
+        />
+
+        <Select
+          value={citizenType ?? "all"}
+          onValueChange={(value) => {
+            setCitizenType(
+              value === "all" ? undefined : (value as CitizenType),
+            );
+            resetToFirstPage();
+          }}
+        >
+          <SelectTrigger className="sm:w-[170px]" aria-label="Filter by type">
+            <SelectValue placeholder="PC / NPC" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All citizens</SelectItem>
+            <SelectItem value="player_character">Player characters</SelectItem>
+            <SelectItem value="npc">NPCs</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            onStatusChange(value as CitizenStatus | "all");
+            resetToFirstPage();
+          }}
+        >
+          <SelectTrigger className="sm:w-[150px]" aria-label="Filter by status">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="alive">Alive</SelectItem>
+            <SelectItem value="dead">Deceased</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {citizensQuery.isPending ? (
+        <TableSkeleton columnCount={7} rowCount={5} />
+      ) : citizensQuery.isError ? (
+        <ErrorState
+          title="Citizens could not be loaded"
+          description={getErrorDescription(citizensQuery.error)}
+        />
+      ) : rows.length === 0 ? (
         <EmptyState
-          title={includeDead ? "No citizens yet" : "No living citizens"}
-          description={
-            includeDead
-              ? "Citizens added to this settlement will appear here."
-              : "Toggle the skull icon in the header to see deceased citizens."
-          }
+          title="No citizens found"
+          description="Try widening your filters or search."
         />
       ) : (
         <>
@@ -374,7 +752,7 @@ function CitizensAdminList({
           </p>
 
           <DataTable
-            columns={SETTLEMENT_CITIZENS_COLUMNS}
+            columns={buildSettlementCitizensColumns(hasEducationLevels)}
             data={rows}
             getRowId={(row) => row.id}
             sorting={sorting}
@@ -575,12 +953,12 @@ const ASSIGNMENT_SEGMENT_COLORS: Record<
   CitizenAssignmentType | "unassigned",
   string
 > = {
-  standard_job: "bg-[#2a78d6] dark:bg-[#3987e5]",
-  construction_project: "bg-[#1baf7a] dark:bg-[#199e70]",
-  deposit: "bg-[#eda100] dark:bg-[#c98500]",
-  husbandry: "bg-[#008300] dark:bg-[#008300]",
-  culling: "bg-[#4a3aa7] dark:bg-[#9085e9]",
-  trade_route: "bg-[#e87ba4] dark:bg-[#d55181]",
+  standard_job: "bg-category-1-foreground",
+  construction_project: "bg-category-2-foreground",
+  deposit: "bg-category-3-foreground",
+  husbandry: "bg-category-4-foreground",
+  culling: "bg-category-5-foreground",
+  trade_route: "bg-category-7-foreground",
   unassigned: "bg-muted-foreground/40",
 };
 

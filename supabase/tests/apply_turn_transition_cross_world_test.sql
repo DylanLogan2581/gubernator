@@ -71,20 +71,18 @@ where
 --   World A (turn 5, active): the world the attacker is admin of
 --   World B (turn 5, active): the foreign world whose entities should be protected
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'e1200000-0000-0000-0000-000000000001',
     'ATTCW World A',
     5,
-    'private',
     'active'
   ),
   (
     'e1200000-0000-0000-0000-000000000002',
     'ATTCW World B',
     5,
-    'private',
     'active'
   );
 
@@ -278,22 +276,13 @@ values
 
 -- Deposit type in World B
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'e1910000-0000-0000-0000-000000000001',
     'e1200000-0000-0000-0000-000000000002',
     'ATTCW Ore B',
-    'attcw-ore-b',
-    'e1900000-0000-0000-0000-000000000001',
-    1
+    'attcw-ore-b'
   );
 
 -- Deposit instance in World B's settlement B1
@@ -318,24 +307,39 @@ values
 
 -- Managed population type in World B
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'e1a00000-0000-0000-0000-000000000001',
     'e1200000-0000-0000-0000-000000000002',
     'ATTCW Flock Type B',
-    'attcw-flock-type-b',
+    'attcw-flock-type-b'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'e1a00000-0000-0000-0000-000000000001',
     'e1900000-0000-0000-0000-000000000002',
-    'e1900000-0000-0000-0000-000000000003',
     5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'e1a00000-0000-0000-0000-000000000001',
+    'e1900000-0000-0000-0000-000000000003',
+    10
   );
 
 -- Managed population instance in World B's settlement B1

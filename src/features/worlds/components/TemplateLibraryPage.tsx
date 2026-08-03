@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Download, Upload } from "lucide-react";
 import { useRef, useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { notifyMutationSuccess } from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
@@ -46,6 +46,7 @@ function BundledScenarioCard({
     ["Jobs", counts.jobs],
     ["Blueprints", counts.blueprints],
     ["Deposit types", counts.depositTypes],
+    ["Unit types", counts.unitTypes],
   ];
   const summaryItems = allCounts.filter(([, n]) => n > 0);
 
@@ -60,20 +61,20 @@ function BundledScenarioCard({
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    toast.success("Scenario downloaded", {
+    notifyMutationSuccess("Scenario downloaded", {
       description: `Saved as ${scenario.template.meta.slug}.json`,
     });
   }
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           {scenario.name}
         </CardTitle>
         <CardDescription>{scenario.description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
           {summaryItems.map(([label, count]) => (
             <li key={label} className="flex justify-between">
@@ -204,9 +205,7 @@ export function TemplateLibraryPage(): JSX.Element {
 
         {/* Bundled scenarios */}
         <section aria-label="Bundled scenarios">
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Bundled scenarios
-          </h2>
+          <h2 className="mb-3 eyebrow">Bundled scenarios</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {BUNDLED_SCENARIOS.map((scenario) => (
               <BundledScenarioCard

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (20);
+  plan (27);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -71,12 +71,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'af200000-0000-0000-0000-000000000001',
     'AF World',
-    'private',
     'active'
   );
 
@@ -92,6 +91,11 @@ values
     'af300000-0000-0000-0000-000000000002',
     'af200000-0000-0000-0000-000000000001',
     'AF Destination Nation'
+  ),
+  (
+    'af300000-0000-0000-0000-000000000003',
+    'af200000-0000-0000-0000-000000000001',
+    'AF Foreign Nation'
   );
 
 insert into
@@ -106,6 +110,11 @@ values
     'af400000-0000-0000-0000-000000000002',
     'af300000-0000-0000-0000-000000000002',
     'AF Destination Settlement'
+  ),
+  (
+    'af400000-0000-0000-0000-000000000004',
+    'af300000-0000-0000-0000-000000000003',
+    'AF Foreign Settlement'
   );
 
 insert into
@@ -211,6 +220,18 @@ values
     'af300000-0000-0000-0000-000000000002',
     null,
     'af400000-0000-0000-0000-000000000002'
+  ),
+  (
+    'af600000-0000-0000-0000-000000000008',
+    'af200000-0000-0000-0000-000000000001',
+    'npc',
+    'AF NPC Foreign',
+    'alive',
+    null,
+    'none',
+    null,
+    null,
+    'af400000-0000-0000-0000-000000000004'
   );
 
 -- Main trade route used for sequential approval tests (origin → both approved)
@@ -326,10 +347,12 @@ select
 reset role;
 
 -- ===========================================================================
--- CITIZEN RESIDENCY IS NOT REQUIRED: authority is role-based only. The origin
--- manager may stamp the approval with any citizen id (here one residing in the
--- destination settlement) because residency no longer gates approval. Uses a
--- dedicated route so the main route's approval sequence is untouched.
+-- CITIZEN RESIDENCY ON THE SPECIFIC SIDE IS NOT REQUIRED: authority is
+-- role-based only. The origin manager may stamp the approval with a citizen
+-- residing in the destination settlement, since (#1145) only requires the
+-- approver citizen to belong to one of the route's two endpoints, not the
+-- specific side being approved. Uses a dedicated route so the main route's
+-- approval sequence is untouched.
 -- ===========================================================================
 insert into
   public.trade_routes (
@@ -383,6 +406,70 @@ select
     )
     $test$,
     'approver citizen residency is not required (role authority only)'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- FOREIGN CITIZEN (#1145): origin manager has legitimate authority, but the
+-- approver citizen belongs to neither the origin nor destination nation of
+-- this route. Uses a dedicated route so the main route's approval sequence
+-- is untouched.
+-- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000009',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000009',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    6
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000009',
+      'origin',
+      'af600000-0000-0000-0000-000000000008'
+    )
+    $test$,
+    'P0001',
+    'p_approver_citizen_id must be alive and belong to one of the trade route endpoints',
+    'approver citizen belonging to neither endpoint nation is rejected'
   );
 
 reset role;
@@ -727,6 +814,373 @@ select
     4,
     'concurrent approval generates one acceptance notification batch (origin mgr, dest mgr, dual mgr, seeded super admin)'
   );
+
+-- ===========================================================================
+-- TRADE POLICY (#1087)
+-- Second settlement in the Origin Nation, with its own settlement-only
+-- manager (af1...004, previously unused), to test internal routes under a
+-- state_controlled policy.
+-- ===========================================================================
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'af400000-0000-0000-0000-000000000003',
+    'af300000-0000-0000-0000-000000000001',
+    'AF Origin Settlement 2 (internal)'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id,
+    settlement_id
+  )
+values
+  (
+    'af600000-0000-0000-0000-000000000007',
+    'af200000-0000-0000-0000-000000000001',
+    'player_character',
+    'AF Origin Settlement-Only Mgr PC',
+    'alive',
+    'af100000-0000-0000-0000-000000000004',
+    'settlement_manager',
+    null,
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000001'
+  );
+
+update public.nations
+set
+  trade_policy = 'state_controlled'
+where
+  id = 'af300000-0000-0000-0000-000000000001';
+
+-- STATE_CONTROLLED: settlement-only manager cannot approve the external
+-- (state-controlled) origin side.
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000005',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000005',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    12
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000005',
+      'origin',
+      'af600000-0000-0000-0000-000000000007'
+    )
+    $test$,
+    '42501',
+    null,
+    'state_controlled origin nation blocks a settlement-only manager from approving the external side'
+  );
+
+reset role;
+
+-- STATE_CONTROLLED: the nation manager (manage-NATION authority) can still
+-- approve the same side.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000005',
+      'origin',
+      'af600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'nation manager authority satisfies a state_controlled origin policy for approval'
+  );
+
+reset role;
+
+-- INTERNAL ROUTES UNAFFECTED: Origin Nation is still state_controlled, but a
+-- settlement-only manager can approve an internal route between the two
+-- Origin Nation settlements.
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000006',
+    'af400000-0000-0000-0000-000000000003',
+    'af400000-0000-0000-0000-000000000001',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'approved',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000006',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    3
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000006',
+      'destination',
+      'af600000-0000-0000-0000-000000000007'
+    )
+    $test$,
+    'internal (same-nation) approve is unaffected by state_controlled policy'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'af300000-0000-0000-0000-000000000001';
+
+-- CLOSED: blocks approval of an international route outright, even for the
+-- nation manager.
+update public.nations
+set
+  trade_policy = 'closed'
+where
+  id = 'af300000-0000-0000-0000-000000000002';
+
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000007',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'approved',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000007',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    4
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000007',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'P0001',
+    null,
+    'closed destination nation blocks approval even for its own nation manager'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'af300000-0000-0000-0000-000000000002';
+
+-- ===========================================================================
+-- DIPLOMACY (#1088)
+-- At_war arising AFTER a route is proposed (but before the recipient side
+-- approves) still blocks that approval.
+-- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000008',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'approved',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000008',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    5
+  );
+
+insert into
+  public.nation_relationships (from_nation_id, to_nation_id, current_stance)
+values
+  (
+    'af300000-0000-0000-0000-000000000001',
+    'af300000-0000-0000-0000-000000000002',
+    'at_war'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000008',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'P0001',
+    null,
+    'at_war arising after proposal blocks the pending side''s approval'
+  );
+
+reset role;
+
+update public.nation_relationships
+set
+  current_stance = 'neutral'
+where
+  from_nation_id = 'af300000-0000-0000-0000-000000000001'
+  and to_nation_id = 'af300000-0000-0000-0000-000000000002';
+
+-- Peace restored: the same approval now succeeds.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000008',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'peace restored allows the previously-blocked approval to succeed'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- SECURITY DEFINER check

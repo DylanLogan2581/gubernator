@@ -83,8 +83,8 @@ function makeStateResponses(): Record<
     "/rest/v1/namesets": { body: [], status: 200 },
     "/rest/v1/resources": {
       body: [
-        { decay_rate: 0, id: FOOD_ID, slug: "food" },
-        { decay_rate: 0, id: WATER_ID, slug: "fresh-water" },
+        { change_amount: 0, change_mode: "percent", id: FOOD_ID, slug: "food" },
+        { change_amount: 0, change_mode: "percent", id: WATER_ID, slug: "fresh-water" },
       ],
       status: 200,
     },
@@ -104,6 +104,20 @@ function makeStateResponses(): Record<
     "/rest/v1/turn_log_entries": { body: [], status: 200 },
     "/rest/v1/citizen_assignments": { body: [], status: 200 },
     "/rest/v1/partnerships": { body: [], status: 200 },
+    "/rest/v1/nations": { body: [], status: 200 },
+    "/rest/v1/nation_offices": { body: [], status: 200 },
+    "/rest/v1/nation_relationships": { body: [], status: 200 },
+    "/rest/v1/nation_resource_stockpiles": { body: [], status: 200 },
+    "/rest/v1/nation_tax_policies": { body: [], status: 200 },
+    "/rest/v1/nation_treaties": { body: [], status: 200 },
+    "/rest/v1/nation_currencies": { body: [], status: 200 },
+    "/rest/v1/nation_currency_ledger": { body: [], status: 200 },
+    "/rest/v1/education_levels": { body: [], status: 200 },
+    "/rest/v1/education_enrollments": { body: [], status: 200 },
+    "/rest/v1/unit_soldiers": { body: [], status: 200 },
+    "/rest/v1/armies": { body: [], status: 200 },
+    "/rest/v1/army_units": { body: [], status: 200 },
+    "/rest/v1/unit_types": { body: [], status: 200 },
   };
 }
 

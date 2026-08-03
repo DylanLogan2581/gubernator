@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, CalendarCheck2, Users, Wheat, Zap } from "lucide-react";
 
+import { StatStrip } from "@/components/shared/StatStrip";
 import { StatTile } from "@/components/shared/StatTile";
 import { Badge } from "@/components/ui/badge";
 import { settlementBuildingsBySettlementQueryOptions } from "@/features/buildings";
@@ -115,7 +116,7 @@ export function SettlementOverviewStatTiles({
         }).length;
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+    <StatStrip className="md:grid-cols-3 xl:grid-cols-5 xl:gap-x-0 xl:divide-x xl:divide-border xl:[&>*]:px-4 xl:[&>*:first-child]:pl-0 xl:[&>*:last-child]:pr-0">
       <StatTile
         icon={Users}
         label="Population"
@@ -224,6 +225,6 @@ export function SettlementOverviewStatTiles({
         context="Active now"
         isLoading={activeEventsQuery.isPending}
       />
-    </div>
+    </StatStrip>
   );
 }

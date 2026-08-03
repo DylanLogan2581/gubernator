@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NotificationPreferencesSheet } from "./NotificationPreferencesSheet";
 
@@ -15,6 +15,7 @@ vi.mock("../queries/notificationPreferencesQueries", () => ({
       Promise.resolve([
         { enabled: true, notificationType: "turn.completed" },
         { enabled: false, notificationType: "citizen.born" },
+        { enabled: true, notificationType: "citizen.died" },
       ]),
     queryKey: ["notifications", "preferences", userId],
   }),
@@ -29,13 +30,47 @@ vi.mock("../mutations/notificationPreferencesMutations", () => ({
 const USER_ID = "user-1";
 
 describe("NotificationPreferencesSheet", () => {
-  it("opens the sheet and lists every notification type with its current state", async () => {
+  beforeEach(() => {
+    setPreferenceMutationFn.mockClear();
+  });
+
+  it("groups notification types into categories with an enabled count", async () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+
+    expect(
+      await screen.findByRole("button", { name: /turns/i }),
+    ).toHaveTextContent("1/1 on");
+    expect(screen.getByRole("button", { name: /citizens/i })).toHaveTextContent(
+      "1/2 on",
     );
+  });
+
+  it("only marks the category switch as mixed when the category is genuinely mixed", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+
+    const turnsToggleAll = await screen.findByRole("switch", {
+      name: "Toggle all Turns notifications",
+    });
+    const citizensToggleAll = screen.getByRole("switch", {
+      name: /Toggle all Citizens notifications/,
+    });
+
+    expect(turnsToggleAll).not.toHaveAttribute("data-mixed");
+    expect(citizensToggleAll).toHaveAttribute("data-mixed", "");
+  });
+
+  it("opens a category and lists its notification types with their current state", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("button", { name: /turns/i }));
 
     expect(
       await screen.findByRole("switch", { name: /turn completed/i }),
@@ -49,9 +84,8 @@ describe("NotificationPreferencesSheet", () => {
     const user = userEvent.setup();
     renderSheet();
 
-    await user.click(
-      screen.getByRole("button", { name: "Notification preferences" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("button", { name: /turns/i }));
     const turnCompletedSwitch = await screen.findByRole("switch", {
       name: /turn completed/i,
     });
@@ -66,7 +100,26 @@ describe("NotificationPreferencesSheet", () => {
     });
   });
 
-  it("does not render preference rows before the sheet is opened", () => {
+  it("toggles every preference in a category with the category switch", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    const citizensToggleAll = await screen.findByRole("switch", {
+      name: /Toggle all Citizens notifications/,
+    });
+    await user.click(citizensToggleAll);
+
+    await waitFor(() => {
+      expect(setPreferenceMutationFn.mock.calls[0]?.[0]).toEqual({
+        enabled: true,
+        notificationType: "citizen.born",
+        userId: USER_ID,
+      });
+    });
+  });
+
+  it("does not render preference categories before the sheet is opened", () => {
     renderSheet();
 
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();

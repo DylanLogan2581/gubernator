@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (20);
+  plan (21);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -49,55 +49,54 @@ where
 --   World 5: multi-project batch
 --   World 6: building recovery (suspended → active)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a6200000-0000-0000-0000-000000000001',
     'ATTCP Project Advance World',
     3,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000002',
     'ATTCP Project Complete World',
     3,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000003',
     'ATTCP Building Suspend World',
     3,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000004',
     'ATTCP Building Autodeconstruct World',
     3,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000005',
     'ATTCP Multi Batch World',
     3,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000006',
     'ATTCP Building Recovery World',
     3,
-    'private',
     'active'
   ),
   (
     'a6200000-0000-0000-0000-000000000007',
     'ATTCP Assignment Clear World',
     3,
-    'private',
+    'active'
+  ),
+  (
+    'a6200000-0000-0000-0000-000000000008',
+    'ATTCP Building Tier Upgrade World',
+    3,
     'active'
   );
 
@@ -139,6 +138,11 @@ values
     'a6300000-0000-0000-0000-000000000007',
     'a6200000-0000-0000-0000-000000000007',
     'ATTCP Nation 7'
+  ),
+  (
+    'a6300000-0000-0000-0000-000000000008',
+    'a6200000-0000-0000-0000-000000000008',
+    'ATTCP Nation 8'
   );
 
 -- One settlement per world
@@ -179,6 +183,11 @@ values
     'a6400000-0000-0000-0000-000000000007',
     'a6300000-0000-0000-0000-000000000007',
     'ATTCP Settlement 7'
+  ),
+  (
+    'a6400000-0000-0000-0000-000000000008',
+    'a6300000-0000-0000-0000-000000000008',
+    'ATTCP Settlement 8'
   );
 
 -- One building blueprint per world (max_instances_per_settlement = NULL → no cap)
@@ -226,6 +235,12 @@ values
     'a6200000-0000-0000-0000-000000000007',
     'ATTCP Granary 7',
     'attcp-granary-7'
+  ),
+  (
+    'a6500000-0000-0000-0000-000000000008',
+    'a6200000-0000-0000-0000-000000000008',
+    'ATTCP Granary 8',
+    'attcp-granary-8'
   );
 
 -- One tier per blueprint (tier 1, 10 worker-turns required)
@@ -278,6 +293,18 @@ values
     'a6500000-0000-0000-0000-000000000007',
     1,
     10
+  ),
+  (
+    'a6600000-0000-0000-0000-000000000008',
+    'a6500000-0000-0000-0000-000000000008',
+    1,
+    10
+  ),
+  (
+    'a6610000-0000-0000-0000-000000000008',
+    'a6500000-0000-0000-0000-000000000008',
+    2,
+    20
   );
 
 -- Construction projects:
@@ -384,6 +411,16 @@ values
     'suspended',
     2,
     1
+  ),
+  -- B8: World 8, active tier-1 building (will be upgraded to tier 2 in place)
+  (
+    'a6800000-0000-0000-0000-000000000008',
+    'a6400000-0000-0000-0000-000000000008',
+    'a6500000-0000-0000-0000-000000000008',
+    'a6600000-0000-0000-0000-000000000008',
+    'active',
+    0,
+    1
   );
 
 insert into
@@ -447,6 +484,14 @@ values
   (
     'a6300000-0000-0000-0000-000000000007',
     'a6200000-0000-0000-0000-000000000007',
+    3,
+    4,
+    'a6100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'a6300000-0000-0000-0000-000000000008',
+    'a6200000-0000-0000-0000-000000000008',
     3,
     4,
     'a6100000-0000-0000-0000-000000000001',
@@ -1040,6 +1085,44 @@ select
     ),
     0,
     'assignment clear: citizen_assignments row deleted after construction project completes'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 8: building tier upgrade (#1372)
+-- Building B8 (tier 1) is upgraded in place to tier 2 via a buildingTierUpgrades
+-- payload entry. No new settlement_buildings row is created; current_tier_id
+-- changes on the existing row.
+-- ===========================================================================
+select
+  public.apply_turn_transition (
+    'a6200000-0000-0000-0000-000000000008',
+    3,
+    jsonb_build_object(
+      'buildingTierUpgrades',
+      jsonb_build_array(
+        jsonb_build_object(
+          'buildingId',
+          'a6800000-0000-0000-0000-000000000008',
+          'currentTierId',
+          'a6610000-0000-0000-0000-000000000008'
+        )
+      )
+    ),
+    'a6300000-0000-0000-0000-000000000008'::uuid
+  );
+
+select
+  is (
+    (
+      select
+        sb.current_tier_id
+      from
+        public.settlement_buildings sb
+      where
+        sb.id = 'a6800000-0000-0000-0000-000000000008'
+    ),
+    'a6610000-0000-0000-0000-000000000008'::uuid,
+    'building tier upgrade: current_tier_id bumped to tier 2 in place (no new row)'
   );
 
 reset role;

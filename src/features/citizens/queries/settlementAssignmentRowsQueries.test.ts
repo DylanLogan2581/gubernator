@@ -32,7 +32,7 @@ describe("buildSettlementAssignmentRows", () => {
     const deposit: DepositInstance = {
       id: "deposit-1",
       name: "Iron Ore",
-      depositTypeJobName: "Mining",
+      depositTypeName: "Mining",
       maxWorkers: 10,
       status: "active",
     } as DepositInstance;

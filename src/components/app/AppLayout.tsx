@@ -6,6 +6,7 @@ import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
 import { CommandPalette } from "./CommandPalette";
 import { AppShellProviders } from "./sidebar/AppShellProviders";
+import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
 import { useRecentPageTracker } from "./UseRecentPageTracker";
 
 type AppLayoutProps = {
@@ -18,13 +19,14 @@ export function AppLayout({
   headerAction,
 }: AppLayoutProps): JSX.Element {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const { isAuthenticated } = useAppShellWorldContext();
   useRecentPageTracker();
 
   return (
     <SidebarProvider>
       <AppShellProviders>
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-w-0">
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
@@ -40,10 +42,12 @@ export function AppLayout({
           <main id="main-content" className="flex-1 p-4 lg:p-6">
             {children}
           </main>
-          <CommandPalette
-            onOpenChange={setIsCommandPaletteOpen}
-            open={isCommandPaletteOpen}
-          />
+          {isAuthenticated ? (
+            <CommandPalette
+              onOpenChange={setIsCommandPaletteOpen}
+              open={isCommandPaletteOpen}
+            />
+          ) : null}
         </SidebarInset>
       </AppShellProviders>
     </SidebarProvider>

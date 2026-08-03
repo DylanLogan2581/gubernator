@@ -1,6 +1,7 @@
-import { useEffect, type JSX } from "react";
+import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
+import { type EducationLevel } from "@/features/education";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
 import { generateLocalId } from "@/lib/uid";
@@ -11,29 +12,32 @@ import { TierDraftFields } from "../TierDraftFields";
 import type { PendingTierDraft } from "../../hooks/useCreateBlueprintWithTiers";
 
 export default function InlineTierDraftForm({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   defaultTierNumber,
   disabled,
+  worldId,
   onAdd,
   onCancel,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly defaultTierNumber: number;
   readonly disabled: boolean;
+  readonly worldId: string;
   readonly onAdd: (draft: PendingTierDraft) => void;
   readonly onCancel: () => void;
 }): JSX.Element {
-  const form = useTierDraftForm();
-
-  useEffect(() => {
-    form.setTierNumber(String(defaultTierNumber));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const form = useTierDraftForm({ tierNumber: String(defaultTierNumber) });
 
   function handleAdd(): void {
-    const data = form.validate(activeResources, activeJobs);
+    const data = form.validate(
+      activeResources,
+      activeJobs,
+      activeEducationLevels,
+    );
     if (data === null) return;
 
     onAdd({
@@ -55,6 +59,7 @@ export default function InlineTierDraftForm({
       <span className="text-sm font-medium">New tier</span>
       <div className="grid gap-3">
         <TierDraftFields
+          activeEducationLevels={activeEducationLevels}
           activeJobs={activeJobs}
           activeResources={activeResources}
           constructionCosts={form.constructionCosts}
@@ -75,6 +80,7 @@ export default function InlineTierDraftForm({
           upkeepCosts={form.upkeepCosts}
           workerTurns={form.workerTurns}
           workerTurnsInputId="inline-worker-turns-required"
+          worldId={worldId}
         />
       </div>
       <div className="flex gap-2">

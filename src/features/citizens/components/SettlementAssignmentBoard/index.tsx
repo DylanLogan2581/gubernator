@@ -21,7 +21,7 @@ export function SettlementAssignmentBoard({
   return (
     <section
       aria-labelledby="settlement-assignment-board-heading"
-      className="grid gap-3 p-4"
+      className="grid min-w-0 grid-cols-1 gap-3 p-4"
     >
       <h2
         id="settlement-assignment-board-heading"

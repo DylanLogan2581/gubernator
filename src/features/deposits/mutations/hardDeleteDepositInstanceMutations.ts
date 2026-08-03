@@ -57,9 +57,19 @@ export function hardDeleteDepositInstanceMutationOptions({
       hardDeleteDepositInstance(client, input),
     mutationKey: [...depositsQueryKeys.all, "hard-delete-deposit-instance"],
     onSuccess: async (result): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: depositsQueryKeys.instancesBySettlement(result.settlementId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.instancesBySettlement(
+            result.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...depositsQueryKeys.all, "instances-by-nations"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...depositsQueryKeys.all, "instances-by-world"],
+        }),
+      ]);
     },
   });
 }

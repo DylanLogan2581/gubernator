@@ -182,7 +182,7 @@ export function WorldSwitcher({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="gap-2">
-                  <Link to="/worlds">
+                  <Link to="/worlds" search={{ action: "create" }}>
                     <Plus
                       className="size-3.5 shrink-0 text-muted-foreground"
                       aria-hidden="true"
@@ -191,7 +191,7 @@ export function WorldSwitcher({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="gap-2">
-                  <Link to="/worlds">
+                  <Link to="/worlds" search={{ action: "import" }}>
                     <Upload
                       className="size-3.5 shrink-0 text-muted-foreground"
                       aria-hidden="true"

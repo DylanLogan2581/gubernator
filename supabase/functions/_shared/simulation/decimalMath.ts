@@ -133,3 +133,12 @@ export function formatStockpileForDisplay(value: number): string {
 export function roundToDatabaseScale(value: DecimalValue): DecimalValue {
   return Math.round(value * 10000) / 10000;
 }
+
+/**
+ * Floors a float64 value to the database scale (4 decimal places), never
+ * rounding up. Use for deterministic derived amounts (e.g. tax collection)
+ * where over-crediting by a fraction of a unit must never happen.
+ */
+export function floorToDatabaseScale(value: DecimalValue): DecimalValue {
+  return Math.floor(value * 10000) / 10000;
+}

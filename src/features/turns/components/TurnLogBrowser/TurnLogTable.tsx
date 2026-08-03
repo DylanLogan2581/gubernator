@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { entityRoute } from "@/lib/entityRoutes";
 
 import { useTurnLogEntityLookup } from "../../hooks/useTurnLogEntityLookup";
 import {
@@ -30,7 +31,7 @@ import {
 } from "../../utils/aggregateJobProcessedRows";
 import { formatResourceDeltas } from "../../utils/formatResourceDeltas";
 import { isTurnLogRowExpandable } from "../../utils/isTurnLogRowExpandable";
-import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+import { logCategoryLabel } from "../../utils/logCategoryLabels";
 
 import { EntityRef } from "./EntityRef";
 import { TurnLogPayloadRenderer } from "./TurnLogPayloadRenderer";
@@ -60,11 +61,11 @@ function ScopeCell({
       <EntityRef
         key="settlement"
         name={entry.settlementName}
-        href={
-          resolvedNationId === null
-            ? null
-            : `/worlds/${worldId}/nations/${resolvedNationId}/settlements/${entry.settlementId}`
-        }
+        href={entityRoute(worldId, {
+          kind: "settlement",
+          nationId: resolvedNationId,
+          settlementId: entry.settlementId,
+        })}
         kindLabel="Settlement"
       />,
     );
@@ -75,7 +76,10 @@ function ScopeCell({
       <EntityRef
         key="nation"
         name={entry.nationName}
-        href={`/worlds/${worldId}/nations/${entry.nationId}`}
+        href={entityRoute(worldId, {
+          kind: "nation",
+          nationId: entry.nationId,
+        })}
         kindLabel="Nation"
       />,
     );
@@ -86,7 +90,10 @@ function ScopeCell({
       <EntityRef
         key="citizen"
         name={entry.citizenName}
-        href={`/worlds/${worldId}/citizens/${entry.citizenId}`}
+        href={entityRoute(worldId, {
+          kind: "citizen",
+          citizenId: entry.citizenId,
+        })}
         kindLabel="Citizen"
       />,
     );
@@ -249,7 +256,7 @@ function buildColumns(
               : "standard_job.processed";
         return (
           <Badge variant="outline" className="font-mono text-xs">
-            {LOG_CATEGORY_LABELS[logCategory] ?? logCategory}
+            {logCategoryLabel(logCategory)}
           </Badge>
         );
       },
@@ -278,8 +285,7 @@ function buildColumns(
           );
         }
         if (original.kind === "category-summary") {
-          const label =
-            LOG_CATEGORY_LABELS[original.logCategory] ?? original.logCategory;
+          const label = logCategoryLabel(original.logCategory);
           return (
             <span className="text-sm">
               <strong>{label}</strong> ×{original.count}

@@ -6,9 +6,8 @@
 --   is_active_app_user()  — true only for active application users
 --   is_super_admin()      — false for normal users, true for flagged users
 --   is_world_admin()      — false for outsiders, true for owners and admins
---   has_world_access()    — covers all access paths (public, owner, admin,
---                           super admin) and denies private worlds to others
---                           including hidden/private worlds
+--   has_world_access()    — covers all access paths (world admin, super
+--                           admin) and denies worlds to outsiders
 --   Super-admin elevation guard trigger
 begin;
 
@@ -76,24 +75,21 @@ where
 
 -- Create a private world owned by owner, and a public world.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f1000000-0000-0000-0000-000000000001',
     'Private World',
-    'private',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'Public World',
-    'public',
     'active'
   ),
   (
     'f3000000-0000-0000-0000-000000000003',
     'Hidden World',
-    'private',
     'active'
   );
 
@@ -370,7 +366,7 @@ select
 
 reset role;
 
--- Any authenticated user can access a public world
+-- Outsiders no longer gain access through a world-wide visibility path.
 set
   local role authenticated;
 
@@ -380,8 +376,8 @@ set
 select
   is (
     public.has_world_access ('f2000000-0000-0000-0000-000000000002'),
-    true,
-    'has_world_access returns true for outsider on public world'
+    false,
+    'has_world_access returns false for outsider on world without admin/pc access'
   );
 
 reset role;
@@ -484,7 +480,7 @@ select
   is (
     public.has_world_access ('f2000000-0000-0000-0000-000000000002'),
     false,
-    'has_world_access returns false for a suspended user on a public world'
+    'has_world_access returns false for a suspended user without world admin access'
   );
 
 reset role;

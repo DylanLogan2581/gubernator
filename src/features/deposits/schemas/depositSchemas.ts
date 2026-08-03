@@ -33,19 +33,40 @@ export const workerInputEntrySchema = z.strictObject({
 
 const workerInputArraySchema = z.array(workerInputEntrySchema);
 
+export const depositTypeJobSchema = z.strictObject({
+  jobId: jobIdSchema,
+  outputUnitsPerWorker: outputUnitsPerWorkerSchema,
+  workerInputsJson: workerInputArraySchema,
+});
+
+const depositTypeJobsArraySchema = z
+  .array(depositTypeJobSchema)
+  .min(1, "At least one linked job is required.")
+  .refine(
+    (jobs) => new Set(jobs.map((j) => j.jobId)).size === jobs.length,
+    "Each job may only be linked once per deposit type.",
+  );
+
 const depositTypeIconSchema = z
   .string()
   .max(64, "Icon name is too long.")
   .optional()
   .nullable();
 
+const depositTypeIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 export const createDepositTypeInputSchema = z.strictObject({
   icon: depositTypeIconSchema,
-  jobId: jobIdSchema,
+  iconColor: depositTypeIconColorSchema,
+  jobs: depositTypeJobsArraySchema,
   name: depositTypeNameSchema,
-  outputUnitsPerWorker: outputUnitsPerWorkerSchema,
   slug: depositTypeSlugSchema,
-  workerInputsJson: workerInputArraySchema.optional(),
   worldId: worldIdSchema,
 });
 
@@ -53,21 +74,19 @@ export const updateDepositTypeInputSchema = z
   .strictObject({
     depositTypeId: depositTypeIdSchema,
     icon: depositTypeIconSchema,
-    jobId: jobIdSchema.optional(),
+    iconColor: depositTypeIconColorSchema,
+    jobs: depositTypeJobsArraySchema.optional(),
     name: depositTypeNameSchema.optional(),
-    outputUnitsPerWorker: outputUnitsPerWorkerSchema.optional(),
     slug: depositTypeSlugSchema.optional(),
-    workerInputsJson: workerInputArraySchema.optional(),
     worldId: worldIdSchema,
   })
   .superRefine((value, ctx): void => {
     if (
       value.name === undefined &&
       value.slug === undefined &&
-      value.jobId === undefined &&
-      value.outputUnitsPerWorker === undefined &&
-      value.workerInputsJson === undefined &&
-      value.icon === undefined
+      value.jobs === undefined &&
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",
@@ -98,6 +117,8 @@ export type CreateDepositTypeInput = z.input<
 export type CreateDepositTypeValues = z.output<
   typeof createDepositTypeInputSchema
 >;
+export type DepositTypeJobInput = z.input<typeof depositTypeJobSchema>;
+export type DepositTypeJobValues = z.output<typeof depositTypeJobSchema>;
 export type HardDeleteDepositTypeInput = z.input<
   typeof hardDeleteDepositTypeInputSchema
 >;

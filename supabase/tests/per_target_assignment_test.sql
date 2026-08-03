@@ -61,12 +61,11 @@ where
   id = 'fe100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA World',
-    'private',
     'active'
   );
 
@@ -157,23 +156,13 @@ values
 
 -- deposit_types: fe7...001 = active deposit type (job = fe6...001)
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'fe700000-0000-0000-0000-000000000001',
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA Ore',
     'fepta-ore',
-    'fe600000-0000-0000-0000-000000000001',
-    5,
     false
   );
 
@@ -181,25 +170,13 @@ values
 --   fe8...001 = active type with active jobs
 --   fe8...002 = active type with jobs that will be trashed
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    is_trashed
-  )
+  public.managed_population_types (id, world_id, name, slug, is_trashed)
 values
   (
     'fe800000-0000-0000-0000-000000000001',
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA Cattle',
     'fepta-cattle',
-    'fe600000-0000-0000-0000-000000000002',
-    'fe600000-0000-0000-0000-000000000003',
-    10,
     false
   ),
   (
@@ -207,10 +184,43 @@ values
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA Pigs',
     'fepta-pigs',
-    'fe600000-0000-0000-0000-000000000004',
-    'fe600000-0000-0000-0000-000000000005',
-    10,
     false
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'fe800000-0000-0000-0000-000000000001',
+    'fe600000-0000-0000-0000-000000000002',
+    10
+  ),
+  (
+    'fe800000-0000-0000-0000-000000000002',
+    'fe600000-0000-0000-0000-000000000004',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'fe800000-0000-0000-0000-000000000001',
+    'fe600000-0000-0000-0000-000000000003',
+    10
+  ),
+  (
+    'fe800000-0000-0000-0000-000000000002',
+    'fe600000-0000-0000-0000-000000000005',
+    10
   );
 
 -- Now trash the two jobs used by mpt2

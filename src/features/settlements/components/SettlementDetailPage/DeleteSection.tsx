@@ -52,12 +52,12 @@ export function SettlementDeleteSection({
   }
 
   return (
-    <section
-      aria-labelledby="settlement-delete-heading"
-      className="grid gap-3 rounded-md border border-destructive/30 bg-card p-4 text-card-foreground"
-    >
-      <div className="space-y-1">
-        <h2 id="settlement-delete-heading" className="text-base font-medium">
+    <section aria-labelledby="settlement-delete-heading" className="grid gap-3">
+      <div className="grid gap-1">
+        <h2
+          id="settlement-delete-heading"
+          className="border-b border-border pb-2 text-base font-medium text-seal"
+        >
           Danger zone
         </h2>
         <p className="text-sm text-muted-foreground">

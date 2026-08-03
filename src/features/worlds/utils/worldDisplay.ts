@@ -4,6 +4,7 @@ import {
   resolveTurnCalendarDate,
   worldCalendarConfigSchema,
 } from "@/features/calendar";
+import { formatRelativeTime } from "@/lib/formatDate";
 import type { Tables } from "@/types/database";
 
 import type {
@@ -24,9 +25,9 @@ type WorldRow = Pick<
   | "name"
   | "status"
   | "updated_at"
-  | "visibility"
 > & {
   readonly calendar_config_json?: Tables<"worlds">["calendar_config_json"];
+  readonly hero_path?: Tables<"worlds">["hero_path"];
   readonly thumbnail_path?: Tables<"worlds">["thumbnail_path"];
 };
 
@@ -36,7 +37,6 @@ export function toAccessibleWorld(
 ): AccessibleWorld {
   const accessTarget = {
     id: world.id,
-    visibility: world.visibility,
   };
   const planningTurnNumber = resolvePlanningTurnNumber(
     world.current_turn_number,
@@ -55,6 +55,7 @@ export function toAccessibleWorld(
     canManage: accessContext.canAdminWorld(accessTarget),
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
+    heroPath: world.hero_path ?? null,
     id: world.id,
     incestPreventionDepth: world.incest_prevention_depth,
     inWorldDateLabel: resolveInWorldDateLabel(
@@ -66,7 +67,6 @@ export function toAccessibleWorld(
       planningTurnNumber,
     ),
     isArchived: world.status === "archived",
-    isHidden: world.visibility !== "public",
     isTrashed: world.is_trashed,
     name: world.name,
     nextInWorldDateLabel: resolveInWorldDateLabel(
@@ -79,8 +79,28 @@ export function toAccessibleWorld(
     status: world.status,
     thumbnailPath: world.thumbnail_path ?? null,
     updatedAt: world.updated_at,
-    visibility: world.visibility,
   };
+}
+
+export function formatPlayerCharacterCount(count: number): string {
+  if (count <= 0) {
+    return "No player characters";
+  }
+
+  return `${count} player character${count === 1 ? "" : "s"}`;
+}
+
+export function formatLastTurnLabel(
+  lastTransitionAt: string | null,
+  now?: Date,
+): string {
+  if (lastTransitionAt === null) {
+    return "Never";
+  }
+
+  return now === undefined
+    ? formatRelativeTime(lastTransitionAt)
+    : formatRelativeTime(lastTransitionAt, now);
 }
 
 export function createWorldSlug(name: string, id: string): string {

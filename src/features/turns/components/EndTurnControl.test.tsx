@@ -607,6 +607,95 @@ describe("EndTurnControl", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  it("shows unready nations and requires the override checkbox before confirming", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      nationReadinessRows: [
+        createNationReadinessRow({
+          eligible_voter_count: 5,
+          government_type: "republic",
+          is_ready: false,
+          nation_id: "nation-1",
+          nation_name: "Republic Nation",
+          readiness_mode: "office_majority",
+          true_vote_count: 2,
+        }),
+      ],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    expect(await screen.findByText("Nation readiness")).toBeDefined();
+    expect(screen.getByText("Republic Nation")).toBeDefined();
+    expect(screen.getByText("Republic — 2/5 senators voted")).toBeDefined();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+    expect(dialog).toHaveTextContent("1 nation not ready:");
+    expect(dialog).toHaveTextContent("Republic — 2/5 senators voted");
+
+    const confirmButton = screen.getByRole("button", {
+      name: "Confirm turn transition",
+    });
+    expect(confirmButton).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: "Advance anyway" }));
+    expect(confirmButton).toBeEnabled();
+
+    await user.click(confirmButton);
+
+    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-simulation", {
+      body: {
+        expectedTurnNumber: 7,
+        worldId: "world-1",
+      },
+    });
+  });
+
+  it("does not require an override for nations with no settlements", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      nationReadinessRows: [
+        createNationReadinessRow({
+          eligible_voter_count: 0,
+          has_settlements: false,
+          is_ready: false,
+          nation_id: "nation-empty",
+          nation_name: "Empty Nation",
+          true_vote_count: 0,
+        }),
+      ],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    expect(screen.queryByText("Nation readiness")).toBeNull();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+    expect(dialog).not.toHaveTextContent("Empty Nation");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Confirm turn transition" }),
+    ).toBeEnabled();
+  });
+
   it("closes the dialog when Escape is pressed", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
@@ -645,6 +734,16 @@ type TestSettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+};
+type TestNationReadinessRow = {
+  readonly eligible_voter_count: number;
+  readonly government_type: string;
+  readonly has_settlements: boolean;
+  readonly is_ready: boolean;
+  readonly nation_id: string;
+  readonly nation_name: string;
+  readonly readiness_mode: string;
+  readonly true_vote_count: number;
 };
 
 function renderEndTurnControl({
@@ -722,10 +821,12 @@ function createClientFixture({
     },
     error: null,
   },
+  nationReadinessRows = [],
   settlementQueryError,
   settlementRows,
 }: {
   readonly invokeResult?: FunctionInvokeResult;
+  readonly nationReadinessRows?: readonly TestNationReadinessRow[];
   readonly settlementQueryError?: Error;
   readonly settlementRows: readonly TestSettlementReadinessRow[];
 }): ClientFixture {
@@ -747,6 +848,9 @@ function createClientFixture({
       functions: {
         invoke,
       },
+      rpc: vi.fn(() =>
+        Promise.resolve({ data: nationReadinessRows, error: null }),
+      ),
     },
     invoke,
   };
@@ -778,6 +882,22 @@ function createSettlementRow(
     auto_ready_enabled: false,
     id: "settlement-1",
     is_ready_current_turn: false,
+    ...overrides,
+  };
+}
+
+function createNationReadinessRow(
+  overrides: Partial<TestNationReadinessRow> = {},
+): TestNationReadinessRow {
+  return {
+    eligible_voter_count: 1,
+    government_type: "monarchy",
+    has_settlements: true,
+    is_ready: true,
+    nation_id: "nation-1",
+    nation_name: "Nation One",
+    readiness_mode: "ruler_only",
+    true_vote_count: 1,
     ...overrides,
   };
 }

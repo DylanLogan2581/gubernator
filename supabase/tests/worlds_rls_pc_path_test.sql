@@ -68,12 +68,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '82000000-0000-0000-0000-000000000001',
     'PC Test Private World',
-    'private',
     'active'
   );
 

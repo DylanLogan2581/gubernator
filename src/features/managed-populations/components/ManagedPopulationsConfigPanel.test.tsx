@@ -42,7 +42,6 @@ const POPULATION_TYPE_ID = "00000000-0000-0000-0000-000000000002";
 const HUSBANDRY_JOB_ID = "00000000-0000-0000-0000-000000000003";
 const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000004";
 const HUSBANDRY_JOB_ID_2 = "00000000-0000-0000-0000-000000000005";
-const CULLING_JOB_ID_2 = "00000000-0000-0000-0000-000000000006";
 
 describe("ManagedPopulationsConfigPanel", () => {
   beforeEach(() => {
@@ -86,7 +85,7 @@ describe("ManagedPopulationsConfigPanel", () => {
     ).toBeNull();
   });
 
-  it("shows population types with name, growth rate, and workers per N", async () => {
+  it("shows population types with name and growth rate", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         husbandryJobRows: [],
@@ -95,7 +94,6 @@ describe("ManagedPopulationsConfigPanel", () => {
           createPopulationTypeRow({
             name: "Cattle",
             growth_rate: 0.05,
-            husbandry_workers_per_n_animals: 2,
           }),
         ],
         resourceRows: [],
@@ -105,8 +103,8 @@ describe("ManagedPopulationsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Cattle");
-    expect(screen.getByText(/5\.0% growth/)).toBeDefined();
-    expect(screen.getByText(/2 workers\/N/)).toBeDefined();
+    const row = screen.getByText("Cattle").closest("tr");
+    expect(row).toHaveTextContent("5.0%");
   });
 
   it("shows linked husbandry and culling job names in the row", async () => {
@@ -128,8 +126,20 @@ describe("ManagedPopulationsConfigPanel", () => {
         ],
         populationTypeRows: [
           createPopulationTypeRow({
-            husbandry_job_id: HUSBANDRY_JOB_ID,
-            culling_job_id: CULLING_JOB_ID,
+            managed_population_husbandry_jobs: [
+              {
+                id: "husbandry-job-row-1",
+                job_id: HUSBANDRY_JOB_ID,
+                workers_per_n_animals: 2,
+              },
+            ],
+            managed_population_culling_jobs: [
+              {
+                id: "culling-job-row-1",
+                job_id: CULLING_JOB_ID,
+                max_cull_per_worker: 5,
+              },
+            ],
             name: "Cattle",
           }),
         ],
@@ -140,8 +150,9 @@ describe("ManagedPopulationsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Cattle");
-    expect(await screen.findByText(/Cattle Husbandry/)).toBeDefined();
-    expect(await screen.findByText(/Cattle Culling/)).toBeDefined();
+    const row = screen.getByText("Cattle").closest("tr");
+    expect(row).toHaveTextContent("Cattle Husbandry");
+    expect(row).toHaveTextContent("Cattle Culling");
   });
 
   it("shows empty state with create link when no husbandry or culling jobs exist in create form", async () => {
@@ -170,10 +181,14 @@ describe("ManagedPopulationsConfigPanel", () => {
     expect(within(dialog).getByText("No culling jobs yet")).toBeDefined();
     expect(within(dialog).getByText("Create culling job")).toBeDefined();
     expect(
-      within(dialog).queryByRole("combobox", { name: "Husbandry job" }),
+      within(dialog).queryByRole("combobox", {
+        name: "Husbandry job 1 linked job",
+      }),
     ).toBeNull();
     expect(
-      within(dialog).queryByRole("combobox", { name: "Culling job" }),
+      within(dialog).queryByRole("combobox", {
+        name: "Culling job 1 linked job",
+      }),
     ).toBeNull();
   });
 
@@ -286,12 +301,12 @@ describe("ManagedPopulationsConfigPanel", () => {
     expect(within(dialog).getByText("slug: cattle")).toBeDefined();
 
     const husbandrySelect = within(dialog).getByRole("combobox", {
-      name: "Husbandry job",
+      name: "Husbandry job 1 linked job",
     });
     await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID);
 
     const cullingSelect = within(dialog).getByRole("combobox", {
-      name: "Culling job",
+      name: "Culling job 1 linked job",
     });
     await user.selectOptions(cullingSelect, CULLING_JOB_ID);
 
@@ -309,8 +324,20 @@ describe("ManagedPopulationsConfigPanel", () => {
   it("emits a success toast after editing a managed population type", async () => {
     const user = userEvent.setup();
     const populationTypeRow = createPopulationTypeRow({
-      husbandry_job_id: HUSBANDRY_JOB_ID,
-      culling_job_id: CULLING_JOB_ID,
+      managed_population_husbandry_jobs: [
+        {
+          id: "husbandry-job-row-1",
+          job_id: HUSBANDRY_JOB_ID,
+          workers_per_n_animals: 2,
+        },
+      ],
+      managed_population_culling_jobs: [
+        {
+          id: "culling-job-row-1",
+          job_id: CULLING_JOB_ID,
+          max_cull_per_worker: 5,
+        },
+      ],
       name: "Cattle",
     });
     requireSupabaseClient.mockReturnValue(
@@ -361,7 +388,13 @@ describe("ManagedPopulationsConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("shows inline error when selected husbandry job is already linked to another type", async () => {
+  // Job linkage is now scoped per population type (managed_population_
+  // husbandry_jobs_unique / _culling_jobs_unique are keyed on (population
+  // type, job), not world-wide, #1247), so a job can be linked to multiple
+  // population types and the same job can appear as both a husbandry and a
+  // culling job. The only remaining client-side conflict is a duplicate job
+  // selected twice within the same purpose's own rows in one form.
+  it("shows inline error when the same job is selected in two husbandry job rows", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -381,117 +414,6 @@ describe("ManagedPopulationsConfigPanel", () => {
           createJobRow({
             id: CULLING_JOB_ID,
             name: "Cattle Culling",
-            job_type: "culling",
-          }),
-        ],
-        populationTypeRows: [
-          createPopulationTypeRow({
-            husbandry_job_id: HUSBANDRY_JOB_ID,
-            culling_job_id: CULLING_JOB_ID,
-            name: "Cattle",
-          }),
-        ],
-        resourceRows: [],
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByRole("heading", { name: "Managed Population Types" });
-    await user.click(
-      screen.getByRole("button", { name: "Add population type" }),
-    );
-
-    const dialog = await screen.findByRole("dialog", {
-      name: "Create managed population type",
-    });
-    const husbandrySelect = within(dialog).getByRole("combobox", {
-      name: "Husbandry job",
-    });
-    await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID);
-
-    expect(
-      within(dialog).getByText('This job is already linked to "Cattle".'),
-    ).toBeDefined();
-
-    expect(
-      within(dialog).getByRole("button", { name: "Create" }),
-    ).toBeDisabled();
-  });
-
-  it("shows inline error when selected culling job is already linked to another type", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        husbandryJobRows: [
-          createJobRow({
-            id: HUSBANDRY_JOB_ID,
-            name: "Cattle Husbandry",
-            job_type: "husbandry",
-          }),
-        ],
-        cullingJobRows: [
-          createJobRow({
-            id: CULLING_JOB_ID,
-            name: "Cattle Culling",
-            job_type: "culling",
-          }),
-          createJobRow({
-            id: CULLING_JOB_ID_2,
-            name: "Sheep Culling",
-            job_type: "culling",
-          }),
-        ],
-        populationTypeRows: [
-          createPopulationTypeRow({
-            husbandry_job_id: HUSBANDRY_JOB_ID,
-            culling_job_id: CULLING_JOB_ID,
-            name: "Cattle",
-          }),
-        ],
-        resourceRows: [],
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByRole("heading", { name: "Managed Population Types" });
-    await user.click(
-      screen.getByRole("button", { name: "Add population type" }),
-    );
-
-    const dialog = await screen.findByRole("dialog", {
-      name: "Create managed population type",
-    });
-    const cullingSelect = within(dialog).getByRole("combobox", {
-      name: "Culling job",
-    });
-    await user.selectOptions(cullingSelect, CULLING_JOB_ID);
-
-    expect(
-      within(dialog).getByText('This job is already linked to "Cattle".'),
-    ).toBeDefined();
-
-    expect(
-      within(dialog).getByRole("button", { name: "Create" }),
-    ).toBeDisabled();
-  });
-
-  it("shows inline error when husbandry and culling jobs are the same", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        husbandryJobRows: [
-          createJobRow({
-            id: HUSBANDRY_JOB_ID,
-            name: "Cattle Husbandry",
-            job_type: "husbandry",
-          }),
-        ],
-        cullingJobRows: [
-          createJobRow({
-            id: HUSBANDRY_JOB_ID,
-            name: "Cattle Husbandry",
             job_type: "culling",
           }),
         ],
@@ -511,91 +433,29 @@ describe("ManagedPopulationsConfigPanel", () => {
       name: "Create managed population type",
     });
 
-    const husbandrySelect = within(dialog).getByRole("combobox", {
-      name: "Husbandry job",
-    });
-    await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID);
+    await user.click(
+      within(dialog).getAllByRole("button", { name: "Add job" })[0],
+    );
 
-    const cullingSelect = within(dialog).getByRole("combobox", {
-      name: "Culling job",
+    const firstHusbandrySelect = within(dialog).getByRole("combobox", {
+      name: "Husbandry job 1 linked job",
     });
-    await user.selectOptions(cullingSelect, HUSBANDRY_JOB_ID);
+    await user.selectOptions(firstHusbandrySelect, HUSBANDRY_JOB_ID);
+
+    const secondHusbandrySelect = within(dialog).getByRole("combobox", {
+      name: "Husbandry job 2 linked job",
+    });
+    await user.selectOptions(secondHusbandrySelect, HUSBANDRY_JOB_ID);
 
     expect(
       within(dialog).getAllByText(
-        "Husbandry job and culling job must be different.",
+        "This job is already selected in another row above.",
       ),
     ).toHaveLength(2);
 
     expect(
       within(dialog).getByRole("button", { name: "Create" }),
     ).toBeDisabled();
-  });
-
-  it("shows inline error in edit form when husbandry job is already linked to a different type", async () => {
-    const user = userEvent.setup();
-    const populationTypeRow = createPopulationTypeRow({
-      husbandry_job_id: HUSBANDRY_JOB_ID,
-      culling_job_id: CULLING_JOB_ID,
-      name: "Cattle",
-    });
-    const otherPopulationTypeRow = createPopulationTypeRow({
-      id: "00000000-0000-0000-0000-000000000020",
-      husbandry_job_id: HUSBANDRY_JOB_ID_2,
-      culling_job_id: CULLING_JOB_ID_2,
-      name: "Sheep",
-    });
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        husbandryJobRows: [
-          createJobRow({
-            id: HUSBANDRY_JOB_ID,
-            name: "Cattle Husbandry",
-            job_type: "husbandry",
-          }),
-          createJobRow({
-            id: HUSBANDRY_JOB_ID_2,
-            name: "Sheep Husbandry",
-            job_type: "husbandry",
-          }),
-        ],
-        cullingJobRows: [
-          createJobRow({
-            id: CULLING_JOB_ID,
-            name: "Cattle Culling",
-            job_type: "culling",
-          }),
-          createJobRow({
-            id: CULLING_JOB_ID_2,
-            name: "Sheep Culling",
-            job_type: "culling",
-          }),
-        ],
-        populationTypeRows: [populationTypeRow, otherPopulationTypeRow],
-        resourceRows: [],
-        updateResult: { data: populationTypeRow, error: null },
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByText("Cattle");
-    const editButtons = screen.getAllByRole("button", { name: "Edit" });
-    await user.click(editButtons[0]);
-
-    await screen.findByRole("heading", {
-      name: "Edit managed population type",
-    });
-    const husbandrySelect = screen.getByRole("combobox", {
-      name: "Husbandry job",
-    });
-    await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID_2);
-
-    expect(
-      screen.getByText('This job is already linked to "Sheep".'),
-    ).toBeDefined();
-
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   it("hides the Edit button for non-admin users", async () => {
@@ -740,11 +600,11 @@ describe("ManagedPopulationsConfigPanel", () => {
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Cattle");
     await user.selectOptions(
-      screen.getByRole("combobox", { name: "Husbandry job" }),
+      screen.getByRole("combobox", { name: "Husbandry job 1 linked job" }),
       HUSBANDRY_JOB_ID,
     );
     await user.selectOptions(
-      screen.getByRole("combobox", { name: "Culling job" }),
+      screen.getByRole("combobox", { name: "Culling job 1 linked job" }),
       CULLING_JOB_ID,
     );
 
@@ -769,8 +629,20 @@ describe("ManagedPopulationsConfigPanel", () => {
   it("edit form displays growth_rate 0.05 as 5 in the percent input", async () => {
     const user = userEvent.setup();
     const populationTypeRow = createPopulationTypeRow({
-      husbandry_job_id: HUSBANDRY_JOB_ID,
-      culling_job_id: CULLING_JOB_ID,
+      managed_population_husbandry_jobs: [
+        {
+          id: "husbandry-job-row-1",
+          job_id: HUSBANDRY_JOB_ID,
+          workers_per_n_animals: 2,
+        },
+      ],
+      managed_population_culling_jobs: [
+        {
+          id: "culling-job-row-1",
+          job_id: CULLING_JOB_ID,
+          max_cull_per_worker: 5,
+        },
+      ],
       name: "Cattle",
       growth_rate: 0.05,
     });
@@ -812,8 +684,20 @@ describe("ManagedPopulationsConfigPanel", () => {
   it("edit form submits a 0–1 decimal when the user enters a whole percent", async () => {
     const user = userEvent.setup();
     const populationTypeRow = createPopulationTypeRow({
-      husbandry_job_id: HUSBANDRY_JOB_ID,
-      culling_job_id: CULLING_JOB_ID,
+      managed_population_husbandry_jobs: [
+        {
+          id: "husbandry-job-row-1",
+          job_id: HUSBANDRY_JOB_ID,
+          workers_per_n_animals: 2,
+        },
+      ],
+      managed_population_culling_jobs: [
+        {
+          id: "culling-job-row-1",
+          job_id: CULLING_JOB_ID,
+          max_cull_per_worker: 5,
+        },
+      ],
       name: "Cattle",
       growth_rate: 0.05,
     });
@@ -902,16 +786,29 @@ function createQueryClient(): QueryClient {
   });
 }
 
+type TestManagedPopulationHusbandryJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+type TestManagedPopulationCullingJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
+};
+
 type TestPopulationTypeRow = {
   readonly created_at: string;
-  readonly culling_job_id: string;
   readonly culling_outputs_json: readonly unknown[];
   readonly growth_rate: number;
-  readonly husbandry_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly unknown[];
+  readonly managed_population_culling_jobs: readonly TestManagedPopulationCullingJobRow[];
+  readonly managed_population_husbandry_jobs: readonly TestManagedPopulationHusbandryJobRow[];
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly regular_outputs_json: readonly unknown[];
@@ -924,7 +821,7 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
@@ -958,14 +855,27 @@ function createPopulationTypeRow(
 ): TestPopulationTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
-    culling_job_id: CULLING_JOB_ID,
     culling_outputs_json: [],
     growth_rate: 0.05,
-    husbandry_job_id: HUSBANDRY_JOB_ID,
-    husbandry_workers_per_n_animals: 2,
+    icon: null,
+    icon_color: null,
     id: POPULATION_TYPE_ID,
     is_trashed: false,
     maintenance_rules_json: [],
+    managed_population_culling_jobs: [
+      {
+        id: "culling-job-row-1",
+        job_id: CULLING_JOB_ID,
+        max_cull_per_worker: 5,
+      },
+    ],
+    managed_population_husbandry_jobs: [
+      {
+        id: "husbandry-job-row-1",
+        job_id: HUSBANDRY_JOB_ID,
+        workers_per_n_animals: 2,
+      },
+    ],
     name: "Test Population",
     referencing_jobs: [],
     regular_outputs_json: [],
@@ -981,7 +891,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
     culling_mpt: [],
-    deposit_types: [],
+    deposit_type_jobs: [],
     husbandry_mpt: [],
     id: HUSBANDRY_JOB_ID,
     inputs_json: [],
@@ -996,6 +906,15 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,
     ...overrides,
+  };
+}
+
+function createJobLinkTableBuilder(): unknown {
+  return {
+    delete: vi.fn(() => ({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    })),
+    insert: vi.fn().mockResolvedValue({ error: null }),
   };
 }
 
@@ -1037,6 +956,12 @@ function createClient({
           updateResult,
         );
       }
+      if (
+        table === "managed_population_husbandry_jobs" ||
+        table === "managed_population_culling_jobs"
+      ) {
+        return createJobLinkTableBuilder();
+      }
       if (table === "job_definitions") {
         return createJobsQueryBuilder(husbandryJobRows, cullingJobRows);
       }
@@ -1064,14 +989,27 @@ function createPopulationTypesQueryBuilder(
 ): unknown {
   // Emulates enough of the real filter/order/range/returns chain that both
   // the unpaginated active-list query (feeding allPopulationTypes) and the
-  // new paginated page query (#1032, driving the visible table) behave like
-  // the real Supabase query would, instead of always returning every row.
+  // paginated page query (#1032, driving the visible table) behave like the
+  // real Supabase query would. `.maybeSingle()` is also supported directly
+  // after `.eq("id", ...)`, matching fetchManagedPopulationTypeById's
+  // select-by-id call after create/update (#1247).
+  const byId = new Map<string, TestPopulationTypeRow>();
+  for (const row of [rows, insertResult.data, updateResult.data].flat()) {
+    if (row !== null && row !== undefined) {
+      byId.set(row.id, row);
+    }
+  }
+
   function buildSelectBuilder(): Record<string, unknown> {
     let filtered: TestPopulationTypeRow[] = [...rows];
     let range: readonly [number, number] | null = null;
+    let matchedById: TestPopulationTypeRow | null = null;
 
     const selectBuilder: Record<string, unknown> = {
       eq: vi.fn((column: string, value: unknown) => {
+        if (column === "id" && typeof value === "string") {
+          matchedById = byId.get(value) ?? null;
+        }
         filtered = filtered.filter(
           (row) => row[column as keyof TestPopulationTypeRow] === value,
         );
@@ -1087,6 +1025,12 @@ function createPopulationTypesQueryBuilder(
         });
         return selectBuilder;
       }),
+      maybeSingle: vi.fn(
+        (): Promise<{
+          readonly data: TestPopulationTypeRow | null;
+          readonly error: null;
+        }> => Promise.resolve({ data: matchedById, error: null }),
+      ),
       order: vi.fn(() => selectBuilder),
       range: vi.fn((start: number, end: number) => {
         range = [start, end];
@@ -1173,15 +1117,16 @@ function createClientWithInsertSpy({
 }): { readonly from: ReturnType<typeof vi.fn> } {
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
+    maybeSingle: vi
+      .fn()
+      .mockResolvedValue({ data: createPopulationTypeRow(), error: null }),
     order: vi.fn(() => selectBuilder),
     range: vi.fn(() => selectBuilder),
-    returns: vi
-      .fn()
-      .mockResolvedValue({
-        count: populationTypeRows.length,
-        data: populationTypeRows,
-        error: null,
-      }),
+    returns: vi.fn().mockResolvedValue({
+      count: populationTypeRows.length,
+      data: populationTypeRows,
+      error: null,
+    }),
   };
 
   return {
@@ -1203,6 +1148,12 @@ function createClientWithInsertSpy({
             return updateBuilder;
           }),
         };
+      }
+      if (
+        table === "managed_population_husbandry_jobs" ||
+        table === "managed_population_culling_jobs"
+      ) {
+        return createJobLinkTableBuilder();
       }
       if (table === "job_definitions") {
         return createJobsQueryBuilder(husbandryJobRows, cullingJobRows);
@@ -1230,15 +1181,16 @@ function createClientWithUpdateSpy({
 }): { readonly from: ReturnType<typeof vi.fn> } {
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
+    maybeSingle: vi
+      .fn()
+      .mockResolvedValue({ data: createPopulationTypeRow(), error: null }),
     order: vi.fn(() => selectBuilder),
     range: vi.fn(() => selectBuilder),
-    returns: vi
-      .fn()
-      .mockResolvedValue({
-        count: populationTypeRows.length,
-        data: populationTypeRows,
-        error: null,
-      }),
+    returns: vi.fn().mockResolvedValue({
+      count: populationTypeRows.length,
+      data: populationTypeRows,
+      error: null,
+    }),
   };
 
   return {
@@ -1256,6 +1208,12 @@ function createClientWithUpdateSpy({
           select: vi.fn(() => selectBuilder),
           update: updateMock,
         };
+      }
+      if (
+        table === "managed_population_husbandry_jobs" ||
+        table === "managed_population_culling_jobs"
+      ) {
+        return createJobLinkTableBuilder();
       }
       if (table === "job_definitions") {
         return createJobsQueryBuilder(husbandryJobRows, cullingJobRows);

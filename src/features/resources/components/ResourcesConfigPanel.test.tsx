@@ -116,6 +116,31 @@ describe("ResourcesConfigPanel", () => {
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
+  it("flags a percent decay below -100% as the user types, before submit", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ resourceRows: [] }));
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Resources" });
+    await user.click(screen.getByRole("button", { name: "Add resource" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create resource",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Change amount" }),
+      "-150",
+    );
+
+    expect(
+      within(dialog).getByText("Percent decay cannot exceed 100% per turn."),
+    ).toBeDefined();
+    expect(
+      within(dialog).queryByText(/Decreases by 150% each turn\./),
+    ).toBeNull();
+  });
+
   it("shows a system badge for system resources", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -355,6 +380,118 @@ describe("ResourcesConfigPanel", () => {
       expect(screen.getByText("Gold")).toBeDefined();
     });
   });
+
+  it("shows a filter-specific empty state, not the pristine empty state, when a category filter matches nothing", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        categoryRows: [
+          createResourceCategoryRow({
+            id: "00000000-0000-0000-0000-000000000020",
+            name: "Metals",
+          }),
+        ],
+        resourceRows: [createResourceRow({ name: "Gold" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter by category" }),
+      "Metals",
+    );
+
+    expect(await screen.findByText("No matching resources")).toBeDefined();
+    expect(screen.queryByText("No resources yet")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(await screen.findByText("Gold")).toBeDefined();
+  });
+
+  it("filters to resources with no category via the Uncategorized option", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        categoryRows: [
+          createResourceCategoryRow({
+            id: "00000000-0000-0000-0000-000000000020",
+            name: "Metals",
+          }),
+        ],
+        resourceRows: [
+          createResourceRow({ category_id: null, name: "Gold" }),
+          createResourceRow({
+            category_id: "00000000-0000-0000-0000-000000000020",
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Iron",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    expect(screen.getByText("Iron")).toBeDefined();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter by category" }),
+      "Uncategorized",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Iron")).toBeNull();
+      expect(screen.getByText("Gold")).toBeDefined();
+    });
+  });
+
+  it("hides the manage categories dialog's own title so the panel heading isn't duplicated", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ resourceRows: [] }));
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("No resources yet");
+    await user.click(screen.getByRole("button", { name: "Manage categories" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Manage resource categories",
+    });
+    const dialogTitle = within(dialog).getByText("Manage resource categories");
+    expect(dialogTitle.closest('[data-slot="dialog-header"]')).toHaveClass(
+      "sr-only",
+    );
+    expect(
+      within(dialog).getByRole("heading", { name: "Resource categories" }),
+    ).toBeDefined();
+  });
+
+  it("re-fetches with server-side order when a sortable column header is clicked", async () => {
+    const orderSpy = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        orderSpy,
+        resourceRows: [createResourceRow({ name: "Gold" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    orderSpy.mockClear();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Storage cap/ }));
+
+    await waitFor(() => {
+      expect(orderSpy).toHaveBeenCalledWith("base_stockpile_cap", {
+        ascending: true,
+      });
+    });
+  });
 });
 
 function renderPanel({
@@ -385,14 +522,18 @@ function createQueryClient(): QueryClient {
 
 type TestResourceRow = {
   readonly base_stockpile_cap: number;
+  readonly category_id: string | null;
   readonly created_at: string;
-  readonly decay_rate: number;
+  readonly change_amount: number;
+  readonly change_mode: "percent" | "flat";
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
+  readonly resource_categories: null;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -403,14 +544,18 @@ function createResourceRow(
 ): TestResourceRow {
   return {
     base_stockpile_cap: 0,
+    category_id: null,
     created_at: "2026-01-01T00:00:00.000Z",
-    decay_rate: 0,
+    change_amount: 0,
+    change_mode: "percent",
     icon: null,
+    icon_color: null,
     id: RESOURCE_ID,
     is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Food",
+    resource_categories: null,
     slug: "food",
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,
@@ -418,16 +563,45 @@ function createResourceRow(
   };
 }
 
+type TestResourceCategoryRow = {
+  readonly color: string;
+  readonly created_at: string;
+  readonly id: string;
+  readonly name: string;
+  readonly sort_order: number;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+function createResourceCategoryRow(
+  overrides: Partial<TestResourceCategoryRow> = {},
+): TestResourceCategoryRow {
+  return {
+    color: "#6b7280",
+    created_at: "2026-01-01T00:00:00.000Z",
+    id: "00000000-0000-0000-0000-000000000020",
+    name: "Metals",
+    sort_order: 0,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
 function createClient({
+  categoryRows = [],
   insertResult = { data: createResourceRow(), error: null },
+  orderSpy,
   resourceRows,
   rpcResult = { data: null, error: null },
   updateResult = { data: createResourceRow(), error: null },
 }: {
+  readonly categoryRows?: readonly TestResourceCategoryRow[];
   readonly insertResult?: {
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
   };
+  readonly orderSpy?: (...args: unknown[]) => void;
   readonly resourceRows: readonly TestResourceRow[];
   readonly rpcResult?: {
     readonly data: { readonly id: string; readonly world_id: string } | null;
@@ -443,6 +617,16 @@ function createClient({
 } {
   return {
     from: vi.fn((table: string) => {
+      if (table === "resources_directory_view") {
+        return {
+          select: vi.fn(() =>
+            buildSelectBuilder(
+              resourceRows.map((row) => toDirectoryRow(row, categoryRows)),
+              orderSpy,
+            ),
+          ),
+        };
+      }
       if (table === "resources") {
         return createResourcesQueryBuilder(
           resourceRows,
@@ -450,12 +634,88 @@ function createClient({
           updateResult,
         );
       }
+      if (table === "resource_categories") {
+        return createResourceCategoriesQueryBuilder(categoryRows);
+      }
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn(() => ({
       maybeSingle: vi.fn().mockResolvedValue(rpcResult),
     })),
   };
+}
+
+type TestResourceDirectoryRow = Omit<TestResourceRow, "resource_categories"> & {
+  readonly category_color: string | null;
+  readonly category_name: string | null;
+};
+
+function toDirectoryRow(
+  row: TestResourceRow,
+  categoryRows: readonly TestResourceCategoryRow[],
+): TestResourceDirectoryRow {
+  const { resource_categories: _resourceCategories, ...rest } = row;
+  const category = categoryRows.find((c) => c.id === row.category_id) ?? null;
+  return {
+    ...rest,
+    category_color: category?.color ?? null,
+    category_name: category?.name ?? null,
+  };
+}
+
+function buildSelectBuilder<TRow extends Record<string, unknown>>(
+  rows: readonly TRow[],
+  orderSpy?: (...args: unknown[]) => void,
+): Record<string, unknown> {
+  // Emulates enough of the real filter/order/range/returns chain that the
+  // panel's server-side search + pagination + trash filtering (#1032)
+  // behaves like the real Supabase query would, instead of always
+  // returning every row regardless of the applied filters.
+  let filtered: TRow[] = [...rows];
+  let range: readonly [number, number] | null = null;
+
+  const selectBuilder: Record<string, unknown> = {
+    eq: vi.fn((column: string, value: unknown) => {
+      filtered = filtered.filter((row) => row[column] === value);
+      return selectBuilder;
+    }),
+    is: vi.fn((column: string, value: unknown) => {
+      filtered = filtered.filter((row) => row[column] === value);
+      return selectBuilder;
+    }),
+    ilike: vi.fn((column: string, pattern: string) => {
+      const needle = pattern.replaceAll("%", "").toLowerCase();
+      filtered = filtered.filter((row) =>
+        String(row[column]).toLowerCase().includes(needle),
+      );
+      return selectBuilder;
+    }),
+    order: vi.fn((...args: unknown[]) => {
+      orderSpy?.(...args);
+      return selectBuilder;
+    }),
+    range: vi.fn((start: number, end: number) => {
+      range = [start, end];
+      return selectBuilder;
+    }),
+    returns: vi.fn(() => {
+      const data =
+        range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+      return Promise.resolve({ count: filtered.length, data, error: null });
+    }),
+  };
+  return selectBuilder;
+}
+
+function createResourceCategoriesQueryBuilder(
+  categoryRows: readonly TestResourceCategoryRow[] = [],
+): Record<string, unknown> {
+  const builder: Record<string, unknown> = {
+    eq: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: categoryRows, error: null }),
+  };
+  return { select: vi.fn(() => builder) };
 }
 
 function createResourcesQueryBuilder(
@@ -469,44 +729,6 @@ function createResourcesQueryBuilder(
     readonly error: { readonly message: string } | null;
   },
 ): unknown {
-  // Emulates enough of the real filter/order/range/returns chain that the
-  // panel's server-side search + pagination + trash filtering (#1032)
-  // behaves like the real Supabase query would, instead of always
-  // returning every row regardless of the applied filters.
-  function buildSelectBuilder(): Record<string, unknown> {
-    let filtered: TestResourceRow[] = [...rows];
-    let range: readonly [number, number] | null = null;
-
-    const selectBuilder: Record<string, unknown> = {
-      eq: vi.fn((column: string, value: unknown) => {
-        filtered = filtered.filter(
-          (row) => row[column as keyof TestResourceRow] === value,
-        );
-        return selectBuilder;
-      }),
-      ilike: vi.fn((column: string, pattern: string) => {
-        const needle = pattern.replaceAll("%", "").toLowerCase();
-        filtered = filtered.filter((row) =>
-          String(row[column as keyof TestResourceRow])
-            .toLowerCase()
-            .includes(needle),
-        );
-        return selectBuilder;
-      }),
-      order: vi.fn(() => selectBuilder),
-      range: vi.fn((start: number, end: number) => {
-        range = [start, end];
-        return selectBuilder;
-      }),
-      returns: vi.fn(() => {
-        const data =
-          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
-        return Promise.resolve({ count: filtered.length, data, error: null });
-      }),
-    };
-    return selectBuilder;
-  }
-
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
     select: vi.fn(() => ({
@@ -520,7 +742,7 @@ function createResourcesQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
-    select: vi.fn(() => buildSelectBuilder()),
+    select: vi.fn(() => buildSelectBuilder(rows)),
     update: vi.fn(() => updateBuilder),
   };
 }

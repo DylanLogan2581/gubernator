@@ -67,18 +67,16 @@ where
   id = 'cd100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'cd200000-0000-0000-0000-000000000001',
     'CM World 1',
-    'private',
     'active'
   ),
   (
     'cd200000-0000-0000-0000-000000000002',
     'CM World 2',
-    'private',
     'active'
   );
 
@@ -478,6 +476,7 @@ select
         public.citizen_memories
       where
         source = 'event'
+        and citizen_id = 'cd300000-0000-0000-0000-000000000001'
     ),
     1::bigint,
     'event-sourced memory distinguishable by source column'

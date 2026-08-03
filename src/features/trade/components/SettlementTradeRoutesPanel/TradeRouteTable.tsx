@@ -66,7 +66,7 @@ export function TradeRoutesDirection({
         {label} ({routes.length})
       </button>
       {!isCollapsed ? (
-        <div id={panelId}>
+        <div className="overflow-x-auto rounded-md border" id={panelId}>
           <Table className="w-full text-sm">
             <TableHeader>
               <TableRow className="text-muted-foreground">

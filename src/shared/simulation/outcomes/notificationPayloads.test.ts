@@ -23,7 +23,7 @@ import {
   parseManualDeconstructOvershootPayload,
   parsePassiveEffectAppliedPayload,
   parseStockpileClampedPayload,
-  parseStockpileDecayedPayload,
+  parseStockpileChangedPayload,
   parseBuildingSuspendedPayload,
   parseConstructionCompletedPayload,
   parseConstructionPausedPayload,
@@ -367,6 +367,22 @@ describe("parseTradeRoutePausedPayload", () => {
       pauseReason: "insufficient_origin_stock",
       quantityPerTransition: 10,
       resourceId: "r-1",
+      tradeRouteId: "tr-1",
+    });
+  });
+
+  it("tolerates historical logs missing quantityPerTransition/resourceId (#1324)", () => {
+    expect(
+      parseTradeRoutePausedPayload({
+        destinationSettlementId: "s-2",
+        pauseReason: "insufficient_origin_stock",
+        tradeRouteId: "tr-1",
+      }),
+    ).toEqual({
+      destinationSettlementId: "s-2",
+      pauseReason: "insufficient_origin_stock",
+      quantityPerTransition: null,
+      resourceId: null,
       tradeRouteId: "tr-1",
     });
   });
@@ -816,9 +832,10 @@ describe("parseStockpileClampedPayload", () => {
   });
 });
 
-describe("parseStockpileDecayedPayload", () => {
+describe("parseStockpileChangedPayload", () => {
   const valid = {
-    decayRate: 0.1,
+    changeAmount: -10,
+    changeMode: "percent",
     delta: -2,
     post: 18,
     pre: 20,
@@ -827,11 +844,11 @@ describe("parseStockpileDecayedPayload", () => {
   };
 
   it("returns null for malformed inputs", () => {
-    expectNullForCommonMalformed(parseStockpileDecayedPayload);
-    expectNullPerInvalidField(parseStockpileDecayedPayload, valid);
+    expectNullForCommonMalformed(parseStockpileChangedPayload);
+    expectNullPerInvalidField(parseStockpileChangedPayload, valid);
   });
 
   it("returns typed payload for valid input", () => {
-    expect(parseStockpileDecayedPayload(valid)).toEqual(valid);
+    expect(parseStockpileChangedPayload(valid)).toEqual(valid);
   });
 });

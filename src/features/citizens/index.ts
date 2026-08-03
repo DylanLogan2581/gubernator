@@ -1,14 +1,16 @@
 // Citizens feature — query and mutation API for NPCs and player characters.
 // Implemented in Epic 3.
 export { CitizenAvatar } from "./components/CitizenAvatar";
+export { CitizenPicker } from "./components/CitizenPicker";
+export { CitizenMultiPicker } from "./components/CitizenMultiPicker";
+export {
+  CITIZEN_SEARCH_PLACEHOLDER,
+  useCitizenDirectorySearch,
+} from "./hooks/useCitizenDirectorySearch";
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensDirectoryPage } from "./components/CitizensDirectoryPage";
 export { CitizensPanel } from "./components/CitizensPanel";
 export { SettlementAssignmentBoard } from "./components/SettlementAssignmentBoard";
-export { NpcFlavorLine } from "./components/NpcFlavorLine";
-export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
-// Partnership exports moved to partnerships feature; re-exported for backward compatibility
-export { PartnershipHistoryPanel } from "@/features/partnerships";
 export {
   BulkConstructionPoolMutationError,
   isBulkConstructionPoolMutationError,
@@ -25,12 +27,16 @@ export {
   setPerTargetAssignmentMutationOptions,
 } from "./mutations/perTargetAssignmentMutations";
 export {
+  bulkSetCitizenCultureReligionMutationOptions,
+  bulkSetCitizenEducationMutationOptions,
   CitizenMutationError,
   createNpcMutationOptions,
   createPlayerCharacterMutationOptions,
   isCitizenMutationError,
   markCitizenDeadMutationOptions,
   reviveCitizenMutationOptions,
+  setCitizenCultureReligionMutationOptions,
+  setCitizenEducationMutationOptions,
   updateCitizenCoreMutationOptions,
   updateCitizenNpcFieldsMutationOptions,
 } from "./mutations/citizensMutations";
@@ -78,7 +84,10 @@ export {
   citizensByIdsQueryOptions,
   citizensInSettlementQueryOptions,
   citizensInWorldQueryOptions,
+  cultureReligionCompositionForNationQueryOptions,
+  cultureReligionCompositionForSettlementQueryOptions,
   playerCharactersInNationQueryOptions,
+  settlementManagersInNationQueryOptions,
   toCitizen,
   unpairedAliveCitizensInWorldQueryOptions,
 } from "./queries/citizensQueries";
@@ -88,10 +97,10 @@ export {
   partnershipsForCitizenQueryOptions,
 } from "@/features/partnerships";
 export { setBulkConstructionPoolInputSchema } from "./schemas/setBulkConstructionPoolSchemas";
-export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
-export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
 export {
   assignCitizenRoleInputSchema,
+  bulkSetCitizenCultureReligionInputSchema,
+  bulkSetCitizenEducationInputSchema,
   citizenRoleAssignmentSchema,
   createNpcInputSchema,
   createPlayerCharacterInputSchema,
@@ -131,6 +140,10 @@ export type {
 export type {
   AssignCitizenRoleInput,
   AssignCitizenRoleValues,
+  BulkSetCitizenCultureReligionInput,
+  BulkSetCitizenCultureReligionValues,
+  BulkSetCitizenEducationInput,
+  BulkSetCitizenEducationValues,
   CitizenRoleAssignmentInput,
   CitizenRoleAssignmentValues,
   CreateNpcInput,
@@ -145,6 +158,10 @@ export type {
   RevokeCitizenRoleValues,
   ReviveCitizenInput,
   ReviveCitizenValues,
+  SetCitizenCultureReligionInput,
+  SetCitizenCultureReligionValues,
+  SetCitizenEducationInput,
+  SetCitizenEducationValues,
   UnlinkUserFromCitizenInput,
   UnlinkUserFromCitizenValues,
   UpdateCitizenCoreInput,
@@ -188,5 +205,6 @@ export type {
   CitizenStatusBreakdown,
   CitizenType,
   CitizenTypeBreakdown,
+  CultureReligionComposition,
 } from "./types/citizenTypes";
 export type { Partnership, PartnershipStatus } from "@/features/partnerships";

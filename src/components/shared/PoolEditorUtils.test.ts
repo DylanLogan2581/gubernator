@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseBulkPaste, sanitizePoolEntries } from "./PoolEditorUtils";
+import {
+  countBulkPastePieces,
+  parseBulkPaste,
+  sanitizePoolEntries,
+} from "./PoolEditorUtils";
 
 describe("parseBulkPaste", () => {
   it("splits text into trimmed lines", () => {
@@ -36,6 +40,25 @@ describe("parseBulkPaste", () => {
 
   it("returns empty array for blank input", () => {
     expect(parseBulkPaste("   \n  \n", ["alpha"])).toEqual([]);
+  });
+
+  it("also splits comma-separated entries within a line", () => {
+    expect(parseBulkPaste("alpha, beta ,gamma\ndelta", [])).toEqual([
+      "alpha",
+      "beta",
+      "gamma",
+      "delta",
+    ]);
+  });
+});
+
+describe("countBulkPastePieces", () => {
+  it("counts non-blank newline and comma separated pieces", () => {
+    expect(countBulkPastePieces("alpha, beta\n\ngamma")).toBe(3);
+  });
+
+  it("returns 0 for blank input", () => {
+    expect(countBulkPastePieces("   \n , \n")).toBe(0);
   });
 });
 

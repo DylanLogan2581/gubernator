@@ -7,7 +7,6 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { useWorldTransitionOutcome } from "@/features/turns";
@@ -23,6 +22,7 @@ import { TradeRoutesDirection } from "./TradeRouteTable";
 
 type SettlementTradeRoutesPanelProps = {
   readonly canManage: boolean;
+  readonly canManageNation: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
   readonly worldId: string;
@@ -30,6 +30,7 @@ type SettlementTradeRoutesPanelProps = {
 
 export function SettlementTradeRoutesPanel({
   canManage,
+  canManageNation,
   isArchived,
   settlementId,
   worldId,
@@ -95,11 +96,11 @@ export function SettlementTradeRoutesPanel({
         : "destination";
 
   return (
-    <Card
+    <section
       aria-labelledby="settlement-trade-routes-heading"
-      className="grid gap-3"
+      className="grid min-w-0 grid-cols-1 gap-3"
     >
-      <div className="flex items-center justify-between gap-2 px-4 pt-4">
+      <div className="flex items-center justify-between gap-2">
         <h2
           id="settlement-trade-routes-heading"
           className="text-base font-medium"
@@ -138,20 +139,19 @@ export function SettlementTradeRoutesPanel({
         </div>
       </div>
       {showProposeDialog ? (
-        <div className="px-4">
-          <ProposeTradeRouteDialog
-            activeCharacterId={activeCharacter?.id ?? ""}
-            queryClient={queryClient}
-            settlementId={settlementId}
-            worldId={worldId}
-            onClose={() => {
-              setShowProposeDialog(false);
-            }}
-          />
-        </div>
+        <ProposeTradeRouteDialog
+          activeCharacterId={activeCharacter?.id ?? null}
+          canManageNation={canManageNation}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+          onClose={() => {
+            setShowProposeDialog(false);
+          }}
+        />
       ) : null}
 
-      <CardContent>
+      <div>
         {routesQuery.isPending ? (
           <TableSkeleton columnCount={5} rowCount={5} />
         ) : routesQuery.isError ? (
@@ -225,7 +225,7 @@ export function SettlementTradeRoutesPanel({
             }}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

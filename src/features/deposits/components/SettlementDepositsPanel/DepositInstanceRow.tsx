@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { type TurnTransitionOutcome } from "@/features/turns";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseDepositDepletedPayload } from "@/shared/simulation";
 
@@ -101,8 +101,10 @@ export function DepositInstanceRow({
           <span className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(instance.depositTypeIcon)}
-              tone={hashToCategoricalSlot(instance.depositTypeId)}
-              size="sm"
+              tone={resolveIconTone(
+                instance.depositTypeIconColor,
+                instance.depositTypeId,
+              )}
             />
             {instance.name}
             {isDepletion ? (

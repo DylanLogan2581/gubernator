@@ -37,6 +37,10 @@ export const resourceInputLimits = {
   resourceSlugMax: 64,
 } as const;
 
+export const resourceCategoryInputLimits = {
+  nameMax: 64,
+} as const;
+
 export const npcFlavorInputLimits = {
   poolSizeMax: 100,
   poolEntryMax: 200,
@@ -70,9 +74,54 @@ export const namingInputLimits = {
   namePoolEntryMax: 64,
 } as const;
 
+export const cultureReligionInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+  loreFieldMax: 2000,
+} as const;
+
+export const educationLevelInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+} as const;
+
+export const unitTypeInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+} as const;
+
+export const armyInputLimits = {
+  nameMax: 64,
+} as const;
+
 export const eventInputLimits = {
   eventGroupNameMax: 128,
   eventGroupDescriptionMax: 1000,
   eventNameMax: 128,
   eventMemoryTextMax: 1000,
+} as const;
+
+export const governmentBodyInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+} as const;
+
+export const officeTypeInputLimits = {
+  nameMax: 64,
+} as const;
+
+export const lawDocumentInputLimits = {
+  titleMax: 200,
+  preambleMax: 20000,
+  headingMax: 200,
+} as const;
+
+export const lawAmendmentInputLimits = {
+  titleMax: 200,
+  rationaleMax: 20000,
+} as const;
+
+export const decreeInputLimits = {
+  titleMax: 200,
+  bodyMarkdownMax: 20000,
 } as const;

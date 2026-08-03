@@ -4,17 +4,21 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PartnershipHistoryPanel } from "@/features/partnerships";
+import { RoleAssignmentControls } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { citizenAdminDetailsQueryOptions } from "../../queries/citizensQueries";
 
 import { CitizenAssignmentSection } from "./AssignmentSection";
 import { CitizenCoreSection } from "./CoreEditForm";
+import { CitizenCultureReligionEditSection } from "./CultureReligionEditSection";
+import { CitizenEducationEditSection } from "./EducationEditSection";
+import { CitizenFamilyTreeSection } from "./FamilyTreeSection";
+import { useCitizenCoreEditState } from "./hooks/UseCitizenCoreEditState";
 import { CitizenLifecycleSection } from "./LifecycleControls";
 import { CitizenMemoriesSection } from "./MemoriesSection";
 import { CitizenNpcFlavorSection } from "./NpcFlavorSection";
 import { CitizenNpcNotesSection } from "./NpcNotesSection";
-import { CitizenParentsSection } from "./ParentsSection";
 import { CitizenPlayerCharacterSection } from "./PlayerCharacterSection";
 
 import type { Citizen, CitizenAdminDetails } from "../../types/citizenTypes";
@@ -38,10 +42,11 @@ export function CitizenDetailTabs({
   readonly worldId: string;
 }): JSX.Element {
   const canEdit = canAdmin && !isArchived;
-  const showPlayerCharacterSection =
+  const coreEditState = useCitizenCoreEditState(citizen);
+  const showLinkedUserReadout =
     citizen.citizenType === "player_character" &&
     (canAdmin || isOwnLivingCharacter);
-  const showNpcTab = canAdmin && citizen.citizenType === "npc";
+  const showNpcAdminInfo = canAdmin && citizen.citizenType === "npc";
 
   return (
     <Tabs className="min-w-0" defaultValue="overview">
@@ -49,28 +54,32 @@ export function CitizenDetailTabs({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="family">Family</TabsTrigger>
         {canAdmin ? <TabsTrigger value="memories">Memories</TabsTrigger> : null}
-        {canAdmin ? (
-          <TabsTrigger value="lifecycle">Lifecycle</TabsTrigger>
-        ) : null}
-        {showNpcTab ? <TabsTrigger value="npc">NPC</TabsTrigger> : null}
-        {canAdmin ? <TabsTrigger value="core">Core edit</TabsTrigger> : null}
+        {canAdmin ? <TabsTrigger value="edit">Edit</TabsTrigger> : null}
       </TabsList>
 
       <TabsContent className="grid gap-4" value="overview">
         <CitizenAssignmentSection citizenId={citizen.id} />
-        {showPlayerCharacterSection ? (
+        {showLinkedUserReadout ? (
           <CitizenPlayerCharacterSection
             canAdmin={canAdmin}
-            canEdit={canEdit}
+            canEdit={false}
             citizen={citizen}
-            isArchived={isArchived}
             queryClient={queryClient}
+          />
+        ) : null}
+        {showNpcAdminInfo ? (
+          <CitizenNpcAdminSections
+            canEdit={false}
+            citizen={citizen}
+            currentTurnNumber={currentTurnNumber}
+            queryClient={queryClient}
+            worldId={worldId}
           />
         ) : null}
       </TabsContent>
 
       <TabsContent className="grid gap-4" value="family">
-        <CitizenParentsSection citizen={citizen} />
+        <CitizenFamilyTreeSection citizen={citizen} />
         <PartnershipHistoryPanel
           canAdmin={canAdmin}
           citizen={citizen}
@@ -91,31 +100,49 @@ export function CitizenDetailTabs({
       ) : null}
 
       {canAdmin ? (
-        <TabsContent className="grid gap-4" value="lifecycle">
-          <CitizenLifecycleSection
-            citizen={citizen}
-            isArchived={isArchived}
-            queryClient={queryClient}
-          />
-        </TabsContent>
-      ) : null}
-
-      {showNpcTab ? (
-        <TabsContent className="grid gap-4" value="npc">
-          <CitizenNpcAdminSections
-            canEdit={canEdit}
-            citizenId={citizen.id}
-            queryClient={queryClient}
-            worldId={worldId}
-          />
-        </TabsContent>
-      ) : null}
-
-      {canAdmin ? (
-        <TabsContent className="grid gap-4" value="core">
+        <TabsContent className="grid gap-4" value="edit">
           <CitizenCoreSection
             canEdit={canEdit}
             citizen={citizen}
+            editState={coreEditState}
+            queryClient={queryClient}
+          />
+          <CitizenCultureReligionEditSection
+            canEdit={canEdit}
+            citizen={citizen}
+            queryClient={queryClient}
+          />
+          <CitizenEducationEditSection
+            canEdit={canEdit}
+            citizen={citizen}
+            queryClient={queryClient}
+          />
+          {citizen.citizenType === "player_character" ? (
+            <CitizenPlayerCharacterSection
+              canAdmin={canAdmin}
+              canEdit={canEdit}
+              citizen={citizen}
+              queryClient={queryClient}
+            />
+          ) : null}
+          <RoleAssignmentControls
+            canAdminWorld={canAdmin}
+            citizen={citizen}
+            isArchived={isArchived}
+            variant="citizen"
+          />
+          {citizen.citizenType === "npc" ? (
+            <CitizenNpcAdminSections
+              canEdit={canEdit}
+              citizen={citizen}
+              currentTurnNumber={currentTurnNumber}
+              queryClient={queryClient}
+              worldId={worldId}
+            />
+          ) : null}
+          <CitizenLifecycleSection
+            citizen={citizen}
+            isArchived={isArchived}
             queryClient={queryClient}
           />
         </TabsContent>
@@ -126,17 +153,19 @@ export function CitizenDetailTabs({
 
 function CitizenNpcAdminSections({
   canEdit,
-  citizenId,
+  citizen,
+  currentTurnNumber,
   queryClient,
   worldId,
 }: {
   readonly canEdit: boolean;
-  readonly citizenId: string;
+  readonly citizen: Citizen;
+  readonly currentTurnNumber: number;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
   const adminDetailsQuery = useQuery(
-    citizenAdminDetailsQueryOptions(citizenId),
+    citizenAdminDetailsQueryOptions(citizen.id),
   );
 
   if (adminDetailsQuery.isPending) {
@@ -159,14 +188,15 @@ function CitizenNpcAdminSections({
       <CitizenNpcNotesSection
         adminDetails={adminDetails}
         canEdit={canEdit}
-        citizenId={citizenId}
+        citizenId={citizen.id}
         queryClient={queryClient}
         worldId={worldId}
       />
       <CitizenNpcFlavorSection
         adminDetails={adminDetails}
         canEdit={canEdit}
-        citizenId={citizenId}
+        citizen={citizen}
+        currentTurnNumber={currentTurnNumber}
         queryClient={queryClient}
         worldId={worldId}
       />

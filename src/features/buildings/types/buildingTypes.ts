@@ -1,3 +1,5 @@
+import { type TierEducationConfig } from "@/shared/education/tierEducationConfig";
+
 export type TierCostEntry = {
   readonly amount: number;
   readonly resourceId: string;
@@ -22,7 +24,10 @@ export type TierEffect =
   | {
       readonly amount: number;
       readonly type: "population_cap_increase";
-    };
+    }
+  | ({
+      readonly type: "education";
+    } & TierEducationConfig);
 
 export type EffectTypeName = TierEffect["type"];
 
@@ -31,6 +36,7 @@ export type BuildingBlueprint = {
   readonly description: string | null;
   readonly gracePeriodTurns: number;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly maxInstancesPerSettlement: number | null;

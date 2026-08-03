@@ -10,6 +10,7 @@ import { citizensQueryKeys } from "@/features/citizens";
 import { depositsQueryKeys } from "@/features/deposits";
 import { eventQueryKeys } from "@/features/events";
 import { managedPopulationsQueryKeys } from "@/features/managed-populations";
+import { nationReadinessQueryKeys } from "@/features/nations";
 import { notificationQueryKeys } from "@/features/notifications";
 import {
   settlementSnapshotQueryKeys,
@@ -148,8 +149,12 @@ export function endTurnTransitionMutationOptions({
     onSuccess: async (_result, input): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: turnQueryKeys.all }),
         queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.currentTurnState(input.worldId),
+          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
         }),
         queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
         queryClient.invalidateQueries({
@@ -159,13 +164,7 @@ export function endTurnTransitionMutationOptions({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
         }),
         queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestTransitionStatus(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
+          queryKey: nationReadinessQueryKeys.list(input.worldId),
         }),
         queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: resourcesQueryKeys.all }),

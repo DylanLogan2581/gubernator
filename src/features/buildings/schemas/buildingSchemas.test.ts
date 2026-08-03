@@ -18,6 +18,7 @@ const TIER_ID = "22222222-2222-2222-2222-222222222222";
 const WORLD_ID = "33333333-3333-3333-3333-333333333333";
 const RESOURCE_ID = "44444444-4444-4444-4444-444444444444";
 const JOB_ID = "55555555-5555-5555-5555-555555555555";
+const EDUCATION_LEVEL_ID = "66666666-6666-6666-6666-666666666666";
 
 describe("tierCostEntrySchema", () => {
   it("accepts a valid cost entry", () => {
@@ -176,6 +177,45 @@ describe("tierEffectSchema — discrimination across all four types", () => {
       jobId: JOB_ID,
       resourceId: RESOURCE_ID,
       type: "job_capacity_increase",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid education effect", () => {
+    const result = tierEffectSchema.safeParse({
+      levels: [{ fromLevelId: null, toLevelId: EDUCATION_LEVEL_ID, turns: 4 }],
+      studentsPerTeacher: 5,
+      teacherCapacity: 2,
+      teacherJobId: JOB_ID,
+      type: "education",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.type).toBe("education");
+    }
+  });
+
+  it("rejects education without levels", () => {
+    const result = tierEffectSchema.safeParse({
+      levels: [],
+      studentsPerTeacher: 5,
+      teacherCapacity: 2,
+      teacherJobId: JOB_ID,
+      type: "education",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects education with zero teacherCapacity", () => {
+    const result = tierEffectSchema.safeParse({
+      levels: [{ fromLevelId: null, toLevelId: EDUCATION_LEVEL_ID, turns: 4 }],
+      studentsPerTeacher: 5,
+      teacherCapacity: 0,
+      teacherJobId: JOB_ID,
+      type: "education",
     });
 
     expect(result.success).toBe(false);
@@ -449,6 +489,36 @@ describe("createTierInputSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a tier with a full education effect in effectsJson", () => {
+    const result = createTierInputSchema.safeParse({
+      blueprintId: BLUEPRINT_ID,
+      effectsJson: [
+        {
+          levels: [
+            { fromLevelId: null, toLevelId: EDUCATION_LEVEL_ID, turns: 4 },
+          ],
+          studentsPerTeacher: 5,
+          teacherCapacity: 2,
+          teacherJobId: JOB_ID,
+          type: "education",
+        },
+      ],
+      tierNumber: 1,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a tier with a partial education effect", () => {
+    const result = createTierInputSchema.safeParse({
+      blueprintId: BLUEPRINT_ID,
+      effectsJson: [{ teacherCapacity: 2, type: "education" }],
+      tierNumber: 1,
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("updateTierInputSchema", () => {
@@ -473,6 +543,25 @@ describe("updateTierInputSchema", () => {
   it("accepts a partial update with only effectsJson", () => {
     const result = updateTierInputSchema.safeParse({
       effectsJson: [{ amount: 50, type: "population_cap_increase" }],
+      tierId: TIER_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a partial update with only an education effect", () => {
+    const result = updateTierInputSchema.safeParse({
+      effectsJson: [
+        {
+          levels: [
+            { fromLevelId: null, toLevelId: EDUCATION_LEVEL_ID, turns: 4 },
+          ],
+          studentsPerTeacher: 5,
+          teacherCapacity: 2,
+          teacherJobId: JOB_ID,
+          type: "education",
+        },
+      ],
       tierId: TIER_ID,
     });
 

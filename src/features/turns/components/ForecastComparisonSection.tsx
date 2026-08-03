@@ -1,10 +1,14 @@
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
 import type {
   TurnTransitionOutcome,
   TurnTransitionResourceSnapshot,
 } from "@/features/turns";
+
+import { compareResourceDelta } from "../utils/compareResourceDelta";
 
 import type { JSX } from "react";
 
@@ -65,24 +69,8 @@ function getSettlementForecast(
   return null;
 }
 
-function compareResourceDelta(
-  forecastDelta: SettlementForecast["resourceDeltas"][0],
-  actual: TurnTransitionResourceSnapshot,
-): {
-  readonly diverged: boolean;
-  readonly forecastValue: number;
-  readonly actualValue: number;
-  readonly reason?: string;
-} {
-  const forecastNetDelta = forecastDelta.netDelta;
-  const actualNetDelta = actual.quantityAfter - actual.quantityBefore;
-
-  return {
-    actualValue: actualNetDelta,
-    diverged: forecastNetDelta !== actualNetDelta,
-    forecastValue: forecastNetDelta,
-  };
-}
+// Deaths are integer counts; this only guards against float artifacts.
+const DEATH_COUNT_EPSILON = 0.5;
 
 export function ForecastComparisonSection({
   outcome,
@@ -106,6 +94,22 @@ export function ForecastComparisonSection({
 
     return { settlementForecast: forecast, settlementIds: ids };
   }, [outcome.forecastSnapshot, outcome.settlementSnapshots]);
+
+  const settlementId =
+    settlementIds.length === 1 ? settlementIds[0] : undefined;
+
+  const stockpilesQuery = useQuery({
+    ...settlementStockpilesByIdQueryOptions(settlementId ?? ""),
+    enabled: settlementId !== undefined,
+  });
+
+  const resourceNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const stockpile of stockpilesQuery.data ?? []) {
+      map.set(stockpile.resourceId, stockpile.resourceName);
+    }
+    return map;
+  }, [stockpilesQuery.data]);
 
   const resourceComparisons = useMemo(() => {
     if (
@@ -174,7 +178,8 @@ export function ForecastComparisonSection({
     return {
       actualTotalDeaths,
       forecastTotalDeaths,
-      diverged: forecastTotalDeaths !== actualTotalDeaths,
+      diverged:
+        Math.abs(forecastTotalDeaths - actualTotalDeaths) > DEATH_COUNT_EPSILON,
       forecastBreakdown: settlementForecast.deathsBy,
     };
   }, [settlementForecast, settlementIds, outcome.settlementSnapshots]);
@@ -256,7 +261,8 @@ export function ForecastComparisonSection({
                         Diverged
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {comp.resourceId}
+                        {resourceNameById.get(comp.resourceId) ??
+                          comp.resourceId}
                       </span>
                     </div>
                     <div className="text-xs">

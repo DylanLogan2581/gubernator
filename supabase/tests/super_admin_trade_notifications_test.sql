@@ -72,12 +72,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'fd200000-0000-0000-0000-000000000001',
     'FD World',
-    'private',
     'active'
   );
 
@@ -102,6 +101,22 @@ values
     'fd300000-0000-0000-0000-000000000002',
     'fd200000-0000-0000-0000-000000000001',
     'FD Destination Nation'
+  );
+
+-- propose_trade_route (#1086) rejects endpoints whose nations have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'fd200000-0000-0000-0000-000000000001',
+    'fd300000-0000-0000-0000-000000000001',
+    'fd300000-0000-0000-0000-000000000002',
+    1
   );
 
 insert into

@@ -86,18 +86,16 @@ where
   id = 'e1000000-0000-0000-0000-000000000003';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'CCP World',
-    'private',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'CCP Other World',
-    'private',
     'active'
   );
 

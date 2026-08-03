@@ -8,6 +8,7 @@ import type {
   AssignmentClear,
   DepositResourceDelta,
   DepositUpdate,
+  SimDepositTypeJob,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -25,9 +26,36 @@ export type PhaseDepositExtractionOutput = {
 export function phaseDepositExtraction(
   context: SimulationContext,
 ): PhaseDepositExtractionOutput {
-  const { citizenAssignments, depositTypes, deposits, stockpiles } = context.input;
+  const {
+    citizenAssignments,
+    depositTypeJobs,
+    deposits,
+    educationEnrollments,
+    nationOffices,
+    stockpiles,
+    unitSoldiers,
+  } = context.input;
 
-  const depositTypeById = new Map(depositTypes.map((dt) => [dt.id, dt]));
+  const jobsByDepositTypeId = new Map<string, SimDepositTypeJob[]>();
+  for (const job of depositTypeJobs) {
+    const existing = jobsByDepositTypeId.get(job.depositTypeId);
+    if (existing === undefined) {
+      jobsByDepositTypeId.set(job.depositTypeId, [job]);
+    } else {
+      existing.push(job);
+    }
+  }
+  // Deterministic job ordering (id asc) — the source query is already
+  // ordered, but this makes the phase's own determinism explicit and
+  // independent of fetch order.
+  for (const jobs of jobsByDepositTypeId.values()) {
+    jobs.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  const officeholderCitizenIds = new Set(
+    nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+  );
+  const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
+  const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 
   const stockpileQty = new Map<string, number>();
   const stockpileCap = new Map<string, number>();
@@ -37,7 +65,10 @@ export function phaseDepositExtraction(
     stockpileCap.set(key, sp.cap);
   }
 
-  // Collect worker counts and citizen IDs per deposit instance.
+  // Collect worker counts and citizen IDs per deposit instance. Officeholders
+  // keep their assignment row (cleared like anyone else on depletion) but do
+  // not count toward extraction — they work for the nation this turn, not
+  // the deposit.
   const workerCountByDeposit = new Map<string, number>();
   const workerIdsByDeposit = new Map<string, string[]>();
   for (const assignment of citizenAssignments) {
@@ -48,7 +79,13 @@ export function phaseDepositExtraction(
       continue;
     }
     const dId = assignment.depositInstanceId;
-    workerCountByDeposit.set(dId, (workerCountByDeposit.get(dId) ?? 0) + 1);
+    if (
+      !officeholderCitizenIds.has(assignment.citizenId) &&
+      !enrolledCitizenIds.has(assignment.citizenId) &&
+      !soldierCitizenIds.has(assignment.citizenId)
+    ) {
+      workerCountByDeposit.set(dId, (workerCountByDeposit.get(dId) ?? 0) + 1);
+    }
     const existing = workerIdsByDeposit.get(dId);
     if (existing === undefined) {
       workerIdsByDeposit.set(dId, [assignment.citizenId]);
@@ -66,8 +103,8 @@ export function phaseDepositExtraction(
   for (const deposit of deposits) {
     if (deposit.status !== "active") continue;
 
-    const depositType = depositTypeById.get(deposit.depositTypeId);
-    if (depositType === undefined) continue;
+    const jobs = jobsByDepositTypeId.get(deposit.depositTypeId);
+    if (jobs === undefined || jobs.length === 0) continue;
 
     const sid = deposit.settlementId;
 
@@ -79,31 +116,63 @@ export function phaseDepositExtraction(
 
     if (workers === 0) continue;
 
-    // Input shortfall scale: tightest resource constraint across all worker inputs.
-    let inputShortfallScale = 1.0;
-    for (const input of depositType.workerInputsJson) {
-      const required = workers * input.amountPerWorker;
-      const available = stockpileQty.get(`${sid}:${input.resourceId}`) ?? 0;
-      const scale = scaleDeficit(required, available);
-      if (scale < inputShortfallScale) inputShortfallScale = scale;
-    }
+    // Bucket the assigned worker pool evenly across the deposit type's
+    // linked jobs (deterministic — no assignment-level job selection
+    // exists yet, so tiers share the pool proportionally).
+    const workersByJob = proportionalShare(
+      workers,
+      jobs.map(() => 1),
+    );
 
-    // Consume worker inputs from the settlement stockpile.
     const inputsConsumed: Record<string, number> = {};
-    for (const input of depositType.workerInputsJson) {
-      const consumed = workers * input.amountPerWorker * inputShortfallScale;
-      inputsConsumed[input.resourceId] = consumed;
-      const key = `${sid}:${input.resourceId}`;
-      allDeltas.push({
-        delta: -consumed,
-        resourceId: input.resourceId,
-        settlementId: sid,
+    const perJob: Array<{
+      readonly extraction: number;
+      readonly inputShortfallScale: number;
+      readonly jobId: string;
+      readonly workers: number;
+    }> = [];
+    let totalExtraction = 0;
+
+    for (let j = 0; j < jobs.length; j++) {
+      const job = jobs[j];
+      if (job === undefined) continue;
+      const jobWorkers = workersByJob[j] ?? 0;
+      if (jobWorkers === 0) continue;
+
+      // Input shortfall scale: tightest resource constraint across this
+      // job's own worker inputs.
+      let inputShortfallScale = 1.0;
+      for (const input of job.workerInputsJson) {
+        const required = jobWorkers * input.amountPerWorker;
+        const available = stockpileQty.get(`${sid}:${input.resourceId}`) ?? 0;
+        const scale = scaleDeficit(required, available);
+        if (scale < inputShortfallScale) inputShortfallScale = scale;
+      }
+
+      // Consume this job's worker inputs from the settlement stockpile.
+      for (const input of job.workerInputsJson) {
+        const consumed = jobWorkers * input.amountPerWorker * inputShortfallScale;
+        inputsConsumed[input.resourceId] = (inputsConsumed[input.resourceId] ?? 0) + consumed;
+        const key = `${sid}:${input.resourceId}`;
+        allDeltas.push({
+          delta: -consumed,
+          resourceId: input.resourceId,
+          settlementId: sid,
+        });
+        stockpileQty.set(key, (stockpileQty.get(key) ?? 0) - consumed);
+      }
+
+      const jobExtraction = jobWorkers * job.outputUnitsPerWorker * inputShortfallScale;
+      totalExtraction += jobExtraction;
+      perJob.push({
+        extraction: jobExtraction,
+        inputShortfallScale,
+        jobId: job.jobId,
+        workers: jobWorkers,
       });
-      stockpileQty.set(key, (stockpileQty.get(key) ?? 0) - consumed);
     }
 
     // Distribute total extraction across deposit resources weighted by remainingQuantity.
-    const totalExtraction = workers * depositType.outputUnitsPerWorker * inputShortfallScale;
     const weights = deposit.resources.map((r) => r.remainingQuantity);
     const rawShares = proportionalShare(totalExtraction, weights);
 
@@ -165,8 +234,8 @@ export function phaseDepositExtraction(
       payload: {
         depositId: deposit.id,
         extractedByResource,
-        inputShortfallScale,
         inputsConsumed,
+        perJob,
         settlementId: sid,
         totalExtraction,
         workers,

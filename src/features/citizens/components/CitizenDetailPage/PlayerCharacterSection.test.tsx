@@ -14,10 +14,6 @@ vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
-vi.mock("@/features/permissions", () => ({
-  RoleAssignmentControls: () => null,
-}));
-
 const WORLD_ID = "00000000-0000-0000-0000-000000000010";
 const USER_ID = "00000000-0000-0000-0000-000000000099";
 
@@ -72,7 +68,6 @@ function renderSection(
         canAdmin={options.canAdmin}
         canEdit={options.canAdmin}
         citizen={citizen}
-        isArchived={false}
         queryClient={createQueryClient()}
       />
     </QueryClientProvider>,
@@ -90,8 +85,10 @@ function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
     bornOnTurnNumber: 1,
     citizenType: "player_character",
     createdAt: "2026-05-01T00:00:00.000Z",
+    cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Citizen",
     id: "citizen-1",
     name: "Citizen",
@@ -99,6 +96,7 @@ function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
     parentACitizenId: null,
     parentBCitizenId: null,
     profilePhotoUrl: null,
+    religionId: null,
     roleNationId: null,
     roleSettlementId: null,
     roleType: "none",

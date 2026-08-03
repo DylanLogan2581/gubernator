@@ -1,9 +1,9 @@
-// Integration test: runs end-turn-simulation against the local seeded Aldermoor world.
+// Integration test: runs end-turn-simulation against the local seeded world.
 //
 // Requires a running local Supabase instance (`npx supabase start`) with the
-// seed loaded. The seeded world 101 ("Aldermoor") has already been advanced 32
-// turns through the real simulation and tidied into a clean turn-32 snapshot, so
-// this test does NOT assume a particular turn number: it reads the world's live
+// seed loaded. The seeded world has already been advanced many turns through the
+// real simulation and tidied into a clean snapshot, so this test does NOT assume
+// a particular turn number or world id: it resolves both, reads the world's live
 // `current_turn_number`, advances exactly ONE turn, asserts the resulting deltas,
 // and then restores the captured state so a later `npx supabase test db` still
 // passes.
@@ -30,9 +30,14 @@ const LOCAL_SERVICE_KEY: string =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
 // ---------------------------------------------------------------------------
-// Seed world 101 identifiers (Aldermoor; see supabase/seed.sql).
+// Seed world identifiers. The seed ships exactly one world, but its id and its
+// settlements' ids are generated rather than fixed, so both are resolved from
+// the live database in beforeAll instead of hardcoded. An earlier revision
+// pinned these to a former fixture world; regenerating the seed silently broke
+// every assertion below.
 // ---------------------------------------------------------------------------
-const WORLD_ID = "00000000-0000-0000-0000-000000000101";
+let WORLD_ID = "";
+let SETTLEMENT_IDS: string[] = [];
 const SUPER_ADMIN_EMAIL = "superadmin@gubernator.local";
 const SUPER_ADMIN_PASSWORD = "password123";
 const svc = createClient(LOCAL_URL, LOCAL_SERVICE_KEY, {
@@ -52,29 +57,78 @@ const anon = createClient(LOCAL_URL, LOCAL_ANON_KEY, {
   },
 });
 
-// The six canonical settlements in Aldermoor (world 101).
-const SETTLEMENT_IDS = [
-  "00000000-0000-0000-0000-000000000301", // Aldercross
-  "00000000-0000-0000-0000-000000000302", // Wendlin
-  "00000000-0000-0000-0000-000000000303", // Bramhollow
-  "00000000-0000-0000-0000-000000000304", // Saltmere
-  "00000000-0000-0000-0000-000000000305", // Cobbleford
-  "00000000-0000-0000-0000-000000000306", // Carrick Hold
-] as const;
+// Resolves the seeded world and its settlements. Returns error strings rather
+// than throwing so the caller can aggregate them with the other setup errors.
+async function resolveSeedFixtures(): Promise<string[]> {
+  const errors: string[] = [];
 
-// Citizen Wynflaed Quill (431) is seeded as a permanently-dead founder NPC with
-// death_cause_category 'unknown'. The seed-topology pgTAP test asserts she stays
-// dead, so the restore logic below must keep her seeded death state intact. Her
+  const { data: worldRows, error: worldErr } = await svc
+    .from("worlds")
+    .select("id")
+    .eq("is_trashed", false);
+  if (worldErr !== null) {
+    errors.push(`resolve seed world: ${worldErr.message}`);
+    return errors;
+  }
+  const worlds = (worldRows ?? []) as unknown as { id: string }[];
+  if (worlds.length !== 1) {
+    errors.push(
+      `resolve seed world: expected exactly 1 seeded world, found ${worlds.length}`,
+    );
+    return errors;
+  }
+  WORLD_ID = worlds[0].id;
+
+  // Settlements are scoped to a nation, not directly to a world, so resolve the
+  // world's nations first.
+  const { data: nationRows, error: nationErr } = await svc
+    .from("nations")
+    .select("id")
+    .eq("world_id", WORLD_ID);
+  if (nationErr !== null) {
+    errors.push(`resolve seed nations: ${nationErr.message}`);
+    return errors;
+  }
+  const nationIds = ((nationRows ?? []) as unknown as { id: string }[]).map(
+    (row) => row.id,
+  );
+  if (nationIds.length === 0) {
+    errors.push("resolve seed nations: world has no nations");
+    return errors;
+  }
+
+  const { data: settlementRows, error: settlementErr } = await svc
+    .from("settlements")
+    .select("id")
+    .in("nation_id", nationIds)
+    .order("id");
+  if (settlementErr !== null) {
+    errors.push(`resolve seed settlements: ${settlementErr.message}`);
+    return errors;
+  }
+  SETTLEMENT_IDS = ((settlementRows ?? []) as unknown as { id: string }[]).map(
+    (row) => row.id,
+  );
+  if (SETTLEMENT_IDS.length === 0) {
+    errors.push("resolve seed settlements: world has no settlements");
+  }
+
+  return errors;
+}
+
+// One seeded citizen is a permanently-dead founder NPC with
+// death_cause_category 'unknown'. The seed-topology pgTAP test asserts they stay
+// dead, so the restore logic below must keep that seeded death state intact. The
 // exact `{status, death_cause, death_cause_category}` is captured dynamically with
 // every other citizen (no hardcoded death-cause string) and restored verbatim, so
 // no dedicated identifier is needed here.
 
 // ---------------------------------------------------------------------------
-// Mutable settlement-scoped tables the end-turn engine mutates across all six
-// settlements (status/progress/count/remaining fields) but does not create or
+// Mutable settlement-scoped tables the end-turn engine mutates across every
+// settlement (status/progress/count/remaining fields) but does not create or
 // delete rows in for the seeded settlements. These are snapshotted (full rows
 // via select('*')) before the test turn and upserted back verbatim in afterAll,
-// keeping world 101 byte-identical for the pgTAP seed-topology suite.
+// keeping the seeded world byte-identical for the pgTAP seed-topology suite.
 // ---------------------------------------------------------------------------
 const SETTLEMENT_SCOPED_TABLES = [
   "construction_projects",
@@ -96,7 +150,7 @@ type CitizenLifeState = {
 let accessToken = "";
 let startTurn = 0;
 
-// Set of every citizen id present in world 101 before the test turn, plus each
+// Set of every citizen id present in the seeded world before the test turn, plus each
 // citizen's life state (so afterAll can revive test-turn deaths and delete
 // test-turn newborns).
 const beforeCitizenLifeState = new Map<string, CitizenLifeState>();
@@ -118,23 +172,24 @@ let baselineConstructionProgress = 0;
 const baselinePopulationCounts = new Map<string, number>();
 
 // ---------------------------------------------------------------------------
-// Helpers for resolving the live set of world-101 citizen ids (used both to
+// Helpers for resolving the live set of seeded-world citizen ids (used both to
 // scope citizen_assignments and to detect newborns in afterAll).
 // ---------------------------------------------------------------------------
 async function fetchWorldCitizenIds(): Promise<{
   ids: string[];
   error: string | null;
 }> {
-  const { data, error } = await svc
-    .from("citizens")
-    .select("id")
-    .eq("world_id", WORLD_ID);
-  if (error !== null) return { ids: [], error: error.message };
-  const rows = (data ?? []) as unknown as { id: string }[];
-  return { ids: rows.map((r) => r.id), error: null };
+  const { rows, error } = await selectAllPages(() =>
+    svc.from("citizens").select("id").eq("world_id", WORLD_ID).order("id"),
+  );
+  if (error !== null) return { ids: [], error };
+  return {
+    ids: (rows as unknown as { id: string }[]).map((r) => r.id),
+    error: null,
+  };
 }
 
-// World 101 has ~292 citizens; enumerating every id in a single PostgREST `.in()`
+// The seeded world has hundreds of citizens; enumerating every id in a single PostgREST `.in()`
 // filter overflows the GET request URL ("URI too long"). Split id lists into
 // small batches so each request URL stays well within the gateway limit.
 const ID_BATCH_SIZE = 80;
@@ -147,21 +202,74 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return batches;
 }
 
+// PostgREST caps every response at `max_rows` (supabase/config.toml: 1000) and
+// truncates SILENTLY — no error, just a short array. The seeded world is well
+// past that on several tables, so a single unpaginated read returns a partial,
+// non-deterministically-ordered snapshot; restoring from one leaves rows behind
+// and the re-insert then collides on the primary key. Every read below pages
+// through with an explicit order so the full set comes back.
+const PAGE_SIZE = 1000;
+
+async function selectAllPages(
+  build: () => {
+    range: (
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  },
+): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  const rows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build().range(from, from + PAGE_SIZE - 1);
+    if (error !== null) return { rows: [], error: error.message };
+    const page = (data ?? []) as Record<string, unknown>[];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return { rows, error: null };
+  }
+}
+
+// Selects `columns` from `table` where `column` is in `ids`, batching the
+// `.in()` filter so the request URL stays short and paging each batch so no
+// result is truncated. Every id-filtered read in this file goes through here:
+// the seeded world has grown past the point where a single `.in()` fits in a
+// request URL, and an unbatched one fails with "URI too long".
+async function selectByIds(
+  table: string,
+  column: string,
+  ids: readonly string[],
+  columns = "*",
+  orderColumn = "id",
+): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  const rows: Record<string, unknown>[] = [];
+  for (const batch of chunk(ids, ID_BATCH_SIZE)) {
+    const { rows: page, error } = await selectAllPages(() =>
+      svc
+        // The table name is a literal from this file, not user input; the
+        // client's generated table union can't express that, so widen it here.
+        .from(table as never)
+        .select(columns)
+        .in(column, batch)
+        .order(orderColumn),
+    );
+    if (error !== null) return { rows: [], error };
+    rows.push(...page);
+  }
+  return { rows, error: null };
+}
+
 // Selects all citizen_assignments for the given citizen ids, batching the `.in()`
 // filter so the request URL stays short. Returns rows or an error string.
 async function fetchAssignmentsForCitizens(
   citizenIds: readonly string[],
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
-  const rows: Record<string, unknown>[] = [];
-  for (const batch of chunk(citizenIds, ID_BATCH_SIZE)) {
-    const { data, error } = await svc
-      .from("citizen_assignments")
-      .select("*")
-      .in("citizen_id", batch);
-    if (error !== null) return { rows: [], error: error.message };
-    rows.push(...((data ?? []) as Record<string, unknown>[]));
-  }
-  return { rows, error: null };
+  return await selectByIds(
+    "citizen_assignments",
+    "citizen_id",
+    citizenIds,
+    "*",
+    // citizen_assignments is keyed by citizen_id, not id.
+    "citizen_id",
+  );
 }
 
 // Deletes all citizen_assignments for the given citizen ids, batching the `.in()`
@@ -179,11 +287,45 @@ async function deleteAssignmentsForCitizens(
   return null;
 }
 
+// Deletes every partnership with the given citizens on either side, batching the
+// `.in()` filter so the request URL stays short. Returns an error string or null.
+async function deletePartnershipsForCitizens(
+  citizenIds: readonly string[],
+): Promise<string | null> {
+  for (const column of ["citizen_a_id", "citizen_b_id"] as const) {
+    for (const batch of chunk(citizenIds, ID_BATCH_SIZE)) {
+      const { error } = await svc
+        .from("partnerships")
+        .delete()
+        .in(column, batch);
+      if (error !== null) return error.message;
+    }
+  }
+  return null;
+}
+
+// Deletes the given citizens, batching the `.in()` filter so the request URL
+// stays short. Returns an error string or null.
+async function deleteCitizensByIds(
+  citizenIds: readonly string[],
+): Promise<string | null> {
+  for (const batch of chunk(citizenIds, ID_BATCH_SIZE)) {
+    const { error } = await svc.from("citizens").delete().in("id", batch);
+    if (error !== null) return error.message;
+  }
+  return null;
+}
+
 // Captures everything required to (a) assert deltas after advancing one turn and
-// (b) restore world 101 afterward. Returns a list of failures rather than
+// (b) restore the seeded world afterward. Returns a list of failures rather than
 // throwing so the caller can aggregate them.
 async function captureBeforeState(): Promise<string[]> {
   const errors: string[] = [];
+
+  // Resolve the seeded world/settlement ids first — every query below is scoped
+  // by them, so there is nothing meaningful to capture if this fails.
+  const resolveErrors = await resolveSeedFixtures();
+  if (resolveErrors.length > 0) return resolveErrors;
 
   // Live turn number — do NOT assume turn 0.
   const { data: worldRow, error: worldErr } = await svc
@@ -194,21 +336,24 @@ async function captureBeforeState(): Promise<string[]> {
   if (worldErr !== null) {
     errors.push(`read world turn: ${worldErr.message}`);
   } else if (worldRow === null) {
-    errors.push("read world turn: world 101 not found");
+    errors.push("read world turn: seeded world not found");
   } else {
     startTurn = Number(worldRow.current_turn_number);
   }
 
   // Every citizen's life state, keyed by id.
-  const { data: citizenRows, error: citizenErr } = await svc
-    .from("citizens")
-    .select("id,status,death_cause,death_cause_category")
-    .eq("world_id", WORLD_ID);
+  const { rows: citizenRows, error: citizenErr } = await selectAllPages(() =>
+    svc
+      .from("citizens")
+      .select("id,status,death_cause,death_cause_category")
+      .eq("world_id", WORLD_ID)
+      .order("id"),
+  );
   if (citizenErr !== null) {
-    errors.push(`capture citizens: ${citizenErr.message}`);
+    errors.push(`capture citizens: ${citizenErr}`);
   } else {
     beforeCitizenLifeState.clear();
-    for (const row of citizenRows ?? []) {
+    for (const row of citizenRows) {
       const r = row as { id: string } & CitizenLifeState;
       beforeCitizenLifeState.set(r.id, {
         status: r.status,
@@ -220,35 +365,37 @@ async function captureBeforeState(): Promise<string[]> {
 
   // Full-row snapshots of the mutable settlement-scoped tables.
   for (const table of SETTLEMENT_SCOPED_TABLES) {
-    const { data, error } = await svc
-      .from(table)
-      .select("*")
-      .in("settlement_id", SETTLEMENT_IDS);
+    const { rows, error } = await selectByIds(
+      table,
+      "settlement_id",
+      SETTLEMENT_IDS,
+    );
     if (error !== null) {
-      errors.push(`snapshot ${table}: ${error.message}`);
+      errors.push(`snapshot ${table}: ${error}`);
       continue;
     }
-    tableSnapshots[table] = (data ?? []) as Record<string, unknown>[];
+    tableSnapshots[table] = rows;
   }
 
   // deposit_instance_resources has no settlement_id; scope it via the snapshot
-  // deposit instances for the six settlements.
+  // deposit instances for the seeded settlements.
   const depositIds = (tableSnapshots["deposit_instances"] ?? []).map(
     (d) => (d as { id: string }).id,
   );
   if (depositIds.length > 0) {
-    const { data, error } = await svc
-      .from("deposit_instance_resources")
-      .select("*")
-      .in("deposit_instance_id", depositIds);
+    const { rows, error } = await selectByIds(
+      "deposit_instance_resources",
+      "deposit_instance_id",
+      depositIds,
+    );
     if (error !== null) {
-      errors.push(`snapshot deposit_instance_resources: ${error.message}`);
+      errors.push(`snapshot deposit_instance_resources: ${error}`);
     } else {
-      depositResourceSnapshot = (data ?? []) as Record<string, unknown>[];
+      depositResourceSnapshot = rows;
     }
   }
 
-  // All citizen_assignments for world-101 citizens.
+  // All citizen_assignments for the seeded world's citizens.
   const worldCitizenIds = [...beforeCitizenLifeState.keys()];
   if (worldCitizenIds.length > 0) {
     const { rows, error } = await fetchAssignmentsForCitizens(worldCitizenIds);
@@ -259,27 +406,29 @@ async function captureBeforeState(): Promise<string[]> {
     }
   }
 
-  // The six canonical settlement rows (the engine resets ready flags each turn).
-  const { data: settlementRows, error: settlementErr } = await svc
-    .from("settlements")
-    .select("*")
-    .in("id", SETTLEMENT_IDS);
+  // The seeded settlement rows (the engine resets ready flags each turn).
+  const { rows: settlementRows, error: settlementErr } = await selectByIds(
+    "settlements",
+    "id",
+    SETTLEMENT_IDS,
+  );
   if (settlementErr !== null) {
-    errors.push(`snapshot settlements: ${settlementErr.message}`);
+    errors.push(`snapshot settlements: ${settlementErr}`);
   } else {
-    settlementsSnapshot = (settlementRows ?? []) as Record<string, unknown>[];
+    settlementsSnapshot = settlementRows;
   }
 
-  // World-101 trade routes (the engine can pause active routes). All routes for
-  // this world originate from the six canonical settlements.
-  const { data: tradeRouteRows, error: tradeRouteErr } = await svc
-    .from("trade_routes")
-    .select("*")
-    .in("origin_settlement_id", SETTLEMENT_IDS);
+  // Trade routes (the engine can pause active routes). All routes for this world
+  // originate from the seeded settlements.
+  const { rows: tradeRouteRows, error: tradeRouteErr } = await selectByIds(
+    "trade_routes",
+    "origin_settlement_id",
+    SETTLEMENT_IDS,
+  );
   if (tradeRouteErr !== null) {
-    errors.push(`snapshot trade_routes: ${tradeRouteErr.message}`);
+    errors.push(`snapshot trade_routes: ${tradeRouteErr}`);
   } else {
-    tradeRoutesSnapshot = (tradeRouteRows ?? []) as Record<string, unknown>[];
+    tradeRoutesSnapshot = tradeRouteRows;
   }
 
   // Aggregate baselines.
@@ -301,7 +450,7 @@ async function captureBeforeState(): Promise<string[]> {
   return errors;
 }
 
-// Restores world 101 close to its seeded turn-N state. Returns failures rather
+// Restores the seeded world close to its seeded turn-N state. Returns failures rather
 // than throwing so the caller can aggregate them.
 async function restoreWorldToCapturedState(): Promise<string[]> {
   const errors: string[] = [];
@@ -335,12 +484,19 @@ async function restoreWorldToCapturedState(): Promise<string[]> {
       (id) => !beforeCitizenLifeState.has(id),
     );
     if (newbornIds.length > 0) {
-      const { error: newbornErr } = await svc
-        .from("citizens")
-        .delete()
-        .in("id", newbornIds);
+      // Partnerships reference citizens with a plain FK (no cascade), and the
+      // turn can partner a newborn's parents or the newborns themselves, so any
+      // partnership touching a newborn has to go first or the delete below
+      // fails on partnerships_citizen_a_id_fkey.
+      const partnershipErr = await deletePartnershipsForCitizens(newbornIds);
+      if (partnershipErr !== null) {
+        errors.push(`delete test-turn partnerships: ${partnershipErr}`);
+      }
+      // Batched like every other id-filtered request here: a single `.in()` over
+      // a full turn's newborns overflows the GET/DELETE request URL.
+      const newbornErr = await deleteCitizensByIds(newbornIds);
       if (newbornErr !== null) {
-        errors.push(`delete test-turn newborns: ${newbornErr.message}`);
+        errors.push(`delete test-turn newborns: ${newbornErr}`);
       }
     }
   }
@@ -389,7 +545,7 @@ async function restoreWorldToCapturedState(): Promise<string[]> {
     if (error !== null) errors.push(`restore trade_routes: ${error.message}`);
   }
 
-  // 6. Restore citizen_assignments: delete all current world-101 assignments and
+  // 6. Restore citizen_assignments: delete all current seeded-world assignments and
   //    re-insert the captured ones. (Newborns were already deleted above, so no
   //    stray assignments remain for them.)
   const { ids: liveCitizenIds, error: liveIdErr } = await fetchWorldCitizenIds();
@@ -566,7 +722,7 @@ describe("end-turn-simulation integration", () => {
     };
     forecastBySettlement = forecast?.bySettlement ?? {};
 
-    // Settlement-turn-snapshot counts per canonical settlement for this transition.
+    // Settlement-turn-snapshot counts per seeded settlement for this transition.
     for (const settlementId of SETTLEMENT_IDS) {
       const { count } = await svc
         .from("settlement_turn_snapshots")
@@ -576,15 +732,17 @@ describe("end-turn-simulation integration", () => {
       settlementSnapshotCounts.set(settlementId, count ?? 0);
     }
 
-    // Total deposit remaining_quantity across the six settlements after the call.
+    // Total deposit remaining_quantity across the seeded settlements after the call.
     const depositIds = (tableSnapshots["deposit_instances"] ?? []).map(
       (d) => (d as { id: string }).id,
     );
-    const { data: depRows } = await svc
-      .from("deposit_instance_resources")
-      .select("remaining_quantity")
-      .in("deposit_instance_id", depositIds);
-    const depositRemainingRows = (depRows ?? []) as unknown as {
+    const { rows: depRows } = await selectByIds(
+      "deposit_instance_resources",
+      "deposit_instance_id",
+      depositIds,
+      "remaining_quantity",
+    );
+    const depositRemainingRows = depRows as unknown as {
       remaining_quantity: number;
     }[];
     totalDepositRemainingAfter = depositRemainingRows.reduce(
@@ -593,25 +751,29 @@ describe("end-turn-simulation integration", () => {
     );
 
     // Managed-population counts after the call.
-    const { data: popRows } = await svc
-      .from("managed_population_instances")
-      .select("id,current_count")
-      .in("settlement_id", SETTLEMENT_IDS);
-    populationRowsAfter = popRows ?? [];
+    const { rows: popRows } = await selectByIds(
+      "managed_population_instances",
+      "settlement_id",
+      SETTLEMENT_IDS,
+      "id,current_count",
+    );
+    populationRowsAfter = popRows as unknown as typeof populationRowsAfter;
 
     // Total construction progress after the call.
-    const { data: projRows } = await svc
-      .from("construction_projects")
-      .select("progress_worker_turns,status")
-      .in("settlement_id", SETTLEMENT_IDS);
-    totalConstructionProgressAfter = (projRows ?? []).reduce(
+    const { rows: projRows } = await selectByIds(
+      "construction_projects",
+      "settlement_id",
+      SETTLEMENT_IDS,
+      "progress_worker_turns,status",
+    );
+    totalConstructionProgressAfter = projRows.reduce(
       (sum, r) =>
         sum +
         Number((r as { progress_worker_turns: number }).progress_worker_turns),
       0,
     );
 
-    // Notifications emitted for world 101, visible to the super admin (all
+    // Notifications emitted for the seeded world, visible to the super admin (all
     // super admins are always recipients).
     const { count: fetchedNotifCount } = await anon
       .from("notifications")
@@ -643,7 +805,7 @@ describe("end-turn-simulation integration", () => {
     expect(transitionRow?.status).toBe("completed");
   });
 
-  it("populates a forecast snapshot for every canonical settlement", () => {
+  it("populates a forecast snapshot for every seeded settlement", () => {
     expect(transitionRow?.forecast_snapshot_jsonb).toBeDefined();
     expect(transitionRow?.forecast_snapshot_jsonb).not.toBeNull();
     expect(forecastBySettlement).toBeDefined();
@@ -677,7 +839,7 @@ describe("end-turn-simulation integration", () => {
     }
   });
 
-  it("writes at least one settlement_turn_snapshot per canonical settlement", () => {
+  it("writes at least one settlement_turn_snapshot per seeded settlement", () => {
     for (const settlementId of SETTLEMENT_IDS) {
       expect(
         settlementSnapshotCounts.get(settlementId),
@@ -711,8 +873,8 @@ describe("end-turn-simulation integration", () => {
     expect(notifCountAfter).toBeGreaterThanOrEqual(1);
   });
 
-  // Leave the shared local database close to its canonical turn-32 seed state so
-  // the pgTAP seed-topology tests (and any later run) see an unmutated world 101.
+  // Leave the shared local database close to its canonical seed state so
+  // the pgTAP seed-topology tests (and any later run) see an unmutated seeded world.
   afterAll(async () => {
     const teardownErrors = await restoreWorldToCapturedState();
     if (teardownErrors.length > 0) {

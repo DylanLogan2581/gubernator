@@ -140,7 +140,7 @@ describe("replaceTradeRouteMutationOptions", () => {
     expect(calls.rpc).toHaveBeenCalledWith("replace_trade_route", {
       p_new_payload: {
         destination_settlement_id: DESTINATION_ID,
-        legs: [{ direction: "send", quantity: 100, resourceId: RESOURCE_ID }],
+        legs: [{ direction: "send", quantity: 100, resource_id: RESOURCE_ID }],
         origin_settlement_id: ORIGIN_ID,
       },
       p_old_id: OLD_ROUTE_ID,

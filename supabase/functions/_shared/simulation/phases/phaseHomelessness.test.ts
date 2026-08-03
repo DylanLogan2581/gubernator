@@ -90,7 +90,7 @@ describe("phaseHomelessness — cap boundary", () => {
       settlementBuildings: [makeBuilding({ id: "b1" })],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     expect(result.citizenDeaths).toHaveLength(0);
     expect(result.logs).toHaveLength(0);
@@ -116,7 +116,7 @@ describe("phaseHomelessness — cap boundary", () => {
       settlementBuildings: [makeBuilding({ id: "b1" })],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     expect(result.citizenDeaths).toHaveLength(1);
     expect(result.citizenDeaths[0]).toMatchObject({
@@ -149,7 +149,7 @@ describe("phaseHomelessness — decline rate arithmetic", () => {
       settlementBuildings: [],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     expect(result.citizenDeaths).toHaveLength(3);
   });
@@ -174,7 +174,7 @@ describe("phaseHomelessness — decline rate arithmetic", () => {
       settlementBuildings: [],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     expect(result.citizenDeaths).toHaveLength(4);
   });
@@ -200,7 +200,7 @@ describe("phaseHomelessness — decline rate arithmetic", () => {
       settlementBuildings: [],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     expect(result.citizenDeaths).toHaveLength(0);
     expect(result.notifications).toHaveLength(0);
@@ -231,7 +231,7 @@ describe("phaseHomelessness — deterministic ordering and log/notification shap
       settlementBuildings: [],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     // overage=3, rate=1 -> all 3 die, in order: turn 2 (id "a"), turn 2 (id "b"), turn 5 (id "z").
     expect(result.citizenDeaths.map((d) => d.citizenId)).toEqual(["a", "b", "z"]);
@@ -256,7 +256,7 @@ describe("phaseHomelessness — deterministic ordering and log/notification shap
       settlementBuildings: [makeBuilding({ id: "b1" })],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     // overage = 3 - 1 = 2 -> 2 deaths.
     expect(result.logs).toHaveLength(2);
@@ -298,7 +298,7 @@ describe("phaseHomelessness — deterministic ordering and log/notification shap
     });
     ctx.shared.pendingDeaths.add("c0");
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     // Only c1 is alive-and-not-pending, cap=0, overage=1, rate=1 -> 1 death: c1.
     expect(result.citizenDeaths).toHaveLength(1);
@@ -328,7 +328,7 @@ describe("phaseHomelessness — deterministic ordering and log/notification shap
       settlementBuildings: [],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     // Only "npc-alive" counts toward alive NPCs; cap=0, overage=1, rate=1 -> 1 death.
     expect(result.citizenDeaths).toHaveLength(1);
@@ -361,7 +361,7 @@ describe("phaseHomelessness — deterministic ordering and log/notification shap
       settlements: [makeSettlement({ id: "s1" }), makeSettlement({ id: "s2" })],
     });
 
-    const result = phaseHomelessness(ctx);
+    const result = phaseHomelessness(ctx, new Set());
 
     const s1Deaths = result.citizenDeaths.filter((d) => d.citizenId.startsWith("s1-"));
     const s2Deaths = result.citizenDeaths.filter((d) => d.citizenId.startsWith("s2-"));

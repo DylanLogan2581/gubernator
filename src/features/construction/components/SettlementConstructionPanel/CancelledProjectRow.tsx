@@ -54,7 +54,6 @@ export function CancelledProjectRow({
             <IconChip
               icon={DOMAIN_ICON_CHIPS.construction.icon}
               tone={DOMAIN_ICON_CHIPS.construction.tone}
-              size="sm"
             />
             {project.blueprintName}
           </span>

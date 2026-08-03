@@ -9,7 +9,6 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
-import { RoleAssignmentControls } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -30,13 +29,11 @@ export function CitizenPlayerCharacterSection({
   canAdmin,
   canEdit,
   citizen,
-  isArchived,
   queryClient,
 }: {
   readonly canAdmin: boolean;
   readonly canEdit: boolean;
   readonly citizen: Citizen;
-  readonly isArchived: boolean;
   readonly queryClient: QueryClient;
 }): JSX.Element {
   return (
@@ -49,24 +46,20 @@ export function CitizenPlayerCharacterSection({
           id="citizen-player-character-heading"
           className="text-base font-medium"
         >
-          Role and linked user
+          Linked user
         </h2>
         <p className="text-sm text-muted-foreground">
-          Player character role and the user that controls them.
+          The user account that controls this player character.
         </p>
       </div>
-      <CitizenLinkedUserControl
-        canAdmin={canAdmin}
-        canEdit={canEdit}
-        citizen={citizen}
-        queryClient={queryClient}
-      />
-      <RoleAssignmentControls
-        canAdminWorld={canAdmin}
-        citizen={citizen}
-        isArchived={isArchived}
-        variant="citizen"
-      />
+      {citizen.citizenType === "player_character" ? (
+        <CitizenLinkedUserControl
+          canAdmin={canAdmin}
+          canEdit={canEdit}
+          citizen={citizen}
+          queryClient={queryClient}
+        />
+      ) : null}
     </Card>
   );
 }
@@ -222,25 +215,25 @@ function CitizenLinkedUserControl({
 
   return (
     <div className="grid gap-2">
-      <dl>
+      <dl className="grid divide-y divide-border border-y border-border">
         {linkedUserState.kind === "pending" ? (
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <dt className="text-xs text-muted-foreground">Linked user</dt>
-            <dd className="mt-1">
+          <div className="flex items-center justify-between gap-4 py-2.5">
+            <dt className="eyebrow">Linked user</dt>
+            <dd>
               <Skeleton className="h-4 w-32" />
             </dd>
           </div>
         ) : linkedUserState.kind === "hidden" ? (
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <dt className="text-xs text-muted-foreground">Linked user</dt>
-            <dd className="mt-1 text-sm italic text-muted-foreground">
+          <div className="flex items-center justify-between gap-4 py-2.5">
+            <dt className="eyebrow">Linked user</dt>
+            <dd className="text-sm italic text-right text-muted-foreground">
               Linked user hidden
             </dd>
           </div>
         ) : linkedUserState.kind === "error" ? (
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <dt className="text-xs text-muted-foreground">Linked user</dt>
-            <dd className="mt-1 flex items-center gap-2 text-sm text-destructive">
+          <div className="flex items-center justify-between gap-4 py-2.5">
+            <dt className="eyebrow">Linked user</dt>
+            <dd className="flex items-center gap-2 text-sm text-destructive">
               <span>Couldn't load linked user.</span>
               <Button
                 type="button"
@@ -304,6 +297,7 @@ function CitizenLinkedUserControl({
             ) : (
               <NativeSelect
                 aria-invalid={inputError === undefined ? undefined : true}
+                aria-label="User"
                 disabled={linkMutation.isPending || usersQuery.isPending}
                 value={selectedUserId}
                 onChange={(event) => {

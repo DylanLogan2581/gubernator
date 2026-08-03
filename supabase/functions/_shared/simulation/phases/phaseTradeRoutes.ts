@@ -5,6 +5,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import type {
+  SimTradeRouteLeg,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -22,10 +23,37 @@ export type PhaseTradeRoutesOutput = {
 export function phaseTradeRoutes(
   context: SimulationContext,
 ): PhaseTradeRoutesOutput {
-  const { citizenAssignments, jobs, settlements, stockpiles, tradeRoutes } = context.input;
+  const {
+    citizenAssignments,
+    jobs,
+    nationOffices,
+    nationRelationships,
+    nations,
+    settlements,
+    stockpiles,
+    tradeRoutes,
+    unitSoldiers,
+  } = context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
+  const officeholderCitizenIds = new Set(
+    nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+  );
+  const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
+  const nationById = new Map(nations.map((n) => [n.id, n]));
+
+  // Nation pairs currently at war, keyed both directions (`${a}:${b}`) so a
+  // single Set.has lookup covers either direction regardless of which side's
+  // row is being read. hostile/at_war are bilaterally mirrored
+  // (20260812000000), so both directions are already present for a declared
+  // war, but keying both ways here is cheap and defensive.
+  const atWarNationPairs = new Set<string>();
+  for (const relationship of nationRelationships) {
+    if (relationship.currentStance !== "at_war") continue;
+    atWarNationPairs.add(`${relationship.fromNationId}:${relationship.toNationId}`);
+    atWarNationPairs.add(`${relationship.toNationId}:${relationship.fromNationId}`);
+  }
 
   // Start quantities from running post-prior-phase totals; caps are static.
   const stockpileQty = new Map(context.shared.pendingStockpiles);
@@ -41,7 +69,9 @@ export function phaseTradeRoutes(
       assignment.assignmentType !== "trade_route" ||
       assignment.tradeRouteId === null ||
       assignment.tradeRouteEnd === null ||
-      assignment.jobId === null
+      assignment.jobId === null ||
+      officeholderCitizenIds.has(assignment.citizenId) ||
+      soldierCitizenIds.has(assignment.citizenId)
     ) {
       continue;
     }
@@ -75,7 +105,12 @@ export function phaseTradeRoutes(
       0,
     );
 
-    const pause = (pauseReason: string, previouslyPaused: boolean): void => {
+    const pause = (
+      pauseReason: string,
+      previouslyPaused: boolean,
+      resourceId: string,
+      quantityPerTransition: number,
+    ): void => {
       allOutcomes.push({
         delivered: false,
         pauseReason,
@@ -87,6 +122,8 @@ export function phaseTradeRoutes(
         payload: {
           destinationSettlementId,
           pauseReason,
+          quantityPerTransition,
+          resourceId,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",
@@ -103,22 +140,57 @@ export function phaseTradeRoutes(
       }
     };
 
+    // Diplomacy gate (#1088): a route between nations currently at war is
+    // paused before any capacity/stock checks run. Internal (same-nation)
+    // routes are never affected. Resume is automatic — once neither
+    // direction reads at_war, this check is skipped and the route falls
+    // through to the normal checks below.
+    const originNationId = settlementById.get(originSettlementId)?.nationId;
+    const destinationNationId = settlementById.get(destinationSettlementId)?.nationId;
+    if (
+      originNationId !== undefined &&
+      destinationNationId !== undefined &&
+      originNationId !== destinationNationId &&
+      atWarNationPairs.has(`${originNationId}:${destinationNationId}`)
+    ) {
+      pause("nations_at_war", wasPaused, legs[0].resourceId, totalQty);
+      continue;
+    }
+
+    // Trade policy gate (#1134): closed borders pause existing international
+    // routes too, not just new proposals/approvals (#1087 only gated those).
+    // Mirrors the war pause above — automatic resume once neither side reads
+    // 'closed'. state_controlled only restricts who may manage a route
+    // (settlement vs nation authority, #1087); it never pauses an already
+    // active route, so it is deliberately excluded here.
+    if (
+      originNationId !== undefined &&
+      destinationNationId !== undefined &&
+      originNationId !== destinationNationId &&
+      (nationById.get(originNationId)?.tradePolicy === "closed" ||
+        nationById.get(destinationNationId)?.tradePolicy === "closed")
+    ) {
+      pause("trade_policy_closed", wasPaused, legs[0].resourceId, totalQty);
+      continue;
+    }
+
     // Check trader capacity at origin.
     const originCapacity = traderCapacity.get(`${id}:origin`) ?? 0;
     if (originCapacity < totalQty) {
-      pause("insufficient_trader_origin", wasPaused);
+      pause("insufficient_trader_origin", wasPaused, legs[0].resourceId, totalQty);
       continue;
     }
 
     // Check trader capacity at destination.
     const destCapacity = traderCapacity.get(`${id}:destination`) ?? 0;
     if (destCapacity < totalQty) {
-      pause("insufficient_trader_destination", wasPaused);
+      pause("insufficient_trader_destination", wasPaused, legs[0].resourceId, totalQty);
       continue;
     }
 
     // Check every leg can be satisfied before committing any transfer.
     let pauseReason: string | null = null;
+    let pausingLeg: SimTradeRouteLeg | null = null;
     for (const leg of legs) {
       if (leg.direction === "send") {
         // Send: origin → destination
@@ -126,6 +198,7 @@ export function phaseTradeRoutes(
         const originQty = stockpileQty.get(originKey) ?? 0;
         if (originQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_origin_stock";
+          pausingLeg = leg;
           break;
         }
         const destKey = `${destinationSettlementId}:${leg.resourceId}`;
@@ -133,6 +206,7 @@ export function phaseTradeRoutes(
         const destCap = stockpileCap.get(destKey) ?? 0;
         if (destCap - destQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_destination_space";
+          pausingLeg = leg;
           break;
         }
       } else {
@@ -141,6 +215,7 @@ export function phaseTradeRoutes(
         const destQty = stockpileQty.get(destKey) ?? 0;
         if (destQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_destination_stock";
+          pausingLeg = leg;
           break;
         }
         const originKey = `${originSettlementId}:${leg.resourceId}`;
@@ -148,13 +223,14 @@ export function phaseTradeRoutes(
         const originCap = stockpileCap.get(originKey) ?? 0;
         if (originCap - originQty < leg.quantityPerTransition) {
           pauseReason = "insufficient_origin_space";
+          pausingLeg = leg;
           break;
         }
       }
     }
 
-    if (pauseReason !== null) {
-      pause(pauseReason, wasPaused);
+    if (pauseReason !== null && pausingLeg !== null) {
+      pause(pauseReason, wasPaused, pausingLeg.resourceId, pausingLeg.quantityPerTransition);
       continue;
     }
 

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type JSX } from "react";
+import { useEffect, type JSX } from "react";
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,11 @@ export function AuthCallbackPage({
     error,
   } = useQuery(currentSessionQueryOptions());
 
-  // Navigate to set-password once session is verified
-  useQuery({
-    enabled: session !== null && session !== undefined,
-    queryFn: async () => {
-      await onSessionVerified();
-      return null;
-    },
-    queryKey: ["auth", "callback", "navigate", onSessionVerified],
-  });
+  useEffect(() => {
+    if (session !== null && session !== undefined) {
+      void onSessionVerified();
+    }
+  }, [session, onSessionVerified]);
 
   if (isLoading) {
     return <LoadingState label="Completing sign up…" />;

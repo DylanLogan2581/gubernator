@@ -44,7 +44,7 @@ values
     '',
     '',
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"username":"aldermoor_warden"}'::jsonb,
+    '{"username":"bovold_warden"}'::jsonb,
     now(),
     now()
   ),
@@ -63,7 +63,7 @@ values
     '',
     '',
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"username":"aldercross_steward"}'::jsonb,
+    '{"username":"bovold_steward"}'::jsonb,
     now(),
     now()
   ),
@@ -82,7 +82,7 @@ values
     '',
     '',
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"username":"brammel_reeve"}'::jsonb,
+    '{"username":"bovold_envoy"}'::jsonb,
     now(),
     now()
   ),
@@ -101,7 +101,7 @@ values
     '',
     '',
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"username":"aldermoor_castellan"}'::jsonb,
+    '{"username":"bovold_castellan"}'::jsonb,
     now(),
     now()
   ),
@@ -120,7 +120,7 @@ values
     '',
     '',
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"username":"aldercross_yeoman"}'::jsonb,
+    '{"username":"bovold_freeman"}'::jsonb,
     now(),
     now()
   )
@@ -212,7 +212,7 @@ set
 
 update public.users
 set
-  username = 'aldermoor_warden',
+  username = 'bovold_warden',
   status = 'active',
   is_super_admin = true
 where
@@ -220,7 +220,7 @@ where
 
 update public.users
 set
-  username = 'aldercross_steward',
+  username = 'bovold_steward',
   status = 'active',
   is_super_admin = false
 where
@@ -228,7 +228,7 @@ where
 
 update public.users
 set
-  username = 'brammel_reeve',
+  username = 'bovold_envoy',
   status = 'active',
   is_super_admin = false
 where
@@ -236,7 +236,7 @@ where
 
 update public.users
 set
-  username = 'aldermoor_castellan',
+  username = 'bovold_castellan',
   status = 'active',
   is_super_admin = false
 where
@@ -244,7 +244,7 @@ where
 
 update public.users
 set
-  username = 'aldercross_yeoman',
+  username = 'bovold_freeman',
   status = 'active',
   is_super_admin = false
 where

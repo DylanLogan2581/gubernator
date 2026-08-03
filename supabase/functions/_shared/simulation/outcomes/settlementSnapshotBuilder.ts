@@ -7,6 +7,7 @@ import type {
   CitizenBirth,
   CitizenDeath,
   DepositUpdate,
+  EducationSummary,
   ManagedPopulationUpdate,
   PartnershipChange,
   SettlementSnapshot,
@@ -31,6 +32,7 @@ export type BuildSettlementSnapshotsParams = {
   readonly buildingStateChanges: readonly BuildingStateChange[];
   readonly citizenBirths: readonly CitizenBirth[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly educationSummaryBySettlementId: ReadonlyMap<string, EducationSummary>;
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
   readonly partnershipChanges: readonly PartnershipChange[];
   readonly tradeRouteOutcomes: readonly TradeRouteOutcome[];
@@ -57,6 +59,7 @@ export function buildSettlementSnapshots(
     buildingStateChanges,
     citizenBirths,
     depositUpdates,
+    educationSummaryBySettlementId,
     managedPopulationUpdates,
     partnershipChanges,
     tradeRouteOutcomes,
@@ -259,6 +262,10 @@ export function buildSettlementSnapshots(
       birthCount,
       buildingSummary,
       deathCount,
+      educationSummary: educationSummaryBySettlementId.get(sid) ?? {
+        countsByLevelId: {},
+        graduationsThisTurn: 0,
+      },
       homelessDeathsCount,
       managedPopulationSummary,
       partnershipsFormedCount,

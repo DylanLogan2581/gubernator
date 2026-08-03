@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { citizensQueryKeys } from "@/features/citizens";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -58,9 +59,18 @@ export function setDepositInstanceMaxWorkersMutationOptions({
     mutationKey: [...depositsQueryKeys.all, "set-deposit-instance-max-workers"],
     onSuccess: async (_result, input): Promise<void> => {
       const values = setDepositInstanceMaxWorkersInputSchema.parse(input);
-      await queryClient.invalidateQueries({
-        queryKey: depositsQueryKeys.instancesBySettlement(values.settlementId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.instancesBySettlement(
+            values.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.assignmentsInSettlement(
+            values.settlementId,
+          ),
+        }),
+      ]);
     },
   });
 }

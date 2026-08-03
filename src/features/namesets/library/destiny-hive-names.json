@@ -1,0 +1,83 @@
+{
+  "id": "destiny-hive-names",
+  "displayName": "Hive",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/destiny-hive-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "none",
+    "parts": {
+      "nm5": ["c", "ch", "h", "m", "n", "ph", "s", "sh", "th", "v", "z", "zh"],
+      "nm6": ["a", "e", "i", "o"],
+      "nm7": [
+        "g",
+        "lk",
+        "lm",
+        "ln",
+        "m",
+        "mn",
+        "n",
+        "nl",
+        "nr",
+        "rm",
+        "sh",
+        "sm",
+        "sn",
+        "sr",
+        "st",
+        "th",
+        "tr",
+        "v",
+        "vn",
+        "vr",
+        "z",
+        "zd",
+        "zl",
+        "zn"
+      ],
+      "nm8": ["h", "l", "s", "th"],
+      "nm1": [
+        "b",
+        "cr",
+        "d",
+        "g",
+        "gr",
+        "k",
+        "kr",
+        "m",
+        "n",
+        "r",
+        "s",
+        "tr",
+        "z"
+      ],
+      "nm2": ["a", "e", "o", "u", "oo"],
+      "nm3": [
+        "c",
+        "cr",
+        "gr",
+        "k",
+        "kr",
+        "m",
+        "n",
+        "nd",
+        "r",
+        "rd",
+        "rg",
+        "rn",
+        "rv",
+        "rz",
+        "t",
+        "tr",
+        "v",
+        "z"
+      ],
+      "nm4": ["c", "k", "n", "r", "x"]
+    },
+    "patterns": {
+      "female_given": [["nm5"], ["nm6"], ["nm7"], ["nm6"], ["nm8"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"], ["nm2"], ["nm4"]],
+      "surname": []
+    }
+  }
+}

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (18);
+  plan (26);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -61,18 +61,16 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'fc200000-0000-0000-0000-000000000001',
     'PTR World',
-    'private',
     'active'
   ),
   (
     'fc200000-0000-0000-0000-000000000002',
     'PTR World 2',
-    'private',
     'active'
   );
 
@@ -106,6 +104,22 @@ values
     'fc300000-0000-0000-0000-000000000003',
     'fc200000-0000-0000-0000-000000000002',
     'PTR Nation C (World 2)'
+  );
+
+-- propose_trade_route (#1086) rejects endpoints whose nations have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'fc200000-0000-0000-0000-000000000001',
+    'fc300000-0000-0000-0000-000000000001',
+    'fc300000-0000-0000-0000-000000000002',
+    1
   );
 
 insert into
@@ -158,6 +172,10 @@ values
 --   fc6...002 – Settlement A1 manager PC (user = fc100...003)
 --   fc6...003 – NPC in Settlement A1 (correct nation for non-admin propose)
 --   fc6...004 – NPC in Settlement C1 World 2 (wrong nation for non-admin test)
+--   fc6...005 – non-manager PC in Settlement A1 (user = fc100...004; #1143:
+--     gives the non-manager caller world access via a PC, so the "not a
+--     manager" 42501 check is what's exercised, not the world-access gate on
+--     nations_have_met)
 insert into
   public.citizens (
     id,
@@ -219,6 +237,18 @@ values
     null,
     null,
     'fc400000-0000-0000-0000-000000000003'
+  ),
+  (
+    'fc600000-0000-0000-0000-000000000005',
+    'fc200000-0000-0000-0000-000000000001',
+    'player_character',
+    'PTR Non-Manager PC',
+    'alive',
+    'fc100000-0000-0000-0000-000000000004',
+    'none',
+    null,
+    null,
+    'fc400000-0000-0000-0000-000000000001'
   );
 
 -- ===========================================================================
@@ -320,8 +350,8 @@ reset role;
 -- ===========================================================================
 -- INVALID LEG DIRECTION: rejected (P0001)
 -- Settlement A1 manager (fc100...003) is authorized, but a leg direction that is
--- neither 'send' nor 'receive' is rejected. Citizen residency is no longer
--- checked — the proposing citizen id is only an audit stamp.
+-- neither 'send' nor 'receive' is rejected before the proposed_by citizen
+-- scope check (#1145) is ever reached, regardless of that citizen's nation.
 -- ===========================================================================
 set
   local role authenticated;
@@ -377,6 +407,39 @@ select
     '42501',
     null,
     'non-manager caller is rejected with 42501'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- FOREIGN CITIZEN: rejected (P0001)
+-- Nation A manager (fc100...002) has legitimate authority over the origin
+-- endpoint, but fc6...004 (NPC in World 2, wrong world entirely) does not
+-- belong to either endpoint of this trade route (#1145).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'P0001',
+    'p_proposed_by_citizen_id must be alive and belong to one of the trade route endpoints',
+    'proposed_by citizen belonging to neither endpoint is rejected'
   );
 
 reset role;
@@ -526,7 +589,9 @@ select
 -- ===========================================================================
 -- WORLD ADMIN MANAGES BOTH ENDPOINTS: both sides auto-approve and the route
 -- goes active immediately, since there is no separate recipient to wait on.
--- Citizen residency is irrelevant; the citizen id is only an audit stamp.
+-- The proposed_by citizen must still be alive and belong to one of the two
+-- endpoints (#1145) -- authority to act is admin-derived, but the audit-stamp
+-- citizen is not.
 -- ===========================================================================
 set
   local role authenticated;
@@ -545,7 +610,7 @@ select
         'resource_id', 'fc500000-0000-0000-0000-000000000001',
         'quantity', 5
       )),
-      'fc600000-0000-0000-0000-000000000004'
+      'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
     'world admin can propose for both endpoints (admin override)'
@@ -624,6 +689,264 @@ select
     2,
     'multi-leg proposal creates route with legs intact (2 total routes: first single-leg + this multi-leg)'
   );
+
+-- ===========================================================================
+-- TRADE POLICY (#1087)
+-- ===========================================================================
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'fc400000-0000-0000-0000-000000000004',
+    'fc300000-0000-0000-0000-000000000001',
+    'PTR Settlement A2 (internal)'
+  );
+
+-- CLOSED: destination nation closed blocks international propose, even for a
+-- manager who would otherwise have full authority.
+update public.nations
+set
+  trade_policy = 'closed'
+where
+  id = 'fc300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'P0001',
+    null,
+    'closed destination nation blocks international propose even for a manager'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'fc300000-0000-0000-0000-000000000002';
+
+-- STATE_CONTROLLED: origin nation state_controlled blocks a settlement
+-- manager (settlement-only authority) from proposing an external route.
+update public.nations
+set
+  trade_policy = 'state_controlled'
+where
+  id = 'fc300000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    '42501',
+    null,
+    'state_controlled origin nation blocks settlement manager from proposing an external route'
+  );
+
+reset role;
+
+-- STATE_CONTROLLED: the same policy allows the nation manager (manage-NATION
+-- authority) to propose the external route.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'nation manager authority satisfies a state_controlled origin policy for an external propose'
+  );
+
+reset role;
+
+-- INTERNAL ROUTES UNAFFECTED: Nation A is still state_controlled from above,
+-- but the settlement A1 manager (settlement-only authority) can still
+-- propose an internal route to A2 (same nation).
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000004',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'internal (same-nation) propose is unaffected by state_controlled policy'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'fc300000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- DIPLOMACY (#1088)
+-- ===========================================================================
+-- HOSTILE: hostile stance between the two nations blocks international
+-- propose, even for a manager who would otherwise have full authority.
+insert into
+  public.nation_relationships (from_nation_id, to_nation_id, current_stance)
+values
+  (
+    'fc300000-0000-0000-0000-000000000001',
+    'fc300000-0000-0000-0000-000000000002',
+    'hostile'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'P0001',
+    null,
+    'hostile stance blocks international propose even for a manager'
+  );
+
+reset role;
+
+-- AT_WAR: escalating to at_war blocks propose too.
+update public.nation_relationships
+set
+  current_stance = 'at_war'
+where
+  from_nation_id = 'fc300000-0000-0000-0000-000000000001'
+  and to_nation_id = 'fc300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'P0001',
+    null,
+    'at_war stance blocks international propose'
+  );
+
+reset role;
+
+-- PEACE: clearing the stance back to neutral restores propose.
+update public.nation_relationships
+set
+  current_stance = 'neutral'
+where
+  from_nation_id = 'fc300000-0000-0000-0000-000000000001'
+  and to_nation_id = 'fc300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'neutral stance (peace) restores international propose'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- SECURITY DEFINER check

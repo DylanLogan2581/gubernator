@@ -1,7 +1,6 @@
 // Buildings feature — building blueprints and settlement buildings.
 // Epic 4 (blueprints/tiers) and Epic 5 (settlement buildings, manual deconstruct).
 
-export { BlueprintTierEditor } from "./components/BlueprintTierEditor";
 export { BuildingsConfigPanel } from "./components/BuildingsConfigPanel";
 export { SettlementBuildingsPanel } from "./components/SettlementBuildingsPanel";
 export { CostEditor, EffectsEditor } from "./components/TierEditorFields";
@@ -134,11 +133,9 @@ export type {
 export type { BuildingReferenceIssue } from "./utils/validateBuildingReferences";
 export type {
   AddSettlementBuildingResult,
-  EffectsDigest,
   ManualDeconstructBuildingResult,
   RestoreSettlementBuildingResult,
   HardDeleteSettlementBuildingResult,
   SettlementBuilding,
   SettlementBuildingState,
 } from "./types/settlementBuildingTypes";
-export { computeEffectsDigest } from "./types/settlementBuildingTypes";

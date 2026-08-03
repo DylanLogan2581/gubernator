@@ -45,13 +45,12 @@ where
 
 -- World with a running transition (wedged by pre-apply validation failure)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f6200000-0000-0000-0000-000000000001',
     'FSTTR Stuck World',
     5,
-    'private',
     'active'
   );
 
@@ -278,7 +277,6 @@ insert into
     id,
     name,
     current_turn_number,
-    visibility,
     status,
     archived_at
   )
@@ -287,7 +285,6 @@ values
     'f6200000-0000-0000-0000-000000000002',
     'FSTTR Archived World',
     5,
-    'private',
     'archived',
     now()
   );
@@ -331,13 +328,12 @@ select
 -- Uses a fresh world to avoid conflicts with the stale/archived worlds above.
 -- ===========================================================================
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f6200000-0000-0000-0000-000000000003',
     'FSTTR Integration World',
     7,
-    'private',
     'active'
   );
 

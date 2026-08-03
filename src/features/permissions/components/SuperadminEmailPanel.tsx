@@ -3,8 +3,6 @@ import { Mail } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,15 +17,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { nationsListQueryOptions } from "@/features/nations";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { sendEmailMutationOptions } from "../mutations/superadminMutations";
 import {
   allUsersForSuperadminQueryOptions,
   allWorldsForSuperadminQueryOptions,
-  smtpStatusQueryOptions,
 } from "../queries/superadminQueries";
+
+import { SmtpSettingsForm } from "./SmtpSettingsForm";
 
 import type {
   SendEmailInput,
@@ -46,81 +44,15 @@ const AUDIENCE_OPTIONS: readonly {
 ];
 
 export function SuperadminEmailPanel(): JSX.Element {
-  const queryClient = useQueryClient();
-  const smtpStatusQuery = useQuery(smtpStatusQueryOptions());
-  const testMutation = useMutation(sendEmailMutationOptions({ queryClient }));
-
-  function handleSendTest(): void {
-    testMutation.mutate(
-      { kind: "test" },
-      {
-        onError: (error) => {
-          notifyMutationError(error, "Test email failed to send");
-        },
-        onSuccess: (result) => {
-          notifyMutationSuccess(
-            result.sentCount > 0
-              ? "Test email sent to you."
-              : "Test email could not be delivered.",
-          );
-        },
-      },
-    );
-  }
-
   return (
     <>
       <PageHeader
         icon={Mail}
         title="Email"
-        description="SMTP status, a test send, and the manual notification sender."
+        description="SMTP settings, a test send, and the manual notification sender."
       />
 
-      <div className="mt-6 rounded-lg border border-border p-4">
-        <h2 className="text-base font-semibold">SMTP status</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Read-only. Secrets (username, password) are never shown here.
-        </p>
-
-        {smtpStatusQuery.isPending && (
-          <LoadingState label="Loading SMTP status…" />
-        )}
-
-        {smtpStatusQuery.isError && (
-          <ErrorState
-            title="Could not load SMTP status"
-            description={getErrorDescription(smtpStatusQuery.error)}
-          />
-        )}
-
-        {smtpStatusQuery.isSuccess && (
-          <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-muted-foreground">Host</dt>
-              <dd className="font-medium">{smtpStatusQuery.data.host}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Sender name</dt>
-              <dd className="font-medium">{smtpStatusQuery.data.senderName}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">From address</dt>
-              <dd className="font-medium">{smtpStatusQuery.data.adminEmail}</dd>
-            </div>
-          </dl>
-        )}
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-4"
-          disabled={testMutation.isPending}
-          onClick={handleSendTest}
-        >
-          Send test email to me
-        </Button>
-      </div>
+      <SmtpSettingsForm />
 
       <ManualNotificationForm />
     </>
@@ -221,12 +153,14 @@ function ManualNotificationForm(): JSX.Element {
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-border p-4">
-      <h2 className="text-base font-semibold">Manual notification sender</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Compose a branded email and send it to a chosen audience. Preview before
-        sending.
-      </p>
+    <section className="mt-6">
+      <div className="border-b border-border pb-3">
+        <h2 className="text-base font-semibold">Manual notification sender</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Compose a branded email and send it to a chosen audience. Preview
+          before sending.
+        </p>
+      </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -426,7 +360,7 @@ function ManualNotificationForm(): JSX.Element {
       </div>
 
       {preview !== null && (
-        <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
+        <div className="mt-4 text-sm">
           <p className="font-medium">
             This will reach <strong>{preview.recipientCount}</strong> recipient
             {preview.recipientCount !== 1 ? "s" : ""}.
@@ -435,7 +369,7 @@ function ManualNotificationForm(): JSX.Element {
             <iframe
               title="Email preview"
               srcDoc={preview.renderedHtml}
-              className="mt-3 h-96 w-full rounded border border-border bg-white"
+              className="mt-3 h-96 w-full rounded border border-border bg-card"
               sandbox=""
             />
           )}
@@ -456,6 +390,6 @@ function ManualNotificationForm(): JSX.Element {
         isPending={sendMutation.isPending}
         onConfirm={handleConfirmSend}
       />
-    </div>
+    </section>
   );
 }

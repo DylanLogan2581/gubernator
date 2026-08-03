@@ -47,34 +47,30 @@ where
 --   World 3 (turn 7): transition finalisation + readiness_summary_jsonb
 --   World 4 (turn 9): double-call safety
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'd5200000-0000-0000-0000-000000000001',
     'ATTAWT World 1',
     3,
-    'private',
     'active'
   ),
   (
     'd5200000-0000-0000-0000-000000000002',
     'ATTAWT World 2',
     5,
-    'private',
     'active'
   ),
   (
     'd5200000-0000-0000-0000-000000000003',
     'ATTAWT World 3',
     7,
-    'private',
     'active'
   ),
   (
     'd5200000-0000-0000-0000-000000000004',
     'ATTAWT World 4',
     9,
-    'private',
     'active'
   );
 

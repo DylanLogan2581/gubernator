@@ -3,9 +3,8 @@ import {
   type UseMutationOptions,
   type UseMutationResult,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 export function useRestoreRow<TData, TError, TVariables>(
   mutationOptions: UseMutationOptions<TData, TError, TVariables>,
@@ -18,9 +17,7 @@ export function useRestoreRow<TData, TError, TVariables>(
   return useMutation({
     ...mutationOptions,
     onError: (error, variables, onMutateResult, context) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to restore.",
-      );
+      notifyMutationError(error, "Failed to restore.");
       return mutationOptions.onError?.(
         error,
         variables,

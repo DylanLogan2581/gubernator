@@ -46,12 +46,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ae200000-0000-0000-0000-000000000001',
     'RHDI World',
-    'private',
     'active'
   );
 
@@ -133,22 +132,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ae500000-0000-0000-0000-000000000001',
     'ae200000-0000-0000-0000-000000000001',
     'RHDI Iron Seam',
-    'rhdi-iron-seam',
-    'ae800000-0000-0000-0000-000000000001',
-    10
+    'rhdi-iron-seam'
   );
 
 -- Resource needed for deposit_instance_resources FK

@@ -51,20 +51,18 @@ values
 
 -- World with owner
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'fa200000-0000-0000-0000-000000000001',
     'NWSAV Aggregate World',
     5,
-    'private',
     'active'
   ),
   (
     'fa200000-0000-0000-0000-000000000002',
     'NWSAV Outsider Separate World',
     1,
-    'private',
     'active'
   );
 

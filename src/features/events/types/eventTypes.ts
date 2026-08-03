@@ -34,6 +34,7 @@ export type Event = {
   readonly amount_value: string | null;
   readonly multiplier_value: string | null;
   readonly extra_data_jsonb: unknown;
+  readonly icon: string | null;
   readonly created_at: string;
   readonly updated_at: string;
 };

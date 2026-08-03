@@ -3,11 +3,8 @@
 
 export { ActiveEventsCard } from "./components/ActiveEventsCard";
 export { EventsPage } from "./components/EventsPage";
-export { EventsList } from "./components/EventsList";
-export { EventCreateWizard } from "./components/EventCreateWizard";
 export { EventCreateNewPage } from "./components/EventCreateNewPage";
 export { EventEditPage } from "./components/EventEditPage";
-export { EventDetail } from "./components/EventDetail";
 export { EventDetailPage } from "./components/EventDetailPage";
 
 export {
@@ -52,3 +49,5 @@ export type {
   EventStatus,
   EventWithGroup,
 } from "./types/eventTypes";
+
+export { resolveEventIcon } from "./utils/eventIcon";

@@ -1,45 +1,32 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  computeCoverCropRect,
+  downscaleImageToBlob,
   WORLD_HERO_TARGET,
   WORLD_THUMBNAIL_TARGET,
+  WorldImageProcessingError,
 } from "./worldImageProcessing";
 
-describe("computeCoverCropRect", () => {
-  it("crops the sides off a wider-than-target source", () => {
-    expect(computeCoverCropRect(2000, 1000, WORLD_THUMBNAIL_TARGET)).toEqual({
-      sHeight: 1000,
-      sWidth: 1000,
-      sx: 500,
-      sy: 0,
-    });
+describe("world image targets", () => {
+  it("pins the thumbnail dimensions", () => {
+    expect(WORLD_THUMBNAIL_TARGET).toEqual({ height: 256, width: 256 });
   });
 
-  it("crops the top/bottom off a taller-than-target source", () => {
-    expect(computeCoverCropRect(1000, 2000, WORLD_THUMBNAIL_TARGET)).toEqual({
-      sHeight: 1000,
-      sWidth: 1000,
-      sx: 0,
-      sy: 500,
-    });
+  it("pins the hero dimensions", () => {
+    expect(WORLD_HERO_TARGET).toEqual({ height: 400, width: 1600 });
   });
+});
 
-  it("returns the full frame when the source aspect ratio already matches", () => {
-    expect(computeCoverCropRect(256, 256, WORLD_THUMBNAIL_TARGET)).toEqual({
-      sHeight: 256,
-      sWidth: 256,
-      sx: 0,
-      sy: 0,
+describe("downscaleImageToBlob", () => {
+  it("throws a WorldImageProcessingError with a world-scoped code", async () => {
+    const file = new File(["not an image"], "notes.txt", {
+      type: "text/plain",
     });
-  });
 
-  it("crops a square source down to the wide hero aspect ratio", () => {
-    expect(computeCoverCropRect(1000, 1000, WORLD_HERO_TARGET)).toEqual({
-      sHeight: 250,
-      sWidth: 1000,
-      sx: 0,
-      sy: 375,
+    const promise = downscaleImageToBlob(file, WORLD_THUMBNAIL_TARGET);
+    await expect(promise).rejects.toBeInstanceOf(WorldImageProcessingError);
+    await expect(promise).rejects.toMatchObject({
+      code: "world_image_invalid_type",
     });
   });
 });

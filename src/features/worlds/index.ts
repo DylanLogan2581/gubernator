@@ -7,21 +7,24 @@ export {
   getVisibleConfigTabs,
 } from "./configTabs";
 export type { ConfigTab, ConfigTabId } from "./configTabs";
+export { LoreEntityConfigPanel } from "./components/loreEntity/LoreEntityConfigPanel";
+export { LoreEntityDetailPage } from "./components/loreEntity/LoreEntityDetailPage";
+export type {
+  LoreEntityBase,
+  LoreEntityDescriptor,
+  LoreEntityLabels,
+  LoreEntityLoreField,
+  LoreEntityLoreSection,
+  LoreEntityUpdatePatch,
+  LoreEntityUsage,
+} from "./components/loreEntity/LoreEntityTypes";
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldAvatar } from "./components/WorldAvatar";
-export { WorldDashboardHeroBanner } from "./components/WorldDashboardHeroBanner";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
-export { WorldHeroImage } from "./components/WorldHeroImage";
-export { WorldImagesPanel } from "./components/WorldImagesPanel";
 export { WorldListPage } from "./components/WorldListPage";
-export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
-export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
-export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
-export { WorldSettingsPanel } from "./components/WorldSettingsPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
 export { WorldSwitcher } from "./components/WorldSwitcher";
-export type { WorldSwitcherProps } from "./components/WorldSwitcher";
 export {
   currentUserAdminWorldIdsQueryOptions,
   currentUserPlayerCharacterWorldIdsQueryOptions,
@@ -118,7 +121,12 @@ export type {
   ResolveWorldScopeInput,
   WorldScopePin,
 } from "./utils/resolveWorldScope";
-export { readWorldScopePin, writeWorldScopePin } from "./utils/worldScopePin";
+export {
+  nextWorldScopePin,
+  readWorldScopePin,
+  writeWorldScopePin,
+} from "./utils/worldScopePin";
+export type { NextWorldScopePinInput } from "./utils/worldScopePin";
 export {
   clearLastWorldPin,
   readLastWorldPin,

@@ -42,3 +42,17 @@ where not exists (
   where strs.settlement_id = s.id and strs.resource_id = srs.resource_id
     and strs.turn_number = w.current_turn_number and strs.turn_transition_id is null
 );
+
+-- ---------------------------------------------------------------------------
+-- Default nation tax rules (#1375). The migration backfill (20261211000001)
+-- and the nations_seed_default_tax_policy trigger both run before this seed's
+-- dumped nations exist / with triggers disabled, so re-create the default
+-- percent-of-production rule from each nation's tax_rate here. Idempotent.
+-- ---------------------------------------------------------------------------
+insert into public.nation_tax_policies (nation_id, method, rate)
+select n.id, 'percent_production', n.tax_rate
+from public.nations n
+where not exists (
+  select 1 from public.nation_tax_policies p
+  where p.nation_id = n.id and p.settlement_id is null
+);

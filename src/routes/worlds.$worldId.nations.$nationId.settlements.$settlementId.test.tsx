@@ -204,6 +204,7 @@ function chainBuilder(result: unknown): Record<string, unknown> {
 
 function createClient({
   adminRows = [],
+  pcWorldIds = [],
   readinessRows = [createReadinessRow()],
   settlementRow = createSettlementWithNationRow(),
   settlementUpdateResult = { data: createSettlementBaseRow(), error: null },
@@ -211,9 +212,9 @@ function createClient({
     data: { id: SETTLEMENT_ID, nation_id: NATION_ID },
     error: null,
   },
-  worldVisibility = "private",
 }: {
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
+  readonly pcWorldIds?: readonly string[];
   readonly readinessRows?: readonly unknown[];
   readonly settlementRow?: unknown;
   readonly settlementUpdateResult?: {
@@ -224,7 +225,6 @@ function createClient({
     readonly data: unknown;
     readonly error: unknown;
   };
-  readonly worldVisibility?: string;
 } = {}): unknown {
   const worldRow = {
     archived_at: null,
@@ -236,7 +236,6 @@ function createClient({
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   const userRow = {
@@ -257,7 +256,6 @@ function createClient({
         archived_at: null,
         id: WORLD_ID,
         status: "active",
-        visibility: worldVisibility,
       },
     },
   };
@@ -338,7 +336,7 @@ function createClient({
             if (columns.includes("worlds!inner")) {
               return chainBuilder({ data: settlementAccessRow, error: null });
             }
-            if (columns.includes("nations!inner")) {
+            if (columns.includes("nations!settlements_nation_id_fkey!inner")) {
               return chainBuilder({ data: [], error: null });
             }
             throw new Error(`Unexpected settlement select columns: ${columns}`);
@@ -354,7 +352,7 @@ function createClient({
     removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string, params: Record<string, unknown> = {}) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       if (fn === "set_settlement_readiness") {
         return {
@@ -537,7 +535,13 @@ describe("settlement detail route", () => {
       );
       renderAt(BASE_PATH);
       expect(
-        await screen.findByRole("heading", { level: 1, name: "Hometown" }),
+        await screen.findByRole(
+          "heading",
+          { level: 1, name: "Hometown" },
+          // The route mounts a full page tree behind several mocked queries; the
+          // 1s default is marginal on a loaded CI runner.
+          { timeout: 5000 },
+        ),
       ).toBeDefined();
       expect(screen.getByTestId("turn-transition-outcome-panel")).toBeDefined();
       expect(screen.getByTestId("active-events-card")).toBeDefined();
@@ -548,7 +552,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/citizens`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
 
       expect(screen.getByTestId("citizens-panel")).toBeDefined();
       expect(screen.queryByTestId("assignment-board")).toBeNull();
@@ -559,7 +569,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/assignments`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
 
       const board = screen.getByTestId("assignment-board");
       const props = JSON.parse(board.dataset.props ?? "{}") as Record<
@@ -587,7 +603,13 @@ describe("settlement detail route", () => {
           createClient({ adminRows: [{ world_id: WORLD_ID }] }),
         );
         renderAt(`${BASE_PATH}/${segment}`);
-        await screen.findByRole("heading", { level: 1, name: "Hometown" });
+        await screen.findByRole(
+          "heading",
+          { level: 1, name: "Hometown" },
+          // The route mounts a full page tree behind several mocked queries; the
+          // 1s default is marginal on a loaded CI runner.
+          { timeout: 5000 },
+        );
         expect(screen.getByTestId(testId)).toBeDefined();
       },
     );
@@ -597,7 +619,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/forecast`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
       expect(await screen.findByText(/forecast/i)).toBeDefined();
     });
 
@@ -606,7 +634,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/settings`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
       expect(screen.getByTestId("nameset-card")).toBeDefined();
       expect(
         screen.getByRole("button", { name: "Delete settlement" }),
@@ -630,7 +664,13 @@ describe("settlement detail route", () => {
         switchTo: vi.fn(),
       });
       renderAt(`${BASE_PATH}/settings`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
       expect(screen.getByText("Admin access paused")).toBeDefined();
       expect(
         screen.queryByRole("button", { name: "Delete settlement" }),
@@ -713,7 +753,7 @@ describe("settlement detail route", () => {
 
     it("hides the coordinate edit button from nation manager viewers", async () => {
       requireSupabaseClient.mockReturnValue(
-        createClient({ worldVisibility: "public" }),
+        createClient({ pcWorldIds: [WORLD_ID] }),
       );
       const nationManagerCharacter = {
         id: "char-1",
@@ -730,7 +770,13 @@ describe("settlement detail route", () => {
         switchTo: vi.fn(),
       });
       renderAt(BASE_PATH);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
 
       const editButtons = await screen.findAllByRole("button", {
         name: "Edit",

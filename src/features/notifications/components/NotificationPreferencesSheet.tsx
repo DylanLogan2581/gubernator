@@ -4,6 +4,12 @@ import { type JSX, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,6 +29,10 @@ import {
   notificationPreferencesQueryOptions,
   type NotificationPreference,
 } from "../queries/notificationPreferencesQueries";
+import {
+  groupNotificationPreferencesByCategory,
+  type NotificationPreferenceCategory,
+} from "../utils/notificationCategories";
 import { formatNotificationTypeLabel } from "../utils/notificationTypeLabels";
 
 type NotificationPreferencesSheetProps = {
@@ -37,12 +47,9 @@ export function NotificationPreferencesSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Notification preferences"
-        >
+        <Button variant="outline">
           <Settings aria-hidden="true" />
+          Preferences
         </Button>
       </SheetTrigger>
       <SheetContent>
@@ -74,6 +81,22 @@ function NotificationPreferencesList({
   const setPreferenceMutation = useMutation(
     setNotificationPreferenceMutationOptions({ queryClient }),
   );
+
+  const categories = groupNotificationPreferencesByCategory(
+    preferencesQuery.data ?? [],
+  );
+
+  const [categoriesInitialized, setCategoriesInitialized] = useState(false);
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
+
+  if (!categoriesInitialized && preferencesQuery.data !== undefined) {
+    setCategoriesInitialized(true);
+    setOpenCategories(
+      categories
+        .filter((category) => category.isMixed)
+        .map((category) => category.key),
+    );
+  }
 
   if (preferencesQuery.isPending) {
     return <LoadingState label="Loading notification preferences…" />;
@@ -109,28 +132,72 @@ function NotificationPreferencesList({
     );
   };
 
+  const handleToggleCategory = (
+    category: NotificationPreferenceCategory,
+    enabled: boolean,
+  ): void => {
+    for (const preference of category.preferences) {
+      if (preference.enabled !== enabled) {
+        handleToggle(preference, enabled);
+      }
+    }
+  };
+
   return (
-    <>
-      {preferencesQuery.data.map((preference) => {
-        const inputId = `notification-preference-${preference.notificationType}`;
-        return (
-          <div
-            key={preference.notificationType}
-            className="flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm"
-          >
-            <Label htmlFor={inputId} className="font-normal">
-              {formatNotificationTypeLabel(preference.notificationType)}
-            </Label>
+    <Accordion
+      type="multiple"
+      value={openCategories}
+      onValueChange={setOpenCategories}
+    >
+      {categories.map((category) => (
+        <AccordionItem key={category.key} value={category.key}>
+          <div className="grid grid-cols-[1fr_auto] items-center gap-2 px-2">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex w-full items-center justify-between gap-2 pr-2">
+                <span className="truncate">{category.label}</span>
+                <span className="shrink-0 font-normal text-muted-foreground">
+                  {category.enabledCount}/{category.preferences.length} on
+                </span>
+              </span>
+            </AccordionTrigger>
             <Switch
-              id={inputId}
-              checked={preference.enabled}
+              aria-label={
+                category.isMixed
+                  ? `Toggle all ${category.label} notifications (currently ${category.enabledCount} of ${category.preferences.length} on)`
+                  : `Toggle all ${category.label} notifications`
+              }
+              checked={category.allEnabled}
+              data-mixed={category.isMixed ? "" : undefined}
+              className="data-mixed:!bg-primary/40"
               onCheckedChange={(enabled) => {
-                handleToggle(preference, enabled);
+                handleToggleCategory(category, enabled);
               }}
             />
           </div>
-        );
-      })}
-    </>
+          <AccordionContent>
+            {category.preferences.map((preference) => {
+              const inputId = `notification-preference-${preference.notificationType}`;
+              return (
+                <div
+                  key={preference.notificationType}
+                  className="flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm"
+                >
+                  <Label htmlFor={inputId} className="font-normal">
+                    {formatNotificationTypeLabel(preference.notificationType)}
+                  </Label>
+                  <Switch
+                    id={inputId}
+                    checked={preference.enabled}
+                    onCheckedChange={(enabled) => {
+                      handleToggle(preference, enabled);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
   );
 }

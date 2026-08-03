@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -59,6 +59,38 @@ describe("WorldCascadeDeletePanel", () => {
       expect(screen.getByRole("option", { name: "Riverside" })).toBeDefined();
     });
   });
+
+  it("removes the world from the dropdown after a successful hard delete without reload", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createSupabaseClient({
+        worlds: [
+          { id: "11111111-1111-4111-8111-111111111111", name: "Riverside" },
+        ],
+      }),
+    );
+
+    renderPanel(<WorldCascadeDeletePanel />);
+
+    const user = userEvent.setup();
+
+    await screen.findByText("Select a trashed world…");
+    await user.click(screen.getByRole("combobox"));
+    await user.click(await screen.findByRole("option", { name: "Riverside" }));
+
+    await user.click(screen.getByRole("button", { name: "Preview cascade" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Delete world" }),
+    );
+
+    // Confirm in the dialog.
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete world" }),
+    );
+
+    await screen.findByText("No trashed worlds");
+    expect(screen.queryByText("Riverside")).toBeNull();
+  });
 });
 
 function renderPanel(node: ReactNode): ReturnType<typeof render> {
@@ -76,6 +108,8 @@ function createSupabaseClient(fixtures: {
     readonly name: string;
   }>;
 }): unknown {
+  const worlds = [...fixtures.worlds];
+
   return {
     from: vi.fn((table: string) => {
       if (table === "worlds") {
@@ -83,13 +117,46 @@ function createSupabaseClient(fixtures: {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
               order: vi.fn(() =>
-                Promise.resolve({ data: fixtures.worlds, error: null }),
+                Promise.resolve({ data: [...worlds], error: null }),
               ),
             })),
           })),
         };
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string, params: { readonly p_world_id: string }) => {
+      if (fn === "preview_world_delete") {
+        return Promise.resolve({
+          data: {
+            worldName: "Riverside",
+            nations: 0,
+            settlements: 0,
+            citizens: 0,
+            resources: 0,
+            turnTransitions: 0,
+            eventGroups: 0,
+            worldAdmins: 0,
+            notifications: 0,
+            settlementTurnSnapshots: 0,
+            turnLogEntries: 0,
+          },
+          error: null,
+        });
+      }
+      if (fn === "hard_delete_world") {
+        const index = worlds.findIndex((w) => w.id === params.p_world_id);
+        if (index !== -1) worlds.splice(index, 1);
+        return {
+          maybeSingle: vi.fn(() =>
+            Promise.resolve({
+              data: { id: params.p_world_id },
+              error: null,
+            }),
+          ),
+        };
+      }
+      throw new Error(`Unexpected rpc ${fn}`);
     }),
   };
 }

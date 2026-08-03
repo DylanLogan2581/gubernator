@@ -5,9 +5,11 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
   allNotificationsQueryOptions,
+  markNotificationReadMutationOptions,
   turnCompletedNotificationsQueryOptions,
   unreadNotificationsCountQueryOptions,
 } from "./notificationQueries";
+import { notificationQueryKeys } from "./notificationQueryKeys";
 
 const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
@@ -166,6 +168,9 @@ describe("turnCompletedNotificationsQueryOptions", () => {
     expect(queryChain.order).toHaveBeenCalledWith("generated_at", {
       ascending: false,
     });
+    expect(queryChain.secondOrder).toHaveBeenCalledWith("id", {
+      ascending: false,
+    });
   });
 
   it("can filter turn-completed notifications by world id", async () => {
@@ -309,6 +314,54 @@ describe("allNotificationsQueryOptions", () => {
     });
   });
 
+  it("skips the count query when includeTotal is false", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-6",
+      is_read: false,
+      message_text: "Turn 2 is complete.",
+      nation_id: null,
+      nation: null,
+      notification_type: "turn.completed",
+      settlement_id: null,
+      settlement: null,
+      severity: "info" as const,
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+
+    const rangeEq = vi.fn().mockResolvedValue({ data: [row], error: null });
+    const range = vi.fn(() => ({ eq: rangeEq }));
+    const secondOrder = vi.fn(() => ({ range }));
+    const order = vi.fn(() => ({ order: secondOrder }));
+    const dataRecipientEq = vi.fn(() => ({ order }));
+    const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
+
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({ select: createDisabledTypesSelect([]) })
+      .mockReturnValueOnce({ select: dataSelect });
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions(
+        "user-1",
+        { isRead: false, includeTotal: false },
+        client,
+      ),
+    );
+
+    expect(result.total).toBe(0);
+    expect(result.notifications).toHaveLength(1);
+    // Only the disabled-types lookup and the data query — no count query.
+    expect(from).toHaveBeenCalledTimes(2);
+  });
+
   it("returns empty list when userId is null", async () => {
     const from = vi.fn();
     const client = { from } as unknown as GubernatorSupabaseClient;
@@ -348,7 +401,8 @@ describe("allNotificationsQueryOptions", () => {
 
     const dataNot = vi.fn().mockResolvedValue({ data: [row], error: null });
     const range = vi.fn(() => ({ not: dataNot }));
-    const order = vi.fn(() => ({ range }));
+    const secondOrder = vi.fn(() => ({ range }));
+    const order = vi.fn(() => ({ order: secondOrder }));
     const dataRecipientEq = vi.fn(() => ({ order }));
     const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
 
@@ -514,9 +568,10 @@ function createAllNotificationsClient({
     .mockResolvedValue({ count: total, error: null });
   const countSelect = vi.fn(() => ({ eq: countRecipientEq }));
 
-  // Data query: from → select → eq(recipient) → order → range → awaitable { data, error }
+  // Data query: from → select → eq(recipient) → order → order → range → awaitable { data, error }
   const range = vi.fn().mockResolvedValue({ data: rows, error: null });
-  const order = vi.fn(() => ({ range }));
+  const secondOrder = vi.fn(() => ({ range }));
+  const order = vi.fn(() => ({ order: secondOrder }));
   const dataRecipientEq = vi.fn(() => ({ order }));
   const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
 
@@ -571,11 +626,13 @@ function createTurnCompletedQueryChain({
   readonly from: ReturnType<typeof vi.fn>;
   readonly order: ReturnType<typeof vi.fn>;
   readonly recipientEq: ReturnType<typeof vi.fn>;
+  readonly secondOrder: ReturnType<typeof vi.fn>;
   readonly select: ReturnType<typeof vi.fn>;
   readonly typeEq: ReturnType<typeof vi.fn>;
   readonly worldEq: ReturnType<typeof vi.fn>;
 } {
-  const order = vi.fn().mockResolvedValue({ data, error });
+  const secondOrder = vi.fn().mockResolvedValue({ data, error });
+  const order = vi.fn(() => ({ order: secondOrder }));
   const worldEq = vi.fn(() => ({ order }));
   const typeEq = vi.fn(() => ({ eq: worldEq, order }));
   const recipientEq = vi.fn(() => ({ eq: typeEq }));
@@ -587,6 +644,7 @@ function createTurnCompletedQueryChain({
     from,
     order,
     recipientEq,
+    secondOrder,
     select,
     typeEq,
     worldEq,
@@ -596,7 +654,41 @@ function createTurnCompletedQueryChain({
 function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
+      mutations: { retry: false },
       queries: { retry: false, retryDelay: 0 },
     },
   });
 }
+
+function executeMutation<TOptions extends { mutationFn?: unknown }>(
+  queryClient: QueryClient,
+  options: TOptions,
+  variables: unknown,
+): Promise<unknown> {
+  return queryClient
+    .getMutationCache()
+    .build(queryClient, options as never)
+    .execute(variables);
+}
+
+describe("markNotificationReadMutationOptions", () => {
+  it("marks the notification read and invalidates the notifications cache", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = markNotificationReadMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, "notification-1");
+
+    expect(rpc).toHaveBeenCalledWith("mark_notification_read", {
+      notification_id: "notification-1",
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: notificationQueryKeys.all,
+    });
+  });
+});

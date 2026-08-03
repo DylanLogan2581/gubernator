@@ -38,7 +38,7 @@ export function SettlementNationAccordion({
   const groups = useMemo(() => groupSettlementsByNation(items), [items]);
 
   return (
-    <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+    <div className="divide-y divide-border border-y border-border">
       {groups.map((group) => (
         <NationAccordionRow
           key={group.nationId}
@@ -73,14 +73,12 @@ function NationAccordionRow({
 }: NationAccordionRowProps): JSX.Element {
   const allReady = group.readyCount === group.totalCount;
   const noneReady = group.readyCount === 0;
-  const bgColor = allReady
-    ? "group-data-[state=closed]:bg-green-50 dark:group-data-[state=closed]:bg-green-950/30"
-    : "";
+  const bgColor = allReady ? "group-data-[state=closed]:bg-success" : "";
 
   return (
     <Collapsible className="group">
       <div
-        className={`flex w-full items-center justify-between px-4 text-left transition-colors ${bgColor}`}
+        className={`flex w-full flex-wrap items-center justify-between gap-x-4 px-4 text-left transition-colors ${bgColor}`}
       >
         <Link
           to="/worlds/$worldId/nations/$nationId"
@@ -89,20 +87,20 @@ function NationAccordionRow({
             worldId,
           }}
           search={{}}
-          className="py-3 font-medium underline-offset-4 hover:underline"
+          className="min-w-0 truncate py-3 font-medium underline-offset-4 hover:underline"
         >
           {group.nationName}
         </Link>
         <CollapsibleTrigger
           aria-label={`Toggle ${group.nationName} settlements (${group.readyCount}/${group.totalCount} ready)`}
-          className="flex flex-1 items-center justify-end gap-4 py-3 pl-4 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+          className="flex flex-1 items-center justify-end gap-2 py-3 pl-4 text-sm text-muted-foreground hover:bg-muted/50 transition-colors sm:gap-4"
         >
-          <span>
+          <span className="whitespace-nowrap">
             {group.readyCount}/{group.totalCount} ready
           </span>
           <Progress
             value={group.readyPercentage}
-            className={`w-20 ${noneReady ? "[&>div]:bg-destructive" : ""}`}
+            className={`w-14 sm:w-20 ${noneReady ? "[&>div]:bg-destructive" : ""}`}
           />
           <div
             className="w-5 h-5 shrink-0 flex items-center justify-center"
@@ -114,12 +112,12 @@ function NationAccordionRow({
             {allReady ? (
               <Check
                 aria-hidden="true"
-                className="w-4 h-4 text-green-600 dark:text-green-500"
+                className="w-4 h-4 text-success-foreground"
               />
             ) : noneReady ? (
               <AlertCircle
                 aria-hidden="true"
-                className="w-4 h-4 text-red-600 dark:text-red-500"
+                className="w-4 h-4 text-destructive"
               />
             ) : null}
           </div>

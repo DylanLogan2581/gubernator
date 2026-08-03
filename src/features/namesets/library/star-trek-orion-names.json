@@ -1,0 +1,79 @@
+{
+  "id": "star-trek-orion-names",
+  "displayName": "Orion",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/star-trek-orion-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "none",
+    "parts": {
+      "nm6": [
+        "D",
+        "G",
+        "H",
+        "J",
+        "L",
+        "M",
+        "N",
+        "S",
+        "Sh",
+        "T",
+        "Th",
+        "V",
+        "Zh"
+      ],
+      "nm7": ["a", "e", "i", "ee", "ai", "ay"],
+      "nm8": [
+        "d",
+        "dd",
+        "g",
+        "gg",
+        "hn",
+        "l",
+        "ll",
+        "n",
+        "nn",
+        "r",
+        "rr",
+        "rt",
+        "s",
+        "ss",
+        "sh",
+        "shk",
+        "v",
+        "vn",
+        "vv"
+      ],
+      "nm9": ["a", "e", "i", "o", "u", "aa", "ou"],
+      "nm10": ["r", "s", "sh", "ss"],
+      "nm1": ["D", "G", "H", "J", "L", "M", "N", "Ng", "R", "T", "Th", "V"],
+      "nm2": ["a", "i", "e", "o", "ai", "ou", "aa"],
+      "nm3": [
+        "g",
+        "gg",
+        "k",
+        "kk",
+        "l",
+        "ll",
+        "m",
+        "mm",
+        "r",
+        "rr",
+        "sr",
+        "ss",
+        "t",
+        "tt",
+        "yc",
+        "z",
+        "zz"
+      ],
+      "nm4": ["a", "e", "i", "o", "u"],
+      "nm5": ["d", "h", "k", "l", "m", "n", "r", "rc", "v", "z"]
+    },
+    "patterns": {
+      "female_given": [["nm6"], ["nm7"], ["nm8"], ["nm9"], ["nm10"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"], ["nm4"], ["nm5"]],
+      "surname": []
+    }
+  }
+}

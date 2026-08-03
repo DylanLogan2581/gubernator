@@ -1,0 +1,72 @@
+{
+  "id": "star-trek-andorian-names",
+  "displayName": "Andorian",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/star-trek-andorian-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "pool",
+    "parts": {
+      "nm1": ["a", "e", "o", "i"],
+      "nm13": ["vr", "thr", "v", "jh", "p", "t", "th", "s", "shr", "z"],
+      "nm3": ["a", "e", "o", "i", "y"],
+      "nm14": ["th", "r", "m", "ss", "v", "l", "ll", "z", "t", "tt", "sh"],
+      "nm5": ["a", "e", "o", "i", "ia", "ao", "aa"],
+      "nm15": ["h", "s", "l", "ss", "n", "t", "th", "sh"],
+      "nm2": ["k", "r", "sh", "shr", "t", "th", "s", "b"],
+      "nm4": ["r", "b", "l", "v", "n", "s", "ss", "th", "hr", "hl"],
+      "nm7": ["Sh'", "Zh'"],
+      "nm8": [
+        "zh",
+        "sh",
+        "th",
+        "z",
+        "v",
+        "rh",
+        "shr",
+        "vh",
+        "k",
+        "t",
+        "r",
+        "ch",
+        "q"
+      ],
+      "nm9": ["a", "e", "o", "i", "y", "ao", "ia", "aa"],
+      "nm10": [
+        "r",
+        "l",
+        "v",
+        "n",
+        "th",
+        "hr",
+        "hl",
+        "nn",
+        "rh",
+        "lr",
+        "sr",
+        "kr",
+        "tr",
+        "ln",
+        "thr",
+        "q",
+        "ll",
+        "rr"
+      ],
+      "nm11": ["a", "e", "o", "i"],
+      "nm12": ["th", "s", "ss", "n", "t", "r", "hr", "rh", "l", "k", "q"]
+    },
+    "patterns": {
+      "female_given": [["nm1"], ["nm13"], ["nm3"], ["nm14"], ["nm5"], ["nm15"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"], ["nm4"]],
+      "surname": [
+        ["nm7"],
+        ["nm1"],
+        ["nm8"],
+        ["nm9"],
+        ["nm10"],
+        ["nm11"],
+        ["nm12"]
+      ]
+    }
+  }
+}

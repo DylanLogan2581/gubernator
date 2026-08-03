@@ -73,16 +73,16 @@ describe("DepositsConfigPanel", () => {
     ).toBeNull();
   });
 
-  it("shows deposit types with name and output per worker", async () => {
+  it("shows deposit types with a linked job count and name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         depositTypeRows: [
           createDepositTypeRow({
             name: "Iron Ore",
-            output_units_per_worker: 5,
+            deposit_type_jobs: [createDepositTypeJobRow({ job_id: JOB_ID })],
           }),
         ],
-        jobRows: [],
+        jobRows: [createJobRow({ id: JOB_ID, name: "Iron Mining" })],
         resourceRows: [],
       }),
     );
@@ -90,7 +90,37 @@ describe("DepositsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Iron Ore");
-    expect(screen.getByText(/5 output\/worker/)).toBeDefined();
+    const row = screen.getByText("Iron Ore").closest("tr");
+    expect(row).toHaveTextContent("1 job");
+    expect(row).toHaveTextContent("Iron Mining");
+  });
+
+  it("shows a plural job count and comma-joined names for multiple linked jobs", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({
+            name: "Iron Ore",
+            deposit_type_jobs: [
+              createDepositTypeJobRow({ id: "row-1", job_id: JOB_ID }),
+              createDepositTypeJobRow({ id: "row-2", job_id: JOB_ID_2 }),
+            ],
+          }),
+        ],
+        jobRows: [
+          createJobRow({ id: JOB_ID, name: "Iron Mining" }),
+          createJobRow({ id: JOB_ID_2, name: "Skilled Iron Mining" }),
+        ],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Iron Ore");
+    const row = screen.getByText("Iron Ore").closest("tr");
+    expect(row).toHaveTextContent("2 jobs");
+    expect(row).toHaveTextContent("Iron Mining, Skilled Iron Mining");
   });
 
   it("shows empty state with create link when no deposit jobs exist in create form", async () => {
@@ -110,7 +140,7 @@ describe("DepositsConfigPanel", () => {
     expect(within(dialog).getByText("No deposit jobs yet")).toBeDefined();
     expect(within(dialog).getByText("Create deposit job")).toBeDefined();
     expect(
-      within(dialog).queryByRole("combobox", { name: "Linked deposit job" }),
+      within(dialog).queryByRole("combobox", { name: /linked job/i }),
     ).toBeNull();
   });
 
@@ -132,26 +162,7 @@ describe("DepositsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Edit deposit type" });
     expect(screen.getByText("No deposit jobs yet")).toBeDefined();
     expect(screen.getByText("Create deposit job")).toBeDefined();
-    expect(
-      screen.queryByRole("combobox", { name: "Linked deposit job" }),
-    ).toBeNull();
-  });
-
-  it("shows linked job name in the row", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        depositTypeRows: [
-          createDepositTypeRow({ job_id: JOB_ID, name: "Iron Ore" }),
-        ],
-        jobRows: [createJobRow({ id: JOB_ID, name: "Iron Mining" })],
-        resourceRows: [],
-      }),
-    );
-
-    renderPanel({ canAdmin: false, isArchived: false });
-
-    await screen.findByText("Iron Ore");
-    expect(await screen.findByText(/Iron Mining/)).toBeDefined();
+    expect(screen.queryByRole("combobox", { name: /linked job/i })).toBeNull();
   });
 
   it("shows trashed deposit types when trash view is toggled", async () => {
@@ -182,15 +193,12 @@ describe("DepositsConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 
-  it("emits a success toast after creating a deposit type", async () => {
+  it("emits a success toast after creating a deposit type with one linked job", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         depositTypeRows: [],
-        insertResult: {
-          data: createDepositTypeRow({ name: "Coal Seam" }),
-          error: null,
-        },
+        fetchedRow: createDepositTypeRow({ name: "Coal Seam" }),
         jobRows: [createJobRow({ id: JOB_ID, name: "Coal Mining" })],
         resourceRows: [createResourceRow({ name: "Coal" })],
       }),
@@ -212,7 +220,7 @@ describe("DepositsConfigPanel", () => {
     expect(within(dialog).getByText("slug: coal-seam")).toBeDefined();
 
     const jobSelect = within(dialog).getByRole("combobox", {
-      name: "Linked deposit job",
+      name: "Job 1 linked job",
     });
     await user.selectOptions(jobSelect, JOB_ID);
 
@@ -227,21 +235,64 @@ describe("DepositsConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  it("supports adding a second job row and disables submit on duplicate selection", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [],
+        jobRows: [
+          createJobRow({ id: JOB_ID, name: "Coal Mining" }),
+          createJobRow({ id: JOB_ID_2, name: "Skilled Coal Mining" }),
+        ],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Add deposit type" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create deposit type",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Coal Seam",
+    );
+
+    await user.selectOptions(
+      within(dialog).getByRole("combobox", { name: "Job 1 linked job" }),
+      JOB_ID,
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Add job" }));
+    await user.selectOptions(
+      within(dialog).getByRole("combobox", { name: "Job 2 linked job" }),
+      JOB_ID,
+    );
+
+    expect(
+      within(dialog).getAllByText(
+        "This job is already selected in another row above.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(dialog).getByRole("button", { name: "Create" }),
+    ).toBeDisabled();
+  });
+
   it("emits a success toast after editing a deposit type", async () => {
     const user = userEvent.setup();
     const depositTypeRow = createDepositTypeRow({
-      job_id: JOB_ID,
       name: "Iron Ore",
+      deposit_type_jobs: [createDepositTypeJobRow({ job_id: JOB_ID })],
     });
     requireSupabaseClient.mockReturnValue(
       createClient({
         depositTypeRows: [depositTypeRow],
+        fetchedRow: depositTypeRow,
         jobRows: [createJobRow({ id: JOB_ID, name: "Iron Mining" })],
         resourceRows: [],
-        updateResult: {
-          data: depositTypeRow,
-          error: null,
-        },
       }),
     );
 
@@ -264,88 +315,6 @@ describe("DepositsConfigPanel", () => {
       );
     });
     expect(toastError).not.toHaveBeenCalled();
-  });
-
-  it("shows inline error when selected job is already linked to another deposit type", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        depositTypeRows: [
-          createDepositTypeRow({
-            job_id: JOB_ID,
-            name: "Iron Ore",
-          }),
-        ],
-        jobRows: [
-          createJobRow({ id: JOB_ID, name: "Iron Mining" }),
-          createJobRow({ id: JOB_ID_2, name: "Coal Mining" }),
-        ],
-        resourceRows: [],
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByRole("heading", { name: "Deposit Types" });
-    await user.click(screen.getByRole("button", { name: "Add deposit type" }));
-
-    const dialog = await screen.findByRole("dialog", {
-      name: "Create deposit type",
-    });
-    const jobSelect = within(dialog).getByRole("combobox", {
-      name: "Linked deposit job",
-    });
-    await user.selectOptions(jobSelect, JOB_ID);
-
-    expect(
-      within(dialog).getByText('This job is already linked to "Iron Ore".'),
-    ).toBeDefined();
-
-    expect(
-      within(dialog).getByRole("button", { name: "Create" }),
-    ).toBeDisabled();
-  });
-
-  it("shows inline error in edit form when job is already linked to a different deposit type", async () => {
-    const user = userEvent.setup();
-    const depositTypeRow = createDepositTypeRow({
-      job_id: JOB_ID,
-      name: "Iron Ore",
-    });
-    const otherDepositTypeRow = createDepositTypeRow({
-      id: "00000000-0000-0000-0000-000000000020",
-      job_id: JOB_ID_2,
-      name: "Coal Seam",
-    });
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        depositTypeRows: [depositTypeRow, otherDepositTypeRow],
-        jobRows: [
-          createJobRow({ id: JOB_ID, name: "Iron Mining" }),
-          createJobRow({ id: JOB_ID_2, name: "Coal Mining" }),
-        ],
-        resourceRows: [],
-        updateResult: { data: depositTypeRow, error: null },
-      }),
-    );
-
-    renderPanel({ canAdmin: true, isArchived: false });
-
-    await screen.findByText("Iron Ore");
-    const editButtons = screen.getAllByRole("button", { name: "Edit" });
-    await user.click(editButtons[0]);
-
-    await screen.findByRole("heading", { name: "Edit deposit type" });
-    const jobSelect = screen.getByRole("combobox", {
-      name: "Linked deposit job",
-    });
-    await user.selectOptions(jobSelect, JOB_ID_2);
-
-    expect(
-      screen.getByText('This job is already linked to "Coal Seam".'),
-    ).toBeDefined();
-
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   it("hides the Edit button for non-admin users", async () => {
@@ -634,18 +603,24 @@ function createQueryClient(): QueryClient {
   });
 }
 
+type TestDepositTypeJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly output_units_per_worker: number;
+  readonly worker_inputs_json: readonly unknown[];
+};
+
 type TestDepositTypeRow = {
   readonly created_at: string;
+  readonly deposit_type_jobs: readonly TestDepositTypeJobRow[];
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
-  readonly job_id: string;
   readonly name: string;
-  readonly output_units_per_worker: number;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
-  readonly worker_inputs_json: readonly unknown[];
   readonly world_id: string;
 };
 
@@ -653,7 +628,7 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
@@ -682,21 +657,32 @@ type TestResourceRow = {
   readonly world_id: string;
 };
 
+function createDepositTypeJobRow(
+  overrides: Partial<TestDepositTypeJobRow> = {},
+): TestDepositTypeJobRow {
+  return {
+    id: "00000000-0000-0000-0000-0000000000a1",
+    job_id: JOB_ID,
+    output_units_per_worker: 1,
+    worker_inputs_json: [],
+    ...overrides,
+  };
+}
+
 function createDepositTypeRow(
   overrides: Partial<TestDepositTypeRow> = {},
 ): TestDepositTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
+    deposit_type_jobs: [createDepositTypeJobRow()],
     icon: null,
+    icon_color: null,
     id: DEPOSIT_TYPE_ID,
     is_trashed: false,
-    job_id: JOB_ID,
     name: "Test Deposit",
-    output_units_per_worker: 1,
     referencing_jobs: [],
     slug: "test-deposit",
     updated_at: "2026-01-01T00:00:00.000Z",
-    worker_inputs_json: [],
     world_id: WORLD_ID,
     ...overrides,
   };
@@ -707,7 +693,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
     culling_mpt: [],
-    deposit_types: [],
+    deposit_type_jobs: [],
     husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
@@ -745,25 +731,17 @@ function createResourceRow(
 
 function createClient({
   depositTypeRows,
-  insertResult = { data: createDepositTypeRow(), error: null },
+  fetchedRow = createDepositTypeRow(),
   jobRows,
   resourceRows,
   rpcResult = { data: null, error: null },
-  updateResult = { data: createDepositTypeRow(), error: null },
 }: {
   readonly depositTypeRows: readonly TestDepositTypeRow[];
-  readonly insertResult?: {
-    readonly data: TestDepositTypeRow | null;
-    readonly error: { readonly message: string } | null;
-  };
+  readonly fetchedRow?: TestDepositTypeRow;
   readonly jobRows: readonly TestJobRow[];
   readonly resourceRows: readonly TestResourceRow[];
   readonly rpcResult?: {
     readonly data: { readonly id: string; readonly world_id: string } | null;
-    readonly error: { readonly message: string } | null;
-  };
-  readonly updateResult?: {
-    readonly data: TestDepositTypeRow | null;
     readonly error: { readonly message: string } | null;
   };
 }): {
@@ -773,11 +751,10 @@ function createClient({
   return {
     from: vi.fn((table: string) => {
       if (table === "deposit_types") {
-        return createDepositTypesQueryBuilder(
-          depositTypeRows,
-          insertResult,
-          updateResult,
-        );
+        return createDepositTypesQueryBuilder(depositTypeRows, fetchedRow);
+      }
+      if (table === "deposit_type_jobs") {
+        return createDepositTypeJobsQueryBuilder();
       }
       if (table === "job_definitions") {
         return createJobsQueryBuilder(jobRows);
@@ -795,23 +772,16 @@ function createClient({
 
 function createDepositTypesQueryBuilder(
   rows: readonly TestDepositTypeRow[],
-  insertResult: {
-    readonly data: TestDepositTypeRow | null;
-    readonly error: { readonly message: string } | null;
-  },
-  updateResult: {
-    readonly data: TestDepositTypeRow | null;
-    readonly error: { readonly message: string } | null;
-  },
+  fetchedRow: TestDepositTypeRow,
 ): unknown {
   // Emulates enough of the real filter/order/range/returns chain that the
   // panel's server-side search + pagination + trash filtering (#1032)
-  // behaves like the real Supabase query would, instead of always
-  // returning every row regardless of the applied filters. This builder
-  // backs both the paginated page query and the unpaginated active-list
-  // query (used to feed `allDepositTypes` into the create/edit forms) —
-  // the latter simply never calls `.range()`.
-  function buildSelectBuilder(): Record<string, unknown> {
+  // behaves like the real Supabase query would. Also emulates the
+  // insert/update two-step flow used by depositsMutations.ts (#1246): the
+  // deposit_types row is inserted/updated first (returning only `id`), then
+  // deposit_type_jobs is replaced separately, then the full row is re-fetched
+  // by id for the mutation's return value.
+  function buildListBuilder(): Record<string, unknown> {
     let filtered: TestDepositTypeRow[] = [...rows];
     let range: readonly [number, number] | null = null;
 
@@ -845,21 +815,51 @@ function createDepositTypesQueryBuilder(
     return selectBuilder;
   }
 
-  const updateBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => updateBuilder),
-    select: vi.fn(() => ({
-      maybeSingle: vi.fn().mockResolvedValue(updateResult),
-    })),
-  };
+  function buildFetchByIdBuilder(): Record<string, unknown> {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      maybeSingle: vi.fn().mockResolvedValue({ data: fetchedRow, error: null }),
+    };
+    return builder;
+  }
 
   return {
     insert: vi.fn(() => ({
       select: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue(insertResult),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: { id: fetchedRow.id }, error: null }),
       })),
     })),
-    select: vi.fn(() => buildSelectBuilder()),
-    update: vi.fn(() => updateBuilder),
+    select: vi.fn((columns: unknown, opts?: unknown) => {
+      if (columns === "id") {
+        return buildFetchByIdBuilder();
+      }
+      if (opts !== undefined) {
+        return buildListBuilder();
+      }
+      return buildFetchByIdBuilder();
+    }),
+    update: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: fetchedRow.id }, error: null }),
+          })),
+        })),
+      })),
+    })),
+  };
+}
+
+function createDepositTypeJobsQueryBuilder(): unknown {
+  return {
+    delete: vi.fn(() => ({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    })),
+    insert: vi.fn().mockResolvedValue({ error: null }),
   };
 }
 

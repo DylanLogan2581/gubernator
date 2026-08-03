@@ -13,6 +13,7 @@ import type {
   SimDeposit,
   SimDepositResource,
   SimDepositType,
+  SimDepositTypeJob,
   SimStockpile,
 } from "../simulationTypes.ts";
 
@@ -23,8 +24,18 @@ import type {
 function makeDepositType(overrides?: Partial<SimDepositType>): SimDepositType {
   return {
     id: "dtype-1",
-    jobId: "job-deposit",
     name: "Iron Vein",
+    ...overrides,
+  };
+}
+
+function makeDepositTypeJob(
+  overrides?: Partial<SimDepositTypeJob>,
+): SimDepositTypeJob {
+  return {
+    depositTypeId: "dtype-1",
+    id: "dtj-1",
+    jobId: "job-deposit",
     outputUnitsPerWorker: 10,
     workerInputsJson: [],
     ...overrides,
@@ -86,7 +97,8 @@ function makeDepositAssignment(
 
 describe("phaseDepositExtraction — extraction arithmetic", () => {
   it("computes total extraction as workers * outputUnitsPerWorker, split proportionally by remaining quantity", () => {
-    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
     const deposit = makeDeposit({
       id: "d1",
       resources: [
@@ -101,6 +113,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
         makeDepositAssignment("c1", "d1"),
         makeDepositAssignment("c2", "d1"),
       ],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -131,14 +144,17 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
     const log = result.logs.find((l) => l.category === "deposit.processed");
     expect(log?.payload).toMatchObject({
-      inputShortfallScale: 1,
       totalExtraction: 20,
       workers: 2,
     });
+    expect(log?.payload.perJob).toEqual([
+      { extraction: 20, inputShortfallScale: 1, jobId: "job-deposit", workers: 2 },
+    ]);
   });
 
   it("clamps extraction at the remaining quantity and depletes the deposit", () => {
-    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
     const deposit = makeDeposit({
       id: "d1",
       resources: [
@@ -149,6 +165,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
     const ctx = makeContext({
       citizenAssignments: [makeDepositAssignment("c1", "d1")],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -175,7 +192,8 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
     // proportionalShare gives a zero-weight resource a 0 share, so a resource
     // that was already at 0 stays exhausted while an untouched resource keeps
     // the deposit alive overall (isDepleted requires *every* resource to hit 0).
-    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
     const deposit = makeDeposit({
       id: "d1",
       resources: [
@@ -187,6 +205,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
     const ctx = makeContext({
       citizenAssignments: [makeDepositAssignment("c1", "d1")],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -207,7 +226,8 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
   });
 
   it("throttles extraction by available stockpile space, leaving overflow in the deposit", () => {
-    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
     const deposit = makeDeposit({
       id: "d1",
       resources: [
@@ -218,6 +238,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
     const ctx = makeContext({
       citizenAssignments: [makeDepositAssignment("c1", "d1")],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -239,7 +260,8 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
   });
 
   it("scales extraction down when worker inputs are in short supply", () => {
-    const depositType = makeDepositType({
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({
       outputUnitsPerWorker: 10,
       workerInputsJson: [{ amountPerWorker: 5, resourceId: "food" }],
     });
@@ -256,6 +278,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
         makeDepositAssignment("c1", "d1"),
         makeDepositAssignment("c2", "d1"),
       ],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -270,11 +293,13 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
     const log = result.logs.find((l) => l.category === "deposit.processed");
     expect(log?.payload).toMatchObject({
-      inputShortfallScale: 0.4,
       inputsConsumed: { food: 4 },
       totalExtraction: 8, // 2 workers * 10 * 0.4
       workers: 2,
     });
+    expect(log?.payload.perJob).toEqual([
+      { extraction: 8, inputShortfallScale: 0.4, jobId: "job-deposit", workers: 2 },
+    ]);
 
     expect(result.stockpileDeltas).toEqual(
       expect.arrayContaining([
@@ -285,7 +310,8 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
   });
 
   it("caps worker count at the deposit's maxWorkers", () => {
-    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
     const deposit = makeDeposit({
       id: "d1",
       maxWorkers: 2,
@@ -303,6 +329,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
         makeDepositAssignment("c4", "d1"),
         makeDepositAssignment("c5", "d1"),
       ],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -318,10 +345,12 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
   it("skips a deposit entirely when no workers are assigned", () => {
     const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob();
     const deposit = makeDeposit({ id: "d1", settlementId: "s1" });
 
     const ctx = makeContext({
       citizenAssignments: [],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -337,10 +366,31 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
   it("skips a deposit that is not active", () => {
     const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob();
     const deposit = makeDeposit({ id: "d1", settlementId: "s1", status: "depleted" });
 
     const ctx = makeContext({
       citizenAssignments: [makeDepositAssignment("c1", "d1")],
+      depositTypeJobs: [depositTypeJob],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    });
+
+    const result = phaseDepositExtraction(ctx);
+
+    expect(result.depositUpdates).toHaveLength(0);
+    expect(result.logs).toHaveLength(0);
+  });
+
+  it("skips a deposit whose type has no linked jobs", () => {
+    const depositType = makeDepositType();
+    const deposit = makeDeposit({ id: "d1", settlementId: "s1" });
+
+    const ctx = makeContext({
+      citizenAssignments: [makeDepositAssignment("c1", "d1")],
+      depositTypeJobs: [],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -354,7 +404,8 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
   });
 
   it("isolates extraction and stockpile deltas across multiple deposits and settlements", () => {
-    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
     const depositA = makeDeposit({
       id: "dA",
       resources: [
@@ -376,6 +427,7 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
         makeDepositAssignment("c2", "dB"),
         makeDepositAssignment("c3", "dB"),
       ],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [depositA, depositB],
       settlements: [makeSettlement({ id: "s1" }), makeSettlement({ id: "s2" })],
@@ -402,10 +454,12 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
 
   it("throws when an active deposit has no resource rows", () => {
     const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob();
     const deposit = makeDeposit({ id: "d1", resources: [], settlementId: "s1" });
 
     const ctx = makeContext({
       citizenAssignments: [makeDepositAssignment("c1", "d1")],
+      depositTypeJobs: [depositTypeJob],
       depositTypes: [depositType],
       deposits: [deposit],
       settlements: [makeSettlement({ id: "s1" })],
@@ -415,5 +469,236 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
     expect(() => phaseDepositExtraction(ctx)).toThrow(
       /has no resource rows/,
     );
+  });
+});
+
+describe("phaseDepositExtraction — multiple linked jobs", () => {
+  it("buckets assigned workers across linked jobs and sums each job's own output", () => {
+    const depositType = makeDepositType();
+    // Tiered jobs: "Copper Miner" (rate 4) and "Skilled Copper Miner" (rate 8).
+    const minerJob = makeDepositTypeJob({
+      id: "dtj-1",
+      jobId: "job-miner",
+      outputUnitsPerWorker: 4,
+    });
+    const skilledMinerJob = makeDepositTypeJob({
+      id: "dtj-2",
+      jobId: "job-skilled-miner",
+      outputUnitsPerWorker: 8,
+    });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 1000, resourceId: "copper" }),
+      ],
+      settlementId: "s1",
+    });
+
+    const ctx = makeContext({
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypeJobs: [minerJob, skilledMinerJob],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "copper", settlementId: "s1" })],
+    });
+
+    const result = phaseDepositExtraction(ctx);
+
+    // 2 workers split evenly across the 2 jobs -> 1 worker each.
+    // job-miner: 1 * 4 = 4; job-skilled-miner: 1 * 8 = 8; total = 12.
+    const log = result.logs.find((l) => l.category === "deposit.processed");
+    expect(log?.payload).toMatchObject({ totalExtraction: 12, workers: 2 });
+    expect(log?.payload.perJob).toEqual(
+      expect.arrayContaining([
+        { extraction: 4, inputShortfallScale: 1, jobId: "job-miner", workers: 1 },
+        { extraction: 8, inputShortfallScale: 1, jobId: "job-skilled-miner", workers: 1 },
+      ]),
+    );
+
+    const update = result.depositUpdates.find((u) => u.depositInstanceId === "d1");
+    expect(update?.resourceDeltas).toEqual([{ delta: -12, resourceId: "copper" }]);
+  });
+
+  it("scales each job's output independently by its own worker-input shortfall", () => {
+    const depositType = makeDepositType();
+    // Both jobs draw 4 workers each (8 total workers, split evenly).
+    const minerJob = makeDepositTypeJob({
+      id: "dtj-1",
+      jobId: "job-miner",
+      outputUnitsPerWorker: 10,
+      workerInputsJson: [{ amountPerWorker: 1, resourceId: "food" }],
+    });
+    const skilledMinerJob = makeDepositTypeJob({
+      id: "dtj-2",
+      jobId: "job-skilled-miner",
+      outputUnitsPerWorker: 10,
+      workerInputsJson: [{ amountPerWorker: 1, resourceId: "tools" }],
+    });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 1000, resourceId: "copper" }),
+      ],
+      settlementId: "s1",
+    });
+
+    const ctx = makeContext({
+      citizenAssignments: Array.from({ length: 8 }, (_, i) =>
+        makeDepositAssignment(`c${i}`, "d1"),
+      ),
+      depositTypeJobs: [minerJob, skilledMinerJob],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [
+        // job-miner: 4 workers * 1 = 4 required, only 2 available -> scale 0.5
+        makeStockpile({ quantity: 2, resourceId: "food", settlementId: "s1" }),
+        // job-skilled-miner: 4 workers * 1 = 4 required, fully available -> scale 1
+        makeStockpile({ quantity: 4, resourceId: "tools", settlementId: "s1" }),
+        makeStockpile({ resourceId: "copper", settlementId: "s1" }),
+      ],
+    });
+
+    const result = phaseDepositExtraction(ctx);
+
+    const log = result.logs.find((l) => l.category === "deposit.processed");
+    // job-miner: 4 workers * 10 * 0.5 = 20; job-skilled-miner: 4 * 10 * 1 = 40; total = 60
+    expect(log?.payload).toMatchObject({ totalExtraction: 60, workers: 8 });
+    expect(log?.payload.perJob).toEqual(
+      expect.arrayContaining([
+        { extraction: 20, inputShortfallScale: 0.5, jobId: "job-miner", workers: 4 },
+        { extraction: 40, inputShortfallScale: 1, jobId: "job-skilled-miner", workers: 4 },
+      ]),
+    );
+
+    expect(result.stockpileDeltas).toEqual(
+      expect.arrayContaining([
+        { delta: -2, resourceId: "food", settlementId: "s1" },
+        { delta: -4, resourceId: "tools", settlementId: "s1" },
+        { delta: 60, resourceId: "copper", settlementId: "s1" },
+      ]),
+    );
+  });
+});
+
+describe("phaseDepositExtraction — officeholder exclusion", () => {
+  it("excludes a citizen holding a nation office from extraction worker count", () => {
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 1000, resourceId: "iron" }),
+      ],
+      settlementId: "s1",
+    });
+    const baseArgs = {
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypeJobs: [depositTypeJob],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    };
+
+    const withoutOffice = phaseDepositExtraction(makeContext(baseArgs));
+    const withOffice = phaseDepositExtraction(
+      makeContext({ ...baseArgs, nationOffices: [{ citizenId: "c2", excludesFromLabor: true }] }),
+    );
+
+    const logWithout = withoutOffice.logs.find((l) => l.category === "deposit.processed");
+    const logWith = withOffice.logs.find((l) => l.category === "deposit.processed");
+    expect(logWithout?.payload).toMatchObject({ totalExtraction: 20, workers: 2 });
+    expect(logWith?.payload).toMatchObject({ totalExtraction: 10, workers: 1 });
+  });
+
+  it("still clears an officeholder's assignment row when the deposit depletes from other workers", () => {
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 5, resourceId: "iron" }),
+      ],
+      settlementId: "s1",
+    });
+
+    const ctx = makeContext({
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypeJobs: [depositTypeJob],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      nationOffices: [{ citizenId: "c2", excludesFromLabor: true }],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    });
+
+    const result = phaseDepositExtraction(ctx);
+
+    expect(result.depositUpdates[0]?.toStatus).toBe("depleted");
+    expect(result.assignmentClears).toEqual(
+      expect.arrayContaining([
+        { citizenId: "c1", reason: "deposit_depleted" },
+        { citizenId: "c2", reason: "deposit_depleted" },
+      ]),
+    );
+  });
+});
+
+describe("phaseDepositExtraction — enrolled citizen exclusion", () => {
+  it("excludes a citizen enrolled in school from extraction worker count", () => {
+    const depositType = makeDepositType();
+    const depositTypeJob = makeDepositTypeJob({ outputUnitsPerWorker: 10 });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 1000, resourceId: "iron" }),
+      ],
+      settlementId: "s1",
+    });
+    const baseArgs = {
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypeJobs: [depositTypeJob],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    };
+
+    const withoutEnrollment = phaseDepositExtraction(makeContext(baseArgs));
+    const withEnrollment = phaseDepositExtraction(
+      makeContext({
+        ...baseArgs,
+        educationEnrollments: [
+          {
+            citizenId: "c2",
+            enrolledTurnNumber: 1,
+            id: "enr1",
+            progressTurns: 0,
+            settlementBuildingId: "b1",
+            targetLevelId: "lvl1",
+            worldId: "w1",
+          },
+        ],
+      }),
+    );
+
+    const logWithout = withoutEnrollment.logs.find((l) => l.category === "deposit.processed");
+    const logWith = withEnrollment.logs.find((l) => l.category === "deposit.processed");
+    expect(logWithout?.payload).toMatchObject({ totalExtraction: 20, workers: 2 });
+    expect(logWith?.payload).toMatchObject({ totalExtraction: 10, workers: 1 });
   });
 });

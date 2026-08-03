@@ -33,17 +33,29 @@ describe("forecast computation", () => {
     } as unknown as SimulationInputState;
 
     const result: SimulationResult = {
-      assignmentClears: [],
+      armyTurnSnapshots: [],
+    assignmentClears: [],
       buildingStateChanges: [],
+      buildingTierUpgrades: [],
       buildingsCreated: [],
       citizenBirths: [],
       citizenDeaths: [],
+      citizenEducationPatches: [],
       citizenPatches: [],
       constructionUpdates: [],
+      deceasedSoldierIds: [],
       depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
+      enrollmentGraduations: [],
+      enrollmentProgressUpdates: [],
       eventStatusPatches: [],
       logEntries: [],
       managedPopulationUpdates: [],
+      nationCurrencySnapshots: [],
+      nationCurrencyUpdates: [],
+      nationStockpileDeltas: [],
+      nationTurnSnapshots: [],
       notifications: [],
       partnershipChanges: [],
       readinessSummary: {
@@ -56,6 +68,7 @@ describe("forecast computation", () => {
       settlementSnapshots: [],
       stockpileDeltas: [],
       tradeRouteOutcomes: [],
+      treatyStatusChanges: [],
     };
 
     const inputBefore = JSON.stringify(input);
@@ -95,17 +108,29 @@ describe("forecast computation", () => {
     } as unknown as SimulationInputState;
 
     const result: SimulationResult = {
-      assignmentClears: [],
+      armyTurnSnapshots: [],
+    assignmentClears: [],
       buildingStateChanges: [],
+      buildingTierUpgrades: [],
       buildingsCreated: [],
       citizenBirths: [],
       citizenDeaths: [],
+      citizenEducationPatches: [],
       citizenPatches: [],
       constructionUpdates: [],
+      deceasedSoldierIds: [],
       depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
+      enrollmentGraduations: [],
+      enrollmentProgressUpdates: [],
       eventStatusPatches: [],
       logEntries: [],
       managedPopulationUpdates: [],
+      nationCurrencySnapshots: [],
+      nationCurrencyUpdates: [],
+      nationStockpileDeltas: [],
+      nationTurnSnapshots: [],
       notifications: [],
       partnershipChanges: [],
       readinessSummary: {
@@ -128,6 +153,7 @@ describe("forecast computation", () => {
             suspended: 0,
           },
           deathCount: 5,
+          educationSummary: { countsByLevelId: {}, graduationsThisTurn: 0 },
           homelessDeathsCount: 1,
           managedPopulationSummary: [],
           partnershipsFormedCount: 0,
@@ -141,6 +167,7 @@ describe("forecast computation", () => {
       ],
       stockpileDeltas: [],
       tradeRouteOutcomes: [],
+      treatyStatusChanges: [],
     };
 
     const forecast = computeForecastSnapshot(result, input);

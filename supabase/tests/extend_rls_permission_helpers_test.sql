@@ -9,13 +9,15 @@
 --   current_user_manages_settlement
 --   current_user_has_world_access
 --   nation_visible_to_current_user
--- Plus the read RLS rewiring on nations and nation_relationships, which
--- gates hidden nations behind nation_visible_to_current_user while admitting
--- non-hidden nations through current_user_has_world_access.
+-- Plus the read RLS on nations and nation_relationships, which gates every
+-- nation behind nation_visible_to_current_user: super admin, world admin,
+-- a living player_character in the nation itself, or (since #1086) the
+-- nation having met the nation of the caller's active player_character via
+-- nation_discoveries. There is no more "world access" fallback arm.
 begin;
 
 select
-  plan (31);
+  plan (33);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -110,18 +112,16 @@ where
   id = '71000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '72000000-0000-0000-0000-000000000001',
     'Helpers Private World',
-    'private',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000002',
     'Helpers Other World',
-    'private',
     'active'
   );
 
@@ -137,35 +137,48 @@ values
     '71000000-0000-0000-0000-000000000002'
   );
 
--- Two nations: A (non-hidden) and B (hidden). Plus C in the other world. Plus
--- D (hidden) in world 1 so we have a same-world hidden/hidden pair for the
--- nation_relationships visibility test (cross-world inserts are now rejected).
+-- Four nations in world 1 (plus C in the other world). Nation A has met
+-- Nation D (nation_discoveries row below); Nation B has met neither A nor D,
+-- so it stays the "unmet" nation exercised by the nation_visible_to_current_user
+-- and read-RLS assertions below.
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     '73000000-0000-0000-0000-00000000000a',
     '72000000-0000-0000-0000-000000000001',
-    'Nation A',
-    false
+    'Nation A'
   ),
   (
     '73000000-0000-0000-0000-00000000000b',
     '72000000-0000-0000-0000-000000000001',
-    'Nation B (hidden)',
-    true
+    'Nation B (unmet)'
   ),
   (
     '73000000-0000-0000-0000-00000000000c',
     '72000000-0000-0000-0000-000000000002',
-    'Nation C',
-    false
+    'Nation C'
   ),
   (
     '73000000-0000-0000-0000-00000000000d',
     '72000000-0000-0000-0000-000000000001',
-    'Nation D (hidden)',
-    true
+    'Nation D'
+  );
+
+-- A and D have met; B has met neither.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    '72000000-0000-0000-0000-000000000001',
+    '73000000-0000-0000-0000-00000000000a',
+    '73000000-0000-0000-0000-00000000000d',
+    1
   );
 
 insert into
@@ -236,13 +249,16 @@ values
     null
   );
 
+-- A<->D relationship: both sides visible to a PC holder living in A (they
+-- have met). B<->D relationship: B has met neither A nor D, so this row
+-- stays invisible to anyone without a privileged path into B.
 insert into
   public.nation_relationships (id, from_nation_id, to_nation_id, current_stance)
 values
   (
     '76000000-0000-0000-0000-000000000001',
     '73000000-0000-0000-0000-00000000000a',
-    '73000000-0000-0000-0000-00000000000b',
+    '73000000-0000-0000-0000-00000000000d',
     'neutral'
   ),
   (
@@ -606,7 +622,7 @@ where
 -- ===========================================================================
 -- nation_visible_to_current_user
 -- ===========================================================================
--- super admin sees hidden nations
+-- super admin sees unmet nations
 set
   local role authenticated;
 
@@ -617,12 +633,12 @@ select
   is (
     public.nation_visible_to_current_user ('73000000-0000-0000-0000-00000000000b'),
     true,
-    'super admin sees hidden nations via nation_visible_to_current_user'
+    'super admin sees unmet nations via nation_visible_to_current_user'
   );
 
 reset role;
 
--- world admin sees hidden nations in their world
+-- world admin sees unmet nations in their world
 set
   local role authenticated;
 
@@ -633,7 +649,7 @@ select
   is (
     public.nation_visible_to_current_user ('73000000-0000-0000-0000-00000000000b'),
     true,
-    'world admin sees hidden nations in their world'
+    'world admin sees unmet nations in their world'
   );
 
 reset role;
@@ -654,19 +670,25 @@ select
 
 select
   is (
+    public.nation_visible_to_current_user ('73000000-0000-0000-0000-00000000000d'),
+    true,
+    'PC holder sees a nation their own nation has met'
+  );
+
+select
+  is (
     public.nation_visible_to_current_user ('73000000-0000-0000-0000-00000000000b'),
     false,
-    'PC holder does not see hidden nations they do not inhabit'
+    'PC holder does not see a nation their own nation has not met'
   );
 
 reset role;
 
 -- ===========================================================================
--- Read RLS: hidden nation visibility through the SELECT policy
+-- Read RLS: unmet nation visibility through the SELECT policy
 -- ===========================================================================
--- A plain player_character holder has world access through the PC path but
--- is not a world admin and does not live in the hidden nation, so the
--- hidden nation must remain invisible to them.
+-- A plain player_character holder is not a world admin and their nation has
+-- not met Nation B, so Nation B must remain invisible to them.
 set
   local role authenticated;
 
@@ -683,7 +705,7 @@ select
       where
         id = '73000000-0000-0000-0000-00000000000b'
     ),
-    'plain PC holder cannot read a hidden nation they do not inhabit'
+    'plain PC holder cannot read a nation their nation has not met'
   );
 
 select
@@ -696,12 +718,25 @@ select
       where
         id = '73000000-0000-0000-0000-00000000000a'
     ),
-    'plain PC holder reads non-hidden nations through current_user_has_world_access'
+    'plain PC holder reads their own nation'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.nations
+      where
+        id = '73000000-0000-0000-0000-00000000000d'
+    ),
+    'plain PC holder reads a nation their own nation has met'
   );
 
 reset role;
 
--- World admin can read the hidden nation through nation_visible_to_current_user.
+-- World admin can read the unmet nation through nation_visible_to_current_user.
 set
   local role authenticated;
 
@@ -718,16 +753,16 @@ select
       where
         id = '73000000-0000-0000-0000-00000000000b'
     ),
-    'world admin can read the hidden nation through the privileged path'
+    'world admin can read the unmet nation through the privileged path'
   );
 
 reset role;
 
--- nation_relationships visibility piggybacks on nation visibility: the
--- plain PC holder lives in Nation A, so they see the A<->B relationship via
--- the visible-from-nation path but not the B<->C relationship, where
--- neither participant is visible to them (B is hidden; C is in a world they
--- have no access to).
+-- nation_relationships visibility requires BOTH participants to be visible:
+-- the plain PC holder lives in Nation A, which has met Nation D, so the
+-- A<->D relationship is visible. The B<->D relationship stays invisible
+-- because Nation B has met neither A nor D, so it is not visible to the
+-- plain PC holder.
 set
   local role authenticated;
 
@@ -744,7 +779,7 @@ select
       where
         id = '76000000-0000-0000-0000-000000000001'
     ),
-    'plain PC holder sees the relationship rooted on the visible Nation A'
+    'plain PC holder sees the relationship between their own nation and a nation it has met'
   );
 
 select
@@ -757,7 +792,7 @@ select
       where
         id = '76000000-0000-0000-0000-000000000002'
     ),
-    'plain PC holder cannot see relationship between hidden Nation B and hidden Nation D'
+    'plain PC holder cannot see a relationship where a participant nation has not been met'
   );
 
 reset role;

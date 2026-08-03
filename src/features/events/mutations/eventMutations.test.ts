@@ -165,6 +165,7 @@ describe("createEventGroupMutationOptions", () => {
       p_create_citizen_memories: false,
       p_memory_text: null,
       p_memories: [],
+      p_icon: null,
     });
     expect(options.mutationKey).toEqual([
       ...eventQueryKeys.all,
@@ -563,6 +564,7 @@ describe("editEventGroupMutationOptions", () => {
       p_create_citizen_memories: false,
       p_memory_text: null,
       p_memories: [],
+      p_icon: null,
     });
     expect(options.mutationKey).toEqual([...eventQueryKeys.all, "edit-group"]);
   });

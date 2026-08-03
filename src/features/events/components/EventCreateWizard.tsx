@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { jobsByWorldQueryOptions } from "@/features/jobs";
 import { nationsListQueryOptions } from "@/features/nations";
@@ -12,12 +12,16 @@ import type { AccessContext } from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
+import {
+  notifyError,
+  notifyMutationError,
+  notifyMutationSuccess,
+} from "@/lib/notify";
 import { generateLocalId } from "@/lib/uid";
 
 import {
   createEventGroupMutationOptions,
   editEventGroupMutationOptions,
-  isEventMutationError,
 } from "../mutations/eventMutations";
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 
@@ -27,6 +31,7 @@ import { EventCreateNameDescriptionStep } from "./steps/EventCreateNameDescripti
 import { EventCreateStep1 } from "./steps/EventCreateStep1";
 import { EventCreateStep2 } from "./steps/EventCreateStep2";
 import { EventCreateStep3 } from "./steps/EventCreateStep3";
+import { EventScopeReadOnly } from "./steps/EventScopeReadOnly";
 
 import type { CreateEventGroupInput } from "../schemas/eventSchemas";
 import type { EventMemoryDraft } from "./steps/EventCreateForecastStep";
@@ -63,7 +68,10 @@ type EditEventData = {
   readonly groupId: string;
   readonly groupName: string;
   readonly groupDescription: string | null;
+  readonly icon: string | null;
   readonly scopeType: string;
+  readonly scopeNationId: string | null;
+  readonly scopeSettlementId: string | null;
   readonly durationType: string;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
@@ -196,10 +204,10 @@ export function EventCreateWizard({
   // Initialize state based on mode
   const [state, setState] = useState<EventCreateWizardState>(() => {
     if (isEditMode && editEventData !== undefined) {
-      // In edit mode, scope/targets are locked, so open directly on the
-      // effects step; Basics (name/description/duration) is one Previous away.
+      // In edit mode, scope/targets are locked (shown read-only on step 1),
+      // but the wizard still opens on the Basics step like create mode.
       return {
-        step: 2,
+        step: 1,
         scopeType:
           (editEventData.scopeType as "world" | "nation" | "settlement") ??
           null,
@@ -243,6 +251,7 @@ export function EventCreateWizard({
   const [groupDescription, setGroupDescription] = useState(
     editEventData?.groupDescription ?? "",
   );
+  const [icon, setIcon] = useState<string | null>(editEventData?.icon ?? null);
 
   // Update activation turn when world data changes and state hasn't been customized
   useEffect(() => {
@@ -418,7 +427,7 @@ export function EventCreateWizard({
     )
       return;
     if (hasInvalidJobSelection(state.effects)) {
-      toast.error(
+      notifyError(
         "Select at least one job for the production multiplier, or choose All Jobs.",
       );
       return;
@@ -477,6 +486,7 @@ export function EventCreateWizard({
           worldId,
           groupName,
           groupDescription,
+          icon,
           effects: baseEffects,
           durationType: state.durationType,
           durationTransitions:
@@ -489,7 +499,7 @@ export function EventCreateWizard({
 
         await editMutation.mutateAsync(input);
 
-        toast.success("Event updated successfully");
+        notifyMutationSuccess("Event updated successfully");
         await queryClient.invalidateQueries({
           queryKey: eventQueryKeys.byWorld(worldId),
         });
@@ -541,6 +551,7 @@ export function EventCreateWizard({
           worldId,
           groupName,
           groupDescription,
+          icon,
           effects: baseEffects,
           scopeType: state.scopeType,
           targets,
@@ -555,10 +566,11 @@ export function EventCreateWizard({
 
         await createMutationCreate.mutateAsync(input);
 
-        toast.success("Event created successfully");
+        notifyMutationSuccess("Event created successfully");
         setState(createInitialState(nextTurnNumber));
         setGroupName("");
         setGroupDescription("");
+        setIcon(null);
         await queryClient.invalidateQueries({
           queryKey: eventQueryKeys.byWorld(worldId),
         });
@@ -566,13 +578,10 @@ export function EventCreateWizard({
         onClose();
       }
     } catch (error) {
-      if (isEventMutationError(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error(
-          isEditMode ? "Failed to update event" : "Failed to create event",
-        );
-      }
+      notifyMutationError(
+        error,
+        isEditMode ? "Failed to update event" : "Failed to create event",
+      );
     }
   };
 
@@ -581,14 +590,10 @@ export function EventCreateWizard({
   return (
     <>
       <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {isEditMode ? "Edit Event" : "Create Event"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Step {state.step} of {totalSteps}
-          </p>
-        </div>
+        <PageHeader
+          title={isEditMode ? "Edit Event" : "Create Event"}
+          description={`Step ${state.step} of ${totalSteps}`}
+        />
 
         <div className="space-y-6">
           {state.step === 1 && (
@@ -596,6 +601,7 @@ export function EventCreateWizard({
               <EventCreateNameDescriptionStep
                 groupName={groupName}
                 groupDescription={groupDescription}
+                icon={icon}
                 onGroupNameChange={(val) => {
                   setGroupName(val);
                   markDirty();
@@ -604,9 +610,21 @@ export function EventCreateWizard({
                   setGroupDescription(val);
                   markDirty();
                 }}
+                onIconChange={(val) => {
+                  setIcon(val);
+                  markDirty();
+                }}
               />
 
-              {!isEditMode && (
+              {isEditMode ? (
+                state.scopeType !== null && (
+                  <EventScopeReadOnly
+                    scopeType={state.scopeType}
+                    scopeNationId={editEventData?.scopeNationId ?? null}
+                    scopeSettlementId={editEventData?.scopeSettlementId ?? null}
+                  />
+                )
+              ) : (
                 <>
                   <EventCreateStep1
                     scopeType={state.scopeType}

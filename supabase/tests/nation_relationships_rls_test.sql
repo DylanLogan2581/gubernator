@@ -1,13 +1,13 @@
 -- pgTAP tests for public.nation_relationships RLS, mutation rules, and
 -- constraints. Run with: npx supabase test db
 --
--- Read visibility chains through nations: a relationship row is visible when
--- either participating nation is visible to the caller. Hidden nations stay
--- private to super admins, world admins of the nation's world, and users
--- whose player_character settlement belongs to the nation, so a relationship
--- between two hidden nations is invisible to a caller with only the
--- non-hidden + world-access path. A mixed pair (one hidden, one visible) is
--- visible via the non-hidden participant.
+-- Read visibility chains through nations: a relationship row is visible only
+-- when BOTH participating nations are visible to the caller
+-- (nation_visible_to_current_user), gated by super admin / world admin /
+-- own-PC-in-nation / the caller's nation having met the participant nation
+-- (#1086, nation_discoveries). A relationship where either participant has
+-- not been met is invisible to a non-privileged caller, even when the other
+-- participant is the caller's own nation.
 --
 -- Writes via the table API are scoped to the originating side: super admin,
 -- world admin of the from_nation's world, and the Nation Manager whose
@@ -18,6 +18,11 @@
 --   • nation_relationships_distinct_nations_check: self-pair is rejected.
 --   • nation_relationships_pending_stance_check: pending_stance is restricted
 --     to the bilateral stances 'allied' and 'non_aggression_pact'.
+--
+-- A fresh propose (pending_status = 'proposed') is gated by
+-- guard_bilateral_relationship_propose on nations_have_met, so every pair
+-- exercised with pending_status = 'proposed' below has a matching
+-- nation_discoveries row.
 begin;
 
 select
@@ -108,12 +113,11 @@ where
   id = 'f1000000-0000-0000-0000-000000000007';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'Nation Relationships World',
-    'private',
     'active'
   );
 
@@ -125,35 +129,46 @@ values
     'f1000000-0000-0000-0000-000000000002'
   );
 
--- Nation A and Nation B are visible to any world-access caller. Nation C and
--- Nation D are hidden, so they stay private to super admins, the world admin,
--- and any user whose player_character settlement belongs to that nation.
+-- Nation A has met Nation B. Nation C and Nation D have met neither A nor
+-- each other, so they stay private to super admins, the world admin, and any
+-- user whose player_character settlement belongs to that nation.
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'f3000000-0000-0000-0000-00000000000a',
     'f2000000-0000-0000-0000-000000000001',
-    'Nation A',
-    false
+    'Nation A'
   ),
   (
     'f3000000-0000-0000-0000-00000000000b',
     'f2000000-0000-0000-0000-000000000001',
-    'Nation B',
-    false
+    'Nation B'
   ),
   (
     'f3000000-0000-0000-0000-00000000000c',
     'f2000000-0000-0000-0000-000000000001',
-    'Nation C (hidden)',
-    true
+    'Nation C (unmet)'
   ),
   (
     'f3000000-0000-0000-0000-00000000000d',
     'f2000000-0000-0000-0000-000000000001',
-    'Nation D (hidden)',
-    true
+    'Nation D (unmet)'
+  );
+
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'f2000000-0000-0000-0000-000000000001',
+    'f3000000-0000-0000-0000-00000000000a',
+    'f3000000-0000-0000-0000-00000000000b',
+    1
   );
 
 insert into
@@ -233,8 +248,34 @@ values
     'f1000000-0000-0000-0000-000000000005'
   );
 
--- Seed relationships covering visible/visible, hidden/hidden, and mixed pairs
--- so each visibility arm can be exercised independently.
+-- nation_visible_to_current_user's have-met arm (#1086) resolves the
+-- caller's own nation via their ACTIVE player_character, so both managers and
+-- the plain PC holder need an active selection for the have-met visibility
+-- checks below (nation_relationships SELECT and the ON CONFLICT upserts in
+-- the write tests).
+insert into
+  public.user_active_player_characters (user_id, world_id, citizen_id)
+values
+  (
+    'f1000000-0000-0000-0000-000000000003',
+    'f2000000-0000-0000-0000-000000000001',
+    'f5000000-0000-0000-0000-0000000000a1'
+  ),
+  (
+    'f1000000-0000-0000-0000-000000000004',
+    'f2000000-0000-0000-0000-000000000001',
+    'f5000000-0000-0000-0000-0000000000b1'
+  ),
+  (
+    'f1000000-0000-0000-0000-000000000005',
+    'f2000000-0000-0000-0000-000000000001',
+    'f5000000-0000-0000-0000-0000000000a2'
+  );
+
+-- Seed relationships covering a met/met pair (A-B), an unmet/unmet pair
+-- (C-D), and a mixed pair where the plain PC holder's own nation (A) has not
+-- met the other participant (C) so each visibility arm can be exercised
+-- independently.
 insert into
   public.nation_relationships (id, from_nation_id, to_nation_id, current_stance)
 values
@@ -305,7 +346,7 @@ reset role;
 
 -- ===========================================================================
 -- WORLD ADMIN: explicit world admin sees every relationship, including the
--- hidden/hidden pair that the manager and plain PC holder cannot see.
+-- unmet/unmet pair that the manager and plain PC holder cannot see.
 -- ===========================================================================
 set
   local role authenticated;
@@ -323,7 +364,7 @@ select
       where
         id = 'f6000000-0000-0000-0000-000000000001'
     ),
-    'world admin can read the visible/visible relationship'
+    'world admin can read the met/met relationship'
   );
 
 select
@@ -336,17 +377,17 @@ select
       where
         id = 'f6000000-0000-0000-0000-000000000002'
     ),
-    'world admin can read the hidden/hidden relationship'
+    'world admin can read the unmet/unmet relationship'
   );
 
 reset role;
 
 -- ===========================================================================
--- PLAIN PC HOLDER: PC lives in Settlement A1 (non-hidden nation). They have
--- world access, so the non-hidden + world-access arm admits any relationship
--- whose pair includes a non-hidden nation. The hidden/hidden pair stays
--- invisible because neither participant qualifies on that arm and they hold
--- no privileged path into Nations C or D.
+-- PLAIN PC HOLDER: PC lives in Settlement A1. Nation A has met Nation B, so
+-- both participants of the A-B relationship are visible. Nation A has NOT
+-- met Nation C, so the mixed A-C pair is invisible even though A is the
+-- caller's own nation -- visibility now requires BOTH participants visible,
+-- not just one.
 -- ===========================================================================
 set
   local role authenticated;
@@ -364,12 +405,12 @@ select
       where
         id = 'f6000000-0000-0000-0000-000000000001'
     ),
-    'plain PC holder reads the visible/visible relationship'
+    'plain PC holder reads the met/met relationship'
   );
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -377,7 +418,7 @@ select
       where
         id = 'f6000000-0000-0000-0000-000000000003'
     ),
-    'plain PC holder reads a mixed pair via the visible participant'
+    'plain PC holder cannot read a mixed pair where the other participant has not been met'
   );
 
 select
@@ -390,13 +431,13 @@ select
       where
         id = 'f6000000-0000-0000-0000-000000000002'
     ),
-    'plain PC holder cannot read a hidden/hidden relationship'
+    'plain PC holder cannot read an unmet/unmet relationship'
   );
 
 reset role;
 
 -- ===========================================================================
--- SUPER ADMIN: sees every relationship regardless of hidden flags.
+-- SUPER ADMIN: sees every relationship regardless of met/unmet status.
 -- ===========================================================================
 set
   local role authenticated;
@@ -614,6 +655,14 @@ select
 
 reset role;
 
+-- #1143: reset role alone leaves the previous block's "request.jwt.claims"
+-- set (SET LOCAL isn't cleared by RESET ROLE), so auth.uid() would still
+-- resolve to that unrelated caller here. nations_have_met now reads
+-- auth.uid() to gate cross-world access, so clear it to genuinely run as the
+-- migration owner (auth.uid() is null) like the block below intends.
+set
+  local "request.jwt.claims" = '';
+
 -- ===========================================================================
 -- CONSTRAINTS: table-level shape checks run as the migration owner so RLS
 -- does not mask them.
@@ -622,23 +671,21 @@ reset role;
 -- Insert a second world and one nation in it so we have a foreign nation to
 -- target.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000002',
     'Other World',
-    'private',
     'active'
   );
 
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'f3000000-0000-0000-0000-00000000000e',
     'f2000000-0000-0000-0000-000000000002',
-    'Foreign Nation',
-    false
+    'Foreign Nation'
   );
 
 select
@@ -674,6 +721,30 @@ select
 
 -- nation_relationships_pending_stance_check: only 'allied' and
 -- 'non_aggression_pact' are accepted; the unilateral stances are rejected.
+-- These pairs propose (pending_status = 'proposed'), which
+-- guard_bilateral_relationship_propose gates on nations_have_met, so C and D
+-- must each have met A first.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'f2000000-0000-0000-0000-000000000001',
+    'f3000000-0000-0000-0000-00000000000a',
+    'f3000000-0000-0000-0000-00000000000c',
+    1
+  ),
+  (
+    'f2000000-0000-0000-0000-000000000001',
+    'f3000000-0000-0000-0000-00000000000a',
+    'f3000000-0000-0000-0000-00000000000d',
+    1
+  );
+
 select
   throws_ok (
     $test$

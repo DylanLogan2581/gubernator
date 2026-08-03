@@ -49,9 +49,9 @@ type SettlementReadinessRow = {
 };
 
 const SETTLEMENT_READINESS_SELECT =
-  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(id,name)";
+  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!settlements_nation_id_fkey!inner(id,name)";
 const SETTLEMENT_READINESS_SUMMARY_SELECT =
-  "auto_ready_enabled,is_ready_current_turn,nations!inner()";
+  "auto_ready_enabled,is_ready_current_turn,nations!settlements_nation_id_fkey!inner()";
 
 export function settlementReadinessListQueryOptions(
   worldId: string,

@@ -87,11 +87,21 @@ export function jobByIdQueryOptions(
   });
 }
 
+export type JobsSortBy =
+  | "name"
+  | "type"
+  | "education"
+  | "capacity"
+  | "tradersPerWorker";
+
 export type JobsPageParams = {
-  readonly jobType?: JobType;
+  readonly educationLevelId?: string | null;
+  readonly jobTypes?: readonly JobType[];
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: JobsSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -138,16 +148,54 @@ async function getJobsPage(
     .eq("world_id", worldId)
     .eq("is_trashed", params.trash);
 
-  if (params.jobType !== undefined) {
-    query = query.eq("job_type", params.jobType);
+  if (params.jobTypes !== undefined && params.jobTypes.length > 0) {
+    query = query.in("job_type", params.jobTypes);
+  }
+
+  if (
+    params.educationLevelId !== undefined &&
+    params.educationLevelId !== null
+  ) {
+    query = query.eq("required_education_level_id", params.educationLevelId);
   }
 
   if (search !== "") {
     query = query.ilike("name", `%${search}%`);
   }
 
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "type") {
+    query = query
+      .order("job_type", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "education") {
+    query = query
+      .order("rank", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+        referencedTable: "education_levels",
+      })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "capacity") {
+    query = query
+      .order("base_capacity", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+      })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "tradersPerWorker") {
+    query = query
+      .order("trader_capacity_per_worker", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+      })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
+  }
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<JobRow[]>();

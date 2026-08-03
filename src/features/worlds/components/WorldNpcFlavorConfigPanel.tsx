@@ -4,21 +4,30 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Save, Sparkles } from "lucide-react";
-import { Tabs } from "radix-ui";
+import { RotateCw, Save, Sparkles } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { TagListEditor } from "@/components/shared/TagListEditor";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { npcFlavorInputLimits } from "@/lib/inputLimits";
+import {
+  notifyMutationError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
@@ -51,7 +60,7 @@ export function WorldNpcFlavorConfigPanel({
     return (
       <ErrorState
         title="NPC flavor pools could not be loaded"
-        description={getNpcFlavorErrorDescription(configQuery.error)}
+        description={resolveMutationErrorMessage(configQuery.error)}
       />
     );
   }
@@ -114,7 +123,7 @@ function WorldNpcFlavorConfigPanelContent({
       { config: sanitizedConfig, worldId },
       {
         onError: (error) => {
-          toast.error(getNpcFlavorErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           setIsDirty(false);
@@ -175,73 +184,59 @@ function WorldNpcFlavorConfigPanelContent({
             noValidate
             onSubmit={handleSubmit}
           >
-            <Tabs.Root defaultValue="traits">
-              <Tabs.List className="flex gap-1 rounded-md border border-border bg-muted p-1">
-                <NpcFlavorTab
-                  value="traits"
-                  label="Traits"
-                  count={draftConfig.traits.length}
-                />
-                <NpcFlavorTab
-                  value="contradictions"
-                  label="Contradictions"
-                  count={draftConfig.contradictions.length}
-                />
-                <NpcFlavorTab
-                  value="goals"
-                  label="Goals"
-                  count={draftConfig.goals.length}
-                />
-                <NpcFlavorTab
-                  value="flaws"
-                  label="Flaws"
-                  count={draftConfig.flaws.length}
-                />
-              </Tabs.List>
-              <Tabs.Content value="traits" className="mt-3">
-                <TagListEditor
-                  label="Traits"
-                  entries={draftConfig.traits}
-                  onChange={(traits) => {
-                    setDraftConfig((current) => ({ ...current, traits }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="contradictions" className="mt-3">
-                <TagListEditor
-                  label="Contradictions"
-                  entries={draftConfig.contradictions}
-                  onChange={(contradictions) => {
-                    setDraftConfig((current) => ({
-                      ...current,
-                      contradictions,
-                    }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="goals" className="mt-3">
-                <TagListEditor
-                  label="Goals"
-                  entries={draftConfig.goals}
-                  onChange={(goals) => {
-                    setDraftConfig((current) => ({ ...current, goals }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="flaws" className="mt-3">
-                <TagListEditor
-                  label="Flaws"
-                  entries={draftConfig.flaws}
-                  onChange={(flaws) => {
-                    setDraftConfig((current) => ({ ...current, flaws }));
-                    setIsDirty(true);
-                  }}
-                />
-              </Tabs.Content>
-            </Tabs.Root>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <TagListEditor
+                label="Traits"
+                entries={draftConfig.traits}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(traits) => {
+                  setDraftConfig((current) => ({ ...current, traits }));
+                  setIsDirty(true);
+                }}
+              />
+              <TagListEditor
+                label="Contradictions"
+                entries={draftConfig.contradictions}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(contradictions) => {
+                  setDraftConfig((current) => ({
+                    ...current,
+                    contradictions,
+                  }));
+                  setIsDirty(true);
+                }}
+              />
+              <TagListEditor
+                label="Goals"
+                entries={draftConfig.goals}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(goals) => {
+                  setDraftConfig((current) => ({ ...current, goals }));
+                  setIsDirty(true);
+                }}
+              />
+              <TagListEditor
+                label="Flaws"
+                entries={draftConfig.flaws}
+                maxEntryLength={npcFlavorInputLimits.poolEntryMax}
+                maxPoolSize={npcFlavorInputLimits.poolSizeMax}
+                searchable
+                scrollAreaClassName="h-96"
+                onChange={(flaws) => {
+                  setDraftConfig((current) => ({ ...current, flaws }));
+                  setIsDirty(true);
+                }}
+              />
+            </div>
 
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saveMutation.isPending}>
@@ -261,7 +256,20 @@ function WorldNpcFlavorConfigPanelContent({
 
           <Dialog open={exampleDialogOpen} onOpenChange={setExampleDialogOpen}>
             <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Example output</DialogTitle>
+              </DialogHeader>
               <p className="text-sm text-foreground">{exampleOutput}</p>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateExample}
+                >
+                  <RotateCw aria-hidden="true" />
+                  Regenerate
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </>
@@ -273,35 +281,13 @@ function WorldNpcFlavorConfigPanelContent({
   );
 }
 
-function NpcFlavorTab({
-  count,
-  label,
-  value,
-}: {
-  readonly count: number;
-  readonly label: string;
-  readonly value: string;
-}): JSX.Element {
-  return (
-    <Tabs.Trigger
-      value={value}
-      className="flex-1 rounded px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:text-foreground"
-    >
-      {label}
-      {count > 0 ? (
-        <span className="ml-1 opacity-60">({String(count)})</span>
-      ) : null}
-    </Tabs.Trigger>
-  );
-}
-
 function NpcFlavorPoolReadOnlySummary({
   config,
 }: {
   readonly config: WorldNpcFlavorConfig;
 }): JSX.Element {
   return (
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <dl className="grid divide-y divide-border border-y border-border">
       <PoolCountReadout label="Traits" count={config.traits.length} />
       <PoolCountReadout
         label="Contradictions"
@@ -321,18 +307,11 @@ function PoolCountReadout({
   readonly label: string;
 }): JSX.Element {
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm">
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="text-right text-sm font-medium">
         {count === 1 ? "1 entry" : `${String(count)} entries`}
       </dd>
     </div>
   );
-}
-
-function getNpcFlavorErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

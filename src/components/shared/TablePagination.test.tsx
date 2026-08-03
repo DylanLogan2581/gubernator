@@ -118,6 +118,14 @@ describe("TablePagination", () => {
     expect(screen.getByText("Page 42 of 100")).toBeInTheDocument();
   });
 
+  it("renders nothing when there is a single page", () => {
+    const { container } = render(
+      <TablePagination page={0} pageCount={1} onPageChange={vi.fn()} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it("disables all controls when isDisabled is true", () => {
     render(
       <TablePagination

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (21);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -63,24 +63,21 @@ where
   id = '61000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '62000000-0000-0000-0000-000000000001',
     'Nations Private World',
-    'private',
     'active'
   ),
   (
     '62000000-0000-0000-0000-000000000002',
     'Nations Public World',
-    'public',
     'active'
   ),
   (
     '62000000-0000-0000-0000-000000000003',
     'Nations Outsider World',
-    'private',
     'active'
   );
 
@@ -97,28 +94,25 @@ values
   );
 
 insert into
-  public.nations (id, world_id, name, description, is_hidden)
+  public.nations (id, world_id, name, description)
 values
   (
     '63000000-0000-0000-0000-000000000001',
     '62000000-0000-0000-0000-000000000001',
     'Private Nation',
-    'Private world nation',
-    false
+    'Private world nation'
   ),
   (
     '63000000-0000-0000-0000-000000000002',
     '62000000-0000-0000-0000-000000000002',
     'Public Nation',
-    null,
-    false
+    null
   ),
   (
     '63000000-0000-0000-0000-000000000003',
     '62000000-0000-0000-0000-000000000003',
     'Outsider Nation',
-    null,
-    true
+    null
   );
 
 -- ===========================================================================
@@ -145,8 +139,10 @@ select
 reset role;
 
 -- ===========================================================================
--- OUTSIDER: can read public-world nations, not inaccessible private-world
--- nations, and cannot manage nations outside an administered world.
+-- OUTSIDER: a public world alone grants no nation visibility (#1086: a
+-- spectator with no player_character and no admin role sees no nations,
+-- even in a public world) and cannot manage nations outside an administered
+-- world.
 -- ===========================================================================
 set
   local role authenticated;
@@ -156,7 +152,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -164,7 +160,7 @@ select
       where
         id = '63000000-0000-0000-0000-000000000002'
     ),
-    'outsider can read public-world nations'
+    'outsider with no player_character cannot read public-world nations'
   );
 
 select
@@ -319,12 +315,11 @@ select
 select
   lives_ok (
     $test$
-    insert into public.nations (id, world_id, name, is_hidden)
+    insert into public.nations (id, world_id, name)
     values (
       '63000000-0000-0000-0000-000000000005',
       '62000000-0000-0000-0000-000000000001',
-      'Admin Insert',
-      true
+      'Admin Insert'
     )
   $test$,
     'world admin can insert nations in administered world'
@@ -422,24 +417,10 @@ select
     values (
       '63000000-0000-0000-0000-000000000007',
       '62000000-0000-0000-0000-000000000001',
-      'Default Hidden Flag'
+      'Default Description'
     )
   $test$,
-    'nations can be inserted without optional description or is_hidden'
-  );
-
-select
-  is (
-    (
-      select
-        is_hidden
-      from
-        public.nations
-      where
-        id = '63000000-0000-0000-0000-000000000007'
-    ),
-    false,
-    'is_hidden defaults to false'
+    'nations can be inserted without an optional description'
   );
 
 select

@@ -1,0 +1,41 @@
+{
+  "id": "pathfinder-sylph-names",
+  "displayName": "Sylph",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/pathfinder-sylph-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "none",
+    "parts": {
+      "nm5": ["d", "f", "h", "k", "l", "m", "n", "r", "s", "t", "v", "w", "z"],
+      "nm6": ["a", "e", "i", "ee", "aa"],
+      "nm7": [
+        "d",
+        "f",
+        "ff",
+        "h",
+        "l",
+        "ll",
+        "m",
+        "mm",
+        "n",
+        "nn",
+        "s",
+        "ss",
+        "v",
+        "y",
+        "w"
+      ],
+      "nm8": ["h", "m", "n", "sh"],
+      "nm1": ["c", "d", "f", "g", "h", "j", "l", "m", "n", "s", "v", "w", "z"],
+      "nm2": ["a", "e", "i", "u", "aa", "uu", "ii"],
+      "nm3": ["d", "f", "g", "j", "k", "l", "m", "n", "s", "v", "w", "z"],
+      "nm4": ["d", "l", "m", "n", "sh"]
+    },
+    "patterns": {
+      "female_given": [["nm5"], ["nm6"], ["nm7"], ["nm6"], ["nm8"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"], ["nm2"], ["nm4"]],
+      "surname": []
+    }
+  }
+}

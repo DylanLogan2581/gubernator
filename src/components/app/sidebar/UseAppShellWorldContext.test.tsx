@@ -42,7 +42,10 @@ describe("useAppShellWorldContext sidebar fallback", () => {
     window.localStorage.setItem(LAST_WORLD_STORAGE_KEY, OTHER_WORLD_ID);
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldRows: [createWorldRow({ id: WORLD_ID })] }),
+      createClient({
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow({ id: WORLD_ID })],
+      }),
     );
 
     const { result } = renderContextHook();
@@ -73,7 +76,10 @@ describe("useAppShellWorldContext sidebar fallback", () => {
     window.localStorage.setItem(LAST_WORLD_STORAGE_KEY, WORLD_ID);
     useParams.mockReturnValue({});
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldRows: [createWorldRow({ id: WORLD_ID })] }),
+      createClient({
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow({ id: WORLD_ID })],
+      }),
     );
 
     const { result } = renderContextHook();
@@ -137,7 +143,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
@@ -155,14 +160,15 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }
 
 function createClient({
+  pcWorldIds = [],
   worldRows,
 }: {
+  readonly pcWorldIds?: readonly string[];
   readonly worldRows: readonly TestWorldRow[];
 }): unknown {
   return {
@@ -221,7 +227,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),

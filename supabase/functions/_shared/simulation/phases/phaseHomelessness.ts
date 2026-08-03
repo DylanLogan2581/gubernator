@@ -20,6 +20,7 @@ export type PhaseHomelessnessOutput = {
 
 export function phaseHomelessness(
   context: SimulationContext,
+  enlistedSoldierCitizenIds: ReadonlySet<string>,
 ): PhaseHomelessnessOutput {
   const {
     buildingTiers,
@@ -55,12 +56,15 @@ export function phaseHomelessness(
     const sid = settlement.id;
     const cap = popCapBySettlement.get(sid) ?? 0;
 
+    // Enlisted soldiers are never homeless while stationed — barracks/camp
+    // housing is assumed regardless of settlement (#1111).
     const aliveNpcs = citizens.filter(
       (c) =>
         c.status === "alive" &&
         c.settlementId === sid &&
         c.citizenType === "npc" &&
-        !context.shared.pendingDeaths.has(c.id),
+        !context.shared.pendingDeaths.has(c.id) &&
+        !enlistedSoldierCitizenIds.has(c.id),
     );
     const aliveNpcCount = aliveNpcs.length;
 

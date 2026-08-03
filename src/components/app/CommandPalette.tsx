@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { citizensDirectoryQueryOptions } from "@/features/citizens";
-import { nationsListQueryOptions } from "@/features/nations";
+import { NationFlagAvatar, nationsListQueryOptions } from "@/features/nations";
 import {
   createAccessContext,
   currentAccessContextQueryOptions,
@@ -66,6 +66,22 @@ const RECENT_KIND_LABELS: Record<RecentPageEntry["kind"], string> = {
   settlement: "Settlement",
   world: "World",
 };
+
+// Per-entity glyphs so a recent entry shows what it points to, not a
+// generic clock — mirrors each group's own leading icon below.
+const RECENT_KIND_ICONS: Record<
+  RecentPageEntry["kind"],
+  ComponentType<{ readonly "aria-hidden"?: boolean }>
+> = {
+  citizen: Users,
+  nation: Landmark,
+  settlement: MapPin,
+  world: Globe2,
+};
+
+// Shared sizing for the rectangular nation flag so it lines up with the
+// square 20px leading icons/avatars (matches WorldAvatar's `size-5`).
+const NATION_FLAG_LEADING_CLASS = "h-5 shrink-0";
 
 type PaletteEntry = {
   readonly disabled?: boolean;
@@ -333,44 +349,67 @@ export function CommandPalette({
   // Shown only while the query box is empty (docs: recents are a browse
   // aid, not part of search-as-you-type) — most-recent first, per the
   // gubernator:recent-pages ring (recentPages.ts).
+  // Reuse the current world's already-loaded nation flags for recent nation
+  // entries; other-world nations fall back to the flag placeholder glyph.
+  const nationFlagById = new Map(
+    (nationsQuery.data ?? []).map((nation) => [nation.id, nation.flagPath]),
+  );
+
   const recentEntries: PaletteEntry[] =
     open && debouncedSearch === ""
-      ? readRecentPages().map((recent) => ({
-          key: `recent-${recent.path}`,
-          label: recent.label,
-          onSelect: () => {
-            closeAndReset();
-            if (recent.kind === "world") {
-              void navigate({
-                params: { worldId: recent.worldId },
-                to: "/worlds/$worldId",
-              });
-            } else if (recent.kind === "nation") {
-              void navigate({
-                params: { nationId: recent.nationId, worldId: recent.worldId },
-                to: "/worlds/$worldId/nations/$nationId",
-              });
-            } else if (recent.kind === "settlement") {
-              void navigate({
-                params: {
-                  nationId: recent.nationId,
-                  settlementId: recent.settlementId,
-                  worldId: recent.worldId,
-                },
-                to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
-              });
-            } else {
-              void navigate({
-                params: {
-                  citizenId: recent.citizenId,
-                  worldId: recent.worldId,
-                },
-                to: "/worlds/$worldId/citizens/$citizenId",
-              });
-            }
-          },
-          subtitle: RECENT_KIND_LABELS[recent.kind],
-        }))
+      ? readRecentPages().map((recent) => {
+          const RecentIcon = RECENT_KIND_ICONS[recent.kind];
+          return {
+            key: `recent-${recent.path}`,
+            label: recent.label,
+            leading:
+              recent.kind === "nation" ? (
+                <NationFlagAvatar
+                  className={NATION_FLAG_LEADING_CLASS}
+                  flagPath={nationFlagById.get(recent.nationId) ?? null}
+                  nationId={recent.nationId}
+                  nationName={recent.label}
+                />
+              ) : (
+                <RecentIcon aria-hidden />
+              ),
+            onSelect: () => {
+              closeAndReset();
+              if (recent.kind === "world") {
+                void navigate({
+                  params: { worldId: recent.worldId },
+                  to: "/worlds/$worldId",
+                });
+              } else if (recent.kind === "nation") {
+                void navigate({
+                  params: {
+                    nationId: recent.nationId,
+                    worldId: recent.worldId,
+                  },
+                  to: "/worlds/$worldId/nations/$nationId",
+                });
+              } else if (recent.kind === "settlement") {
+                void navigate({
+                  params: {
+                    nationId: recent.nationId,
+                    settlementId: recent.settlementId,
+                    worldId: recent.worldId,
+                  },
+                  to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
+                });
+              } else {
+                void navigate({
+                  params: {
+                    citizenId: recent.citizenId,
+                    worldId: recent.worldId,
+                  },
+                  to: "/worlds/$worldId/citizens/$citizenId",
+                });
+              }
+            },
+            subtitle: RECENT_KIND_LABELS[recent.kind],
+          };
+        })
       : [];
 
   const worldEntries: PaletteEntry[] = (worldsQuery.data ?? []).map(
@@ -379,7 +418,7 @@ export function CommandPalette({
       label: world.name,
       leading: (
         <WorldAvatar
-          className="absolute left-2 size-5 translate-y-1/2"
+          className="size-5 shrink-0"
           size="sm"
           thumbnailPath={world.thumbnailPath}
           worldId={world.id}
@@ -403,6 +442,14 @@ export function CommandPalette({
       : (nationsQuery.data ?? []).map((nation) => ({
           key: `nation-${nation.id}`,
           label: nation.name,
+          leading: (
+            <NationFlagAvatar
+              className={NATION_FLAG_LEADING_CLASS}
+              flagPath={nation.flagPath}
+              nationId={nation.id}
+              nationName={nation.name}
+            />
+          ),
           onSelect: () => {
             closeAndReset();
             void navigate({
@@ -503,7 +550,7 @@ export function CommandPalette({
         </DialogDescription>
         <Command
           shouldFilter={false}
-          className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]:overflow-hidden [&_[cmdk-group]]:px-2 [&_[cmdk-group]]:py-1.5 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:absolute [&_[cmdk-item]_svg]:left-2 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:translate-y-1/2 [&_[cmdk-item]]:pl-8 [&_[cmdk-item]]:aria-selected:bg-accent [&_[cmdk-item]]:aria-selected:text-accent-foreground [&_[cmdk-empty]]:px-2 [&_[cmdk-empty]]:py-6 [&_[cmdk-empty]]:text-center [&_[cmdk-empty]]:text-sm [&_[cmdk-empty]]:text-muted-foreground"
+          className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]:overflow-hidden [&_[cmdk-group]]:px-2 [&_[cmdk-group]]:py-1.5 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:gap-2 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:shrink-0 [&_[cmdk-item]]:aria-selected:bg-accent [&_[cmdk-item]]:aria-selected:text-accent-foreground [&_[cmdk-empty]]:px-2 [&_[cmdk-empty]]:py-6 [&_[cmdk-empty]]:text-center [&_[cmdk-empty]]:text-sm [&_[cmdk-empty]]:text-muted-foreground"
         >
           <CommandInput
             onValueChange={setSearch}

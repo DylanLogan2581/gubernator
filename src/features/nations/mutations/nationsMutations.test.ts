@@ -9,19 +9,28 @@ import {
   deleteNationMutationOptions,
   isNationMutationError,
   NationMutationError,
-  setNationHiddenMutationOptions,
+  setNationCapitalAndFoundedTurnMutationOptions,
+  setNationCultureReligionMutationOptions,
+  setNationTradePolicyMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./nationsMutations";
 
 const NATION_ID = "11111111-1111-1111-1111-111111111111";
 const WORLD_ID = "22222222-2222-2222-2222-222222222222";
+const SETTLEMENT_ID = "33333333-3333-3333-3333-333333333333";
 
 type NationRow = {
+  readonly capital_settlement_id?: string | null;
   readonly created_at: string;
   readonly description: string | null;
+  readonly founded_turn_number?: number | null;
+  readonly government_type?: string;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
+  readonly primary_culture_id?: string | null;
+  readonly state_religion_id?: string | null;
+  readonly tax_rate?: number;
+  readonly trade_policy?: string;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -58,7 +67,6 @@ describe("createNationMutationOptions", () => {
 
     const result = await executeMutation(queryClient, options, {
       description: "  desc  ",
-      isHidden: false,
       name: "  Aldoria  ",
       worldId: WORLD_ID,
     });
@@ -67,7 +75,6 @@ describe("createNationMutationOptions", () => {
     expect(calls.from).toHaveBeenCalledWith("nations");
     expect(calls.insert).toHaveBeenCalledWith({
       description: "desc",
-      is_hidden: false,
       name: "Aldoria",
       world_id: WORLD_ID,
     });
@@ -117,6 +124,50 @@ describe("createNationMutationOptions", () => {
         worldId: WORLD_ID,
       }),
     ).rejects.toBeInstanceOf(AuthUiError);
+  });
+
+  it("sets the founded turn via RPC after insert when foundedTurnNumber is provided", async () => {
+    const insertedRow = createNationRow();
+    const rpcRow = createNationRow({ founded_turn_number: 3 });
+    const { client, calls } = createInsertAndRpcClient({
+      insertResult: { data: insertedRow, error: null },
+      rpcResult: { data: rpcRow, error: null },
+    });
+    const queryClient = createQueryClient();
+    const options = createNationMutationOptions({ client, queryClient });
+
+    const result = await executeMutation(queryClient, options, {
+      foundedTurnNumber: 3,
+      name: "Aldoria",
+      worldId: WORLD_ID,
+    });
+
+    expect(result).toMatchObject({ foundedTurnNumber: 3, id: NATION_ID });
+    expect(calls.rpc).toHaveBeenCalledWith(
+      "set_nation_capital_and_founded_turn",
+      {
+        p_capital_settlement_id: null,
+        p_founded_turn_number: 3,
+        p_nation_id: NATION_ID,
+      },
+    );
+  });
+
+  it("does not call the RPC when foundedTurnNumber is omitted", async () => {
+    const row = createNationRow();
+    const { client, calls } = createInsertAndRpcClient({
+      insertResult: { data: row, error: null },
+      rpcResult: { data: row, error: null },
+    });
+    const queryClient = createQueryClient();
+    const options = createNationMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      name: "Aldoria",
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.rpc).not.toHaveBeenCalled();
   });
 });
 
@@ -211,70 +262,361 @@ describe("updateNationDetailsMutationOptions", () => {
   });
 });
 
-describe("setNationHiddenMutationOptions", () => {
-  it("rejects missing isHidden before touching the Supabase client", async () => {
-    const from = vi.fn();
-    const client = { from } as unknown as GubernatorSupabaseClient;
+describe("setNationCapitalAndFoundedTurnMutationOptions", () => {
+  it("rejects an invalid capitalSettlementId before touching the Supabase client", async () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
 
     await expect(
       executeMutation(queryClient, options, {
-        isHidden: "yes",
+        capitalSettlementId: "not-a-uuid",
+        foundedTurnNumber: null,
         nationId: NATION_ID,
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "nation_input_invalid" });
-    expect(from).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("updates is_hidden, scoped by id and world", async () => {
-    const row = createNationRow({ is_hidden: true });
-    const { client, calls } = createUpdateClient({ data: row, error: null });
+  it("calls the RPC with the nation id, capital settlement id, and founded turn", async () => {
+    const row = createNationRow({
+      capital_settlement_id: SETTLEMENT_ID,
+      founded_turn_number: 3,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
     const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
 
     const result = await executeMutation(queryClient, options, {
-      isHidden: true,
+      capitalSettlementId: SETTLEMENT_ID,
+      foundedTurnNumber: 3,
       nationId: NATION_ID,
       worldId: WORLD_ID,
     });
 
-    expect(result).toMatchObject({ id: NATION_ID, isHidden: true });
-    expect(calls.from).toHaveBeenCalledWith("nations");
-    expect(calls.update).toHaveBeenCalledWith({ is_hidden: true });
-    expect(calls.eqId).toHaveBeenCalledWith("id", NATION_ID);
-    expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
-    expect(options.mutationKey).toEqual(["nations", "set-nation-hidden"]);
+    expect(result).toMatchObject({
+      capitalSettlementId: SETTLEMENT_ID,
+      foundedTurnNumber: 3,
+      id: NATION_ID,
+    });
+    expect(calls.rpc).toHaveBeenCalledWith(
+      "set_nation_capital_and_founded_turn",
+      {
+        p_capital_settlement_id: SETTLEMENT_ID,
+        p_founded_turn_number: 3,
+        p_nation_id: NATION_ID,
+      },
+    );
+    expect(options.mutationKey).toEqual([
+      "nations",
+      "set-nation-capital-and-founded-turn",
+    ]);
   });
 
-  it("raises nation_not_found when update returns no row", async () => {
-    const { client } = createUpdateClient({ data: null, error: null });
+  it("clears the capital and founded turn when both are null", async () => {
+    const row = createNationRow({
+      capital_settlement_id: null,
+      founded_turn_number: null,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
     const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      capitalSettlementId: null,
+      foundedTurnNumber: null,
+      nationId: NATION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.rpc).toHaveBeenCalledWith(
+      "set_nation_capital_and_founded_turn",
+      {
+        p_capital_settlement_id: null,
+        p_founded_turn_number: null,
+        p_nation_id: NATION_ID,
+      },
+    );
+  });
+
+  it("raises nation_not_found when the RPC returns no row", async () => {
+    const { client } = createRpcClient({ data: null, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
 
     await expect(
       executeMutation(queryClient, options, {
-        isHidden: false,
+        capitalSettlementId: null,
+        foundedTurnNumber: null,
         nationId: NATION_ID,
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "nation_not_found" });
   });
 
-  it("normalizes Supabase errors", async () => {
-    const { client } = createUpdateClient({
+  it("normalizes Supabase errors, e.g. an out-of-nation capital settlement", async () => {
+    const { client } = createRpcClient({
       data: null,
-      error: { code: "42501", message: "permission denied" },
+      error: {
+        code: "23514",
+        message: "Capital settlement must belong to this nation.",
+      },
     });
     const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
 
     await expect(
       executeMutation(queryClient, options, {
-        isHidden: false,
+        capitalSettlementId: SETTLEMENT_ID,
+        foundedTurnNumber: null,
         nationId: NATION_ID,
         worldId: WORLD_ID,
+      }),
+    ).rejects.toBeInstanceOf(AuthUiError);
+  });
+});
+
+describe("setNationTradePolicyMutationOptions", () => {
+  it("rejects an invalid tradePolicy before touching the Supabase client", async () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        tradePolicy: "occupied",
+      }),
+    ).rejects.toMatchObject({ code: "nation_input_invalid" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("calls the RPC with the nation id and trade policy", async () => {
+    const row = createNationRow({ trade_policy: "state_controlled" });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    const result = await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      tradePolicy: "state_controlled",
+    });
+
+    expect(result).toMatchObject({
+      id: NATION_ID,
+      tradePolicy: "state_controlled",
+    });
+    expect(calls.rpc).toHaveBeenCalledWith("set_nation_trade_policy", {
+      p_nation_id: NATION_ID,
+      p_trade_policy: "state_controlled",
+    });
+    expect(options.mutationKey).toEqual(["nations", "set-nation-trade-policy"]);
+  });
+
+  it("raises nation_not_found when the RPC returns no row", async () => {
+    const { client } = createRpcClient({ data: null, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        tradePolicy: "closed",
+      }),
+    ).rejects.toMatchObject({ code: "nation_not_found" });
+  });
+
+  it("normalizes Supabase errors, e.g. an unauthorized manager", async () => {
+    const { client } = createRpcClient({
+      data: null,
+      error: {
+        code: "42501",
+        message: "You do not have permission to manage this nation.",
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        tradePolicy: "closed",
+      }),
+    ).rejects.toBeInstanceOf(AuthUiError);
+  });
+});
+
+describe("setNationCultureReligionMutationOptions", () => {
+  it("rejects an invalid primaryCultureId before touching the Supabase client", async () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        primaryCultureId: "not-a-uuid",
+        stateReligionId: null,
+      }),
+    ).rejects.toMatchObject({ code: "nation_input_invalid" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("calls the RPC with the nation id, culture id, and religion id", async () => {
+    const cultureId = "44444444-4444-4444-4444-444444444444";
+    const religionId = "55555555-5555-5555-5555-555555555555";
+    const row = createNationRow({
+      primary_culture_id: cultureId,
+      state_religion_id: religionId,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    const result = await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      primaryCultureId: cultureId,
+      stateReligionId: religionId,
+    });
+
+    expect(result).toMatchObject({
+      id: NATION_ID,
+      primaryCultureId: cultureId,
+      stateReligionId: religionId,
+    });
+    expect(calls.rpc).toHaveBeenCalledWith("set_nation_culture_religion", {
+      p_nation_id: NATION_ID,
+      p_primary_culture_id: cultureId,
+      p_state_religion_id: religionId,
+    });
+    expect(options.mutationKey).toEqual([
+      "nations",
+      "set-nation-culture-religion",
+    ]);
+  });
+
+  it("invalidates culture usage and religion usage caches", async () => {
+    const row = createNationRow();
+    const { client } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      primaryCultureId: null,
+      stateReligionId: null,
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["cultures", "usage"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["religions", "usage"] }),
+    );
+  });
+
+  it("accepts null culture and religion ids to clear both fields", async () => {
+    const row = createNationRow({
+      primary_culture_id: null,
+      state_religion_id: null,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      primaryCultureId: null,
+      stateReligionId: null,
+    });
+
+    expect(calls.rpc).toHaveBeenCalledWith("set_nation_culture_religion", {
+      p_nation_id: NATION_ID,
+      p_primary_culture_id: null,
+      p_state_religion_id: null,
+    });
+  });
+
+  it("raises nation_not_found when the RPC returns no row", async () => {
+    const { client } = createRpcClient({ data: null, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        primaryCultureId: null,
+        stateReligionId: null,
+      }),
+    ).rejects.toMatchObject({ code: "nation_not_found" });
+  });
+
+  it("normalizes Supabase errors, e.g. an unauthorized manager", async () => {
+    const { client } = createRpcClient({
+      data: null,
+      error: {
+        code: "42501",
+        message: "You do not have permission to manage this nation.",
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        primaryCultureId: null,
+        stateReligionId: null,
       }),
     ).rejects.toBeInstanceOf(AuthUiError);
   });
@@ -362,9 +704,10 @@ function createNationRow(overrides: Partial<NationRow> = {}): NationRow {
   return {
     created_at: "2026-05-01T00:00:00.000Z",
     description: null,
+    government_type: "monarchy",
     id: NATION_ID,
-    is_hidden: false,
     name: "Aldoria",
+    tax_rate: 0,
     updated_at: "2026-05-01T00:00:00.000Z",
     world_id: WORLD_ID,
     ...overrides,
@@ -393,6 +736,32 @@ function createInsertClient(result: SupabaseResult<NationRow>): {
   };
 }
 
+function createInsertAndRpcClient({
+  insertResult,
+  rpcResult,
+}: {
+  readonly insertResult: SupabaseResult<NationRow>;
+  readonly rpcResult: SupabaseResult<NationRow>;
+}): {
+  readonly client: GubernatorSupabaseClient;
+  readonly calls: {
+    readonly from: ReturnType<typeof vi.fn>;
+    readonly insert: ReturnType<typeof vi.fn>;
+    readonly rpc: ReturnType<typeof vi.fn>;
+  };
+} {
+  const insertMaybeSingle = vi.fn().mockResolvedValue(insertResult);
+  const select = vi.fn(() => ({ maybeSingle: insertMaybeSingle }));
+  const insert = vi.fn(() => ({ select }));
+  const from = vi.fn(() => ({ insert }));
+  const rpcMaybeSingle = vi.fn().mockResolvedValue(rpcResult);
+  const rpc = vi.fn(() => ({ maybeSingle: rpcMaybeSingle }));
+  return {
+    client: { from, rpc } as unknown as GubernatorSupabaseClient,
+    calls: { from, insert, rpc },
+  };
+}
+
 function createUpdateClient(result: SupabaseResult<NationRow>): {
   readonly client: GubernatorSupabaseClient;
   readonly calls: {
@@ -411,6 +780,20 @@ function createUpdateClient(result: SupabaseResult<NationRow>): {
   return {
     client: { from } as unknown as GubernatorSupabaseClient,
     calls: { from, update, eqId, eqWorld },
+  };
+}
+
+function createRpcClient(result: SupabaseResult<NationRow>): {
+  readonly client: GubernatorSupabaseClient;
+  readonly calls: {
+    readonly rpc: ReturnType<typeof vi.fn>;
+  };
+} {
+  const maybeSingle = vi.fn().mockResolvedValue(result);
+  const rpc = vi.fn(() => ({ maybeSingle }));
+  return {
+    client: { rpc } as unknown as GubernatorSupabaseClient,
+    calls: { rpc },
   };
 }
 

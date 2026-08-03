@@ -7,6 +7,13 @@ import { worldNamingConfigSchema } from "@/lib/worldNamingConfigSchemas";
 const nonnegativeInteger = z.number().int().min(0);
 const probability = z.number().min(0).max(1);
 const nonnegativeDecimal = z.number().min(0);
+const positiveInteger = z.number().int().positive();
+const nameRef = z.string().nullable().default(null);
+const iconRef = z.string().nullable().default(null);
+const iconColorRef = z.number().int().min(1).max(8).nullable().default(null);
+const colorHex = z
+  .string()
+  .regex(/^#[0-9a-f]{6}$/i, "must be a #rrggbb hex color");
 
 // ── calendar ─────────────────────────────────────────────────────────────
 
@@ -24,6 +31,7 @@ const calendarWeekdaySchema = z.object({
 const calendarConfigTemplateSchema = z.object({
   dateFormatTemplate: z.string(),
   months: z.array(calendarMonthSchema).min(1),
+  shortDateFormatTemplate: z.string().optional(),
   startingDayOfMonth: z.number().int().positive(),
   startingMonthIndex: z.number().int().min(0),
   startingWeekdayOffset: z.number().int().min(0),
@@ -65,14 +73,75 @@ const namesetTemplateSchema = z.object({
   config: worldNamingConfigSchema,
 });
 
+// ── resource categories ───────────────────────────────────────────────────
+
+const resourceCategoryTemplateSchema = z.object({
+  name: z.string().min(1),
+  color: colorHex,
+  sort_order: z.number().int(),
+});
+
+// ── education levels ──────────────────────────────────────────────────────
+
+const educationLevelTemplateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  rank: z.number().int(),
+  natural_born_percent: z.number().min(0).max(100),
+});
+
+const educationLevelsTemplateSchema = z
+  .array(educationLevelTemplateSchema)
+  .superRefine((levels, ctx) => {
+    const seenRanks = new Set<number>();
+    for (const level of levels) {
+      if (seenRanks.has(level.rank)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `duplicate education level rank ${level.rank}`,
+        });
+      }
+      seenRanks.add(level.rank);
+    }
+
+    const totalPercent = levels.reduce(
+      (sum, level) => sum + level.natural_born_percent,
+      0,
+    );
+    if (totalPercent > 100) {
+      ctx.addIssue({
+        code: "custom",
+        message: "natural_born_percent values sum to more than 100",
+      });
+    }
+  });
+
+// ── cultures & religions ──────────────────────────────────────────────────
+
+const cultureTemplateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  color: colorHex,
+});
+
+const religionTemplateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  color: colorHex,
+});
+
 // ── resources ─────────────────────────────────────────────────────────────
 
 const resourceTemplateSchema = z.object({
   name: z.string(),
   slug: z.string(),
   base_stockpile_cap: z.number(),
-  decay_rate: z.number(),
+  change_amount: z.number(),
+  change_mode: z.enum(["percent", "flat"]),
   is_system_resource: z.boolean(),
+  icon: iconRef,
+  icon_color: iconColorRef,
+  category: nameRef,
 });
 
 // ── jobs ──────────────────────────────────────────────────────────────────
@@ -91,6 +160,9 @@ const jobTemplateSchema = z.object({
   trader_capacity_per_worker: z.number().nullable(),
   inputs: z.array(jobIoEntryTemplateSchema),
   outputs: z.array(jobIoEntryTemplateSchema),
+  icon: iconRef,
+  icon_color: iconColorRef,
+  required_education_level: nameRef,
 });
 
 // ── buildings ─────────────────────────────────────────────────────────────
@@ -98,6 +170,12 @@ const jobTemplateSchema = z.object({
 const tierCostEntryTemplateSchema = z.object({
   resource_slug: z.string(),
   amount: z.number(),
+});
+
+const educationTierLevelTemplateSchema = z.object({
+  from_level: nameRef,
+  to_level: z.string(),
+  turns: positiveInteger,
 });
 
 const tierEffectTemplateSchema = z.discriminatedUnion("type", [
@@ -120,6 +198,13 @@ const tierEffectTemplateSchema = z.discriminatedUnion("type", [
     type: z.literal("population_cap_increase"),
     amount: z.number(),
   }),
+  z.object({
+    type: z.literal("education"),
+    teacher_job_slug: z.string(),
+    teacher_capacity: positiveInteger,
+    students_per_teacher: positiveInteger,
+    levels: z.array(educationTierLevelTemplateSchema).min(1),
+  }),
 ]);
 
 const blueprintTierTemplateSchema = z.object({
@@ -137,6 +222,8 @@ const blueprintTemplateSchema = z.object({
   max_instances_per_settlement: z.number().nullable(),
   grace_period_turns: z.number(),
   tiers: z.array(blueprintTierTemplateSchema),
+  icon: iconRef,
+  icon_color: iconColorRef,
 });
 
 // ── deposit types ─────────────────────────────────────────────────────────
@@ -146,13 +233,42 @@ const workerInputEntryTemplateSchema = z.object({
   amount_per_worker: z.number(),
 });
 
-const depositTypeTemplateSchema = z.object({
-  name: z.string(),
-  slug: z.string(),
+const depositTypeJobTemplateSchema = z.object({
   job_slug: z.string(),
   output_units_per_worker: z.number(),
   worker_inputs: z.array(workerInputEntryTemplateSchema),
 });
+
+// Legacy templates had a single job flattened onto the deposit type
+// (job_slug/output_units_per_worker/worker_inputs, no jobs array). Wrap that
+// shape into a single-element jobs array so old templates still import.
+const depositTypeTemplateSchema = z.preprocess(
+  (value) => {
+    const valueObj = value as Record<string, unknown>;
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      !("jobs" in valueObj) &&
+      "job_slug" in valueObj
+    ) {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { job_slug, output_units_per_worker, worker_inputs, ...rest } =
+        valueObj;
+      return {
+        ...rest,
+        jobs: [{ job_slug, output_units_per_worker, worker_inputs }],
+      };
+    }
+    return value;
+  },
+  z.object({
+    name: z.string(),
+    slug: z.string(),
+    jobs: z.array(depositTypeJobTemplateSchema),
+    icon: iconRef,
+    icon_color: iconColorRef,
+  }),
+);
 
 // ── managed population types ──────────────────────────────────────────────
 
@@ -161,21 +277,91 @@ const populationResourceEntryTemplateSchema = z.object({
   amount_per_n_animals: z.number(),
 });
 
-const managedPopulationTypeTemplateSchema = z.object({
-  name: z.string(),
-  slug: z.string(),
-  husbandry_job_slug: z.string(),
-  culling_job_slug: z.string(),
-  husbandry_workers_per_n_animals: z.number(),
-  growth_rate: z.number(),
-  maintenance_rules: z.array(populationResourceEntryTemplateSchema),
-  culling_outputs: z.array(populationResourceEntryTemplateSchema),
-  regular_outputs: z.array(populationResourceEntryTemplateSchema),
+const managedPopulationHusbandryJobTemplateSchema = z.object({
+  job_slug: z.string(),
+  workers_per_n_animals: positiveInteger,
+});
+
+const managedPopulationCullingJobTemplateSchema = z.object({
+  job_slug: z.string(),
+  max_cull_per_worker: nonnegativeInteger,
+});
+
+// Legacy templates had a single husbandry job and a single culling job
+// flattened onto the managed population type (husbandry_job_slug +
+// husbandry_workers_per_n_animals, culling_job_slug). Wrap those into
+// single-element jobs arrays so old templates still import. Legacy templates
+// had no per-job culling rate, so the migrated culling job defaults to a
+// max_cull_per_worker of 10, matching the DB data migration's default for
+// existing worlds.
+const managedPopulationTypeTemplateSchema = z.preprocess(
+  (value) => {
+    const valueObj = value as Record<string, unknown>;
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "husbandry_job_slug" in valueObj &&
+      !("husbandry_jobs" in valueObj)
+    ) {
+      const {
+        husbandry_job_slug: husbandryJobSlug,
+        husbandry_workers_per_n_animals: husbandryWorkersPerNAnimals,
+        culling_job_slug: cullingJobSlug,
+        ...rest
+      } = valueObj;
+      return {
+        ...rest,
+        husbandry_jobs: [
+          {
+            job_slug: husbandryJobSlug,
+            workers_per_n_animals: husbandryWorkersPerNAnimals,
+          },
+        ],
+        culling_jobs: [{ job_slug: cullingJobSlug, max_cull_per_worker: 10 }],
+      };
+    }
+    return value;
+  },
+  z.object({
+    name: z.string(),
+    slug: z.string(),
+    husbandry_jobs: z.array(managedPopulationHusbandryJobTemplateSchema).min(1),
+    culling_jobs: z.array(managedPopulationCullingJobTemplateSchema).min(1),
+    growth_rate: z.number(),
+    maintenance_rules: z.array(populationResourceEntryTemplateSchema),
+    culling_outputs: z.array(populationResourceEntryTemplateSchema),
+    regular_outputs: z.array(populationResourceEntryTemplateSchema),
+    icon: iconRef,
+    icon_color: iconColorRef,
+  }),
+);
+
+// ── unit types ────────────────────────────────────────────────────────────
+
+const unitTypeCostEntryTemplateSchema = z.object({
+  resource_slug: z.string(),
+  amount: z.number(),
+});
+
+const unitTypeRequiredBuildingTemplateSchema = z.object({
+  blueprint_slug: z.string(),
+  tier_number: positiveInteger,
+});
+
+const unitTypeTemplateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  soldiers_per_unit: positiveInteger,
+  required_education_level: nameRef,
+  required_building: unitTypeRequiredBuildingTemplateSchema.nullable(),
+  recruitment_costs: z.array(unitTypeCostEntryTemplateSchema),
+  upkeep_costs: z.array(unitTypeCostEntryTemplateSchema),
+  desertion_rate: probability,
 });
 
 // ── world template ────────────────────────────────────────────────────────
 
-export const WORLD_TEMPLATE_VERSION = 1 as const;
+export const WORLD_TEMPLATE_VERSION = 2 as const;
 
 export const worldTemplateSchema = z.object({
   template_version: z.literal(WORLD_TEMPLATE_VERSION),
@@ -189,11 +375,16 @@ export const worldTemplateSchema = z.object({
   npc_flavor: npcFlavorTemplateSchema,
   naming_config: worldNamingConfigSchema,
   namesets: z.array(namesetTemplateSchema),
+  resource_categories: z.array(resourceCategoryTemplateSchema).default([]),
+  education_levels: educationLevelsTemplateSchema.default([]),
+  cultures: z.array(cultureTemplateSchema).default([]),
+  religions: z.array(religionTemplateSchema).default([]),
   resources: z.array(resourceTemplateSchema),
   jobs: z.array(jobTemplateSchema),
   blueprints: z.array(blueprintTemplateSchema),
   deposit_types: z.array(depositTypeTemplateSchema),
   managed_population_types: z.array(managedPopulationTypeTemplateSchema),
+  unit_types: z.array(unitTypeTemplateSchema).default([]),
 });
 
 export type WorldTemplate = z.infer<typeof worldTemplateSchema>;

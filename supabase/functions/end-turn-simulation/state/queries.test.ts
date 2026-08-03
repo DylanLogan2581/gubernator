@@ -7,10 +7,14 @@ import {
   fetchCitizens,
   fetchDeposits,
   fetchDepositTypes,
+  fetchEducationEnrollments,
   fetchEvents,
   fetchJobs,
   fetchManagedPops,
   fetchManagedPopTypes,
+  fetchNationCurrencies,
+  fetchNationOffices,
+  fetchNationTreaties,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
@@ -100,6 +104,17 @@ describe("fetchSettlements", () => {
     expect(url).toContain("/rest/v1/settlements");
     expect(url).toContain(`nations.world_id=eq.${WORLD_ID}`);
   });
+
+  it("disambiguates the nations embed with an explicit FK hint", async () => {
+    const { calls } = stubFetch([]);
+
+    await fetchSettlements(ctx, WORLD_ID);
+
+    const url = calls[0];
+    expect(decodeURIComponent(url)).toContain(
+      "nations!settlements_nation_id_fkey!inner(nameset_id,world_id)",
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -167,6 +182,7 @@ describe("fetchStockpiles", () => {
     const url = calls[0];
     expect(url).toContain("/rest/v1/settlement_stockpiles_view");
     expect(url).toContain(`settlement_id=in.%28${SETTLEMENT_ID}%29`);
+    expect(url).toContain("order=settlement_id.asc%2Cresource_id.asc");
   });
 
   it("uses an empty in-list when no settlement ids are given", async () => {
@@ -454,8 +470,11 @@ describe("pagination", () => {
     if (result.ok) {
       expect(result.rows).toHaveLength(1500);
       expect(fetchCalls).toHaveLength(2);
-      expect(fetchCalls[0].rangeHeader).toBe("rows=0-999");
-      expect(fetchCalls[1].rangeHeader).toBe("rows=1000-1999");
+      // Bare `start-end` (default `items` range unit). A `rows=` prefix is
+      // parsed by PostgREST as an unknown unit and ignored, which would return
+      // the first page forever (infinite loop / OOM for >1 page of rows).
+      expect(fetchCalls[0].rangeHeader).toBe("0-999");
+      expect(fetchCalls[1].rangeHeader).toBe("1000-1999");
     }
   });
 
@@ -541,6 +560,213 @@ describe("pagination", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.rows).toHaveLength(1100);
+    }
+  });
+
+
+  it("fetchEducationEnrollments paginates when response exceeds 1000 rows", async () => {
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      id: `enrollment-${i}`,
+      world_id: WORLD_ID,
+      settlement_building_id: "building-1",
+      citizen_id: `citizen-${i}`,
+      target_level_id: "level-1",
+      progress_turns: 0,
+      enrolled_turn_number: 1,
+    }));
+    const page2 = Array.from({ length: 200 }, (_, i) => ({
+      id: `enrollment-${i + 1000}`,
+      world_id: WORLD_ID,
+      settlement_building_id: "building-1",
+      citizen_id: `citizen-${i + 1000}`,
+      target_level_id: "level-1",
+      progress_turns: 0,
+      enrolled_turn_number: 1,
+    }));
+
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((): Promise<Response> => {
+        callCount++;
+
+        if (callCount === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page1), {
+              status: 200,
+              headers: { "Content-Range": "0-999/*" },
+            }),
+          );
+        } else if (callCount === 2) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page2), {
+              status: 200,
+              headers: { "Content-Range": "1000-1199/*" },
+            }),
+          );
+        }
+        return Promise.reject(new Error("Unexpected call"));
+      }),
+    );
+
+    const result = await fetchEducationEnrollments(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1200);
+    }
+  });
+
+  it("fetchNationOffices paginates when response exceeds 1000 rows", async () => {
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      citizen_id: `citizen-${i}`,
+      office_types: { excludes_from_labor: false },
+    }));
+    const page2 = Array.from({ length: 50 }, (_, i) => ({
+      citizen_id: `citizen-${i + 1000}`,
+      office_types: { excludes_from_labor: false },
+    }));
+
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((): Promise<Response> => {
+        callCount++;
+
+        if (callCount === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page1), {
+              status: 200,
+              headers: { "Content-Range": "0-999/*" },
+            }),
+          );
+        } else if (callCount === 2) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page2), {
+              status: 200,
+              headers: { "Content-Range": "1000-1049/*" },
+            }),
+          );
+        }
+        return Promise.reject(new Error("Unexpected call"));
+      }),
+    );
+
+    const result = await fetchNationOffices(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1050);
+    }
+  });
+
+  it("fetchNationTreaties paginates when response exceeds 1000 rows", async () => {
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      id: `treaty-${i}`,
+      proposer_nation_id: "nation-1",
+      responder_nation_id: "nation-2",
+      treaty_type: "trade",
+      terms: {},
+      ends_turn_number: null,
+    }));
+    const page2 = Array.from({ length: 25 }, (_, i) => ({
+      id: `treaty-${i + 1000}`,
+      proposer_nation_id: "nation-1",
+      responder_nation_id: "nation-2",
+      treaty_type: "trade",
+      terms: {},
+      ends_turn_number: null,
+    }));
+
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((): Promise<Response> => {
+        callCount++;
+
+        if (callCount === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page1), {
+              status: 200,
+              headers: { "Content-Range": "0-999/*" },
+            }),
+          );
+        } else if (callCount === 2) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page2), {
+              status: 200,
+              headers: { "Content-Range": "1000-1024/*" },
+            }),
+          );
+        }
+        return Promise.reject(new Error("Unexpected call"));
+      }),
+    );
+
+    const result = await fetchNationTreaties(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1025);
+    }
+  });
+
+  it("fetchNationCurrencies paginates when response exceeds 1000 rows", async () => {
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      id: `currency-${i}`,
+      nation_id: "nation-1",
+      name: "gold",
+      currency_type: "commodity",
+      backing_resource_id: null,
+      backing_ratio: null,
+      money_supply: 0,
+      reserve_quantity: 0,
+      confidence: 1,
+      is_in_default: false,
+    }));
+    const page2 = Array.from({ length: 10 }, (_, i) => ({
+      id: `currency-${i + 1000}`,
+      nation_id: "nation-1",
+      name: "gold",
+      currency_type: "commodity",
+      backing_resource_id: null,
+      backing_ratio: null,
+      money_supply: 0,
+      reserve_quantity: 0,
+      confidence: 1,
+      is_in_default: false,
+    }));
+
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((): Promise<Response> => {
+        callCount++;
+
+        if (callCount === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page1), {
+              status: 200,
+              headers: { "Content-Range": "0-999/*" },
+            }),
+          );
+        } else if (callCount === 2) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page2), {
+              status: 200,
+              headers: { "Content-Range": "1000-1009/*" },
+            }),
+          );
+        }
+        return Promise.reject(new Error("Unexpected call"));
+      }),
+    );
+
+    const result = await fetchNationCurrencies(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1010);
     }
   });
 });

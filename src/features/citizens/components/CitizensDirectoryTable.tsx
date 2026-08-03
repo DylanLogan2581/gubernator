@@ -15,6 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { nationsListQueryOptions } from "@/features/nations";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -22,6 +27,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
+import { formatOfficeTypesLabel } from "../utils/officeTypesLabel";
 
 import { CitizenAvatar } from "./CitizenAvatar";
 
@@ -67,26 +73,17 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
                 : undefined
             }
           />
-          <span className="flex flex-col">
-            <span className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "font-medium",
-                  isDeceased && "text-muted-foreground",
-                )}
-              >
-                {citizen.name ?? "—"}
-              </span>
-              {isPlayerCharacter ? (
-                <Badge variant="default">Player</Badge>
-              ) : null}
-              {isDeceased ? (
-                <Badge variant="destructive">Deceased</Badge>
-              ) : null}
+          <span className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                "font-medium",
+                isDeceased && "text-muted-foreground",
+              )}
+            >
+              {citizen.name ?? "—"}
             </span>
-            <span className="font-mono text-[11px] text-muted-foreground/70">
-              {citizen.id.slice(0, 8)}
-            </span>
+            {isPlayerCharacter ? <Badge variant="default">Player</Badge> : null}
+            {isDeceased ? <Badge variant="destructive">Deceased</Badge> : null}
           </span>
         </>
       );
@@ -134,11 +131,30 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
     id: "assignment",
     enableSorting: false,
     header: "Job / assignment",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.assignmentLabel ?? "Unassigned"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const officeTypes = row.original.officeTypes;
+      if (officeTypes !== null) {
+        const officeLabel = formatOfficeTypesLabel(officeTypes);
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="cursor-default">
+                In office: {officeLabel}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              Works for the nation this turn — no settlement job output while in
+              office.
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+      return (
+        <span className="text-muted-foreground">
+          {row.original.assignmentLabel ?? "Unassigned"}
+        </span>
+      );
+    },
   },
 ];
 
@@ -218,6 +234,27 @@ export function CitizensDirectoryTable({
         />
 
         <Select
+          value={nationId ?? "all"}
+          onValueChange={(value) => {
+            setNationId(value === "all" ? undefined : value);
+            setSettlementId(undefined);
+            resetToFirstPage();
+          }}
+        >
+          <SelectTrigger className="sm:w-[180px]" aria-label="Filter by nation">
+            <SelectValue placeholder="All nations" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All nations</SelectItem>
+            {(nationsQuery.data ?? []).map((nation) => (
+              <SelectItem key={nation.id} value={nation.id}>
+                {nation.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
           value={settlementId ?? "all"}
           onValueChange={(value) => {
             setSettlementId(value === "all" ? undefined : value);
@@ -232,29 +269,14 @@ export function CitizensDirectoryTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All settlements</SelectItem>
-            {(settlementsQuery.data ?? []).map((settlement) => (
+            {(nationId === undefined
+              ? (settlementsQuery.data ?? [])
+              : (settlementsQuery.data ?? []).filter(
+                  (settlement) => settlement.nationId === nationId,
+                )
+            ).map((settlement) => (
               <SelectItem key={settlement.id} value={settlement.id}>
                 {settlement.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={nationId ?? "all"}
-          onValueChange={(value) => {
-            setNationId(value === "all" ? undefined : value);
-            resetToFirstPage();
-          }}
-        >
-          <SelectTrigger className="sm:w-[180px]" aria-label="Filter by nation">
-            <SelectValue placeholder="All nations" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All nations</SelectItem>
-            {(nationsQuery.data ?? []).map((nation) => (
-              <SelectItem key={nation.id} value={nation.id}>
-                {nation.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -346,9 +368,66 @@ export function CitizensDirectoryTable({
                 {children}
               </Link>
             )}
+            renderMobileCard={(row) => (
+              <CitizenCard citizen={row} worldId={worldId} />
+            )}
           />
         </>
       )}
     </div>
+  );
+}
+
+function CitizenCard({
+  citizen,
+  worldId,
+}: {
+  readonly citizen: CitizenDirectoryRow;
+  readonly worldId: string;
+}): JSX.Element {
+  const isPlayerCharacter = citizen.citizenType === "player_character";
+  const isDeceased = citizen.status === "dead";
+  const officeTypes = citizen.officeTypes;
+
+  return (
+    <Link
+      to="/worlds/$worldId/citizens/$citizenId"
+      params={{ citizenId: citizen.id, worldId }}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border p-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        isDeceased && "opacity-70",
+      )}
+    >
+      <CitizenAvatar
+        id={citizen.id}
+        name={citizen.name ?? "—"}
+        size="sm"
+        className={
+          isPlayerCharacter ? "ring-2 ring-primary ring-offset-1" : undefined
+        }
+      />
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5">
+          <span className="truncate font-medium">{citizen.name ?? "—"}</span>
+          {isPlayerCharacter ? <Badge variant="default">Player</Badge> : null}
+          {isDeceased ? <Badge variant="destructive">Deceased</Badge> : null}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {citizen.settlementName ?? "—"} · {citizen.nationName ?? "—"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Age {citizen.ageTurns ?? "—"} · {citizen.sex ?? "—"}
+        </p>
+        {officeTypes !== null ? (
+          <Badge variant="outline" className="mt-1 cursor-default">
+            In office: {formatOfficeTypesLabel(officeTypes)}
+          </Badge>
+        ) : (
+          <p className="truncate text-xs text-muted-foreground">
+            {citizen.assignmentLabel ?? "Unassigned"}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }

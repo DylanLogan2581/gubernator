@@ -1,6 +1,7 @@
 import {
   mutationOptions,
   queryOptions,
+  type QueryClient,
   type UseMutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
@@ -46,6 +47,7 @@ export type TurnCompletedNotificationsFilters = {
   readonly worldId?: string | null;
 };
 export type AllNotificationsFilters = {
+  readonly includeTotal?: boolean;
   readonly isRead?: boolean | null;
   readonly limit?: number;
   readonly nationId?: string | null;
@@ -91,7 +93,10 @@ type AllNotificationRow = {
   readonly citizen_id: string | null;
   readonly citizen: { readonly name: string | null } | null;
   readonly event_id: string | null;
-  readonly event: { readonly name: string } | null;
+  readonly event: {
+    readonly name: string;
+    readonly icon: string | null;
+  } | null;
   readonly generated_at: string;
   readonly generated_in_transition_id: string | null;
   readonly id: string;
@@ -127,6 +132,7 @@ export type AllNotification = {
   readonly citizenName: string | null;
   readonly eventId: string | null;
   readonly eventName: string | null;
+  readonly eventIcon: string | null;
   readonly generatedAt: string;
   readonly generatedInTransitionId: string | null;
   readonly id: string;
@@ -147,6 +153,8 @@ export type AllNotification = {
 
 type AllNotificationsResponse = {
   readonly notifications: readonly AllNotification[];
+  // 0 when the caller passed includeTotal: false — the count query is
+  // skipped, so this isn't a real "zero results" signal.
   readonly total: number;
 };
 
@@ -164,7 +172,7 @@ const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
 const TURN_COMPLETED_NOTIFICATION_TYPE = "turn.completed";
 const ALL_NOTIFICATIONS_SELECT =
-  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,severity,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name),citizen:citizens(name),event:events(name),transition:turn_transitions!notifications_transition_world_fkey(to_turn_number,finished_at,started_at),trade_route:trade_routes(origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(id,name,nation_id))";
+  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,severity,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name),citizen:citizens(name),event:events(name,icon),transition:turn_transitions!notifications_transition_world_fkey(to_turn_number,finished_at,started_at),trade_route:trade_routes(origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(id,name,nation_id))";
 
 export function unreadNotificationsCountQueryOptions(
   userId: string | null,
@@ -208,6 +216,7 @@ export function allNotificationsQueryOptions(
   const worldId = filters.worldId ?? null;
   const nationId = filters.nationId ?? null;
   const settlementId = filters.settlementId ?? null;
+  const includeTotal = filters.includeTotal ?? true;
 
   // The client is the configured Supabase singleton in app code; tests inject a fake.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
@@ -225,6 +234,7 @@ export function allNotificationsQueryOptions(
         worldId,
         nationId,
         settlementId,
+        includeTotal,
       ),
     queryKey: notificationQueryKeys.allNotifications(
       userId,
@@ -236,6 +246,7 @@ export function allNotificationsQueryOptions(
       worldId,
       nationId,
       settlementId,
+      includeTotal,
     ),
   });
 }
@@ -314,9 +325,9 @@ async function getTurnCompletedNotifications(
     query = query.eq("world_id", worldId);
   }
 
-  const { data, error } = await query.order("generated_at", {
-    ascending: false,
-  });
+  const { data, error } = await query
+    .order("generated_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -336,6 +347,7 @@ async function getAllNotifications(
   worldId: string | null,
   nationId: string | null,
   settlementId: string | null,
+  includeTotal: boolean,
 ): Promise<AllNotificationsResponse> {
   if (userId === null) {
     return { notifications: [], total: 0 };
@@ -343,53 +355,59 @@ async function getAllNotifications(
 
   const disabledTypes = await getDisabledNotificationTypes(client, userId);
 
-  let countQuery = client
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("recipient_user_id", userId);
+  let count = 0;
 
-  if (disabledTypes.length > 0) {
-    countQuery = countQuery.not(
-      "notification_type",
-      "in",
-      `(${disabledTypes.join(",")})`,
-    );
-  }
+  if (includeTotal) {
+    let countQuery = client
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("recipient_user_id", userId);
 
-  if (isRead !== null) {
-    countQuery = countQuery.eq("is_read", isRead);
-  }
+    if (disabledTypes.length > 0) {
+      countQuery = countQuery.not(
+        "notification_type",
+        "in",
+        `(${disabledTypes.join(",")})`,
+      );
+    }
 
-  if (type !== null) {
-    countQuery = countQuery.eq(
-      "notification_type",
-      type as Database["public"]["Enums"]["notification_type"],
-    );
-  }
+    if (isRead !== null) {
+      countQuery = countQuery.eq("is_read", isRead);
+    }
 
-  if (severity !== null) {
-    countQuery = countQuery.eq(
-      "severity",
-      severity as Database["public"]["Enums"]["notification_severity"],
-    );
-  }
+    if (type !== null) {
+      countQuery = countQuery.eq(
+        "notification_type",
+        type as Database["public"]["Enums"]["notification_type"],
+      );
+    }
 
-  if (worldId !== null) {
-    countQuery = countQuery.eq("world_id", worldId);
-  }
+    if (severity !== null) {
+      countQuery = countQuery.eq(
+        "severity",
+        severity as Database["public"]["Enums"]["notification_severity"],
+      );
+    }
 
-  if (nationId !== null) {
-    countQuery = countQuery.eq("nation_id", nationId);
-  }
+    if (worldId !== null) {
+      countQuery = countQuery.eq("world_id", worldId);
+    }
 
-  if (settlementId !== null) {
-    countQuery = countQuery.eq("settlement_id", settlementId);
-  }
+    if (nationId !== null) {
+      countQuery = countQuery.eq("nation_id", nationId);
+    }
 
-  const { count, error: countError } = await countQuery;
+    if (settlementId !== null) {
+      countQuery = countQuery.eq("settlement_id", settlementId);
+    }
 
-  if (countError !== null) {
-    throw normalizeSupabaseError(countError);
+    const { count: exactCount, error: countError } = await countQuery;
+
+    if (countError !== null) {
+      throw normalizeSupabaseError(countError);
+    }
+
+    count = exactCount ?? 0;
   }
 
   let dataQuery = client
@@ -397,6 +415,7 @@ async function getAllNotifications(
     .select(ALL_NOTIFICATIONS_SELECT)
     .eq("recipient_user_id", userId)
     .order("generated_at", { ascending: false })
+    .order("id", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (disabledTypes.length > 0) {
@@ -445,7 +464,7 @@ async function getAllNotifications(
 
   return {
     notifications: data.map(toAllNotification),
-    total: count ?? 0,
+    total: count,
   };
 }
 
@@ -471,6 +490,7 @@ function toAllNotification(row: AllNotificationRow): AllNotification {
     citizenName: row.citizen?.name ?? null,
     eventId: row.event_id,
     eventName: row.event?.name ?? null,
+    eventIcon: row.event?.icon ?? null,
     generatedAt: row.generated_at,
     generatedInTransitionId: row.generated_in_transition_id,
     id: row.id,
@@ -504,12 +524,21 @@ function toAllNotification(row: AllNotificationRow): AllNotification {
   };
 }
 
-export function markNotificationReadMutationOptions(
-  client: GubernatorSupabaseClient = requireSupabaseClient(),
-): MarkNotificationReadMutationOptions {
+export function markNotificationReadMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): MarkNotificationReadMutationOptions {
   return mutationOptions({
     mutationFn: (notificationId: string) =>
       markNotificationRead(client, notificationId),
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: notificationQueryKeys.all,
+      });
+    },
   });
 }
 

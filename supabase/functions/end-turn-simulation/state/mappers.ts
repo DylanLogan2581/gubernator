@@ -1,48 +1,94 @@
+import { parseTierEducationConfig } from "../../_shared/education/index.ts";
 import { isRecord } from "../utils.ts";
 
-import { isBlueprintRow, isDepositResourceRow, isDepositRow, isTierRow } from "./rowTypes.ts";
+import {
+  isBlueprintRow,
+  isDepositResourceRow,
+  isDepositRow,
+  isDepositTypeJobRow,
+  isDepositTypeRow,
+  isManagedPopCullingJobRow,
+  isManagedPopHusbandryJobRow,
+  isManagedPopTypeRow,
+  isTierRow,
+} from "./rowTypes.ts";
 
 import type {
+  SupabaseArmyRow,
+  SupabaseArmyUnitRow,
   SupabaseAssignmentRow,
   SupabaseBuildingRow,
   SupabaseCitizenRow,
-  SupabaseDepositTypeRow,
+  SupabaseDepositTypeJobRow,
+  SupabaseEducationEnrollmentRow,
+  SupabaseEducationLevelRow,
   SupabaseEventEffectRow,
   SupabaseEventRow,
   SupabaseJobRow,
+  SupabaseManagedPopCullingJobRow,
+  SupabaseManagedPopHusbandryJobRow,
   SupabaseManagedPopRow,
   SupabaseManagedPopTypeRow,
+  SupabaseNationCurrencyLedgerRow,
+  SupabaseNationCurrencyRow,
+  SupabaseNationOfficeRow,
+  SupabaseNationRelationshipRow,
+  SupabaseNationRow,
+  SupabaseNationStockpileRow,
+  SupabaseNationTaxPolicyRow,
+  SupabaseNationTreatyRow,
   SupabasePartnershipRow,
   SupabaseProjectRow,
   SupabaseSettlementRow,
   SupabaseStockpileRow,
   SupabaseTradeRouteRow,
+  SupabaseUnitSoldierRow,
+  SupabaseUnitTypeRow,
   SupabaseWorldRow,
 } from "./rowTypes.ts";
 import type {
+  SimArmy,
+  SimArmyUnit,
   SimBuildingBlueprint,
   SimBuildingState,
   SimBuildingTier,
   SimCitizen,
   SimCitizenAssignment,
   SimConstructionProject,
+  SimCurrencyLedgerEntry,
   SimDeposit,
   SimDepositResource,
   SimDepositType,
+  SimDepositTypeJob,
+  SimEducationEnrollment,
+  SimEducationLevel,
   SimEffect,
   SimEvent,
   SimJob,
   SimJobIoEntry,
   SimManagedPopulation,
+  SimManagedPopulationCullingJob,
+  SimManagedPopulationHusbandryJob,
   SimManagedPopulationType,
+  SimNation,
+  SimNationCurrency,
+  SimNationOffice,
+  SimNationRelationship,
+  SimNationStockpile,
+  SimNationTaxPolicy,
   SimPartnership,
   SimPopulationResourceEntry,
   SimSettlement,
   SimSettlementBuilding,
   SimStockpile,
+  SimTaxMethod,
   SimTierCostEntry,
   SimTierEffect,
   SimTradeRoute,
+  SimTreaty,
+  SimTreatyType,
+  SimUnitSoldier,
+  SimUnitType,
   SimWorkerInputEntry,
   WorldPopulationRules,
 } from "../../_shared/simulation/simulationTypes.ts";
@@ -86,33 +132,36 @@ export function toSimTierCostEntries(
   return result;
 }
 
+function toSimTierAmountEffect(item: Record<string, unknown>): SimTierEffect | null {
+  const { type, amount } = item;
+  if (typeof amount !== "number") return null;
+  if (type === "job_capacity_increase" && typeof item.job_id === "string") {
+    return { amount, jobId: item.job_id, type };
+  }
+  if (type === "passive_resource_production" && typeof item.resource_id === "string") {
+    return { amount, resourceId: item.resource_id, type };
+  }
+  if (type === "resource_storage_increase" && typeof item.resource_id === "string") {
+    return { amount, resourceId: item.resource_id, type };
+  }
+  if (type === "population_cap_increase") {
+    return { amount, type: "population_cap_increase" };
+  }
+  return null;
+}
+
 export function toSimTierEffects(raw: unknown): readonly SimTierEffect[] {
   if (!Array.isArray(raw)) return [];
   const result: SimTierEffect[] = [];
   for (const item of raw) {
-    if (
-      !isRecord(item) ||
-      typeof item.type !== "string" ||
-      typeof item.amount !== "number"
-    ) {
+    if (!isRecord(item) || typeof item.type !== "string") continue;
+    if (item.type === "education") {
+      const config = parseTierEducationConfig(item);
+      if (config !== null) result.push({ ...config, type: "education" });
       continue;
     }
-    const { type, amount } = item;
-    if (type === "job_capacity_increase" && typeof item.job_id === "string") {
-      result.push({ amount, jobId: item.job_id, type });
-    } else if (
-      type === "passive_resource_production" &&
-      typeof item.resource_id === "string"
-    ) {
-      result.push({ amount, resourceId: item.resource_id, type });
-    } else if (
-      type === "resource_storage_increase" &&
-      typeof item.resource_id === "string"
-    ) {
-      result.push({ amount, resourceId: item.resource_id, type });
-    } else if (type === "population_cap_increase") {
-      result.push({ amount, type });
-    }
+    const effect = toSimTierAmountEffect(item);
+    if (effect !== null) result.push(effect);
   }
   return result;
 }
@@ -188,6 +237,7 @@ export function toSimJob(row: SupabaseJobRow): SimJob {
     linkedManagedPopulationTypeId: row.linked_managed_population_type_id,
     name: row.name,
     outputsJson: toSimJobIoEntries(row.outputs_json),
+    requiredEducationLevelId: row.required_education_level_id,
     traderCapacityPerWorker: row.trader_capacity_per_worker,
   };
 }
@@ -214,15 +264,18 @@ export function toSimProject(row: SupabaseProjectRow): SimConstructionProject {
     settlementId: row.settlement_id,
     status: row.status as SimConstructionProject["status"],
     targetTierId: row.target_tier_id,
+    upgradeSettlementBuildingId: row.upgrade_settlement_building_id,
     workerTurnsRequired: row.target_tier?.worker_turns_required ?? 0,
   };
 }
 
-export function toSimDepositType(row: SupabaseDepositTypeRow): SimDepositType {
+export function toSimDepositTypeJob(
+  row: SupabaseDepositTypeJobRow,
+): SimDepositTypeJob {
   return {
+    depositTypeId: row.deposit_type_id,
     id: row.id,
     jobId: row.job_id,
-    name: row.name,
     outputUnitsPerWorker: row.output_units_per_worker,
     workerInputsJson: toSimWorkerInputEntries(row.worker_inputs_json),
   };
@@ -232,15 +285,34 @@ export function toSimManagedPopType(
   row: SupabaseManagedPopTypeRow,
 ): SimManagedPopulationType {
   return {
-    cullingJobId: row.culling_job_id,
     cullingOutputsJson: toSimPopResourceEntries(row.culling_outputs_json),
     growthRate: row.growth_rate,
-    husbandryJobId: row.husbandry_job_id,
-    husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
     id: row.id,
     maintenanceRulesJson: toSimPopResourceEntries(row.maintenance_rules_json),
     name: row.name,
     regularOutputsJson: toSimPopResourceEntries(row.regular_outputs_json),
+  };
+}
+
+export function toSimManagedPopHusbandryJob(
+  row: SupabaseManagedPopHusbandryJobRow,
+): SimManagedPopulationHusbandryJob {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    managedPopulationTypeId: row.managed_population_type_id,
+    workersPerNAnimals: row.workers_per_n_animals,
+  };
+}
+
+export function toSimManagedPopCullingJob(
+  row: SupabaseManagedPopCullingJobRow,
+): SimManagedPopulationCullingJob {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    managedPopulationTypeId: row.managed_population_type_id,
+    maxCullPerWorker: row.max_cull_per_worker,
   };
 }
 
@@ -276,15 +348,202 @@ export function toSimCitizen(row: SupabaseCitizenRow): SimCitizen {
   return {
     bornOnTurnNumber: row.born_on_turn_number,
     citizenType: row.citizen_type as SimCitizen["citizenType"],
+    cultureId: row.culture_id ?? null,
+    educationLevelId: row.education_level_id ?? null,
     givenName: row.given_name,
     id: row.id,
     namesetId: row.nameset_id ?? null,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
+    religionId: row.religion_id ?? null,
+    roleNationId: row.role_nation_id,
+    roleSettlementId: row.role_settlement_id,
+    roleType: row.role_type as SimCitizen["roleType"],
     settlementId: row.settlement_id,
     sex: row.sex,
     status: row.status as SimCitizen["status"],
     surname: row.surname,
+  };
+}
+
+export function toSimNation(row: SupabaseNationRow): SimNation {
+  return {
+    governmentType: row.government_type as SimNation["governmentType"],
+    id: row.id,
+    name: row.name,
+    taxRate: row.tax_rate,
+    tradePolicy: row.trade_policy as SimNation["tradePolicy"],
+  };
+}
+
+export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice {
+  return {
+    citizenId: row.citizen_id,
+    // office_types is null only if the FK row was concurrently deleted
+    // between fetch and map; default to excluding from labor (the safe,
+    // Epic 11-compatible default) rather than silently including them.
+    excludesFromLabor: row.office_types?.excludes_from_labor ?? true,
+  };
+}
+
+export function toSimUnitSoldier(row: SupabaseUnitSoldierRow): SimUnitSoldier {
+  return {
+    citizenId: row.citizen_id,
+    homeSettlementId: row.home_settlement_id,
+    id: row.id,
+    unitId: row.unit_id,
+  };
+}
+
+export function toSimArmy(row: SupabaseArmyRow): SimArmy {
+  return {
+    fundingSource: row.funding_source as SimArmy["fundingSource"],
+    id: row.id,
+    name: row.name,
+    nationId: row.nation_id,
+    stationedSettlementId: row.stationed_settlement_id,
+  };
+}
+
+export function toSimArmyUnit(row: SupabaseArmyUnitRow): SimArmyUnit {
+  return {
+    armyId: row.army_id,
+    id: row.id,
+    unitTypeId: row.unit_type_id,
+  };
+}
+
+export function toSimUnitType(row: SupabaseUnitTypeRow): SimUnitType {
+  return {
+    desertionRate: row.desertion_rate,
+    id: row.id,
+    upkeepCostsJson: toSimTierCostEntries(row.upkeep_costs_json),
+  };
+}
+
+export function toSimEducationLevel(row: SupabaseEducationLevelRow): SimEducationLevel {
+  return {
+    id: row.id,
+    name: row.name,
+    naturalBornPercent: row.natural_born_percent,
+    rank: row.rank,
+    worldId: row.world_id,
+  };
+}
+
+export function toSimEducationEnrollment(
+  row: SupabaseEducationEnrollmentRow,
+): SimEducationEnrollment {
+  return {
+    citizenId: row.citizen_id,
+    enrolledTurnNumber: row.enrolled_turn_number,
+    id: row.id,
+    progressTurns: row.progress_turns,
+    settlementBuildingId: row.settlement_building_id,
+    targetLevelId: row.target_level_id,
+    worldId: row.world_id,
+  };
+}
+
+export function toSimNationRelationship(
+  row: SupabaseNationRelationshipRow,
+): SimNationRelationship {
+  return {
+    currentStance: row.current_stance,
+    fromNationId: row.from_nation_id,
+    toNationId: row.to_nation_id,
+  };
+}
+
+export function toSimNationStockpile(row: SupabaseNationStockpileRow): SimNationStockpile {
+  return {
+    nationId: row.nation_id,
+    quantity: row.quantity,
+    resourceId: row.resource_id,
+  };
+}
+
+const TAX_METHODS: readonly SimTaxMethod[] = ["percent_production", "percent_stockpile", "flat"];
+
+export function toSimNationTaxPolicy(row: SupabaseNationTaxPolicyRow): SimNationTaxPolicy {
+  const method: SimTaxMethod = TAX_METHODS.includes(row.method as SimTaxMethod)
+    ? (row.method as SimTaxMethod)
+    : "percent_production";
+  return {
+    exempt: row.exempt,
+    flatAmount: row.flat_amount,
+    method,
+    minStockpileFloor: row.min_stockpile_floor,
+    nationId: row.nation_id,
+    rate: row.rate,
+    settlementId: row.settlement_id,
+    taxedResourceIds: row.taxed_resource_ids === null ? null : [...row.taxed_resource_ids],
+  };
+}
+
+const TREATY_TYPES: readonly SimTreatyType[] = [
+  "tribute",
+  "trade_agreement",
+  "royal_marriage",
+  "currency_exchange",
+];
+
+// #1090: terms shape is validated per treaty_type by propose_nation_treaty
+// (20260914000001) — only the fields each type's simulation effect needs are
+// extracted here; malformed/unexpected terms fields resolve to null rather
+// than throwing, so a corrupt row can't crash the transition.
+export function toSimTreaty(row: SupabaseNationTreatyRow): SimTreaty {
+  const terms = row.terms;
+  const treatyType = TREATY_TYPES.includes(row.treaty_type as SimTreatyType)
+    ? (row.treaty_type as SimTreatyType)
+    : "trade_agreement";
+
+  const tributePayer = terms.payer === "proposer" || terms.payer === "responder"
+    ? terms.payer
+    : null;
+  const tributeResourceId = typeof terms.resource_id === "string" ? terms.resource_id : null;
+  const tributeQuantityPerTurn = typeof terms.quantity_per_turn === "number"
+    ? terms.quantity_per_turn
+    : null;
+  const marriageCitizenAId = typeof terms.citizen_a_id === "string" ? terms.citizen_a_id : null;
+  const marriageCitizenBId = typeof terms.citizen_b_id === "string" ? terms.citizen_b_id : null;
+
+  return {
+    endsTurnNumber: row.ends_turn_number,
+    id: row.id,
+    marriageCitizenAId,
+    marriageCitizenBId,
+    proposerNationId: row.proposer_nation_id,
+    responderNationId: row.responder_nation_id,
+    treatyType,
+    tributePayer,
+    tributeQuantityPerTurn,
+    tributeResourceId,
+  };
+}
+
+export function toSimNationCurrency(row: SupabaseNationCurrencyRow): SimNationCurrency {
+  return {
+    backingRatio: row.backing_ratio,
+    backingResourceId: row.backing_resource_id,
+    confidence: row.confidence,
+    currencyType: row.currency_type as SimNationCurrency["currencyType"],
+    id: row.id,
+    isInDefault: row.is_in_default,
+    moneySupply: row.money_supply,
+    name: row.name,
+    nationId: row.nation_id,
+    reserveQuantity: row.reserve_quantity,
+  };
+}
+
+export function toSimCurrencyLedgerEntry(
+  row: SupabaseNationCurrencyLedgerRow,
+): SimCurrencyLedgerEntry {
+  return {
+    action: row.action as SimCurrencyLedgerEntry["action"],
+    amount: row.amount,
+    currencyId: row.currency_id,
   };
 }
 
@@ -387,6 +646,50 @@ export function toBlueprintsAndTiers(rows: readonly unknown[]): {
   }
 
   return { buildingBlueprints, buildingTiers };
+}
+
+export function toDepositTypesAndJobs(rows: readonly unknown[]): {
+  readonly depositTypeJobs: SimDepositTypeJob[];
+  readonly depositTypes: SimDepositType[];
+} {
+  const depositTypes: SimDepositType[] = [];
+  const depositTypeJobs: SimDepositTypeJob[] = [];
+
+  for (const raw of rows) {
+    if (!isDepositTypeRow(raw)) continue;
+    depositTypes.push({ id: raw.id, name: raw.name });
+    for (const job of raw.deposit_type_jobs) {
+      if (!isDepositTypeJobRow(job)) continue;
+      depositTypeJobs.push(toSimDepositTypeJob(job));
+    }
+  }
+
+  return { depositTypeJobs, depositTypes };
+}
+
+export function toManagedPopulationTypesAndJobs(rows: readonly unknown[]): {
+  readonly managedPopulationCullingJobs: SimManagedPopulationCullingJob[];
+  readonly managedPopulationHusbandryJobs: SimManagedPopulationHusbandryJob[];
+  readonly managedPopulationTypes: SimManagedPopulationType[];
+} {
+  const managedPopulationTypes: SimManagedPopulationType[] = [];
+  const managedPopulationHusbandryJobs: SimManagedPopulationHusbandryJob[] = [];
+  const managedPopulationCullingJobs: SimManagedPopulationCullingJob[] = [];
+
+  for (const raw of rows) {
+    if (!isManagedPopTypeRow(raw)) continue;
+    managedPopulationTypes.push(toSimManagedPopType(raw));
+    for (const job of raw.managed_population_husbandry_jobs) {
+      if (!isManagedPopHusbandryJobRow(job)) continue;
+      managedPopulationHusbandryJobs.push(toSimManagedPopHusbandryJob(job));
+    }
+    for (const job of raw.managed_population_culling_jobs) {
+      if (!isManagedPopCullingJobRow(job)) continue;
+      managedPopulationCullingJobs.push(toSimManagedPopCullingJob(job));
+    }
+  }
+
+  return { managedPopulationCullingJobs, managedPopulationHusbandryJobs, managedPopulationTypes };
 }
 
 export function toDeposits(rows: readonly unknown[]): SimDeposit[] {

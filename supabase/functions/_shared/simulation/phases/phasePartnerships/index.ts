@@ -34,6 +34,7 @@ export function phasePartnerships(
 ): PhasePartnershipsOutput {
   const {
     citizens: inputCitizens,
+    educationLevels,
     fallbackNamesetIdBySettlementId,
     namesetConfigById,
     npcFlavorConfig,
@@ -128,6 +129,7 @@ export function phasePartnerships(
       fallbackNamesetIdBySettlementId?.[settlement.id] ?? null,
       turnNumber,
       rng,
+      educationLevels,
     );
     allCitizenBirths.push(...fertility.citizenBirths);
     allLogs.push(...fertility.logs);

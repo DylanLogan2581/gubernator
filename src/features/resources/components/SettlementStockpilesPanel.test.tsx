@@ -99,6 +99,30 @@ describe("SettlementStockpilesPanel", () => {
     expect(screen.getByText("250 / 300")).toBeDefined();
   });
 
+  it("shows the detail placeholder until a resource is selected", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [
+          createStockpileRow({ resource_name: "Food", quantity: 100 }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("Select a resource to view details")).toBeDefined();
+
+    await user.click(screen.getByText("Food"));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Select a resource to view details"),
+      ).toBeNull();
+    });
+  });
+
   it("shows system badge for system resources", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -184,7 +208,6 @@ describe("SettlementStockpilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /Edit Food quantity/i }),
     ).toBeNull();
-    expect(screen.getByText("Stockpiles are simulation-managed")).toBeDefined();
   });
 
   it("hides the edit affordance when the world is archived", async () => {
@@ -202,7 +225,6 @@ describe("SettlementStockpilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /Edit Food quantity/i }),
     ).toBeNull();
-    expect(screen.getByText("Stockpiles are simulation-managed")).toBeDefined();
   });
 
   it("opens the edit dialog when the admin clicks Edit", async () => {
@@ -431,8 +453,10 @@ describe("SettlementStockpilesPanel", () => {
 
     await screen.findByText("Food");
     const bars = screen.getAllByRole("progressbar");
-    expect(bars[0]?.firstElementChild?.className).toContain("bg-amber-500");
-    expect(bars[1]?.firstElementChild?.className).toContain("bg-red-600");
+    expect(bars[0]?.firstElementChild?.className).toContain(
+      "bg-warning-foreground",
+    );
+    expect(bars[1]?.firstElementChild?.className).toContain("bg-destructive");
   });
 
   it("shows — for resources not in forecast snapshot", async () => {

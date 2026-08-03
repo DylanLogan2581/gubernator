@@ -13,6 +13,7 @@ afterEach(() => {
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
 const NATION_ID = "00000000-0000-0000-0000-000000000003";
+const OTHER_NATION_ID = "00000000-0000-0000-0000-000000000004";
 const FOOD_ID = "00000000-0000-0000-0000-000000000010";
 const WATER_ID = "00000000-0000-0000-0000-000000000011";
 const JOB_ID = "00000000-0000-0000-0000-000000000020";
@@ -23,9 +24,12 @@ const PROJECT_ID = "00000000-0000-0000-0000-000000000050";
 const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000060";
 const DEPOSIT_ID = "00000000-0000-0000-0000-000000000061";
 const DEPOSIT_RES_ID = "00000000-0000-0000-0000-000000000062";
+const DEPOSIT_TYPE_JOB_ID = "00000000-0000-0000-0000-000000000063";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000070";
 const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000080";
 const MANAGED_POP_ID = "00000000-0000-0000-0000-000000000081";
+const MANAGED_POP_HUSBANDRY_JOB_ID = "00000000-0000-0000-0000-000000000082";
+const MANAGED_POP_CULLING_JOB_ID = "00000000-0000-0000-0000-000000000083";
 const TRADE_ROUTE_ID = "00000000-0000-0000-0000-000000000090";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000100";
 const PARTNER_ID = "00000000-0000-0000-0000-000000000101";
@@ -141,8 +145,8 @@ function makeAllSuccessResponses(): Record<
     },
     "/rest/v1/resources": {
       body: [
-        { decay_rate: 0, id: FOOD_ID, slug: "food" },
-        { decay_rate: 0, id: WATER_ID, slug: "fresh-water" },
+        { change_amount: 0, change_mode: "percent", id: FOOD_ID, slug: "food" },
+        { change_amount: 0, change_mode: "percent", id: WATER_ID, slug: "fresh-water" },
       ],
       status: 200,
     },
@@ -168,6 +172,7 @@ function makeAllSuccessResponses(): Record<
           linked_managed_population_type_id: null,
           name: "Farming",
           outputs_json: [{ amount_per_worker: 3, resource_id: FOOD_ID }],
+          required_education_level_id: null,
           trader_capacity_per_worker: null,
         },
       ],
@@ -223,6 +228,7 @@ function makeAllSuccessResponses(): Record<
           status: "in_progress",
           target_tier: { worker_turns_required: 10 },
           target_tier_id: TIER_ID,
+          upgrade_settlement_building_id: null,
         },
       ],
       status: 200,
@@ -230,13 +236,19 @@ function makeAllSuccessResponses(): Record<
     "/rest/v1/deposit_types": {
       body: [
         {
-          id: DEPOSIT_TYPE_ID,
-          job_id: JOB_ID,
-          name: "Iron Vein",
-          output_units_per_worker: 2,
-          worker_inputs_json: [
-            { amount_per_worker: 0.5, resource_id: FOOD_ID },
+          deposit_type_jobs: [
+            {
+              deposit_type_id: DEPOSIT_TYPE_ID,
+              id: DEPOSIT_TYPE_JOB_ID,
+              job_id: JOB_ID,
+              output_units_per_worker: 2,
+              worker_inputs_json: [
+                { amount_per_worker: 0.5, resource_id: FOOD_ID },
+              ],
+            },
           ],
+          id: DEPOSIT_TYPE_ID,
+          name: "Iron Vein",
         },
       ],
       status: 200,
@@ -264,16 +276,29 @@ function makeAllSuccessResponses(): Record<
     "/rest/v1/managed_population_types": {
       body: [
         {
-          culling_job_id: JOB_ID,
           culling_outputs_json: [
             { amount_per_n_animals: 1, resource_id: RESOURCE_ID },
           ],
           growth_rate: 0.05,
-          husbandry_job_id: JOB_ID,
-          husbandry_workers_per_n_animals: 2,
           id: MANAGED_POP_TYPE_ID,
           maintenance_rules_json: [
             { amount_per_n_animals: 0.5, resource_id: FOOD_ID },
+          ],
+          managed_population_culling_jobs: [
+            {
+              id: MANAGED_POP_CULLING_JOB_ID,
+              job_id: JOB_ID,
+              managed_population_type_id: MANAGED_POP_TYPE_ID,
+              max_cull_per_worker: 5,
+            },
+          ],
+          managed_population_husbandry_jobs: [
+            {
+              id: MANAGED_POP_HUSBANDRY_JOB_ID,
+              job_id: JOB_ID,
+              managed_population_type_id: MANAGED_POP_TYPE_ID,
+              workers_per_n_animals: 2,
+            },
           ],
           name: "Sheep",
           regular_outputs_json: [],
@@ -318,10 +343,16 @@ function makeAllSuccessResponses(): Record<
         {
           born_on_turn_number: 1,
           citizen_type: "npc",
+          culture_id: null,
+          education_level_id: null,
           given_name: "Alice",
           id: CITIZEN_ID,
           parent_a_citizen_id: null,
           parent_b_citizen_id: null,
+          religion_id: null,
+          role_nation_id: null,
+          role_settlement_id: null,
+          role_type: "none",
           settlement_id: SETTLEMENT_ID,
           sex: "female",
           status: "alive",
@@ -330,10 +361,16 @@ function makeAllSuccessResponses(): Record<
         {
           born_on_turn_number: 2,
           citizen_type: "npc",
+          culture_id: null,
+          education_level_id: null,
           given_name: "Bob",
           id: PARTNER_ID,
           parent_a_citizen_id: null,
           parent_b_citizen_id: null,
+          religion_id: null,
+          role_nation_id: null,
+          role_settlement_id: null,
+          role_type: "none",
           settlement_id: SETTLEMENT_ID,
           sex: "male",
           status: "alive",
@@ -392,6 +429,76 @@ function makeAllSuccessResponses(): Record<
           status: "active",
         },
       ],
+      status: 200,
+    },
+    "/rest/v1/nations": {
+      body: [
+        {
+          id: NATION_ID,
+          name: "Testland",
+          government_type: "monarchy",
+          tax_rate: 0,
+          trade_policy: "free",
+        },
+      ],
+      status: 200,
+    },
+    "/rest/v1/nation_offices": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/nation_relationships": {
+      body: [
+        {
+          current_stance: "at_war",
+          from_nation_id: NATION_ID,
+          to_nation_id: OTHER_NATION_ID,
+        },
+      ],
+      status: 200,
+    },
+    "/rest/v1/nation_resource_stockpiles": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/nation_tax_policies": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/nation_treaties": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/nation_currencies": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/nation_currency_ledger": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/education_levels": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/education_enrollments": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/unit_soldiers": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/armies": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/army_units": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/unit_types": {
+      body: [],
       status: 200,
     },
   };
@@ -510,8 +617,13 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.depositTypes).toHaveLength(1);
     const depositType = input.depositTypes[0];
     expect(depositType.id).toBe(DEPOSIT_TYPE_ID);
-    expect(depositType.outputUnitsPerWorker).toBe(2);
-    expect(depositType.workerInputsJson).toEqual([
+
+    expect(input.depositTypeJobs).toHaveLength(1);
+    const depositTypeJob = input.depositTypeJobs[0];
+    expect(depositTypeJob.depositTypeId).toBe(DEPOSIT_TYPE_ID);
+    expect(depositTypeJob.jobId).toBe(JOB_ID);
+    expect(depositTypeJob.outputUnitsPerWorker).toBe(2);
+    expect(depositTypeJob.workerInputsJson).toEqual([
       { amountPerWorker: 0.5, resourceId: FOOD_ID },
     ]);
 
@@ -540,6 +652,22 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(mpt.cullingOutputsJson).toEqual([
       { amountPerNAnimals: 1, resourceId: RESOURCE_ID },
     ]);
+
+    // Managed population husbandry / culling job links
+    expect(input.managedPopulationHusbandryJobs).toHaveLength(1);
+    expect(input.managedPopulationHusbandryJobs[0]).toEqual({
+      id: MANAGED_POP_HUSBANDRY_JOB_ID,
+      jobId: JOB_ID,
+      managedPopulationTypeId: MANAGED_POP_TYPE_ID,
+      workersPerNAnimals: 2,
+    });
+    expect(input.managedPopulationCullingJobs).toHaveLength(1);
+    expect(input.managedPopulationCullingJobs[0]).toEqual({
+      id: MANAGED_POP_CULLING_JOB_ID,
+      jobId: JOB_ID,
+      managedPopulationTypeId: MANAGED_POP_TYPE_ID,
+      maxCullPerWorker: 5,
+    });
 
     // Managed populations
     expect(input.managedPopulations).toHaveLength(1);
@@ -589,6 +717,13 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(event.effectType).toBe("resource_grant");
     expect(event.status).toBe("pending");
     expect(event.activateOnTransitionAfterTurnNumber).toBe(4);
+
+    // Nation relationships (#1088)
+    expect(input.nationRelationships).toHaveLength(1);
+    const relationship = input.nationRelationships[0];
+    expect(relationship.fromNationId).toBe(NATION_ID);
+    expect(relationship.toNationId).toBe(OTHER_NATION_ID);
+    expect(relationship.currentStance).toBe("at_war");
   });
 
   it("returns a state_unavailable error when auth header is missing", async () => {
@@ -753,8 +888,8 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/namesets": { body: [], status: 200 },
       "/rest/v1/resources": {
         body: [
-          { decay_rate: 0, id: FOOD_ID, slug: "food" },
-          { decay_rate: 0, id: WATER_ID, slug: "fresh-water" },
+          { change_amount: 0, change_mode: "percent", id: FOOD_ID, slug: "food" },
+          { change_amount: 0, change_mode: "percent", id: WATER_ID, slug: "fresh-water" },
         ],
         status: 200,
       },
@@ -773,6 +908,20 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/event_effects": { body: [], status: 200 },
       "/rest/v1/citizen_assignments": { body: [], status: 200 },
       "/rest/v1/partnerships": { body: [], status: 200 },
+      "/rest/v1/nations": { body: [], status: 200 },
+      "/rest/v1/nation_offices": { body: [], status: 200 },
+      "/rest/v1/nation_relationships": { body: [], status: 200 },
+      "/rest/v1/nation_resource_stockpiles": { body: [], status: 200 },
+      "/rest/v1/nation_tax_policies": { body: [], status: 200 },
+      "/rest/v1/nation_treaties": { body: [], status: 200 },
+      "/rest/v1/nation_currencies": { body: [], status: 200 },
+      "/rest/v1/nation_currency_ledger": { body: [], status: 200 },
+      "/rest/v1/education_levels": { body: [], status: 200 },
+      "/rest/v1/education_enrollments": { body: [], status: 200 },
+      "/rest/v1/unit_soldiers": { body: [], status: 200 },
+      "/rest/v1/armies": { body: [], status: 200 },
+      "/rest/v1/army_units": { body: [], status: 200 },
+      "/rest/v1/unit_types": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(
@@ -793,6 +942,8 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.deposits).toHaveLength(0);
     expect(input.events).toHaveLength(0);
     expect(input.managedPopulations).toHaveLength(0);
+    expect(input.nationOffices).toHaveLength(0);
+    expect(input.nationRelationships).toHaveLength(0);
     expect(input.partnerships).toHaveLength(0);
     expect(input.tradeRoutes).toHaveLength(0);
   });

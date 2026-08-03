@@ -102,7 +102,7 @@ export function PartnershipHistoryPanel({
       </div>
 
       {canAdmin && adminUnavailableReason !== null ? (
-        <p className="rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {adminUnavailableReason}
         </p>
       ) : null}
@@ -129,7 +129,10 @@ export function PartnershipHistoryPanel({
           description="This citizen has no partnership records yet."
         />
       ) : (
-        <ul aria-label="Partnerships" className="grid gap-2">
+        <ul
+          aria-label="Partnerships"
+          className="divide-y divide-border border-y border-border"
+        >
           {partnerships.map((partnership) => {
             const isThisRowActive = partnership.status === "active";
             const rowAdminReady = adminReady && isThisRowActive;

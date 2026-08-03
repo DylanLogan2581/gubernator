@@ -13,10 +13,16 @@ import type {
   ConstructionProjectStatus,
 } from "../types/constructionProjectTypes";
 
+type ConstructionCostEntryRow = {
+  readonly amount: number;
+  readonly resource_id: string;
+};
+
 type ConstructionProjectRow = {
   readonly activated_on_turn_number: number | null;
   readonly building_blueprint_id: string;
   readonly building_blueprint_tiers: {
+    readonly construction_costs_json: readonly ConstructionCostEntryRow[];
     readonly tier_number: number;
     readonly worker_turns_required: number;
   };
@@ -33,7 +39,7 @@ type ConstructionProjectRow = {
 };
 
 const CONSTRUCTION_PROJECT_SELECT =
-  "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,completed_in_transition_id,activated_on_turn_number,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,worker_turns_required)";
+  "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,completed_in_transition_id,activated_on_turn_number,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,worker_turns_required,construction_costs_json)";
 
 type ConstructionProjectsBySettlementQueryKey = ReturnType<
   typeof buildingsQueryKeys.constructionProjectsBySettlement
@@ -83,6 +89,11 @@ function toConstructionProject(
     blueprintName: row.building_blueprints.name,
     buildingBlueprintId: row.building_blueprint_id,
     completedInTransitionId: row.completed_in_transition_id,
+    constructionCostsJson:
+      row.building_blueprint_tiers.construction_costs_json.map((cost) => ({
+        amount: cost.amount,
+        resourceId: cost.resource_id,
+      })),
     createdAt: row.created_at,
     id: row.id,
     progressWorkerTurns: row.progress_worker_turns,

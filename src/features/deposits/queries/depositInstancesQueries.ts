@@ -32,7 +32,7 @@ type DepositInstanceRow = {
   readonly deposit_type_id: string;
   readonly deposit_types: {
     readonly icon: string | null;
-    readonly job: { readonly name: string };
+    readonly icon_color: number | null;
     readonly name: string;
   };
   readonly discovered_by_event_id: string | null;
@@ -50,7 +50,7 @@ type DepositInstanceWithLocationRow = {
   readonly deposit_type_id: string;
   readonly deposit_types: {
     readonly icon: string | null;
-    readonly job: { readonly name: string };
+    readonly icon_color: number | null;
     readonly name: string;
   };
   readonly discovered_by_event_id: string | null;
@@ -74,15 +74,15 @@ export type DepositInstanceWithLocation = DepositInstance & {
 
 const DEPOSIT_INSTANCE_SELECT = [
   "id,settlement_id,deposit_type_id,name,status,max_workers,discovered_by_event_id,created_at,updated_at",
-  "deposit_types(name,icon,job:job_definitions!deposit_types_job_id_fk(name))",
+  "deposit_types(name,icon,icon_color)",
   "deposit_instance_resources(id,deposit_instance_id,resource_id,initial_quantity,remaining_quantity,created_at,updated_at,resources(name))",
 ].join(",");
 
 const DEPOSIT_INSTANCE_WITH_LOCATION_SELECT = [
   "id,settlement_id,deposit_type_id,name,status,max_workers,discovered_by_event_id,created_at,updated_at",
-  "deposit_types(name,icon,job:job_definitions!deposit_types_job_id_fk(name))",
+  "deposit_types(name,icon,icon_color)",
   "deposit_instance_resources(id,deposit_instance_id,resource_id,initial_quantity,remaining_quantity,created_at,updated_at,resources(name))",
-  "settlements(id,name,nations!inner(name))",
+  "settlements(id,name,nations!settlements_nation_id_fkey!inner(name))",
 ].join(",");
 
 type DepositInstanceDetailQueryKey = ReturnType<
@@ -253,8 +253,8 @@ function toDepositInstance(row: DepositInstanceRow): DepositInstance {
   return {
     createdAt: row.created_at,
     depositTypeIcon: row.deposit_types.icon,
+    depositTypeIconColor: row.deposit_types.icon_color,
     depositTypeId: row.deposit_type_id,
-    depositTypeJobName: row.deposit_types.job.name,
     depositTypeName: row.deposit_types.name,
     discoveredByEventId: row.discovered_by_event_id,
     id: row.id,
@@ -273,8 +273,8 @@ function toDepositInstanceWithLocation(
   return {
     createdAt: row.created_at,
     depositTypeIcon: row.deposit_types.icon,
+    depositTypeIconColor: row.deposit_types.icon_color,
     depositTypeId: row.deposit_type_id,
-    depositTypeJobName: row.deposit_types.job.name,
     depositTypeName: row.deposit_types.name,
     discoveredByEventId: row.discovered_by_event_id,
     id: row.id,

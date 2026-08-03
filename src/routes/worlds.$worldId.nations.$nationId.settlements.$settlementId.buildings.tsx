@@ -6,12 +6,18 @@ import { useSettlementDetailContext } from "@/features/settlements";
 import type { JSX } from "react";
 
 function SettlementBuildingsRoute(): JSX.Element {
-  const { effectiveCanAdmin, isArchived, settlement, worldId } =
-    useSettlementDetailContext();
+  const {
+    canManageSettlement,
+    effectiveCanAdmin,
+    isArchived,
+    settlement,
+    worldId,
+  } = useSettlementDetailContext();
 
   return (
     <SettlementBuildingsPanel
       canAdmin={effectiveCanAdmin}
+      canManageSettlement={canManageSettlement}
       isArchived={isArchived}
       settlementId={settlement.id}
       worldId={worldId}

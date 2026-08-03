@@ -102,10 +102,14 @@ export function tierByIdQueryOptions(
   });
 }
 
+export type BlueprintsSortBy = "name" | "gracePeriod" | "maxInstances";
+
 export type BlueprintsPageParams = {
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: BlueprintsSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -132,7 +136,7 @@ type BlueprintsPageQueryOptions = UseQueryOptions<
 // filtering so the client only ever holds one page of blueprints, not the
 // whole world's list. Also embeds a per-blueprint tier count via a Supabase
 // embedded count select, without touching BLUEPRINT_SELECT/BlueprintRow
-// (used elsewhere, e.g. BlueprintTierEditor).
+// (used elsewhere for single-blueprint/tier fetches).
 export function blueprintsPageQueryOptions(
   worldId: string,
   params: BlueprintsPageParams,
@@ -179,8 +183,24 @@ async function getBlueprintsPage(
     query = query.ilike("name", `%${search}%`);
   }
 
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "gracePeriod") {
+    query = query
+      .order("grace_period_turns", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "maxInstances") {
+    query = query
+      .order("max_instances_per_settlement", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+      })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
+  }
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<BlueprintSummaryRow[]>();

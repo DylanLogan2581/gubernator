@@ -7,7 +7,7 @@ import { settlementJobCountsQueryOptions } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import {
   categoricalForegroundCssVar,
-  hashToCategoricalSlot,
+  resolveIconTone,
 } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -59,9 +59,14 @@ export function PopulationByJobDonut({
   const iconByJobId = new Map(
     jobsQuery.data.map((job) => [job.id, job.icon] as const),
   );
+  const iconColorByJobId = new Map(
+    jobsQuery.data.map((job) => [job.id, job.iconColor] as const),
+  );
 
   const slices = jobCountsQuery.data.map((count) => ({
-    color: categoricalForegroundCssVar(hashToCategoricalSlot(count.jobId)),
+    color: categoricalForegroundCssVar(
+      resolveIconTone(iconColorByJobId.get(count.jobId) ?? null, count.jobId),
+    ),
     icon: resolveEntityIcon(iconByJobId.get(count.jobId)),
     id: count.jobId,
     label: count.jobName,

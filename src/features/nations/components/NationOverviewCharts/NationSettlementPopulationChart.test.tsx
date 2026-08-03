@@ -12,6 +12,7 @@ function makeSettlement(
 ): NationSettlement {
   return {
     autoReadyEnabled: false,
+    flagPath: null,
     id,
     isReadyCurrentTurn: false,
     isReadyForCurrentTurn: false,

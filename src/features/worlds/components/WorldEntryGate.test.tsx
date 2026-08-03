@@ -95,10 +95,10 @@ describe("WorldEntryGate", () => {
   it("renders access denied when non-admin has no selectable PC", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          // Public world so the user can access but isn't an admin.
-          createWorldRow({ visibility: "public" }),
-        ],
+        // World access via the PC path, but no currently-living selectable
+        // character (e.g. it died since world access was last computed).
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [],
         activeRow: null,
       }),
@@ -113,7 +113,8 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
         activeRow: null,
         upsertActiveRow: upsert,
@@ -139,7 +140,8 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
         activeRow: {
           citizen_id: PC_ID_A,
@@ -160,7 +162,8 @@ describe("WorldEntryGate", () => {
   it("renders the chooser when multiple PCs and no persisted selection", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -182,7 +185,8 @@ describe("WorldEntryGate", () => {
   it("resumes when the persisted active row resolves to a selectable PC", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -209,7 +213,8 @@ describe("WorldEntryGate", () => {
     const DEAD_PC_ID = "00000000-0000-0000-0000-0000000000cc";
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -241,7 +246,8 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -274,7 +280,8 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ visibility: "public" })],
+        pcWorldIds: [WORLD_ID],
+        worldRows: [createWorldRow()],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -344,7 +351,7 @@ describe("WorldEntryGate", () => {
         playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
         activeRow: null,
         upsertActiveRow: upsert,
-        worldRows: [createWorldRow({ visibility: "public" })],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -390,7 +397,7 @@ describe("WorldEntryGate", () => {
           user_id: USER_ID,
           world_id: WORLD_ID,
         },
-        worldRows: [createWorldRow({ visibility: "public" })],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -464,7 +471,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 type CitizenRowFixture = {
@@ -513,7 +519,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }
@@ -555,6 +560,7 @@ type ClientOptions = {
   readonly activeRow?: ActiveRowFixture | null;
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
   readonly deleteActiveRow?: () => void;
+  readonly pcWorldIds?: readonly string[];
   readonly playerCharacters?: readonly CitizenRowFixture[];
   readonly upsertActiveRow?: UpsertActiveRowFn;
   readonly userStatus?: "active" | "inactive";
@@ -565,6 +571,7 @@ function createClient({
   activeRow = null,
   adminRows = [],
   deleteActiveRow,
+  pcWorldIds = [],
   playerCharacters = [],
   upsertActiveRow,
   userStatus = "active",
@@ -639,7 +646,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),

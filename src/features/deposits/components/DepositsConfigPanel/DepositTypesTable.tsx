@@ -5,12 +5,14 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { type JobDefinition } from "@/features/jobs";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
+import { sortByName } from "@/lib/sortUtils";
 
 import {
   hardDeleteDepositTypeMutationOptions,
@@ -22,19 +24,20 @@ import { EditDepositTypeForm } from "./EditDepositTypeForm";
 
 import type { DepositType } from "../../types/depositTypes";
 import type { QueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type DepositTypesTableProps = {
-  readonly allDepositTypes: readonly DepositType[];
   readonly canEdit: boolean;
   readonly depositJobs: readonly JobDefinition[];
   readonly depositTypes: readonly DepositType[];
   readonly isPaginationDisabled: boolean;
   readonly onPageChange: (page: number) => void;
+  readonly onSortingChange: (sorting: SortingState) => void;
   readonly pageCount: number;
   readonly pageIndex: number;
   readonly queryClient: QueryClient;
   readonly showTrash: boolean;
+  readonly sorting: SortingState;
   readonly worldId: string;
 };
 
@@ -64,7 +67,8 @@ function buildColumns({
   return [
     {
       id: "name",
-      enableSorting: false,
+      accessorFn: (row) => row.name,
+      enableSorting: true,
       header: "Name",
       cell: ({ row }) => {
         const depositType = row.original;
@@ -72,8 +76,7 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(depositType.icon)}
-              tone={hashToCategoricalSlot(depositType.id)}
-              size="sm"
+              tone={resolveIconTone(depositType.iconColor, depositType.id)}
             />
             <span className="font-medium">{depositType.name}</span>
           </div>
@@ -81,17 +84,33 @@ function buildColumns({
       },
     },
     {
-      id: "stats",
+      id: "jobs",
+      accessorFn: (row) => row.jobs.length,
       enableSorting: false,
-      header: "Stats",
+      header: "Linked jobs",
       cell: ({ row }) => {
         const depositType = row.original;
-        const linkedJob = depositJobs.find((j) => j.id === depositType.jobId);
+        if (depositType.jobs.length === 0) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        const jobNames = sortByName(
+          depositType.jobs.flatMap((job) => {
+            const linkedJob = depositJobs.find((j) => j.id === job.jobId);
+            return linkedJob === undefined ? [] : [linkedJob];
+          }),
+        ).map((job) => job.name);
         return (
-          <span className="tabular-nums text-sm text-muted-foreground">
-            {`${depositType.outputUnitsPerWorker.toLocaleString()} output/worker`}
-            {linkedJob !== undefined ? ` · ${linkedJob.name}` : ""}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary">
+              {depositType.jobs.length}{" "}
+              {depositType.jobs.length === 1 ? "job" : "jobs"}
+            </Badge>
+            {jobNames.length > 0 ? (
+              <span className="text-sm text-muted-foreground">
+                {jobNames.join(", ")}
+              </span>
+            ) : null}
+          </div>
         );
       },
     },
@@ -189,16 +208,17 @@ function buildColumns({
 // instead of always mounting an inline edit row, so a world with hundreds
 // of deposit types doesn't mount hundreds of mutation hooks.
 export function DepositTypesTable({
-  allDepositTypes,
   canEdit,
   depositJobs,
   depositTypes,
   isPaginationDisabled,
   onPageChange,
+  onSortingChange,
   pageCount,
   pageIndex,
   queryClient,
   showTrash,
+  sorting,
   worldId,
 }: DepositTypesTableProps): JSX.Element {
   const [editingDepositType, setEditingDepositType] =
@@ -261,10 +281,8 @@ export function DepositTypesTable({
         columns={columns}
         data={depositTypes}
         getRowId={(depositType) => depositType.id}
-        sorting={[]}
-        onSortingChange={() => {
-          // Server-side ordering is fixed (by name); no sortable columns.
-        }}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
         pageIndex={pageIndex}
         pageCount={pageCount}
         onPageChange={onPageChange}
@@ -274,7 +292,6 @@ export function DepositTypesTable({
 
       {editingDepositType !== null ? (
         <EditDepositTypeForm
-          allDepositTypes={allDepositTypes}
           depositJobs={depositJobs}
           depositType={editingDepositType}
           queryClient={queryClient}

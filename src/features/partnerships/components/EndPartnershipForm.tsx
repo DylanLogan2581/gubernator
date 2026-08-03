@@ -1,15 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyMutationError } from "@/lib/notify";
 
 import {
   dissolvePartnershipMutationOptions,
   markPartnershipWidowedMutationOptions,
 } from "../mutations/partnershipsMutations";
-import { getPartnershipMutationErrorDescription } from "../utils/partnershipErrors";
 
 import {
   ChangeReasonField,
@@ -76,14 +75,14 @@ export function EndPartnershipForm({
     if (kind === "dissolve") {
       dissolveMutation.mutate(input, {
         onError: (error) => {
-          toast.error(getPartnershipMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: onClose,
       });
     } else {
       widowMutation.mutate(input, {
         onError: (error) => {
-          toast.error(getPartnershipMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: onClose,
       });
@@ -103,7 +102,7 @@ export function EndPartnershipForm({
   return (
     <form
       aria-label={heading}
-      className="grid gap-2 rounded-md border border-border bg-card px-3 py-2"
+      className="grid gap-2"
       noValidate
       onSubmit={handleSubmit}
     >

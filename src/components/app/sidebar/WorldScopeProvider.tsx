@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import {
+  nextWorldScopePin,
   readWorldScopePin,
   resolveWorldScope,
   writeWorldScopePin,
@@ -69,11 +70,12 @@ export function WorldScopeProvider({
 
     if (isWorldChange) {
       setStoredPin(readWorldScopePin(worldId));
-    } else if (routeNationId !== null || routeSettlementId !== null) {
-      const next: WorldScopePin = {
-        nationId: routeNationId ?? storedPin.nationId,
-        settlementId: routeSettlementId ?? storedPin.settlementId,
-      };
+    } else {
+      const next = nextWorldScopePin({
+        routeNationId,
+        routeSettlementId,
+        storedPin,
+      });
       if (
         next.nationId !== storedPin.nationId ||
         next.settlementId !== storedPin.settlementId

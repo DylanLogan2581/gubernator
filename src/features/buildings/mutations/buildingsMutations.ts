@@ -89,6 +89,7 @@ type BlueprintInsertPayload = {
   description?: string;
   grace_period_turns?: number;
   icon?: string | null;
+  icon_color?: number | null;
   max_instances_per_settlement?: number;
   name: string;
   slug: string;
@@ -99,6 +100,7 @@ type BlueprintUpdatePayload = {
   description?: string | null;
   grace_period_turns?: number;
   icon?: string | null;
+  icon_color?: number | null;
   max_instances_per_settlement?: number | null;
   name?: string;
   slug?: string;
@@ -251,6 +253,9 @@ async function createBlueprint(
   if (values.icon !== undefined) {
     insertPayload.icon = values.icon;
   }
+  if (values.iconColor !== undefined) {
+    insertPayload.icon_color = values.iconColor;
+  }
 
   const { data, error } = await client
     .from("building_blueprints")
@@ -299,6 +304,9 @@ async function updateBlueprint(
   }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;
+  }
+  if (values.iconColor !== undefined) {
+    updatePayload.icon_color = values.iconColor;
   }
 
   const { data, error } = await client
@@ -563,6 +571,18 @@ function toEffectJson(effects: readonly TierEffect[]): Json {
         return { amount: e.amount, resource_id: e.resourceId, type: e.type };
       case "population_cap_increase":
         return { amount: e.amount, type: e.type };
+      case "education":
+        return {
+          levels: e.levels.map((l) => ({
+            from_level_id: l.fromLevelId,
+            to_level_id: l.toLevelId,
+            turns: l.turns,
+          })),
+          students_per_teacher: e.studentsPerTeacher,
+          teacher_capacity: e.teacherCapacity,
+          teacher_job_id: e.teacherJobId,
+          type: e.type,
+        };
     }
   });
 }

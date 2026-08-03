@@ -11,6 +11,7 @@ import {
   ActivePlayerCharacterContext,
   type ActivePlayerCharacterContextValue,
 } from "@/features/permissions";
+import { ThemeProvider } from "@/lib/ThemeProvider";
 
 import { AppHeader } from "./AppHeader";
 
@@ -20,8 +21,9 @@ const WORLD_ID = "00000000-0000-0000-0000-000000000101";
 const NATION_ID = "nation-1";
 const SETTLEMENT_ID = "settlement-1";
 
-const { requireSupabaseClient, useParams } = vi.hoisted(() => ({
+const { requireSupabaseClient, useLocation, useParams } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
+  useLocation: vi.fn<() => { pathname: string }>(),
   useParams: vi.fn<() => Record<string, string | undefined>>(),
 }));
 
@@ -48,7 +50,7 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
-  useLocation: () => ({ pathname: "/" }),
+  useLocation,
   useNavigate: () => vi.fn(),
   useParams,
   useRouter: () => ({
@@ -59,6 +61,8 @@ vi.mock("@tanstack/react-router", () => ({
 describe("AppHeader", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    useLocation.mockReset();
+    useLocation.mockReturnValue({ pathname: "/" });
     useParams.mockReset();
     useParams.mockReturnValue({});
     // useAppShellWorldContext persists the current route world to
@@ -67,56 +71,89 @@ describe("AppHeader", () => {
     window.localStorage.clear();
   });
 
-  it("renders the sidebar trigger", () => {
+  it("renders the sidebar trigger for a signed-in viewer", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader();
     expect(
-      screen.getByRole("button", { name: /toggle sidebar/i }),
+      await screen.findByRole("button", { name: /toggle sidebar/i }),
     ).toBeDefined();
   });
 
-  it("renders the notification bell", () => {
+  it("renders the notification bell for a signed-in viewer", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader();
     expect(
-      screen.getByRole("button", { name: /notifications/i }),
+      await screen.findByRole("button", { name: /notifications/i }),
     ).toBeDefined();
   });
 
   it("opens the command palette when the search button is clicked", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     const onOpenCommandPalette = vi.fn();
     renderAppHeader(<AppHeader onOpenCommandPalette={onOpenCommandPalette} />);
 
-    await user.click(screen.getByRole("button", { name: /search/i }));
+    await user.click(await screen.findByRole("button", { name: /search/i }));
 
     expect(onOpenCommandPalette).toHaveBeenCalledOnce();
   });
 
-  it("shows search button text and the ⌘K hint", () => {
+  it("shows search button text and the ⌘K hint", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader();
 
-    const searchButton = screen.getByRole("button", { name: /search/i });
+    const searchButton = await screen.findByRole("button", {
+      name: /search/i,
+    });
     expect(searchButton.textContent).toContain("Search");
     expect(searchButton.textContent).toContain("K");
   });
 
-  it("does not render a brand label — logo/product name lives in the sidebar only", () => {
+  it("does not render a brand label for a signed-in viewer — logo/product name lives in the sidebar only", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: { user: { id: "user-1" } } }).client,
+    );
+    renderAppHeader();
+    await screen.findByRole("button", { name: /toggle sidebar/i });
+    expect(screen.queryByText("Gubernator")).toBeNull();
+  });
+
+  it("hides the sidebar trigger, command palette trigger, and notification bell for a signed-out viewer", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ session: null }).client,
     );
     renderAppHeader();
-    expect(screen.queryByText("Gubernator")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /toggle sidebar/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /search/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /notifications/i })).toBeNull();
+  });
+
+  it("shows a minimal brand + sign-in state for a signed-out viewer", () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: null }).client,
+    );
+    renderAppHeader(<AppHeader action={<a href="/sign-in">Sign in</a>} />);
+    expect(screen.getByText("Gubernator")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Sign in" })).toBeDefined();
+  });
+
+  it("hides the sign-in action on the sign-in page itself", () => {
+    useLocation.mockReturnValue({ pathname: "/sign-in" });
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: null }).client,
+    );
+    renderAppHeader(<AppHeader action={<a href="/sign-in">Sign in</a>} />);
+    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
   });
 
   it("shows the unread notification badge when a user has unread rows", async () => {
@@ -162,14 +199,14 @@ describe("AppHeader", () => {
     ).toBeDefined();
   });
 
-  it("renders the header action (user menu) at the far right, after notifications", () => {
+  it("renders the header action (user menu) at the far right, after notifications", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ session: null }).client,
+      createClient({ session: { user: { id: "user-1" } } }).client,
     );
     renderAppHeader(<AppHeader action={<a href="/worlds">Worlds</a>} />);
 
     const worldsLink = screen.getByRole("link", { name: "Worlds" });
-    const notificationsButton = screen.getByRole("button", {
+    const notificationsButton = await screen.findByRole("button", {
       name: /notifications/i,
     });
 
@@ -183,6 +220,7 @@ describe("AppHeader", () => {
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: [WORLD_ID],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({ current_turn_number: 7, name: "Eastern Marches" }),
@@ -232,6 +270,7 @@ describe("AppHeader", () => {
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: [WORLD_ID],
         session: { user: { id: "user-1" } },
         worldRows: [createWorldRow({})],
       }).client,
@@ -360,9 +399,11 @@ function renderAppHeader(
   render(
     <QueryClientProvider client={queryClient}>
       <ActivePlayerCharacterContext value={contextValue}>
-        <TooltipProvider>
-          <SidebarProvider>{ui}</SidebarProvider>
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <SidebarProvider>{ui}</SidebarProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </ActivePlayerCharacterContext>
     </QueryClientProvider>,
   );
@@ -375,8 +416,10 @@ function createSettlementManagerCitizen(): Citizen {
     bornOnTurnNumber: null,
     citizenType: "player_character",
     createdAt: "2026-01-01T00:00:00.000Z",
+    cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Manager",
     id: "citizen-1",
     name: "Manager",
@@ -384,6 +427,7 @@ function createSettlementManagerCitizen(): Citizen {
     parentACitizenId: null,
     parentBCitizenId: null,
     profilePhotoUrl: null,
+    religionId: null,
     roleNationId: NATION_ID,
     roleSettlementId: SETTLEMENT_ID,
     roleType: "settlement_manager",
@@ -408,7 +452,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createWorldRow(overrides: Partial<TestWorldRow>): TestWorldRow {
@@ -437,7 +480,6 @@ function createWorldRow(overrides: Partial<TestWorldRow>): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }
@@ -463,7 +505,6 @@ type TestSettlementRow = {
       readonly archived_at: string | null;
       readonly id: string;
       readonly status: string;
-      readonly visibility: string;
     };
   };
   readonly ready_set_at: string | null;
@@ -494,7 +535,6 @@ function createSettlementRow(
         archived_at: null,
         id: WORLD_ID,
         status: "active",
-        visibility: "public",
       },
     },
     ready_set_at: null,
@@ -506,12 +546,14 @@ function createSettlementRow(
 function createClient({
   adminRows = [],
   initialUnreadCount = 0,
+  pcWorldIds = [],
   session,
   settlementRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly initialUnreadCount?: number;
+  readonly pcWorldIds?: readonly string[];
   readonly session: { readonly user: { readonly id: string } } | null;
   readonly settlementRows?: readonly TestSettlementRow[];
   readonly worldRows?: readonly TestWorldRow[];
@@ -583,7 +625,7 @@ function createClient({
       removeChannel: vi.fn().mockResolvedValue("ok"),
       rpc: vi.fn((fn: string, args?: Record<string, unknown>) => {
         if (fn === "current_user_player_character_world_ids") {
-          return Promise.resolve({ data: [], error: null });
+          return Promise.resolve({ data: pcWorldIds, error: null });
         }
         if (fn === "set_settlement_readiness") {
           const settlementId = args?.p_settlement_id;

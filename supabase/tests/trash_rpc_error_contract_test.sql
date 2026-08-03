@@ -41,12 +41,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ef100000-0000-0000-0000-000000000001',
     'EC Test World',
-    'private',
     'active'
   );
 
@@ -116,45 +115,50 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ef500000-0000-0000-0000-000000000001',
     'ef100000-0000-0000-0000-000000000001',
     'EC Coal Seam',
-    'ec-coal-seam',
-    'ef300000-0000-0000-0000-000000000002',
-    3
+    'ec-coal-seam'
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'ef600000-0000-0000-0000-000000000001',
     'ef100000-0000-0000-0000-000000000001',
     'EC Cattle',
     'ec-cattle',
-    'ef300000-0000-0000-0000-000000000003',
-    'ef300000-0000-0000-0000-000000000004',
-    10,
     0.1
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'ef600000-0000-0000-0000-000000000001',
+    'ef300000-0000-0000-0000-000000000003',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'ef600000-0000-0000-0000-000000000001',
+    'ef300000-0000-0000-0000-000000000004',
+    10
   );
 
 -- ===========================================================================

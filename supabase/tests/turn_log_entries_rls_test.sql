@@ -81,20 +81,18 @@ where
   id = '91000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     '92000000-0000-0000-0000-000000000001',
     'Turn Log Private World',
     3,
-    'private',
     'active'
   ),
   (
     '92000000-0000-0000-0000-000000000002',
     'Turn Log Outsider World',
     7,
-    'private',
     'active'
   );
 

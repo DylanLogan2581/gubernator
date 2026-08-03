@@ -39,7 +39,6 @@ export type WorldTemplateImportError = InstanceType<
 type WorldRow = {
   readonly id: string;
   readonly name: string;
-  readonly visibility: string;
   readonly status: string;
   readonly current_turn_number: number;
   readonly is_trashed: boolean;
@@ -50,7 +49,6 @@ type WorldRow = {
 
 export type ImportWorldFromTemplateInput = {
   readonly name: string;
-  readonly visibility: "public" | "private";
   readonly template: WorldTemplate;
 };
 
@@ -69,7 +67,6 @@ async function importWorldFromTemplate(
   const { data, error } = await client
     .rpc("import_world_from_template", {
       p_name: input.name.trim(),
-      p_visibility: input.visibility,
       // Pass the template as Json; the runtime value is a plain JSON object.
       p_template: input.template as unknown as Json,
     })

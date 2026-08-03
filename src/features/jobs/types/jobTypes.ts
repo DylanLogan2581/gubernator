@@ -4,6 +4,7 @@ export type JobType =
   | "deposit"
   | "husbandry"
   | "standard"
+  | "teacher"
   | "trader";
 
 export type JobIoEntry = {
@@ -17,6 +18,7 @@ export type JobDefinition = {
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly inputsJson: readonly JobIoEntry[];
   readonly isTrashed: boolean;
@@ -25,6 +27,11 @@ export type JobDefinition = {
   readonly linkedManagedPopulationTypeId: string | null;
   readonly name: string;
   readonly outputsJson: readonly JobIoEntry[];
+  // Minimum education level required to fill this job, null = no requirement.
+  // Qualification rule (enforced by a later issue): citizen qualifies iff
+  // their education level rank >= this level's rank; uneducated (null)
+  // citizens qualify only when this is null.
+  readonly requiredEducationLevelId: string | null;
   readonly slug: string;
   readonly traderCapacityPerWorker: number | null;
   readonly updatedAt: string;

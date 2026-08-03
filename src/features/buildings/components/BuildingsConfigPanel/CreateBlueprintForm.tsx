@@ -3,6 +3,7 @@ import { Plus, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -58,6 +61,7 @@ export function CreateBlueprintForm({
   const [gracePeriodTurns, setGracePeriodTurns] = useState("0");
   const [maxInstances, setMaxInstances] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof BlueprintFieldErrors>();
   const [pendingTiers, setPendingTiers] = useState<PendingTierDraft[]>([]);
@@ -65,7 +69,13 @@ export function CreateBlueprintForm({
 
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
-  const tiersReady = resourcesQuery.isSuccess && jobsQuery.isSuccess;
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const tiersReady =
+    resourcesQuery.isSuccess &&
+    jobsQuery.isSuccess &&
+    educationLevelsQuery.isSuccess;
 
   const derivedSlug = toSlug(name, {
     maxLength: buildingInputLimits.blueprintSlugMax,
@@ -80,6 +90,7 @@ export function CreateBlueprintForm({
       gracePeriodTurns:
         gracePeriodTurns !== "" ? parseInt(gracePeriodTurns, 10) : undefined,
       icon,
+      iconColor,
       maxInstancesPerSettlement:
         maxInstances !== "" ? parseInt(maxInstances, 10) : undefined,
       name,
@@ -153,7 +164,9 @@ export function CreateBlueprintForm({
               ) : null}
             </div>
             <div className="grid gap-1">
-              <Label htmlFor="grace-period-turns">Grace period (turns)</Label>
+              <Label htmlFor="grace-period-turns">
+                Upkeep grace period (turns)
+              </Label>
               <Input
                 id="grace-period-turns"
                 aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
@@ -165,6 +178,10 @@ export function CreateBlueprintForm({
                   setGracePeriodTurns(e.currentTarget.value);
                 }}
               />
+              <p className="text-xs text-muted-foreground">
+                Turns a building can miss upkeep before it is suspended. 0 =
+                suspend on first missed upkeep.
+              </p>
               {fieldErrors.gracePeriodTurns !== undefined ? (
                 <p className="text-xs text-destructive">
                   {fieldErrors.gracePeriodTurns}
@@ -200,6 +217,14 @@ export function CreateBlueprintForm({
                 disabled={isCreating}
                 value={icon}
                 onChange={setIcon}
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label>Icon color</Label>
+              <PaletteSlotPicker
+                disabled={isCreating}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </div>
           </div>
@@ -261,10 +286,12 @@ export function CreateBlueprintForm({
 
             {showAddTierForm && tiersReady ? (
               <InlineTierDraftForm
+                activeEducationLevels={educationLevelsQuery.data}
                 activeJobs={jobsQuery.data}
                 activeResources={resourcesQuery.data}
                 defaultTierNumber={nextTierNumber}
                 disabled={isCreating}
+                worldId={worldId}
                 onAdd={(draft) => {
                   setPendingTiers((prev) => [...prev, draft]);
                   setShowAddTierForm(false);

@@ -9,7 +9,6 @@ import { useState, type JSX } from "react";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   useSettlementTransitionOutcome,
   type TurnTransitionLogEntry,
@@ -47,11 +46,11 @@ export function SettlementConstructionPanel({
   const canAct = canManageSettlement && !isArchived;
 
   return (
-    <Card
+    <section
       aria-labelledby="settlement-construction-heading"
       className="grid gap-3"
     >
-      <div className="flex items-center justify-between gap-2 px-4 pt-4">
+      <div className="flex items-center justify-between gap-2">
         <h2
           id="settlement-construction-heading"
           className="text-base font-medium"
@@ -88,7 +87,7 @@ export function SettlementConstructionPanel({
         </div>
       </div>
 
-      <CardContent>
+      <div>
         {projectsQuery.isPending ? (
           <TableSkeleton columnCount={5} rowCount={5} />
         ) : projectsQuery.isError ? (
@@ -121,8 +120,8 @@ export function SettlementConstructionPanel({
             }}
           />
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

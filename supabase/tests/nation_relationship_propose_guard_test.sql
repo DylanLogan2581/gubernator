@@ -56,29 +56,43 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f7100000-0000-0000-0000-000000000001',
     'Propose Guard World',
-    'private',
     'active'
   );
 
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'f7200000-0000-0000-0000-00000000000a',
     'f7100000-0000-0000-0000-000000000001',
-    'Nation A',
-    false
+    'Nation A'
   ),
   (
     'f7200000-0000-0000-0000-00000000000b',
     'f7100000-0000-0000-0000-000000000001',
-    'Nation B',
-    false
+    'Nation B'
+  );
+
+-- guard_bilateral_relationship_propose (#1086) rejects a fresh propose
+-- (pending_status = 'proposed') between nations that have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'f7100000-0000-0000-0000-000000000001',
+    'f7200000-0000-0000-0000-00000000000a',
+    'f7200000-0000-0000-0000-00000000000b',
+    1
   );
 
 insert into
@@ -114,6 +128,19 @@ values
     'f7000000-0000-0000-0000-000000000001',
     'nation_manager',
     'f7200000-0000-0000-0000-00000000000a'
+  );
+
+-- nation_visible_to_current_user's have-met arm (#1086) resolves the caller's
+-- own nation via their ACTIVE player_character, so citizen1 needs an active
+-- selection for nation_relationships_select_visible (both from/to visible) to
+-- admit the propose upsert's implicit ON CONFLICT SELECT check.
+insert into
+  public.user_active_player_characters (user_id, world_id, citizen_id)
+values
+  (
+    'f7000000-0000-0000-0000-000000000001',
+    'f7100000-0000-0000-0000-000000000001',
+    'f7400000-0000-0000-0000-0000000000a1'
   );
 
 -- ===========================================================================
@@ -198,6 +225,15 @@ values
     'f7000000-0000-0000-0000-000000000002',
     'nation_manager',
     'f7200000-0000-0000-0000-00000000000a'
+  );
+
+insert into
+  public.user_active_player_characters (user_id, world_id, citizen_id)
+values
+  (
+    'f7000000-0000-0000-0000-000000000002',
+    'f7100000-0000-0000-0000-000000000001',
+    'f7400000-0000-0000-0000-0000000000a2'
   );
 
 set

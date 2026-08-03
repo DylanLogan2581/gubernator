@@ -26,7 +26,6 @@ import { nationsListQueryOptions } from "@/features/nations";
 import {
   allNotificationsQueryOptions,
   markNotificationReadMutationOptions,
-  notificationQueryKeys,
   unreadNotificationsCountQueryOptions,
   useMarkAllNotificationsRead,
   type AllNotification,
@@ -49,7 +48,7 @@ import { NOTIFICATION_TYPE_OPTIONS } from "../utils/notificationTypeLabels";
 const PAGE_SIZE = 20;
 
 const READ_STATUS_OPTIONS = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All statuses" },
   { value: "unread", label: "Unread" },
   { value: "read", label: "Read" },
 ];
@@ -157,19 +156,15 @@ function NotificationsPageContent({
   );
   const unreadCount = unreadCountQuery.data ?? 0;
 
-  const markReadMutation = useMutation(markNotificationReadMutationOptions());
+  const markReadMutation = useMutation(
+    markNotificationReadMutationOptions({ queryClient }),
+  );
   const { handleMarkAllRead, isPending: isMarkingAllRead } =
     useMarkAllNotificationsRead();
 
   const handleMarkRead = (notification: AllNotification): void => {
     if (!notification.isRead) {
-      markReadMutation.mutate(notification.id, {
-        onSuccess: () => {
-          void queryClient.invalidateQueries({
-            queryKey: notificationQueryKeys.all,
-          });
-        },
-      });
+      markReadMutation.mutate(notification.id);
     }
   };
 

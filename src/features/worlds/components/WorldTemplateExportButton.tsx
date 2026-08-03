@@ -1,10 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
 import { Download } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
+  describeWorldTemplateExportError,
   exportWorldTemplateMutationOptions,
   serializeWorldTemplate,
 } from "../queries/worldTemplateExportQueries";
@@ -34,13 +35,13 @@ export function WorldTemplateExportButton({
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-      toast.success("Template exported", {
+      notifyMutationSuccess("Template exported", {
         description: `Saved as ${filename}`,
       });
     },
-    onError: () => {
-      toast.error("Export failed", {
-        description: "Could not export world template. Check your permissions.",
+    onError: (error) => {
+      notifyError("Export failed", {
+        description: describeWorldTemplateExportError(error),
       });
     },
   });

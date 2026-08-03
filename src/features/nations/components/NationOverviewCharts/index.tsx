@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { nationPopulationAggregatesQueryOptions } from "@/features/reports";
 import {
@@ -10,6 +10,8 @@ import {
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
 
+import { NationArmyStrengthCard } from "./NationArmyStrengthCard";
+import { NationDemographicsCard } from "./NationDemographicsCard";
 import { NationPopulationTrendSparkline } from "./NationPopulationTrendSparkline";
 import { NationSettlementPopulationChart } from "./NationSettlementPopulationChart";
 
@@ -59,7 +61,9 @@ export function NationOverviewCharts({
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Population by settlement</CardTitle>
+          <h3 className="text-base leading-snug font-medium">
+            Population by settlement
+          </h3>
         </CardHeader>
         <CardContent>
           <NationSettlementPopulationChart
@@ -71,7 +75,9 @@ export function NationOverviewCharts({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Population trend</CardTitle>
+          <h3 className="text-base leading-snug font-medium">
+            Population trend
+          </h3>
         </CardHeader>
         <CardContent>
           <NationPopulationTrendSparkline
@@ -81,6 +87,10 @@ export function NationOverviewCharts({
           />
         </CardContent>
       </Card>
+
+      <NationDemographicsCard nationId={nationId} worldId={worldId} />
+
+      <NationArmyStrengthCard nationId={nationId} turnLabel={turnLabel} />
     </div>
   );
 }

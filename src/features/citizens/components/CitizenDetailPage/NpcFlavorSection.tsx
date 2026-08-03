@@ -4,7 +4,10 @@ import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
+import {
+  worldNpcFlavorConfigQueryOptions,
+  worldPopulationRulesQueryOptions,
+} from "@/features/worlds";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 import { generateLocalId } from "@/lib/uid";
@@ -14,9 +17,10 @@ import { generateNpcFlavor, type NpcFlavor } from "../../utils/npcFlavor";
 import { NpcFlavorEditor } from "../NpcFlavorEditor";
 import { NpcFlavorLine } from "../NpcFlavorLine";
 
+import { citizenAgeTurns, isBelowPartnershipAge } from "./CitizenAge";
 import { Readout } from "./Shared";
 
-import type { CitizenAdminDetails } from "../../types/citizenTypes";
+import type { Citizen, CitizenAdminDetails } from "../../types/citizenTypes";
 
 function adminDetailsToNpcFlavor(
   adminDetails: CitizenAdminDetails | null,
@@ -33,13 +37,15 @@ function adminDetailsToNpcFlavor(
 export function CitizenNpcFlavorSection({
   adminDetails,
   canEdit,
-  citizenId,
+  citizen,
+  currentTurnNumber,
   queryClient,
   worldId,
 }: {
   readonly adminDetails: CitizenAdminDetails | null;
   readonly canEdit: boolean;
-  readonly citizenId: string;
+  readonly citizen: Citizen;
+  readonly currentTurnNumber: number;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
@@ -48,6 +54,14 @@ export function CitizenNpcFlavorSection({
     updateCitizenNpcFieldsMutationOptions({ queryClient }),
   );
   const flavorConfigQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
+  const populationRulesQuery = useQuery(
+    worldPopulationRulesQueryOptions(worldId),
+  );
+  const ageTurns = citizenAgeTurns(citizen.bornOnTurnNumber, currentTurnNumber);
+  const isChild = isBelowPartnershipAge(
+    ageTurns,
+    populationRulesQuery.data?.minimum_partnership_age_turns ?? null,
+  );
 
   function closeEditor(): void {
     setIsEditing(false);
@@ -58,7 +72,7 @@ export function CitizenNpcFlavorSection({
     updateMutation.reset();
     updateMutation.mutate(
       {
-        citizenId,
+        citizenId: citizen.id,
         npcFlaw: next.flaw,
         npcGoal: next.goal,
         npcSecretContradiction: next.contradiction,
@@ -136,18 +150,26 @@ export function CitizenNpcFlavorSection({
           </Button>
         ) : null}
       </div>
-      <NpcFlavorLine citizenId={citizenId} flavor={currentFlavor} />
-      <dl className="flex flex-col gap-2">
-        <Readout label="Trait 1" value={adminDetails?.npcTrait1 ?? null} />
-        <Readout label="Trait 2" value={adminDetails?.npcTrait2 ?? null} />
-        <Readout label="Goal" value={adminDetails?.npcGoal ?? null} block />
-        <Readout label="Flaw" value={adminDetails?.npcFlaw ?? null} block />
-        <Readout
-          label="Secret / contradiction"
-          value={adminDetails?.npcSecretContradiction ?? null}
-          block
-        />
-      </dl>
+      {isChild ? (
+        <p className="text-sm italic leading-relaxed text-muted-foreground">
+          This citizen is too young for adult flavor text.
+        </p>
+      ) : (
+        <NpcFlavorLine citizenId={citizen.id} flavor={currentFlavor} />
+      )}
+      {isChild ? null : (
+        <dl className="grid divide-y divide-border border-y border-border">
+          <Readout label="Trait 1" value={adminDetails?.npcTrait1 ?? null} />
+          <Readout label="Trait 2" value={adminDetails?.npcTrait2 ?? null} />
+          <Readout label="Goal" value={adminDetails?.npcGoal ?? null} block />
+          <Readout label="Flaw" value={adminDetails?.npcFlaw ?? null} block />
+          <Readout
+            label="Secret / contradiction"
+            value={adminDetails?.npcSecretContradiction ?? null}
+            block
+          />
+        </dl>
+      )}
     </Card>
   );
 }

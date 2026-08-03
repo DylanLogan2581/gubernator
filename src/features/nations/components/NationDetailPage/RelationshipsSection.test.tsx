@@ -1,23 +1,44 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NationRelationshipsSection } from "./RelationshipsSection";
 
 import type { NationRelationship } from "../../types/nationRelationshipTypes";
+import type { NationTreaty } from "../../types/nationTreatyTypes";
 import type { Nation } from "../../types/nationTypes";
 
-const { mockNationsListQuery, mockOutgoingQuery, mockIncomingQuery } =
-  vi.hoisted(() => ({
-    mockNationsListQuery: vi.fn(),
-    mockOutgoingQuery: vi.fn(),
-    mockIncomingQuery: vi.fn(),
-  }));
+const {
+  mockNationsListQuery,
+  mockDiscoveriesQuery,
+  mockOutgoingQuery,
+  mockIncomingQuery,
+  mockTreatiesQuery,
+  mockResourcesQuery,
+  mockCalendarQuery,
+  mockCitizensByIdsQuery,
+} = vi.hoisted(() => ({
+  mockNationsListQuery: vi.fn(),
+  mockDiscoveriesQuery: vi.fn(),
+  mockOutgoingQuery: vi.fn(),
+  mockIncomingQuery: vi.fn(),
+  mockTreatiesQuery: vi.fn(),
+  mockResourcesQuery: vi.fn(),
+  mockCalendarQuery: vi.fn(),
+  mockCitizensByIdsQuery: vi.fn(),
+}));
 
 vi.mock("../../queries/nationsQueries", () => ({
   nationsListQueryOptions: () => ({
     queryFn: () => mockNationsListQuery() as Promise<unknown>,
     queryKey: ["nations-list"],
+  }),
+}));
+
+vi.mock("../../queries/nationDiscoveryQueries", () => ({
+  nationDiscoveriesQueryOptions: () => ({
+    queryFn: () => mockDiscoveriesQuery() as Promise<unknown>,
+    queryKey: ["nation-discoveries"],
   }),
 }));
 
@@ -32,28 +53,77 @@ vi.mock("../../queries/nationRelationshipQueries", () => ({
   }),
 }));
 
+vi.mock("../../queries/treatiesQueries", () => ({
+  nationTreatiesQueryOptions: () => ({
+    queryFn: () => mockTreatiesQuery() as Promise<unknown>,
+    queryKey: ["nation-treaties"],
+  }),
+}));
+
+vi.mock("@/features/resources", () => ({
+  activeResourcesByWorldQueryOptions: () => ({
+    queryFn: () => mockResourcesQuery() as Promise<unknown>,
+    queryKey: ["active-resources"],
+  }),
+}));
+
+vi.mock("@/features/calendar", () => ({
+  worldCalendarConfigQueryOptions: () => ({
+    queryFn: () => mockCalendarQuery() as Promise<unknown>,
+    queryKey: ["world-calendar-config"],
+  }),
+}));
+
+vi.mock("@/features/citizens", () => ({
+  citizensByIdsQueryOptions: (ids: readonly string[]) => ({
+    enabled: ids.length > 0,
+    queryFn: () => mockCitizensByIdsQuery() as Promise<unknown>,
+    queryKey: ["citizens-by-ids", ids],
+  }),
+}));
+
 vi.mock("@/features/permissions", () => ({
   useActivePlayerCharacter: () => ({ activeCharacter: null }),
+  // With no active character, nation-manage authority reduces to canAdmin.
+  useNationManageAuthority: ({ canAdmin }: { readonly canAdmin: boolean }) => ({
+    canManageNation: canAdmin,
+  }),
 }));
 
 const nation: Nation = {
+  capitalSettlementId: null,
   createdAt: "2024-01-01T00:00:00Z",
   description: null,
+  flagPath: null,
+  foundedTurnNumber: null,
+  governmentType: "monarchy",
   id: "11111111-1111-1111-1111-111111111111",
-  isHidden: false,
   name: "Highmark",
   namesetId: null,
+  primaryCultureId: null,
+  sealPath: null,
+  stateReligionId: null,
+  taxRate: 0,
+  tradePolicy: "free",
   updatedAt: "2024-01-01T00:00:00Z",
   worldId: "00000000-0000-0000-0000-000000000101",
 };
 
 const other: Nation = {
+  capitalSettlementId: null,
   createdAt: "2024-01-01T00:00:00Z",
   description: null,
+  flagPath: null,
+  foundedTurnNumber: null,
+  governmentType: "monarchy",
   id: "22222222-2222-2222-2222-222222222222",
-  isHidden: false,
   name: "Rivenhold",
   namesetId: null,
+  primaryCultureId: null,
+  sealPath: null,
+  stateReligionId: null,
+  taxRate: 0,
+  tradePolicy: "free",
   updatedAt: "2024-01-01T00:00:00Z",
   worldId: "00000000-0000-0000-0000-000000000101",
 };
@@ -73,6 +143,21 @@ function renderSection(): ReturnType<typeof render> {
 }
 
 describe("NationRelationshipAccordionRow", () => {
+  beforeEach(() => {
+    mockDiscoveriesQuery.mockResolvedValue([
+      {
+        createdByUserId: null,
+        metAtTurnNumber: 1,
+        nationAId: nation.id,
+        nationBId: other.id,
+      },
+    ]);
+    mockTreatiesQuery.mockResolvedValue([]);
+    mockResourcesQuery.mockResolvedValue([]);
+    mockCalendarQuery.mockResolvedValue(null);
+    mockCitizensByIdsQuery.mockResolvedValue([]);
+  });
+
   it("shows the stance as text without expanding the row", async () => {
     mockNationsListQuery.mockResolvedValue([nation, other]);
     mockOutgoingQuery.mockResolvedValue([
@@ -115,7 +200,7 @@ describe("NationRelationshipAccordionRow", () => {
     renderSection();
 
     const badge = await screen.findByText("Hostile");
-    expect(badge.className).toContain("orange");
+    expect(badge.className).toContain("warning");
   });
 
   it("shows pending proposal count on the collapsed row", async () => {
@@ -149,5 +234,99 @@ describe("NationRelationshipAccordionRow", () => {
 
     await screen.findByText("Neutral");
     expect(screen.queryByText(/pending proposal/)).not.toBeInTheDocument();
+  });
+
+  it("folds a pending treaty proposal into the collapsed pending count", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+    mockTreatiesQuery.mockResolvedValue([
+      {
+        createdAt: "2024-01-01T00:00:00Z",
+        durationTurns: null,
+        endsTurnNumber: null,
+        id: "treaty-1",
+        proposedByCitizenId: "citizen-1",
+        proposerNationId: other.id,
+        respondedByCitizenId: null,
+        responderNationId: nation.id,
+        startsTurnNumber: null,
+        status: "proposed",
+        terms: {},
+        treatyType: "trade_agreement",
+        updatedAt: "2024-01-01T00:00:00Z",
+        worldId: nation.worldId,
+      } satisfies NationTreaty,
+    ]);
+
+    renderSection();
+
+    expect(await screen.findByText(/1 pending proposal/)).toBeInTheDocument();
+  });
+
+  it("renders treaty terms once the row is expanded", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+    mockTreatiesQuery.mockResolvedValue([
+      {
+        createdAt: "2024-01-01T00:00:00Z",
+        durationTurns: null,
+        endsTurnNumber: null,
+        id: "treaty-1",
+        proposedByCitizenId: "citizen-1",
+        proposerNationId: nation.id,
+        respondedByCitizenId: null,
+        responderNationId: other.id,
+        startsTurnNumber: null,
+        status: "active",
+        terms: {},
+        treatyType: "trade_agreement",
+        updatedAt: "2024-01-01T00:00:00Z",
+        worldId: nation.worldId,
+      } satisfies NationTreaty,
+    ]);
+
+    renderSection();
+
+    fireEvent.click(await screen.findByText(other.name));
+
+    expect(
+      await screen.findByText(
+        `Trade agreement between ${nation.name} and ${other.name}`,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render a row for an undiscovered nation", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockDiscoveriesQuery.mockResolvedValue([]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+
+    renderSection();
+
+    expect(
+      await screen.findByText("No nations discovered"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(other.name)).not.toBeInTheDocument();
+  });
+
+  it("renders a row for a discovered nation regardless of pair order", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockDiscoveriesQuery.mockResolvedValue([
+      {
+        createdByUserId: null,
+        metAtTurnNumber: 1,
+        nationAId: other.id,
+        nationBId: nation.id,
+      },
+    ]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+
+    renderSection();
+
+    expect(await screen.findByText(other.name)).toBeInTheDocument();
   });
 });

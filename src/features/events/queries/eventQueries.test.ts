@@ -51,6 +51,7 @@ function createEventRow(
     amount_value: null,
     multiplier_value: null,
     extra_data_jsonb: null,
+    icon: null,
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     group: null,
@@ -305,6 +306,28 @@ describe("eventsListQueryOptions", () => {
       ),
     ).rejects.toThrow("boom");
   });
+
+  it("rejects a scope entity id that is not a UUID before building the filter", async () => {
+    const from = vi.fn(() => ({ select: vi.fn() }));
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    await expect(
+      queryClient.fetchQuery(
+        eventsListQueryOptions(
+          WORLD_ID,
+          {
+            scopeEntityFilter: {
+              type: "nation",
+              id: "not-a-uuid,scope_type.eq.world",
+            },
+          },
+          client,
+        ),
+      ),
+    ).rejects.toThrow(/uuid/i);
+    expect(from).not.toHaveBeenCalled();
+  });
 });
 
 describe("eventDetailQueryOptions", () => {
@@ -417,6 +440,23 @@ describe("activeSettlementEventsQueryOptions", () => {
       `and(scope_type.eq.settlement,scope_settlement_id.eq.${SETTLEMENT_ID}),and(scope_type.eq.nation,scope_nation_id.eq.${NATION_ID}),scope_type.eq.world`,
     );
   });
+
+  it("rejects a settlement id that is not a UUID before querying", async () => {
+    const from = vi.fn(() => ({ select: vi.fn() }));
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    await expect(
+      queryClient.fetchQuery(
+        activeSettlementEventsQueryOptions(
+          WORLD_ID,
+          "not-a-uuid,scope_type.eq.world",
+          client,
+        ),
+      ),
+    ).rejects.toThrow(/uuid/i);
+    expect(from).not.toHaveBeenCalled();
+  });
 });
 
 describe("activeNationEventsQueryOptions", () => {
@@ -466,6 +506,23 @@ describe("expiredSettlementEventsQueryOptions", () => {
     expect(eventsBuilder.order).toHaveBeenCalledWith("updated_at", {
       ascending: false,
     });
+  });
+
+  it("rejects a settlement id that is not a UUID before querying", async () => {
+    const from = vi.fn(() => ({ select: vi.fn() }));
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    await expect(
+      queryClient.fetchQuery(
+        expiredSettlementEventsQueryOptions(
+          WORLD_ID,
+          "not-a-uuid,scope_type.eq.world",
+          client,
+        ),
+      ),
+    ).rejects.toThrow(/uuid/i);
+    expect(from).not.toHaveBeenCalled();
   });
 });
 

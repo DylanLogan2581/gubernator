@@ -1,16 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { hardDeleteConstructionProjectMutationOptions } from "../../mutations/hardDeleteConstructionProjectMutations";
 
@@ -29,68 +20,30 @@ export function DestroyConfirmDialog({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const destroyMutation = useMutation(
-    hardDeleteConstructionProjectMutationOptions({
-      queryClient,
-      settlementId,
-      worldId,
-    }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await destroyMutation.mutateAsync({
-        projectId: project.id,
-      });
-      notifyMutationSuccess("Construction project destroyed.");
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to destroy construction project.");
-    }
-  }
-
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Permanently destroy {project.blueprintName}?
-          </DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+    <MutationConfirmDialog
+      onClose={onClose}
+      title={`Permanently destroy ${project.blueprintName}?`}
+      description={
+        <>
           This will permanently delete the cancelled construction of{" "}
           <span className="font-medium text-foreground">
             {project.blueprintName}
           </span>{" "}
           (Tier {project.tierNumber}). This cannot be undone, and no resources
           will be refunded.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={destroyMutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Keep
-          </Button>
-          <Button
-            disabled={destroyMutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Destroy permanently
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Destroy permanently"
+      cancelLabel="Keep"
+      mutationOptions={hardDeleteConstructionProjectMutationOptions({
+        queryClient,
+        settlementId,
+        worldId,
+      })}
+      input={{ projectId: project.id }}
+      successMessage="Construction project destroyed."
+      errorFallback="Failed to destroy construction project."
+    />
   );
 }

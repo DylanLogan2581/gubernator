@@ -88,6 +88,10 @@ vi.mock("@/features/nations", () => ({
     queryFn: () => Promise.resolve(NATIONS_FIXTURE),
     queryKey: ["test", "nations", worldId],
   }),
+  // Real NationFlagAvatar resolves a signed URL via the Supabase client,
+  // which isn't configured in this test's module graph — stub it to a no-op
+  // (mirrors the WorldAvatar stub above).
+  NationFlagAvatar: () => null,
 }));
 
 vi.mock("@/features/settlements", () => ({
@@ -128,7 +132,7 @@ const WORLDS_FIXTURE = [
   },
 ];
 
-const NATIONS_FIXTURE = [{ id: NATION_ID, name: "Ironmark" }];
+const NATIONS_FIXTURE = [{ flagPath: null, id: NATION_ID, name: "Ironmark" }];
 
 const SETTLEMENTS_FIXTURE = [
   {
@@ -586,8 +590,10 @@ function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
     bornOnTurnNumber: null,
     citizenType: "player_character",
     createdAt: "2026-01-01T00:00:00.000Z",
+    cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Test",
     id: "citizen-x",
     name: "Test Citizen",
@@ -595,6 +601,7 @@ function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
     parentACitizenId: null,
     parentBCitizenId: null,
     profilePhotoUrl: null,
+    religionId: null,
     roleNationId: null,
     roleSettlementId: null,
     roleType: "none",

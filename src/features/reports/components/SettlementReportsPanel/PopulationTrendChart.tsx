@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/chart";
 
 import type { PopulationSnapshotRow } from "../../types/snapshotTypes";
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 type PopulationTrendChartProps = {
   readonly rows: readonly PopulationSnapshotRow[];
@@ -46,13 +46,37 @@ const eventsBarConfig: ChartConfig = {
   },
 };
 
+/** Height shared by both plots so the two-up layout stays aligned. */
+export const populationTrendChartHeightClassName = "h-64";
+
+/**
+ * Layout for the paired population charts: stacked at narrow container widths,
+ * side by side once the container is wide enough for two readable plots.
+ * Exported so loading skeletons can mirror the layout actually rendered.
+ */
+export function PopulationTrendLayout({
+  children,
+}: {
+  readonly children: ReactNode;
+}): JSX.Element {
+  return (
+    <div className="@container">
+      {/* min-w-0 on the items keeps the responsive charts from forcing the
+          grid track wider than the container at narrow widths. */}
+      <div className="grid gap-6 @3xl:grid-cols-2 [&>*]:min-w-0">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function PopulationTrendChart({
   rows,
   turnLabel,
 }: PopulationTrendChartProps): JSX.Element {
   if (rows.length === 0) {
     return (
-      <div className="space-y-6">
+      <PopulationTrendLayout>
         <div>
           <h3 className="mb-3 text-sm font-medium text-muted-foreground">
             Population over time
@@ -69,7 +93,7 @@ export function PopulationTrendChart({
             No population snapshots in this turn range.
           </p>
         </div>
-      </div>
+      </PopulationTrendLayout>
     );
   }
 
@@ -94,13 +118,16 @@ export function PopulationTrendChart({
   }));
 
   return (
-    <div className="space-y-6">
+    <PopulationTrendLayout>
       <div>
         <h3 className="text-sm font-medium mb-3 text-muted-foreground">
           Population over time
         </h3>
-        <ChartContainer config={populationLineConfig} className="h-56 w-full">
-          <LineChart data={lineData}>
+        <ChartContainer
+          config={populationLineConfig}
+          className={`${populationTrendChartHeightClassName} w-full`}
+        >
+          <LineChart data={lineData} margin={{ right: 24 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="turnLabel"
@@ -171,8 +198,11 @@ export function PopulationTrendChart({
         <h3 className="text-sm font-medium mb-3 text-muted-foreground">
           Births and deaths per turn
         </h3>
-        <ChartContainer config={eventsBarConfig} className="h-48 w-full">
-          <BarChart data={barData}>
+        <ChartContainer
+          config={eventsBarConfig}
+          className={`${populationTrendChartHeightClassName} w-full`}
+        >
+          <BarChart data={barData} margin={{ right: 24 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="turnLabel"
@@ -217,6 +247,6 @@ export function PopulationTrendChart({
           ))}
         </div>
       </div>
-    </div>
+    </PopulationTrendLayout>
   );
 }

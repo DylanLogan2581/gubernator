@@ -75,12 +75,20 @@ vi.mock("@/features/nations", () => ({
     queryKey: ["nations-test"],
     queryFn: nationsListMock,
   }),
+  nationByIdQueryOptions: (nationId: string) => ({
+    queryKey: ["nation-detail-test", nationId],
+    queryFn: () => Promise.resolve(null),
+  }),
 }));
 
 vi.mock("@/features/settlements", () => ({
   settlementsByWorldQueryOptions: () => ({
     queryKey: ["settlements-test"],
     queryFn: settlementsListMock,
+  }),
+  settlementByIdQueryOptions: (settlementId: string) => ({
+    queryKey: ["settlement-detail-test", settlementId],
+    queryFn: () => Promise.resolve(null),
   }),
 }));
 
@@ -599,7 +607,10 @@ describe("EventCreateWizard", () => {
               groupId: "group-1",
               groupName: "Original Name",
               groupDescription: "Original description",
+              icon: null,
               scopeType: "world",
+              scopeNationId: null,
+              scopeSettlementId: null,
               durationType: "instant",
               durationTransitions: null,
               activationTurn: 5,
@@ -613,9 +624,29 @@ describe("EventCreateWizard", () => {
       return { onClose };
     }
 
-    it("allows navigating back to the Basics step to edit the name", async () => {
+    it("opens on the Basics step with values pre-filled and scope shown read-only", () => {
+      renderEditWizard();
+
+      expect(screen.getByTestId("step-name")).toBeInTheDocument();
+      const nameInput = screen.getByLabelText("Group name");
+      expect(nameInput).toHaveValue("Original Name");
+
+      // Scope selection is locked in edit mode, but the scope is still visible.
+      expect(screen.queryByTestId("step-scope-type")).not.toBeInTheDocument();
+      expect(screen.getByText("Event Scope")).toBeInTheDocument();
+      expect(screen.getByText("World")).toBeInTheDocument();
+
+      // No Previous button on the first step.
+      expect(
+        screen.queryByRole("button", { name: "Previous" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("navigates forward to the effects step", async () => {
       const user = userEvent.setup();
       renderEditWizard();
+
+      await user.click(screen.getByRole("button", { name: "Next" }));
 
       expect(screen.getByTestId("step-effects")).toBeInTheDocument();
       const prevButton = screen.getByRole("button", { name: "Previous" });
@@ -624,10 +655,7 @@ describe("EventCreateWizard", () => {
       await user.click(prevButton);
 
       expect(screen.getByTestId("step-name")).toBeInTheDocument();
-      // Scope selection stays locked in edit mode.
-      expect(screen.queryByTestId("step-scope-type")).not.toBeInTheDocument();
       const nameInput = screen.getByLabelText("Group name");
-      expect(nameInput).toHaveValue("Original Name");
 
       await user.clear(nameInput);
       await user.type(nameInput, "Updated Name");
@@ -673,7 +701,10 @@ describe("EventCreateWizard", () => {
       await user.click(screen.getByRole("button", { name: "Create Event" }));
 
       await waitFor(() =>
-        expect(toastSuccess).toHaveBeenCalledWith("Event created successfully"),
+        expect(toastSuccess).toHaveBeenCalledWith(
+          "Event created successfully",
+          undefined,
+        ),
       );
 
       expect(latestShouldBlockFn()()).toBe(false);

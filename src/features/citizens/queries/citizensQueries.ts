@@ -6,6 +6,8 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { UNASSIGNED_CULTURE_RELIGION_KEY } from "../types/citizenTypes";
+
 import { citizensQueryKeys } from "./citizensQueryKeys";
 
 import type {
@@ -16,6 +18,7 @@ import type {
   CitizenRoleType,
   CitizenStatus,
   CitizenType,
+  CultureReligionComposition,
   DeathCauseCategory,
 } from "../types/citizenTypes";
 
@@ -27,6 +30,9 @@ type CitizenDetailQueryKey = ReturnType<typeof citizensQueryKeys.detail>;
 type PlayerCharactersInNationQueryKey = ReturnType<
   typeof citizensQueryKeys.playerCharactersInNation
 >;
+type SettlementManagersInNationQueryKey = ReturnType<
+  typeof citizensQueryKeys.settlementManagersInNation
+>;
 type UnpairedAliveInWorldQueryKey = ReturnType<
   typeof citizensQueryKeys.unpairedAliveInWorld
 >;
@@ -35,6 +41,12 @@ type CitizenSettlementAggregateQueryKey = ReturnType<
 >;
 type CitizenNationAggregateQueryKey = ReturnType<
   typeof citizensQueryKeys.nationAggregateStats
+>;
+type CitizenSettlementCultureReligionCompositionQueryKey = ReturnType<
+  typeof citizensQueryKeys.settlementCultureReligionComposition
+>;
+type CitizenNationCultureReligionCompositionQueryKey = ReturnType<
+  typeof citizensQueryKeys.nationCultureReligionComposition
 >;
 
 type CitizenListQueryOptions = UseQueryOptions<
@@ -74,6 +86,12 @@ type PlayerCharactersInNationQueryOptions = UseQueryOptions<
   readonly Citizen[],
   PlayerCharactersInNationQueryKey
 >;
+type SettlementManagersInNationQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  SettlementManagersInNationQueryKey
+>;
 type CitizenSettlementAggregateQueryOptions = UseQueryOptions<
   CitizenAggregateStats,
   AuthUiError,
@@ -86,13 +104,27 @@ type CitizenNationAggregateQueryOptions = UseQueryOptions<
   CitizenAggregateStats,
   CitizenNationAggregateQueryKey
 >;
+type CitizenSettlementCultureReligionCompositionQueryOptions = UseQueryOptions<
+  CultureReligionComposition,
+  AuthUiError,
+  CultureReligionComposition,
+  CitizenSettlementCultureReligionCompositionQueryKey
+>;
+type CitizenNationCultureReligionCompositionQueryOptions = UseQueryOptions<
+  CultureReligionComposition,
+  AuthUiError,
+  CultureReligionComposition,
+  CitizenNationCultureReligionCompositionQueryKey
+>;
 
 type CitizenRow = {
   readonly born_on_turn_number: number | null;
   readonly citizen_type: CitizenType;
   readonly created_at: string;
+  readonly culture_id: string | null;
   readonly death_cause: string | null;
   readonly death_cause_category: DeathCauseCategory | null;
+  readonly education_level_id: string | null;
   readonly given_name: string;
   readonly id: string;
   readonly name: string;
@@ -100,6 +132,7 @@ type CitizenRow = {
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
   readonly profile_photo_url: string | null;
+  readonly religion_id: string | null;
   readonly role_nation_id: string | null;
   readonly role_settlement_id: string | null;
   readonly role_type: CitizenRoleType;
@@ -122,23 +155,32 @@ type CitizenAdminDetailsRow = {
   readonly skills_text: string | null;
 };
 
+// Sourced from citizen_directory_view (not the raw citizens table) so the
+// labor-eligibility flags -- which mirror phaseStandardJobs.ts's
+// officeholderCitizenIds/enrolledCitizenIds/soldierCitizenIds sets -- are
+// available to computeAggregate without a second round trip (#1322).
 type CitizenAggregateRow = {
+  readonly assignment_type: CitizenAssignmentType | null;
   readonly citizen_type: CitizenType;
   readonly id: string;
+  readonly is_enrolled_in_education: boolean;
+  readonly is_labor_excluded_officeholder: boolean;
+  readonly is_soldier: boolean;
   readonly status: CitizenStatus;
 };
 
-type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
-  readonly citizen_assignments: ReadonlyArray<{
-    readonly assignment_type: CitizenAssignmentType;
-  }> | null;
+const CITIZEN_SELECT =
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,culture_id,religion_id,education_level_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+
+type CitizenCultureReligionRow = {
+  readonly culture_id: string | null;
+  readonly religion_id: string | null;
 };
 
-const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+const CITIZEN_CULTURE_RELIGION_SELECT = "culture_id,religion_id";
 
 const CITIZEN_AGGREGATE_SELECT =
-  "id,citizen_type,status,citizen_assignments(assignment_type)";
+  "id,citizen_type,status,assignment_type,is_labor_excluded_officeholder,is_enrolled_in_education,is_soldier";
 
 export function citizensInSettlementQueryOptions(
   settlementId: string,
@@ -259,6 +301,21 @@ export function playerCharactersInNationQueryOptions(
   });
 }
 
+// Current settlement-manager holders for a nation (#1160): scoped by
+// settlement count, not citizen count, so it stays small even in a
+// ~1000-NPC world -- unlike the removed full-candidate-list fetch it
+// replaces alongside the searchable CitizenPicker.
+export function settlementManagersInNationQueryOptions(
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementManagersInNationQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getSettlementManagersInNation(client, nationId),
+    queryKey: citizensQueryKeys.settlementManagersInNation(nationId),
+  });
+}
+
 export function citizenAdminDetailsQueryOptions(
   citizenId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
@@ -289,6 +346,30 @@ export function citizenAggregateStatsForNationQueryOptions(
   return queryOptions({
     queryFn: () => getCitizenAggregateStatsForNation(client, nationId),
     queryKey: citizensQueryKeys.nationAggregateStats(nationId),
+  });
+}
+
+export function cultureReligionCompositionForSettlementQueryOptions(
+  settlementId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizenSettlementCultureReligionCompositionQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () =>
+      getCultureReligionCompositionForSettlement(client, settlementId),
+    queryKey:
+      citizensQueryKeys.settlementCultureReligionComposition(settlementId),
+  });
+}
+
+export function cultureReligionCompositionForNationQueryOptions(
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizenNationCultureReligionCompositionQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getCultureReligionCompositionForNation(client, nationId),
+    queryKey: citizensQueryKeys.nationCultureReligionComposition(nationId),
   });
 }
 
@@ -415,11 +496,54 @@ async function getPlayerCharactersInNation(
     return [];
   }
 
+  // Any citizen can hold a manager role (Epic 11): player characters
+  // unconditionally, and NPCs while alive (a dead NPC cannot be assigned a
+  // role, mirroring assign_citizen_role's guard).
   const { data, error } = await client
     .from("citizens")
     .select(CITIZEN_SELECT)
     .in("settlement_id", settlementIds)
-    .eq("citizen_type", "player_character")
+    .or(
+      "citizen_type.eq.player_character,and(citizen_type.eq.npc,status.eq.alive)",
+    )
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toCitizen);
+}
+
+async function getSettlementManagersInNation(
+  client: GubernatorSupabaseClient,
+  nationId: string,
+): Promise<readonly Citizen[]> {
+  const { data: settlements, error: settlementsError } = await client
+    .from("settlements")
+    .select("id")
+    .eq("nation_id", nationId)
+    .returns<Array<{ readonly id: string }>>();
+
+  if (settlementsError !== null) {
+    throw normalizeSupabaseError(settlementsError);
+  }
+
+  const settlementIds = settlements.map(
+    (row: { readonly id: string }) => row.id,
+  );
+
+  if (settlementIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_SELECT)
+    .in("settlement_id", settlementIds)
+    .eq("role_type", "settlement_manager")
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .returns<CitizenRow[]>();
@@ -436,10 +560,10 @@ async function getCitizenAggregateStatsForSettlement(
   settlementId: string,
 ): Promise<CitizenAggregateStats> {
   const { data, error } = await client
-    .from("citizens")
+    .from("citizen_directory_view")
     .select(CITIZEN_AGGREGATE_SELECT)
     .eq("settlement_id", settlementId)
-    .returns<CitizenAggregateWithAssignmentRow[]>();
+    .returns<CitizenAggregateRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -471,10 +595,10 @@ async function getCitizenAggregateStatsForNation(
   }
 
   const { data, error } = await client
-    .from("citizens")
+    .from("citizen_directory_view")
     .select(CITIZEN_AGGREGATE_SELECT)
     .in("settlement_id", settlementIds)
-    .returns<CitizenAggregateWithAssignmentRow[]>();
+    .returns<CitizenAggregateRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -483,8 +607,78 @@ async function getCitizenAggregateStatsForNation(
   return computeAggregate(data);
 }
 
+async function getCultureReligionCompositionForSettlement(
+  client: GubernatorSupabaseClient,
+  settlementId: string,
+): Promise<CultureReligionComposition> {
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_CULTURE_RELIGION_SELECT)
+    .eq("settlement_id", settlementId)
+    .eq("status", "alive")
+    .returns<CitizenCultureReligionRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return computeCultureReligionComposition(data);
+}
+
+async function getCultureReligionCompositionForNation(
+  client: GubernatorSupabaseClient,
+  nationId: string,
+): Promise<CultureReligionComposition> {
+  const { data: settlements, error: settlementsError } = await client
+    .from("settlements")
+    .select("id")
+    .eq("nation_id", nationId)
+    .returns<Array<{ readonly id: string }>>();
+
+  if (settlementsError !== null) {
+    throw normalizeSupabaseError(settlementsError);
+  }
+
+  const settlementIds = settlements.map(
+    (row: { readonly id: string }) => row.id,
+  );
+
+  if (settlementIds.length === 0) {
+    return { byCultureId: {}, byReligionId: {} };
+  }
+
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_CULTURE_RELIGION_SELECT)
+    .in("settlement_id", settlementIds)
+    .eq("status", "alive")
+    .returns<CitizenCultureReligionRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return computeCultureReligionComposition(data);
+}
+
+function computeCultureReligionComposition(
+  rows: readonly CitizenCultureReligionRow[],
+): CultureReligionComposition {
+  const byCultureId: Record<string, number> = {};
+  const byReligionId: Record<string, number> = {};
+
+  for (const row of rows) {
+    const cultureKey = row.culture_id ?? UNASSIGNED_CULTURE_RELIGION_KEY;
+    byCultureId[cultureKey] = (byCultureId[cultureKey] ?? 0) + 1;
+    const religionKey = row.religion_id ?? UNASSIGNED_CULTURE_RELIGION_KEY;
+    byReligionId[religionKey] = (byReligionId[religionKey] ?? 0) + 1;
+  }
+
+  return { byCultureId, byReligionId };
+}
+
 function computeAggregate(
-  rows: readonly CitizenAggregateWithAssignmentRow[],
+  rows: readonly CitizenAggregateRow[],
 ): CitizenAggregateStats {
   const typeBreakdown: Record<CitizenType, number> = {
     npc: 0,
@@ -508,18 +702,32 @@ function computeAggregate(
   };
   let unassignedNpcCount = 0;
   let unassignedPcCount = 0;
+  let ineligibleIdleNpcCount = 0;
+  let ineligibleIdlePcCount = 0;
 
   for (const row of rows) {
     typeBreakdown[row.citizen_type] += 1;
     statusBreakdown[row.status] += 1;
-    const assignment = row.citizen_assignments?.[0]?.assignment_type ?? null;
+    const assignment = row.assignment_type;
     if (assignment === null) {
       if (row.status === "alive") {
-        assignmentTypeBreakdown.unassigned += 1;
-        if (row.citizen_type === "npc") {
-          unassignedNpcCount += 1;
+        const isLaborIneligible =
+          row.is_labor_excluded_officeholder ||
+          row.is_enrolled_in_education ||
+          row.is_soldier;
+        if (isLaborIneligible) {
+          if (row.citizen_type === "npc") {
+            ineligibleIdleNpcCount += 1;
+          } else {
+            ineligibleIdlePcCount += 1;
+          }
         } else {
-          unassignedPcCount += 1;
+          assignmentTypeBreakdown.unassigned += 1;
+          if (row.citizen_type === "npc") {
+            unassignedNpcCount += 1;
+          } else {
+            unassignedPcCount += 1;
+          }
         }
       }
     } else {
@@ -529,6 +737,8 @@ function computeAggregate(
 
   return {
     assignmentTypeBreakdown,
+    ineligibleIdleNpcCount,
+    ineligibleIdlePcCount,
     statusBreakdown,
     total: rows.length,
     typeBreakdown,
@@ -548,6 +758,8 @@ function emptyAggregateStats(): CitizenAggregateStats {
       trade_route: 0,
       unassigned: 0,
     },
+    ineligibleIdleNpcCount: 0,
+    ineligibleIdlePcCount: 0,
     statusBreakdown: { alive: 0, dead: 0 },
     total: 0,
     typeBreakdown: { npc: 0, player_character: 0 },
@@ -588,8 +800,10 @@ export function toCitizen(row: CitizenRow): Citizen {
     bornOnTurnNumber: row.born_on_turn_number,
     citizenType: row.citizen_type,
     createdAt: row.created_at,
+    cultureId: row.culture_id,
     deathCause: row.death_cause,
     deathCauseCategory: row.death_cause_category,
+    educationLevelId: row.education_level_id,
     givenName: row.given_name,
     id: row.id,
     name: row.name,
@@ -597,6 +811,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
     profilePhotoUrl: row.profile_photo_url,
+    religionId: row.religion_id,
     roleNationId: row.role_nation_id,
     roleSettlementId: row.role_settlement_id,
     roleType: row.role_type,

@@ -100,6 +100,16 @@ describe("removeDepositInstanceMutationOptions", () => {
         queryKey: depositsQueryKeys.instancesBySettlement(SETTLEMENT_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["deposits", "instances-by-nations"],
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["deposits", "instances-by-world"],
+      }),
+    );
   });
 
   it("raises remove_deposit_instance_not_found when RPC returns no row", async () => {

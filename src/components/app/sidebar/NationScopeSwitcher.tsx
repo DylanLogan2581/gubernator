@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, Landmark } from "lucide-react";
 
 import { nationsListQueryOptions } from "@/features/nations";
 
@@ -11,12 +11,17 @@ import type { JSX } from "react";
 // Mirrors the nation detail child routes (see also AppSidebar's
 // nationSectionItem) — one value per sidebar NATION item.
 export type NationSection =
+  | "bank"
+  | "charter"
   | "government"
+  | "military"
   | "overview"
   | "relationships"
   | "reports"
   | "settings"
-  | "settlements";
+  | "settlements"
+  | "taxPolicy"
+  | "treasury";
 
 export type NationScopeSwitcherProps = {
   readonly nationId: string | null;
@@ -26,16 +31,27 @@ export type NationScopeSwitcherProps = {
 
 type NationSectionRouteId =
   | "/worlds/$worldId/nations/$nationId"
+  | "/worlds/$worldId/nations/$nationId/bank"
+  | "/worlds/$worldId/nations/$nationId/charter"
   | "/worlds/$worldId/nations/$nationId/government"
+  | "/worlds/$worldId/nations/$nationId/military"
   | "/worlds/$worldId/nations/$nationId/relationships"
   | "/worlds/$worldId/nations/$nationId/reports"
   | "/worlds/$worldId/nations/$nationId/settings"
-  | "/worlds/$worldId/nations/$nationId/settlements";
+  | "/worlds/$worldId/nations/$nationId/settlements"
+  | "/worlds/$worldId/nations/$nationId/taxPolicy"
+  | "/worlds/$worldId/nations/$nationId/treasury";
 
 function sectionRouteId(section: NationSection | null): NationSectionRouteId {
   switch (section) {
+    case "bank":
+      return "/worlds/$worldId/nations/$nationId/bank";
+    case "charter":
+      return "/worlds/$worldId/nations/$nationId/charter";
     case "government":
       return "/worlds/$worldId/nations/$nationId/government";
+    case "military":
+      return "/worlds/$worldId/nations/$nationId/military";
     case "relationships":
       return "/worlds/$worldId/nations/$nationId/relationships";
     case "reports":
@@ -44,6 +60,10 @@ function sectionRouteId(section: NationSection | null): NationSectionRouteId {
       return "/worlds/$worldId/nations/$nationId/settings";
     case "settlements":
       return "/worlds/$worldId/nations/$nationId/settlements";
+    case "taxPolicy":
+      return "/worlds/$worldId/nations/$nationId/taxPolicy";
+    case "treasury":
+      return "/worlds/$worldId/nations/$nationId/treasury";
     case "overview":
     case null:
       return "/worlds/$worldId/nations/$nationId";
@@ -73,6 +93,7 @@ export function NationScopeSwitcher({
     <ScopeGroupSwitcher
       emptyLabel="No nations yet"
       errorLabel="Nations could not be loaded"
+      icon={<Landmark aria-hidden="true" />}
       isError={nationsQuery.isError}
       isPending={nationsQuery.isPending}
       items={nations.map((nation) => ({
@@ -95,6 +116,7 @@ export function NationScopeSwitcher({
       }))}
       menuLabel="Nations"
       title={<>NATION{current !== null ? ` · ${current.name}` : ""}</>}
+      tooltipLabel={`NATION${current !== null ? ` · ${current.name}` : ""}`}
     />
   );
 }

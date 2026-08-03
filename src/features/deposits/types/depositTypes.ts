@@ -3,18 +3,24 @@ export type WorkerInputEntry = {
   readonly resourceId: string;
 };
 
+export type DepositTypeJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly outputUnitsPerWorker: number;
+  readonly workerInputsJson: readonly WorkerInputEntry[];
+};
+
 export type DepositType = {
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly isTrashed: boolean;
-  readonly jobId: string;
+  readonly jobs: readonly DepositTypeJob[];
   readonly name: string;
-  readonly outputUnitsPerWorker: number;
   readonly slug: string;
   readonly updatedAt: string;
-  readonly workerInputsJson: readonly WorkerInputEntry[];
   readonly worldId: string;
 };
 

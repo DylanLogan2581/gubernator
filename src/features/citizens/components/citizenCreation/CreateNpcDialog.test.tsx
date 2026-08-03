@@ -260,6 +260,7 @@ describe("CreateNpcDialog", () => {
     await waitFor(() => {
       expect(toastError).toHaveBeenCalledWith(
         expect.stringContaining("NPC could not be created."),
+        undefined,
       );
     });
     expect(screen.queryByRole("alert")).toBeNull();

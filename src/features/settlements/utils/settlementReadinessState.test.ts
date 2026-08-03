@@ -22,13 +22,13 @@ describe("deriveSettlementReadinessState", () => {
       ).toEqual({ isReadyForCurrentTurn: true, kind: "manually-ready" });
     });
 
-    it("returns auto-ready not yet ready for current turn when autoReadyEnabled=true and isReadyCurrentTurn=false (auto-ready enabled mid-turn)", () => {
+    it("returns auto-ready and effectively ready when autoReadyEnabled=true and isReadyCurrentTurn=false (auto-ready enabled mid-turn)", () => {
       expect(
         deriveSettlementReadinessState({
           autoReadyEnabled: true,
           isReadyCurrentTurn: false,
         }),
-      ).toEqual({ isReadyForCurrentTurn: false, kind: "auto-ready" });
+      ).toEqual({ isReadyForCurrentTurn: true, kind: "auto-ready" });
     });
 
     it("returns auto-ready when autoReadyEnabled=true and isReadyCurrentTurn=true", () => {
@@ -60,13 +60,13 @@ describe("deriveSettlementReadinessState", () => {
       ).toBe(true);
     });
 
-    it("is false for auto-ready with isReadyCurrentTurn=false (mid-turn, not yet applied)", () => {
+    it("is true for auto-ready with isReadyCurrentTurn=false (mid-turn, not yet applied)", () => {
       expect(
         deriveSettlementReadinessState({
           autoReadyEnabled: true,
           isReadyCurrentTurn: false,
         }).isReadyForCurrentTurn,
-      ).toBe(false);
+      ).toBe(true);
     });
 
     it("is true for auto-ready with isReadyCurrentTurn=true", () => {

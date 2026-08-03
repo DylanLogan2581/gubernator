@@ -4,7 +4,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -38,6 +38,7 @@ vi.mock("@/lib/supabase", () => ({
 }));
 
 type RenderResult = {
+  readonly container: HTMLElement;
   readonly queryClient: QueryClient;
   readonly router: {
     readonly state: {
@@ -57,9 +58,9 @@ function renderAt(
     history: createMemoryHistory({ initialEntries: [path] }),
     context: { queryClient },
   });
-  render(<RouterProvider router={router} />);
+  const { container } = render(<RouterProvider router={router} />);
 
-  return { queryClient, router };
+  return { container, queryClient, router };
 }
 
 describe("not-found route", () => {
@@ -77,7 +78,7 @@ describe("not-found route", () => {
   it("provides a link back to home", async () => {
     renderAt("/another-missing-route");
     await screen.findByText("Page not found");
-    expect(screen.getByRole("link", { name: "Go to home" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Go to sign in" })).toBeDefined();
   });
 
   it("does not render template copy on the fallback", async () => {
@@ -88,11 +89,24 @@ describe("not-found route", () => {
   });
 
   it("still renders the app shell around the fallback", async () => {
-    renderAt("/not-a-real-route");
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: "user-1" } } },
+          error: null,
+        }),
+      }),
+    );
+    const { container } = renderAt("/not-a-real-route");
     await screen.findByText("Page not found");
-    expect(
-      screen.getByRole("button", { name: /toggle sidebar/i }),
-    ).toBeDefined();
+    await waitFor(() => {
+      const header = container.querySelector(
+        '[data-slot="app-header"]',
+      ) as HTMLElement;
+      expect(
+        within(header).getByRole("button", { name: /toggle sidebar/i }),
+      ).toBeDefined();
+    });
   });
 });
 
@@ -107,7 +121,7 @@ describe("app shell auth controls", () => {
   it("does not expose sign-out when no user is authenticated", async () => {
     renderAt("/");
 
-    await screen.findByRole("heading", { name: "Gubernator" });
+    await screen.findByRole("heading", { name: "Sign in" });
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 
@@ -185,7 +199,10 @@ describe("app shell auth controls", () => {
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith("Sign-out failed. Try again.");
+      expect(toastError).toHaveBeenCalledWith(
+        "Sign-out failed. Try again.",
+        undefined,
+      );
     });
     expect(toastError).not.toHaveBeenCalledWith(
       "Internal credential cleanup failed.",
@@ -250,9 +267,16 @@ describe("root error boundary", () => {
       .mockRejectedValueOnce(new CancelledError());
 
     try {
-      renderAt("/worlds", queryClient);
+      const { container } = renderAt("/worlds", queryClient);
 
-      await screen.findByRole("button", { name: /toggle sidebar/i });
+      await waitFor(() => {
+        const header = container.querySelector(
+          '[data-slot="app-header"]',
+        ) as HTMLElement;
+        expect(
+          within(header).getByRole("button", { name: /toggle sidebar/i }),
+        ).toBeDefined();
+      });
       expect(screen.queryByText("Something went wrong")).toBeNull();
     } finally {
       restoreConsole();
@@ -318,7 +342,7 @@ describe("root error boundary", () => {
 
       await screen.findByText("Something went wrong");
       expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
-      expect(screen.getByRole("link", { name: "Go to home" })).toBeDefined();
+      expect(screen.getByRole("link", { name: "Go to sign in" })).toBeDefined();
     } finally {
       restoreConsole();
     }
@@ -422,6 +446,12 @@ function createClient(
       }),
     }),
     removeChannel: vi.fn().mockResolvedValue("ok"),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    }),
   };
 }
 

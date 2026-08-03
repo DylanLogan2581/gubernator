@@ -1,0 +1,79 @@
+{
+  "id": "star-trek-romulan-names",
+  "displayName": "Romulan",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/star-trek-romulan-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "none",
+    "parts": {
+      "nm7": [
+        "b",
+        "c",
+        "d",
+        "h",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r",
+        "s",
+        "t",
+        "th",
+        "v"
+      ],
+      "nm2": ["a", "e", "i", "o", "u"],
+      "nm8": ["h", "k", "l", "ll", "m", "n", "r", "rr", "t", "tr", "th", "v"],
+      "nm9": ["a", "e", "i", "o", "u", "au", "ee"],
+      "nm10": ["k", "l", "m", "n", "s", "th"],
+      "nm11": ["a"],
+      "nm1": [
+        "b",
+        "ch",
+        "c",
+        "d",
+        "h",
+        "j",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r",
+        "s",
+        "t",
+        "th",
+        "v",
+        "vr",
+        "x"
+      ],
+      "nm3": [
+        "b",
+        "c",
+        "chr",
+        "j",
+        "k",
+        "l",
+        "lm",
+        "ld",
+        "m",
+        "ns",
+        "nd",
+        "ncl",
+        "r",
+        "rr",
+        "t",
+        "v"
+      ],
+      "nm4": ["a", "e", "i", "o", "u", "ai", "ee", "iu"],
+      "nm5": ["b", "hk", "k", "l", "m", "n", "r", "s", "t", "th", "x"],
+      "nm6": ["a", "e", "o"]
+    },
+    "patterns": {
+      "female_given": [["nm7"], ["nm2"], ["nm8"], ["nm9"], ["nm10"], ["nm11"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"], ["nm4"], ["nm5"], ["nm6"]],
+      "surname": []
+    }
+  }
+}

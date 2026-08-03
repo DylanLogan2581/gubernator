@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { removeDepositInstanceMutationOptions } from "../../mutations/removeDepositInstanceMutations";
 
@@ -19,26 +18,9 @@ export function ExhaustDepositConfirmDialog({
   onClose,
   queryClient,
 }: RemoveDepositConfirmDialogProps): JSX.Element {
-  const mutation = useMutation(
-    removeDepositInstanceMutationOptions({ queryClient }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await mutation.mutateAsync({ depositInstanceId: instance.id });
-      notifyMutationSuccess(`${instance.name} exhausted.`);
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to exhaust deposit instance.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Exhaust ${instance.name}?`}
       description={
         <>
@@ -48,8 +30,10 @@ export function ExhaustDepositConfirmDialog({
         </>
       }
       confirmLabel="Exhaust"
-      isPending={mutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={removeDepositInstanceMutationOptions({ queryClient })}
+      input={{ depositInstanceId: instance.id }}
+      successMessage={`${instance.name} exhausted.`}
+      errorFallback="Failed to exhaust deposit instance."
     />
   );
 }

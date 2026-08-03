@@ -30,8 +30,8 @@ function WorldsNotFoundPage(): JSX.Element {
     <ScopedNotFound
       title="Worlds not found"
       description="The worlds section you're looking for doesn't exist or may have moved."
-      backTo="/"
-      backToLabel="Go to home"
+      backTo="/worlds"
+      backToLabel="Go to worlds"
     />
   );
 }

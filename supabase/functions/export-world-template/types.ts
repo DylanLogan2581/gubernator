@@ -1,6 +1,12 @@
 // Raw row shapes returned by the PostgREST queries for world template export.
 // These are plain-TypeScript types — no zod, no @/ imports.
 
+export type RawEducationTierLevelRow = {
+  readonly from_level_id: string | null;
+  readonly to_level_id: string;
+  readonly turns: number;
+};
+
 export type RawTierEffectRow =
   | {
     readonly type: "job_capacity_increase";
@@ -20,6 +26,13 @@ export type RawTierEffectRow =
   | {
     readonly type: "population_cap_increase";
     readonly amount: number;
+  }
+  | {
+    readonly type: "education";
+    readonly teacher_job_id: string;
+    readonly teacher_capacity: number;
+    readonly students_per_teacher: number;
+    readonly levels: readonly RawEducationTierLevelRow[];
   };
 
 export type RawTierCostRow = {
@@ -43,6 +56,8 @@ export type RawBlueprintRow = {
   readonly description: string | null;
   readonly max_instances_per_settlement: number | null;
   readonly grace_period_turns: number;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly is_trashed: boolean;
   readonly building_blueprint_tiers: readonly RawTierRow[];
 };
@@ -62,6 +77,9 @@ export type RawJobRow = {
   readonly trader_capacity_per_worker: number | null;
   readonly inputs_json: readonly RawJobIoRow[];
   readonly outputs_json: readonly RawJobIoRow[];
+  readonly icon: string | null;
+  readonly icon_color: number | null;
+  readonly required_education_level_id: string | null;
   readonly is_trashed: boolean;
 };
 
@@ -70,8 +88,12 @@ export type RawResourceRow = {
   readonly name: string;
   readonly slug: string;
   readonly base_stockpile_cap: number;
-  readonly decay_rate: number;
+  readonly change_amount: number;
+  readonly change_mode: "percent" | "flat";
   readonly is_system_resource: boolean;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
+  readonly category_id: string | null;
   readonly is_trashed: boolean;
 };
 
@@ -80,14 +102,22 @@ export type RawWorkerInputRow = {
   readonly amount_per_worker: number;
 };
 
+export type RawDepositTypeJobRow = {
+  readonly id: string;
+  readonly deposit_type_id: string;
+  readonly job_id: string;
+  readonly output_units_per_worker: number;
+  readonly worker_inputs_json: readonly RawWorkerInputRow[];
+};
+
 export type RawDepositTypeRow = {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
-  readonly job_id: string;
-  readonly output_units_per_worker: number;
-  readonly worker_inputs_json: readonly RawWorkerInputRow[];
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly is_trashed: boolean;
+  readonly deposit_type_jobs: readonly RawDepositTypeJobRow[];
 };
 
 export type RawPopulationResourceRow = {
@@ -95,18 +125,78 @@ export type RawPopulationResourceRow = {
   readonly amount_per_n_animals: number;
 };
 
+export type RawManagedPopulationHusbandryJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+export type RawManagedPopulationCullingJobRow = {
+  readonly id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
+};
+
 export type RawManagedPopulationTypeRow = {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
-  readonly husbandry_job_id: string;
-  readonly culling_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
   readonly growth_rate: number;
   readonly maintenance_rules_json: readonly RawPopulationResourceRow[];
   readonly culling_outputs_json: readonly RawPopulationResourceRow[];
   readonly regular_outputs_json: readonly RawPopulationResourceRow[];
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly is_trashed: boolean;
+  readonly managed_population_husbandry_jobs: readonly RawManagedPopulationHusbandryJobRow[];
+  readonly managed_population_culling_jobs: readonly RawManagedPopulationCullingJobRow[];
+};
+
+export type RawResourceCategoryRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly color: string;
+  readonly sort_order: number;
+};
+
+export type RawEducationLevelRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly rank: number;
+  readonly natural_born_percent: number;
+};
+
+export type RawCultureRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly color: string;
+};
+
+export type RawReligionRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly color: string;
+};
+
+export type RawUnitTypeCostRow = {
+  readonly resource_id: string;
+  readonly amount: number;
+};
+
+export type RawUnitTypeRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly soldiers_per_unit: number;
+  readonly required_education_level_id: string | null;
+  readonly required_building_blueprint_id: string | null;
+  readonly required_building_tier_number: number | null;
+  readonly recruitment_costs_json: readonly RawUnitTypeCostRow[];
+  readonly upkeep_costs_json: readonly RawUnitTypeCostRow[];
+  readonly desertion_rate: number;
 };
 
 export type RawNamesetRow = {
@@ -138,13 +228,24 @@ export type RawWorldRow = {
 // Bundled fetch result passed to assemble()
 export type WorldConfigData = {
   readonly world: RawWorldRow;
+  readonly resourceCategories: readonly RawResourceCategoryRow[];
+  readonly educationLevels: readonly RawEducationLevelRow[];
+  readonly cultures: readonly RawCultureRow[];
+  readonly religions: readonly RawReligionRow[];
   readonly resources: readonly RawResourceRow[];
   readonly jobs: readonly RawJobRow[];
   readonly blueprints: readonly RawBlueprintRow[];
   readonly depositTypes: readonly RawDepositTypeRow[];
   readonly managedPopulationTypes: readonly RawManagedPopulationTypeRow[];
+  readonly unitTypes: readonly RawUnitTypeRow[];
   readonly namesets: readonly RawNamesetRow[];
   readonly exportedAt: string;
+};
+
+export type EducationTierLevelOutput = {
+  readonly from_level: string | null;
+  readonly to_level: string;
+  readonly turns: number;
 };
 
 // Structured template output (mirrors WorldTemplate from worldTemplateSchema.ts)
@@ -160,7 +261,14 @@ export type TierEffectOutput =
     readonly resource_slug: string;
     readonly amount: number;
   }
-  | { readonly type: "population_cap_increase"; readonly amount: number };
+  | { readonly type: "population_cap_increase"; readonly amount: number }
+  | {
+    readonly type: "education";
+    readonly teacher_job_slug: string;
+    readonly teacher_capacity: number;
+    readonly students_per_teacher: number;
+    readonly levels: readonly EducationTierLevelOutput[];
+  };
 
 export type TierCostOutput = {
   readonly resource_slug: string;
@@ -182,7 +290,7 @@ export type JobIoOutput = {
 };
 
 export type WorldTemplateOutput = {
-  readonly template_version: 1;
+  readonly template_version: 2;
   readonly meta: {
     readonly name: string;
     readonly slug: string;
@@ -208,12 +316,37 @@ export type WorldTemplateOutput = {
     readonly is_default: boolean;
     readonly config: unknown;
   }[];
+  readonly resource_categories: readonly {
+    readonly name: string;
+    readonly color: string;
+    readonly sort_order: number;
+  }[];
+  readonly education_levels: readonly {
+    readonly name: string;
+    readonly description: string | null;
+    readonly rank: number;
+    readonly natural_born_percent: number;
+  }[];
+  readonly cultures: readonly {
+    readonly name: string;
+    readonly description: string | null;
+    readonly color: string;
+  }[];
+  readonly religions: readonly {
+    readonly name: string;
+    readonly description: string | null;
+    readonly color: string;
+  }[];
   readonly resources: readonly {
     readonly name: string;
     readonly slug: string;
     readonly base_stockpile_cap: number;
-    readonly decay_rate: number;
+    readonly change_amount: number;
+    readonly change_mode: "percent" | "flat";
     readonly is_system_resource: boolean;
+    readonly icon: string | null;
+    readonly icon_color: number | null;
+    readonly category: string | null;
   }[];
   readonly jobs: readonly {
     readonly name: string;
@@ -223,6 +356,9 @@ export type WorldTemplateOutput = {
     readonly trader_capacity_per_worker: number | null;
     readonly inputs: readonly JobIoOutput[];
     readonly outputs: readonly JobIoOutput[];
+    readonly icon: string | null;
+    readonly icon_color: number | null;
+    readonly required_education_level: string | null;
   }[];
   readonly blueprints: readonly {
     readonly name: string;
@@ -231,23 +367,34 @@ export type WorldTemplateOutput = {
     readonly max_instances_per_settlement: number | null;
     readonly grace_period_turns: number;
     readonly tiers: readonly TierOutput[];
+    readonly icon: string | null;
+    readonly icon_color: number | null;
   }[];
   readonly deposit_types: readonly {
     readonly name: string;
     readonly slug: string;
-    readonly job_slug: string;
-    readonly output_units_per_worker: number;
-    readonly worker_inputs: readonly {
-      readonly resource_slug: string;
-      readonly amount_per_worker: number;
+    readonly jobs: readonly {
+      readonly job_slug: string;
+      readonly output_units_per_worker: number;
+      readonly worker_inputs: readonly {
+        readonly resource_slug: string;
+        readonly amount_per_worker: number;
+      }[];
     }[];
+    readonly icon: string | null;
+    readonly icon_color: number | null;
   }[];
   readonly managed_population_types: readonly {
     readonly name: string;
     readonly slug: string;
-    readonly husbandry_job_slug: string;
-    readonly culling_job_slug: string;
-    readonly husbandry_workers_per_n_animals: number;
+    readonly husbandry_jobs: readonly {
+      readonly job_slug: string;
+      readonly workers_per_n_animals: number;
+    }[];
+    readonly culling_jobs: readonly {
+      readonly job_slug: string;
+      readonly max_cull_per_worker: number;
+    }[];
     readonly growth_rate: number;
     readonly maintenance_rules: readonly {
       readonly resource_slug: string;
@@ -261,5 +408,20 @@ export type WorldTemplateOutput = {
       readonly resource_slug: string;
       readonly amount_per_n_animals: number;
     }[];
+    readonly icon: string | null;
+    readonly icon_color: number | null;
+  }[];
+  readonly unit_types: readonly {
+    readonly name: string;
+    readonly description: string | null;
+    readonly soldiers_per_unit: number;
+    readonly required_education_level: string | null;
+    readonly required_building: {
+      readonly blueprint_slug: string;
+      readonly tier_number: number;
+    } | null;
+    readonly recruitment_costs: readonly TierCostOutput[];
+    readonly upkeep_costs: readonly TierCostOutput[];
+    readonly desertion_rate: number;
   }[];
 };

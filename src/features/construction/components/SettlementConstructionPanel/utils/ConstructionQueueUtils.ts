@@ -4,6 +4,7 @@ import type {
 } from "@/features/buildings";
 import type { TurnTransitionLogEntry } from "@/features/turns";
 import { parseConstructionPausedPayload } from "@/shared/simulation";
+import type { LogCode } from "@/shared/simulation";
 
 import type {
   ConstructionProject,
@@ -15,11 +16,40 @@ export type ProjectLogData = {
   readonly workers: number;
 };
 
-export const CONSTRUCTION_LOG_CATEGORIES = new Set([
+export type ProjectResourceCost = {
+  readonly perTurn: number;
+  readonly remaining: number;
+  readonly resourceId: string;
+  readonly totalRequired: number;
+};
+
+export function getProjectResourceCosts(
+  project: ConstructionProject,
+  workers: number,
+): readonly ProjectResourceCost[] {
+  return project.constructionCostsJson.map((cost) => {
+    const totalRequired = cost.amount * project.workerTurnsRequired;
+    const consumedSoFar = cost.amount * project.progressWorkerTurns;
+    return {
+      perTurn: cost.amount * workers,
+      remaining: Math.max(totalRequired - consumedSoFar, 0),
+      resourceId: cost.resourceId,
+      totalRequired,
+    };
+  });
+}
+
+// `satisfies` ties these to the shared LogCode union: a typo or a code that no
+// longer exists fails the type check here.
+const CONSTRUCTION_LOG_CODES = [
   "construction.completed",
   "construction.paused",
   "construction.progress",
-]);
+] as const satisfies readonly LogCode[];
+
+export const CONSTRUCTION_LOG_CATEGORIES = new Set<string>(
+  CONSTRUCTION_LOG_CODES,
+);
 
 export const ACTIVE_STATUSES: readonly ConstructionProjectStatus[] = [
   "queued",

@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { approveTradeRouteSideMutationOptions } from "../../mutations/approveTradeRouteSideMutations";
 
@@ -29,34 +28,9 @@ export function ApproveConfirmDialog({
   side,
   worldId,
 }: ApproveConfirmDialogProps): JSX.Element {
-  const mutation = useMutation(
-    approveTradeRouteSideMutationOptions({ queryClient, worldId }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      const result = await mutation.mutateAsync({
-        approverCitizenId,
-        side,
-        tradeRouteId: route.id,
-      });
-      const label =
-        result.status === "active"
-          ? "Trade route approved and now active."
-          : "Trade route side approved.";
-      notifyMutationSuccess(label);
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to approve trade route.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title="Approve trade route?"
       description={
         <>
@@ -73,8 +47,21 @@ export function ApproveConfirmDialog({
       }
       confirmLabel="Approve"
       confirmVariant="default"
-      isPending={mutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={approveTradeRouteSideMutationOptions({
+        queryClient,
+        worldId,
+      })}
+      input={{
+        approverCitizenId,
+        side,
+        tradeRouteId: route.id,
+      }}
+      successMessage={(result) =>
+        result.status === "active"
+          ? "Trade route approved and now active."
+          : "Trade route side approved."
+      }
+      errorFallback="Failed to approve trade route."
     />
   );
 }

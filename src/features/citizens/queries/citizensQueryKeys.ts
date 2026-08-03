@@ -6,6 +6,8 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "admin-details", citizenId] as const,
   detail: (citizenId: string) =>
     [...citizensQueryKeys.all, "detail", citizenId] as const,
+  familyTree: (citizenId: string) =>
+    [...citizensQueryKeys.all, "family-tree", citizenId] as const,
   byIds: (ids: readonly string[]) =>
     [...citizensQueryKeys.all, "by-ids", [...ids].sort().join(",")] as const,
   activePartnershipForCitizen: (citizenId: string) =>
@@ -20,12 +22,16 @@ export const citizensQueryKeys = {
       "assignments-in-settlement",
       settlementId,
     ] as const,
+  currentAssignmentAll: () =>
+    [...citizensQueryKeys.all, "current-assignment-for-citizen"] as const,
   currentAssignmentForCitizen: (citizenId: string) =>
     [
       ...citizensQueryKeys.all,
       "current-assignment-for-citizen",
       citizenId,
     ] as const,
+  directoryByWorld: (worldId: string) =>
+    [...citizensQueryKeys.all, "directory", worldId] as const,
   directory: (
     worldId: string,
     filters: Record<string, unknown>,
@@ -40,6 +46,12 @@ export const citizensQueryKeys = {
     ] as const,
   nationAggregateStats: (nationId: string) =>
     [...citizensQueryKeys.all, "nation-aggregate-stats", nationId] as const,
+  nationCultureReligionComposition: (nationId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "nation-culture-religion-composition",
+      nationId,
+    ] as const,
   partnershipsForCitizen: (citizenId: string) =>
     [...citizensQueryKeys.all, "partnerships-for-citizen", citizenId] as const,
   playerCharactersInNation: (nationId: string) =>
@@ -54,6 +66,12 @@ export const citizensQueryKeys = {
       "settlement-aggregate-stats",
       settlementId,
     ] as const,
+  settlementCultureReligionComposition: (settlementId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "settlement-culture-religion-composition",
+      settlementId,
+    ] as const,
   settlementConstructionProjectCounts: (settlementId: string) =>
     [
       ...citizensQueryKeys.all,
@@ -64,6 +82,18 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "settlement-job-counts", settlementId] as const,
   settlementList: (settlementId: string) =>
     [...citizensQueryKeys.all, "settlement-list", settlementId] as const,
+  settlementManagersInNation: (nationId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "settlement-managers-in-nation",
+      nationId,
+    ] as const,
+  settlementOfficeholderCount: (settlementId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "settlement-officeholder-count",
+      settlementId,
+    ] as const,
   settlementTargetAssignments: (settlementId: string) =>
     [
       ...citizensQueryKeys.all,
@@ -72,6 +102,8 @@ export const citizensQueryKeys = {
     ] as const,
   memories: (citizenId: string) =>
     [...citizensQueryKeys.all, "memories", citizenId] as const,
+  unpairedAliveAll: () =>
+    [...citizensQueryKeys.all, "unpaired-alive-in-world"] as const,
   unpairedAliveInWorld: (worldId: string) =>
     [...citizensQueryKeys.all, "unpaired-alive-in-world", worldId] as const,
   worldList: (worldId: string) =>

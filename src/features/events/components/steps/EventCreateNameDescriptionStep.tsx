@@ -1,5 +1,6 @@
 import { type JSX } from "react";
 
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,15 +9,19 @@ import { eventInputLimits } from "@/lib/inputLimits";
 type EventCreateNameDescriptionStepProps = {
   readonly groupName: string;
   readonly groupDescription: string;
+  readonly icon: string | null;
   readonly onGroupNameChange: (name: string) => void;
   readonly onGroupDescriptionChange: (desc: string) => void;
+  readonly onIconChange: (icon: string | null) => void;
 };
 
 export function EventCreateNameDescriptionStep({
   groupName,
   groupDescription,
+  icon,
   onGroupNameChange,
   onGroupDescriptionChange,
+  onIconChange,
 }: EventCreateNameDescriptionStepProps): JSX.Element {
   return (
     <div className="space-y-6">
@@ -60,6 +65,11 @@ export function EventCreateNameDescriptionStep({
           {eventInputLimits.eventGroupDescriptionMax} characters
         </p>
       </div>
+
+      <Label className="grid gap-2 text-sm font-medium">
+        Icon
+        <IconPicker value={icon} onChange={onIconChange} />
+      </Label>
     </div>
   );
 }

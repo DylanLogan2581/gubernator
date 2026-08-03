@@ -42,12 +42,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'd2000000-0000-0000-0000-000000000001',
     'SDR Test World',
-    'private',
     'active'
   );
 
@@ -152,23 +151,30 @@ values
     'deposit'
   );
 
--- Deposit type referencing the deletable resource in worker_inputs_json.
+-- Deposit type (job link now lives on deposit_type_jobs).
 insert into
-  public.deposit_types (
+  public.deposit_types (id, world_id, name, slug)
+values
+  (
+    'd7000000-0000-0000-0000-000000000001',
+    'd2000000-0000-0000-0000-000000000001',
+    'Ore Deposit',
+    'ore-deposit'
+  );
+
+-- Deposit type job referencing the deletable resource in worker_inputs_json.
+insert into
+  public.deposit_type_jobs (
     id,
-    world_id,
-    name,
-    slug,
+    deposit_type_id,
     job_id,
     output_units_per_worker,
     worker_inputs_json
   )
 values
   (
+    'd7100000-0000-0000-0000-000000000001',
     'd7000000-0000-0000-0000-000000000001',
-    'd2000000-0000-0000-0000-000000000001',
-    'Ore Deposit',
-    'ore-deposit',
     'd4000000-0000-0000-0000-000000000002',
     5,
     '[{"resource_id":"d3000000-0000-0000-0000-000000000001","amount_per_worker":1},
@@ -202,9 +208,6 @@ insert into
     world_id,
     name,
     slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
     maintenance_rules_json,
     culling_outputs_json
   )
@@ -214,12 +217,35 @@ values
     'd2000000-0000-0000-0000-000000000001',
     'Ore Beast',
     'ore-beast',
-    'd4000000-0000-0000-0000-000000000003',
-    'd4000000-0000-0000-0000-000000000004',
-    10,
     '[{"resource_id":"d3000000-0000-0000-0000-000000000001","amount_per_n_animals":5},
       {"resource_id":"d3000000-0000-0000-0000-000000000002","amount_per_n_animals":3}]',
     '[{"resource_id":"d3000000-0000-0000-0000-000000000001","amount_per_n_animals":2}]'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'd8000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000003',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'd8000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000004',
+    10
   );
 
 -- ===========================================================================
@@ -422,7 +448,7 @@ select
   );
 
 -- ---------------------------------------------------------------------------
--- Branch 6: deposit_types.worker_inputs_json
+-- Branch 6: deposit_type_jobs.worker_inputs_json
 -- Deletable Ore removed; Keeper Stone entry preserved.
 -- ---------------------------------------------------------------------------
 select
@@ -431,9 +457,9 @@ select
       select
         worker_inputs_json
       from
-        public.deposit_types
+        public.deposit_type_jobs
       where
-        id = 'd7000000-0000-0000-0000-000000000001'
+        id = 'd7100000-0000-0000-0000-000000000001'
     ),
     '[{"resource_id":"d3000000-0000-0000-0000-000000000002","amount_per_worker":2}]'::jsonb,
     'deletable resource stripped from deposit worker_inputs_json; keeper entry preserved'

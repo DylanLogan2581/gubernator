@@ -1,5 +1,5 @@
-// Unit tests for phaseManagedPopulations — husbandry coverage formula and
-// growth/decline behaviour.
+// Unit tests for phaseManagedPopulations — per-job husbandry coverage and
+// culling-gate formulas, and growth/decline behaviour.
 //
 // Cross-runtime module: Deno-compatible, no browser APIs.
 
@@ -8,6 +8,8 @@ import { describe, expect, it } from "vitest";
 import { phaseManagedPopulations } from "./phaseManagedPopulations.ts";
 
 import type {
+  SimManagedPopulationCullingJob,
+  SimManagedPopulationHusbandryJob,
   SimManagedPopulation,
   SimManagedPopulationType,
   SimulationContext,
@@ -21,10 +23,21 @@ function makeContext(
   overrides: Partial<SimulationContext["input"]> & {
     pops: SimManagedPopulation[];
     types: SimManagedPopulationType[];
+    husbandryJobs?: SimManagedPopulationHusbandryJob[];
+    cullingJobs?: SimManagedPopulationCullingJob[];
     husbandryAssignments?: { citizenId: string; popId: string }[];
+    cullingAssignments?: { citizenId: string; popId: string }[];
   },
 ): SimulationContext {
-  const { pops, types, husbandryAssignments = [], ...rest } = overrides;
+  const {
+    pops,
+    types,
+    husbandryJobs = [],
+    cullingJobs = [],
+    husbandryAssignments = [],
+    cullingAssignments = [],
+    ...rest
+  } = overrides;
 
   return {
     input: {
@@ -39,25 +52,53 @@ function makeContext(
         startingYear: 1,
         weekdays: [{ index: 0, name: "Mon" }],
       },
-      citizenAssignments: husbandryAssignments.map(({ citizenId, popId }) => ({
-        assignedOnTurnNumber: 1,
-        assignmentType: "husbandry" as const,
-        citizenId,
-        constructionProjectId: null,
-        depositInstanceId: null,
-        jobId: null,
-        managedPopulationInstanceId: popId,
-        tradeRouteEnd: null,
-        tradeRouteId: null,
-      })),
+      citizenAssignments: [
+        ...husbandryAssignments.map(({ citizenId, popId }) => ({
+          assignedOnTurnNumber: 1,
+          assignmentType: "husbandry" as const,
+          citizenId,
+          constructionProjectId: null,
+          depositInstanceId: null,
+          jobId: null,
+          managedPopulationInstanceId: popId,
+          tradeRouteEnd: null,
+          tradeRouteId: null,
+        })),
+        ...cullingAssignments.map(({ citizenId, popId }) => ({
+          assignedOnTurnNumber: 1,
+          assignmentType: "culling" as const,
+          citizenId,
+          constructionProjectId: null,
+          depositInstanceId: null,
+          jobId: null,
+          managedPopulationInstanceId: popId,
+          tradeRouteEnd: null,
+          tradeRouteId: null,
+        })),
+      ],
       citizens: [],
       constructionProjects: [],
+      armies: [],
+      armyUnits: [],
+      depositTypeJobs: [],
       depositTypes: [],
       deposits: [],
+    educationEnrollments: [],
+    educationLevels: [],
       events: [],
       jobs: [],
+      managedPopulationCullingJobs: cullingJobs,
+      managedPopulationHusbandryJobs: husbandryJobs,
       managedPopulationTypes: types,
       managedPopulations: pops,
+      nationCurrencies: [],
+      nationCurrencyLedgerEntries: [],
+      nationOffices: [],
+      nationRelationships: [],
+      nationResourceStockpiles: [],
+      nationTaxPolicies: [],
+      nationTreaties: [],
+      nations: [],
       partnerships: [],
       populationRules: {
         fertilityChance: 0,
@@ -78,6 +119,8 @@ function makeContext(
       systemResourceIds: { foodId: "food", freshWaterId: "water" },
       tradeRoutes: [],
       turnNumber: 1,
+      unitSoldiers: [],
+      unitTypes: [],
       worldId: "w1",
       ...rest,
     },
@@ -85,6 +128,7 @@ function makeContext(
       pendingDeaths: new Set(),
       pendingDepositDestroys: new Set(),
       pendingEventMultipliers: new Map(),
+      pendingNationStockpiles: new Map(),
       pendingManagedPopulationDeltas: new Map(),
       pendingPopCapBySettlement: new Map(),
       pendingStockpiles: new Map(),
@@ -96,11 +140,8 @@ function makeBeeColonyType(
   overrides?: Partial<SimManagedPopulationType>,
 ): SimManagedPopulationType {
   return {
-    cullingJobId: "cull-job",
     cullingOutputsJson: [],
     growthRate: 0.1,
-    husbandryJobId: "husb-job",
-    husbandryWorkersPerNAnimals: 20,
     id: "bee-type",
     maintenanceRulesJson: [],
     name: "Bee Colony",
@@ -114,7 +155,7 @@ function makeBeeFarm(
 ): SimManagedPopulation {
   return {
     configuredCullQuantity: 0,
-    currentCount: 142,
+    currentCount: 140,
     id: "bee-farm",
     managedPopulationTypeId: "bee-type",
     name: "Bee Farm",
@@ -124,45 +165,41 @@ function makeBeeFarm(
   };
 }
 
+function makeHusbandryJob(
+  overrides?: Partial<SimManagedPopulationHusbandryJob>,
+): SimManagedPopulationHusbandryJob {
+  return {
+    id: "husb-job-1",
+    jobId: "beekeeper",
+    managedPopulationTypeId: "bee-type",
+    workersPerNAnimals: 20,
+    ...overrides,
+  };
+}
+
+function makeCullingJob(
+  overrides?: Partial<SimManagedPopulationCullingJob>,
+): SimManagedPopulationCullingJob {
+  return {
+    id: "cull-job-1",
+    jobId: "honey-gatherer",
+    managedPopulationTypeId: "bee-type",
+    maxCullPerWorker: 10,
+    ...overrides,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("phaseManagedPopulations — husbandry coverage formula", () => {
-  it("computes required workers as ceil(count / N), not count * N", () => {
-    // count=142, N=20 → ceil(142/20) = ceil(7.1) = 8
-    // Old (buggy) formula: 20 * 142 = 2840
+  it("caps coverage at 1 when worker capacity exceeds the population count", () => {
+    // count=140, 8 workers * 20/worker = 160 capacity → min(1, 160/140) = 1
     const ctx = makeContext({
       types: [makeBeeColonyType()],
       pops: [makeBeeFarm()],
-      // 0 husbandry workers assigned — coverage should be 0/8 = 0, not 0/2840
-      husbandryAssignments: [],
-    });
-
-    const result = phaseManagedPopulations(ctx);
-
-    // With growthRate=0.1 and coverage < 1: decline = -ceil(142 * 0.1) = -15
-    const update = result.managedPopulationUpdates.find(
-      (u) => u.managedPopulationInstanceId === "bee-farm",
-    );
-    expect(update).toBeDefined();
-    // Population declines (not grows) due to insufficient husbandry
-    expect(update?.countDelta).toBeLessThan(0);
-
-    // Declining log must be emitted
-    const log = result.logs.find(
-      (l) => l.category === "managed_population.declining",
-    );
-    expect(log).toBeDefined();
-    // husbandryCoverage should be 0 (0 workers / 8 needed), not ~0.0007
-    expect((log?.payload as { husbandryCoverage: number } | undefined)?.husbandryCoverage).toBe(0);
-  });
-
-  it("fully supports colony when workers >= ceil(count / N)", () => {
-    // count=142, N=20 → needed=8; assign 8 workers → coverage=1
-    const ctx = makeContext({
-      types: [makeBeeColonyType()],
-      pops: [makeBeeFarm()],
+      husbandryJobs: [makeHusbandryJob()],
       husbandryAssignments: Array.from({ length: 8 }, (_, i) => ({
         citizenId: `c${i}`,
         popId: "bee-farm",
@@ -175,31 +212,54 @@ describe("phaseManagedPopulations — husbandry coverage formula", () => {
       (u) => u.managedPopulationInstanceId === "bee-farm",
     );
     expect(update).toBeDefined();
-    // With full coverage and growthRate=0.1: floor(142 * 0.1) = 14 growth
-    expect(update?.countDelta).toBeGreaterThan(0);
+    // Full coverage → growth: floor(140 * 0.1) = 14
+    expect(update?.countDelta).toBe(14);
     expect(update?.toStatus).toBeNull();
 
-    // No declining log
     const decliningLog = result.logs.find(
       (l) => l.category === "managed_population.declining",
     );
     expect(decliningLog).toBeUndefined();
   });
 
-  it("ceil(142 / 20) equals 8, not 2840", () => {
-    // Directly assert the arithmetic the formula must satisfy.
-    expect(Math.ceil(142 / 20)).toBe(8);
-  });
-
-  it("partial coverage (2 of 8 workers) gives husbandryCoverage = 0.25", () => {
-    // count=142, N=20 → needed=8; 2 workers → coverage=2/8=0.25 (not 2/2840)
+  it("gives zero coverage with zero husbandry workers", () => {
     const ctx = makeContext({
       types: [makeBeeColonyType()],
       pops: [makeBeeFarm()],
-      husbandryAssignments: [
-        { citizenId: "c1", popId: "bee-farm" },
-        { citizenId: "c2", popId: "bee-farm" },
+      husbandryJobs: [makeHusbandryJob()],
+      husbandryAssignments: [],
+    });
+
+    const result = phaseManagedPopulations(ctx);
+
+    const update = result.managedPopulationUpdates.find(
+      (u) => u.managedPopulationInstanceId === "bee-farm",
+    );
+    expect(update?.countDelta).toBeLessThan(0);
+
+    const log = result.logs.find(
+      (l) => l.category === "managed_population.declining",
+    );
+    expect(log).toBeDefined();
+    expect((log?.payload as { husbandryCoverage: number } | undefined)?.husbandryCoverage).toBe(
+      0,
+    );
+  });
+
+  it("splits pooled workers evenly across multiple husbandry jobs", () => {
+    // count=140, two jobs (20/worker, 10/worker), 4 workers pooled → 2 each.
+    // capacity = 2*20 + 2*10 = 60 → coverage = min(1, 60/140) ≈ 0.4286
+    const ctx = makeContext({
+      types: [makeBeeColonyType()],
+      pops: [makeBeeFarm()],
+      husbandryJobs: [
+        makeHusbandryJob({ id: "husb-job-1", jobId: "beekeeper", workersPerNAnimals: 20 }),
+        makeHusbandryJob({ id: "husb-job-2", jobId: "master-beekeeper", workersPerNAnimals: 10 }),
       ],
+      husbandryAssignments: Array.from({ length: 4 }, (_, i) => ({
+        citizenId: `c${i}`,
+        popId: "bee-farm",
+      })),
     });
 
     const result = phaseManagedPopulations(ctx);
@@ -208,11 +268,97 @@ describe("phaseManagedPopulations — husbandry coverage formula", () => {
       (l) => l.category === "managed_population.declining",
     );
     expect(log).toBeDefined();
-    const payload = log?.payload as {
-      husbandryCoverage: number;
-      maintenanceCoverage: number;
-    } | undefined;
-    expect(payload?.husbandryCoverage).toBeCloseTo(0.25);
-    expect(payload?.maintenanceCoverage).toBe(1);
+    const payload = log?.payload as { husbandryCoverage: number } | undefined;
+    expect(payload?.husbandryCoverage).toBeCloseTo(60 / 140);
+  });
+});
+
+describe("phaseManagedPopulations — culling gate formula", () => {
+  it("gates cull below the configured quantity when worker capacity is lower", () => {
+    // configuredCullQuantity=50, 2 workers * 10/worker = 20 capacity → cull=20
+    const ctx = makeContext({
+      types: [makeBeeColonyType()],
+      pops: [
+        makeBeeFarm({
+          configuredCullQuantity: 50,
+          currentCount: 140,
+        }),
+      ],
+      husbandryJobs: [makeHusbandryJob()],
+      cullingJobs: [makeCullingJob()],
+      husbandryAssignments: Array.from({ length: 8 }, (_, i) => ({
+        citizenId: `h${i}`,
+        popId: "bee-farm",
+      })),
+      cullingAssignments: [
+        { citizenId: "cull1", popId: "bee-farm" },
+        { citizenId: "cull2", popId: "bee-farm" },
+      ],
+    });
+
+    const result = phaseManagedPopulations(ctx);
+
+    const update = result.managedPopulationUpdates.find(
+      (u) => u.managedPopulationInstanceId === "bee-farm",
+    );
+    // Fully supported → growth: floor(140*0.1)=14 → 154, then cull=20 → -6 net
+    expect(update?.countDelta).toBe(14 - 20);
+  });
+
+  it("caps cull at the configured quantity when worker capacity exceeds it", () => {
+    // configuredCullQuantity=5, 8 workers * 10/worker = 80 capacity → cull=5
+    const ctx = makeContext({
+      types: [makeBeeColonyType()],
+      pops: [
+        makeBeeFarm({
+          configuredCullQuantity: 5,
+          currentCount: 140,
+        }),
+      ],
+      husbandryJobs: [makeHusbandryJob()],
+      cullingJobs: [makeCullingJob()],
+      husbandryAssignments: Array.from({ length: 8 }, (_, i) => ({
+        citizenId: `h${i}`,
+        popId: "bee-farm",
+      })),
+      cullingAssignments: Array.from({ length: 8 }, (_, i) => ({
+        citizenId: `cull${i}`,
+        popId: "bee-farm",
+      })),
+    });
+
+    const result = phaseManagedPopulations(ctx);
+
+    const update = result.managedPopulationUpdates.find(
+      (u) => u.managedPopulationInstanceId === "bee-farm",
+    );
+    expect(update?.countDelta).toBe(14 - 5);
+  });
+
+  it("gates cull to zero with zero culling workers, even if configured quantity is positive", () => {
+    const ctx = makeContext({
+      types: [makeBeeColonyType()],
+      pops: [
+        makeBeeFarm({
+          configuredCullQuantity: 20,
+          currentCount: 140,
+        }),
+      ],
+      husbandryJobs: [makeHusbandryJob()],
+      cullingJobs: [makeCullingJob()],
+      husbandryAssignments: Array.from({ length: 8 }, (_, i) => ({
+        citizenId: `h${i}`,
+        popId: "bee-farm",
+      })),
+      cullingAssignments: [],
+    });
+
+    const result = phaseManagedPopulations(ctx);
+
+    const update = result.managedPopulationUpdates.find(
+      (u) => u.managedPopulationInstanceId === "bee-farm",
+    );
+    // Fully supported → growth of 14, no cull applied.
+    expect(update?.countDelta).toBe(14);
   });
 });

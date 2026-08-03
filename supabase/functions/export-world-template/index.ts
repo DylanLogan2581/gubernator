@@ -179,7 +179,7 @@ export async function handleExportWorldTemplateRequest(
     return respond(authContextResult.error, authContextResult.status);
   }
 
-  // Rate limit: this endpoint fans out into a 7-table parallel export
+  // Rate limit: this endpoint fans out into a 12-table parallel export
   // (fetchWorldConfigData), so cap per-user calls before doing any of that
   // work or the authorization RPC round-trips below.
   const rateLimitResult = await checkRateLimit(

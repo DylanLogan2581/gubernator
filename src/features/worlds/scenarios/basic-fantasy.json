@@ -1,9 +1,9 @@
 {
-  "template_version": 1,
+  "template_version": 2,
   "meta": {
-    "name": "Basic Fantasy",
-    "slug": "basic-fantasy",
-    "exported_at": "2026-06-17T00:00:00.000Z"
+    "name": "Ironhold & Verdania",
+    "slug": "ironhold-and-verdania",
+    "exported_at": "2026-07-16T00:00:00.000Z"
   },
   "calendar": {
     "dateFormatTemplate": "{weekday}, {day} {month} {year}",
@@ -70,70 +70,39 @@
   },
   "naming_config": {
     "convention": "family-name",
-    "female_given_names": [
-      "Alara",
-      "Brynn",
-      "Calla",
-      "Dara",
-      "Erin",
-      "Fara",
-      "Gwen",
-      "Hessa",
-      "Idris",
-      "Jora"
-    ],
-    "male_given_names": [
-      "Aldric",
-      "Brand",
-      "Calder",
-      "Dorin",
-      "Ervan",
-      "Fenric",
-      "Gareth",
-      "Hadwin",
-      "Ivar",
-      "Jorath"
-    ],
-    "surnames": [
-      "Ashborne",
-      "Blackwood",
-      "Coldfen",
-      "Dawnridge",
-      "Embervale",
-      "Frostholm",
-      "Greymoor",
-      "Hammerfell",
-      "Ironhill",
-      "Jarvik"
-    ]
+    "female_given_names": ["Brynn", "Hessa", "Gwen", "Idris"],
+    "male_given_names": ["Aldric", "Brand", "Gareth", "Hadwin"],
+    "surnames": ["Ironhill", "Hammerfell", "Frostholm", "Greymoor"]
   },
   "namesets": [
     {
-      "name": "Common Folk",
+      "name": "Ironhold Folk",
       "is_default": true,
       "config": {
         "convention": "family-name",
+        "female_given_names": ["Brynn", "Hessa", "Gwen", "Idris"],
+        "male_given_names": ["Aldric", "Brand", "Gareth", "Hadwin"],
+        "surnames": ["Ironhill", "Hammerfell", "Frostholm", "Greymoor"]
+      }
+    },
+    {
+      "name": "Verdanian",
+      "is_default": false,
+      "config": {
+        "convention": "family-name",
         "female_given_names": [
-          "Alara",
-          "Brynn",
           "Calla",
           "Dara",
           "Erin",
           "Fara",
-          "Gwen",
-          "Hessa",
-          "Idris",
+          "Alara",
           "Jora"
         ],
         "male_given_names": [
-          "Aldric",
-          "Brand",
           "Calder",
           "Dorin",
           "Ervan",
           "Fenric",
-          "Gareth",
-          "Hadwin",
           "Ivar",
           "Jorath"
         ],
@@ -143,13 +112,79 @@
           "Coldfen",
           "Dawnridge",
           "Embervale",
-          "Frostholm",
-          "Greymoor",
-          "Hammerfell",
-          "Ironhill",
           "Jarvik"
         ]
       }
+    }
+  ],
+  "resource_categories": [
+    {
+      "name": "Food & Drink",
+      "icon": "game:wheat",
+      "color": "#e2a640",
+      "sort_order": 0
+    },
+    {
+      "name": "Raw Materials",
+      "icon": "game:stone-pile",
+      "color": "#8d99ae",
+      "sort_order": 1
+    },
+    {
+      "name": "Refined Goods",
+      "icon": "game:anvil",
+      "color": "#6d597a",
+      "sort_order": 2
+    },
+    {
+      "name": "Military Supplies",
+      "icon": "game:crossed-swords",
+      "color": "#b23a48",
+      "sort_order": 3
+    }
+  ],
+  "education_levels": [
+    {
+      "name": "Literate",
+      "description": "Can read, write, and do basic sums.",
+      "rank": 1,
+      "natural_born_percent": 20
+    },
+    {
+      "name": "Educated",
+      "description": "Formally schooled in letters, numbers, and civic knowledge.",
+      "rank": 2,
+      "natural_born_percent": 5
+    },
+    {
+      "name": "Scholar",
+      "description": "Masters of advanced learning, medicine, and strategy.",
+      "rank": 3,
+      "natural_born_percent": 0
+    }
+  ],
+  "cultures": [
+    {
+      "name": "Ironhold Folk",
+      "description": "Industrious mountain folk of Ironhold, prizing craft and discipline.",
+      "color": "#6d597a"
+    },
+    {
+      "name": "Verdanian",
+      "description": "Agrarian people of Verdania's river valleys, devoted to the land.",
+      "color": "#3a7d44"
+    }
+  ],
+  "religions": [
+    {
+      "name": "Faith of the Forge",
+      "description": "Reveres the divine smith said to have shaped the mountains.",
+      "color": "#b23a48"
+    },
+    {
+      "name": "Old Gods of the Green",
+      "description": "Nature spirits of river, field, and forest.",
+      "color": "#3a6ea5"
     }
   ],
   "resources": [
@@ -157,36 +192,141 @@
       "name": "Grain",
       "slug": "grain",
       "base_stockpile_cap": 1000,
-      "decay_rate": 0.02,
-      "is_system_resource": false
+      "change_mode": "percent",
+      "change_amount": -0.02,
+      "is_system_resource": false,
+      "icon": "game:wheat",
+      "category": "Food & Drink"
+    },
+    {
+      "name": "Bread",
+      "slug": "bread",
+      "base_stockpile_cap": 400,
+      "change_mode": "percent",
+      "change_amount": -0.03,
+      "is_system_resource": false,
+      "icon": "game:bread",
+      "category": "Food & Drink"
+    },
+    {
+      "name": "Ale",
+      "slug": "ale",
+      "base_stockpile_cap": 300,
+      "change_mode": "percent",
+      "change_amount": -0.01,
+      "is_system_resource": false,
+      "icon": "game:beer-stein",
+      "category": "Food & Drink"
+    },
+    {
+      "name": "Meat",
+      "slug": "meat",
+      "base_stockpile_cap": 250,
+      "change_mode": "percent",
+      "change_amount": -0.04,
+      "is_system_resource": false,
+      "icon": "game:meat",
+      "category": "Food & Drink"
     },
     {
       "name": "Hardwood Logs",
       "slug": "hardwood-logs",
       "base_stockpile_cap": 600,
-      "decay_rate": 0.0,
-      "is_system_resource": false
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:log",
+      "category": "Raw Materials"
     },
     {
       "name": "Iron Ore",
       "slug": "iron-ore",
       "base_stockpile_cap": 400,
-      "decay_rate": 0.0,
-      "is_system_resource": false
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:ore",
+      "category": "Raw Materials"
     },
     {
       "name": "Stone Block",
       "slug": "stone-block",
       "base_stockpile_cap": 800,
-      "decay_rate": 0.0,
-      "is_system_resource": false
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:stone-block",
+      "category": "Raw Materials"
     },
     {
-      "name": "Wool",
-      "slug": "wool",
-      "base_stockpile_cap": 300,
-      "decay_rate": 0.0,
-      "is_system_resource": false
+      "name": "Cattle Hide",
+      "slug": "cattle-hide",
+      "base_stockpile_cap": 200,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:animal-hide",
+      "category": "Raw Materials"
+    },
+    {
+      "name": "Planks",
+      "slug": "planks",
+      "base_stockpile_cap": 500,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:planks",
+      "category": "Refined Goods"
+    },
+    {
+      "name": "Iron Tools",
+      "slug": "iron-tools",
+      "base_stockpile_cap": 200,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:claw-hammer",
+      "category": "Refined Goods"
+    },
+    {
+      "name": "Leather",
+      "slug": "leather",
+      "base_stockpile_cap": 200,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:leather-vest",
+      "category": "Refined Goods"
+    },
+    {
+      "name": "Spears",
+      "slug": "spears",
+      "base_stockpile_cap": 150,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:thrown-spear",
+      "category": "Military Supplies"
+    },
+    {
+      "name": "Shields",
+      "slug": "shields",
+      "base_stockpile_cap": 150,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:bordered-shield",
+      "category": "Military Supplies"
+    },
+    {
+      "name": "Armor",
+      "slug": "armor",
+      "base_stockpile_cap": 150,
+      "change_mode": "percent",
+      "change_amount": 0.0,
+      "is_system_resource": false,
+      "icon": "game:chest-armor",
+      "category": "Military Supplies"
     }
   ],
   "jobs": [
@@ -197,7 +337,31 @@
       "base_capacity": 20,
       "trader_capacity_per_worker": null,
       "inputs": [],
-      "outputs": [{ "resource_slug": "grain", "amount_per_worker": 2 }]
+      "outputs": [{ "resource_slug": "grain", "amount_per_worker": 2 }],
+      "icon": "game:farmer",
+      "required_education_level": null
+    },
+    {
+      "name": "Baking",
+      "slug": "baking",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [{ "resource_slug": "grain", "amount_per_worker": 2 }],
+      "outputs": [{ "resource_slug": "bread", "amount_per_worker": 1.5 }],
+      "icon": "game:chicken-oven",
+      "required_education_level": null
+    },
+    {
+      "name": "Brewing",
+      "slug": "brewing",
+      "job_type": "standard",
+      "base_capacity": 8,
+      "trader_capacity_per_worker": null,
+      "inputs": [{ "resource_slug": "grain", "amount_per_worker": 1.5 }],
+      "outputs": [{ "resource_slug": "ale", "amount_per_worker": 1 }],
+      "icon": "game:beer-stein",
+      "required_education_level": null
     },
     {
       "name": "Lumbering",
@@ -206,7 +370,20 @@
       "base_capacity": 10,
       "trader_capacity_per_worker": null,
       "inputs": [],
-      "outputs": [{ "resource_slug": "hardwood-logs", "amount_per_worker": 3 }]
+      "outputs": [{ "resource_slug": "hardwood-logs", "amount_per_worker": 3 }],
+      "icon": "game:logging",
+      "required_education_level": null
+    },
+    {
+      "name": "Carpentry",
+      "slug": "carpentry",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [{ "resource_slug": "hardwood-logs", "amount_per_worker": 2 }],
+      "outputs": [{ "resource_slug": "planks", "amount_per_worker": 1.5 }],
+      "icon": "game:planks",
+      "required_education_level": null
     },
     {
       "name": "Mining",
@@ -215,7 +392,9 @@
       "base_capacity": 10,
       "trader_capacity_per_worker": null,
       "inputs": [{ "resource_slug": "grain", "amount_per_worker": 0.5 }],
-      "outputs": [{ "resource_slug": "iron-ore", "amount_per_worker": 2 }]
+      "outputs": [{ "resource_slug": "iron-ore", "amount_per_worker": 2 }],
+      "icon": "game:miner",
+      "required_education_level": null
     },
     {
       "name": "Quarrying",
@@ -224,40 +403,145 @@
       "base_capacity": 10,
       "trader_capacity_per_worker": null,
       "inputs": [],
-      "outputs": [{ "resource_slug": "stone-block", "amount_per_worker": 4 }]
+      "outputs": [{ "resource_slug": "stone-block", "amount_per_worker": 4 }],
+      "icon": "game:war-pick",
+      "required_education_level": null
     },
     {
-      "name": "Shepherding",
-      "slug": "shepherding",
+      "name": "Tanning",
+      "slug": "tanning",
       "job_type": "standard",
+      "base_capacity": 6,
+      "trader_capacity_per_worker": null,
+      "inputs": [{ "resource_slug": "cattle-hide", "amount_per_worker": 1 }],
+      "outputs": [{ "resource_slug": "leather", "amount_per_worker": 0.8 }],
+      "icon": "game:leather-vest",
+      "required_education_level": null
+    },
+    {
+      "name": "Smithing",
+      "slug": "smithing",
+      "job_type": "standard",
+      "base_capacity": 8,
+      "trader_capacity_per_worker": null,
+      "inputs": [
+        { "resource_slug": "iron-ore", "amount_per_worker": 1 },
+        { "resource_slug": "planks", "amount_per_worker": 0.5 }
+      ],
+      "outputs": [
+        { "resource_slug": "iron-tools", "amount_per_worker": 0.5 },
+        { "resource_slug": "spears", "amount_per_worker": 0.3 },
+        { "resource_slug": "shields", "amount_per_worker": 0.3 },
+        { "resource_slug": "armor", "amount_per_worker": 0.2 }
+      ],
+      "icon": "game:blacksmith",
+      "required_education_level": "Literate"
+    },
+    {
+      "name": "Cattle Herding",
+      "slug": "cattle-herding",
+      "job_type": "standard",
+      "base_capacity": 12,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [],
+      "icon": "game:cow",
+      "required_education_level": null
+    },
+    {
+      "name": "Butchering",
+      "slug": "butchering",
+      "job_type": "standard",
+      "base_capacity": 6,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [],
+      "icon": "game:meat-cleaver",
+      "required_education_level": null
+    },
+    {
+      "name": "Teaching",
+      "slug": "teaching",
+      "job_type": "teacher",
       "base_capacity": 5,
       "trader_capacity_per_worker": null,
       "inputs": [],
-      "outputs": []
-    },
-    {
-      "name": "Culling",
-      "slug": "culling",
-      "job_type": "standard",
-      "base_capacity": 5,
-      "trader_capacity_per_worker": null,
-      "inputs": [],
-      "outputs": []
+      "outputs": [],
+      "icon": "game:teacher",
+      "required_education_level": "Literate"
     }
   ],
   "blueprints": [
     {
-      "name": "Granary",
-      "slug": "granary",
-      "description": "A sturdy storage house for grain and dry goods.",
+      "name": "Housing",
+      "slug": "housing",
+      "description": "Modest homes for settlement families.",
+      "max_instances_per_settlement": null,
+      "grace_period_turns": 5,
+      "icon": "game:house",
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 60,
+          "construction_costs": [
+            { "resource_slug": "planks", "amount": 20 },
+            { "resource_slug": "stone-block", "amount": 10 }
+          ],
+          "upkeep_costs": [],
+          "effects": [{ "type": "population_cap_increase", "amount": 15 }]
+        },
+        {
+          "tier_number": 2,
+          "worker_turns_required": 150,
+          "construction_costs": [
+            { "resource_slug": "planks", "amount": 50 },
+            { "resource_slug": "stone-block", "amount": 30 },
+            { "resource_slug": "iron-tools", "amount": 5 }
+          ],
+          "upkeep_costs": [],
+          "effects": [{ "type": "population_cap_increase", "amount": 40 }]
+        }
+      ]
+    },
+    {
+      "name": "Farmstead",
+      "slug": "farmstead",
+      "description": "Cultivated fields and barns for grain production.",
+      "max_instances_per_settlement": 4,
+      "grace_period_turns": 8,
+      "icon": "game:farm-tractor",
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 100,
+          "construction_costs": [
+            { "resource_slug": "planks", "amount": 30 },
+            { "resource_slug": "stone-block", "amount": 10 }
+          ],
+          "upkeep_costs": [],
+          "effects": [
+            {
+              "type": "job_capacity_increase",
+              "job_slug": "farming",
+              "amount": 15
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Storehouse",
+      "slug": "storehouse",
+      "description": "Sturdy storage for the settlement's stockpiles.",
       "max_instances_per_settlement": 3,
       "grace_period_turns": 10,
+      "icon": "game:warehouse",
       "tiers": [
         {
           "tier_number": 1,
           "worker_turns_required": 120,
           "construction_costs": [
-            { "resource_slug": "hardwood-logs", "amount": 60 },
+            { "resource_slug": "planks", "amount": 60 },
             { "resource_slug": "stone-block", "amount": 20 }
           ],
           "upkeep_costs": [],
@@ -267,16 +551,16 @@
               "resource_slug": "grain",
               "amount": 800
             },
-            { "type": "population_cap_increase", "amount": 20 }
+            { "type": "population_cap_increase", "amount": 10 }
           ]
         },
         {
           "tier_number": 2,
           "worker_turns_required": 240,
           "construction_costs": [
-            { "resource_slug": "hardwood-logs", "amount": 120 },
+            { "resource_slug": "planks", "amount": 120 },
             { "resource_slug": "stone-block", "amount": 60 },
-            { "resource_slug": "iron-ore", "amount": 20 }
+            { "resource_slug": "iron-tools", "amount": 20 }
           ],
           "upkeep_costs": [],
           "effects": [
@@ -285,26 +569,143 @@
               "resource_slug": "grain",
               "amount": 2000
             },
-            { "type": "population_cap_increase", "amount": 50 }
+            {
+              "type": "resource_storage_increase",
+              "resource_slug": "bread",
+              "amount": 500
+            }
           ]
         }
       ]
     },
     {
-      "name": "Sawmill",
-      "slug": "sawmill",
-      "description": "A water-powered mill for processing raw timber into planks.",
+      "name": "Smithy",
+      "slug": "smithy",
+      "description": "Forges tools, weapons, and armor from iron.",
       "max_instances_per_settlement": 1,
       "grace_period_turns": 8,
+      "icon": "game:blacksmith",
       "tiers": [
         {
           "tier_number": 1,
-          "worker_turns_required": 80,
+          "worker_turns_required": 150,
           "construction_costs": [
             { "resource_slug": "stone-block", "amount": 40 },
             { "resource_slug": "iron-ore", "amount": 15 }
           ],
           "upkeep_costs": [{ "resource_slug": "iron-ore", "amount": 2 }],
+          "effects": [
+            {
+              "type": "job_capacity_increase",
+              "job_slug": "smithing",
+              "amount": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "School",
+      "slug": "school",
+      "description": "Teaches citizens to read, write, and reason.",
+      "max_instances_per_settlement": 2,
+      "grace_period_turns": 15,
+      "icon": "game:school-bag",
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 200,
+          "construction_costs": [
+            { "resource_slug": "planks", "amount": 80 },
+            { "resource_slug": "stone-block", "amount": 40 }
+          ],
+          "upkeep_costs": [],
+          "effects": [
+            {
+              "type": "education",
+              "teacher_job_slug": "teaching",
+              "teacher_capacity": 2,
+              "students_per_teacher": 10,
+              "levels": [
+                { "from_level": null, "to_level": "Literate", "turns": 60 }
+              ]
+            }
+          ]
+        },
+        {
+          "tier_number": 2,
+          "worker_turns_required": 350,
+          "construction_costs": [
+            { "resource_slug": "planks", "amount": 150 },
+            { "resource_slug": "stone-block", "amount": 80 },
+            { "resource_slug": "iron-tools", "amount": 20 }
+          ],
+          "upkeep_costs": [],
+          "effects": [
+            {
+              "type": "education",
+              "teacher_job_slug": "teaching",
+              "teacher_capacity": 4,
+              "students_per_teacher": 8,
+              "levels": [
+                { "from_level": null, "to_level": "Literate", "turns": 60 },
+                {
+                  "from_level": "Literate",
+                  "to_level": "Educated",
+                  "turns": 120
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Barracks",
+      "slug": "barracks",
+      "description": "Garrisons and trains the settlement's soldiery.",
+      "max_instances_per_settlement": 1,
+      "grace_period_turns": 10,
+      "icon": "game:barracks",
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 180,
+          "construction_costs": [
+            { "resource_slug": "stone-block", "amount": 60 },
+            { "resource_slug": "hardwood-logs", "amount": 30 }
+          ],
+          "upkeep_costs": [],
+          "effects": [{ "type": "population_cap_increase", "amount": 5 }]
+        },
+        {
+          "tier_number": 2,
+          "worker_turns_required": 320,
+          "construction_costs": [
+            { "resource_slug": "stone-block", "amount": 120 },
+            { "resource_slug": "iron-tools", "amount": 20 },
+            { "resource_slug": "armor", "amount": 10 }
+          ],
+          "upkeep_costs": [],
+          "effects": [{ "type": "population_cap_increase", "amount": 10 }]
+        }
+      ]
+    },
+    {
+      "name": "Lumber Camp",
+      "slug": "lumber-camp",
+      "description": "Expands timber harvesting in the surrounding woods.",
+      "max_instances_per_settlement": 2,
+      "grace_period_turns": 6,
+      "icon": "game:logging",
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 80,
+          "construction_costs": [
+            { "resource_slug": "stone-block", "amount": 20 }
+          ],
+          "upkeep_costs": [],
           "effects": [
             {
               "type": "job_capacity_increase",
@@ -314,34 +715,113 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Quarry Works",
+      "slug": "quarry-works",
+      "description": "Expands stone extraction from the settlement's quarry.",
+      "max_instances_per_settlement": 2,
+      "grace_period_turns": 6,
+      "icon": "game:war-pick",
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 80,
+          "construction_costs": [
+            { "resource_slug": "hardwood-logs", "amount": 20 },
+            { "resource_slug": "iron-ore", "amount": 10 }
+          ],
+          "upkeep_costs": [{ "resource_slug": "iron-ore", "amount": 1 }],
+          "effects": [
+            {
+              "type": "job_capacity_increase",
+              "job_slug": "quarrying",
+              "amount": 10
+            }
+          ]
+        }
+      ]
     }
   ],
   "deposit_types": [
     {
-      "name": "Iron Vein",
-      "slug": "iron-vein",
+      "name": "Iron Mine",
+      "slug": "iron-mine",
       "job_slug": "mining",
       "output_units_per_worker": 3,
-      "worker_inputs": [{ "resource_slug": "grain", "amount_per_worker": 0.5 }]
+      "worker_inputs": [{ "resource_slug": "grain", "amount_per_worker": 0.5 }],
+      "icon": "game:mine-truck"
+    },
+    {
+      "name": "Quarry",
+      "slug": "quarry",
+      "job_slug": "quarrying",
+      "output_units_per_worker": 4,
+      "worker_inputs": [],
+      "icon": "game:stone-pile"
     }
   ],
   "managed_population_types": [
     {
-      "name": "Sheep",
-      "slug": "sheep",
-      "husbandry_job_slug": "shepherding",
-      "culling_job_slug": "culling",
-      "husbandry_workers_per_n_animals": 10,
-      "growth_rate": 0.05,
+      "name": "Cattle",
+      "slug": "cattle",
+      "husbandry_job_slug": "cattle-herding",
+      "culling_job_slug": "butchering",
+      "husbandry_workers_per_n_animals": 8,
+      "growth_rate": 0.04,
       "maintenance_rules": [
-        { "resource_slug": "grain", "amount_per_n_animals": 0.2 }
+        { "resource_slug": "grain", "amount_per_n_animals": 0.3 }
       ],
       "culling_outputs": [
-        { "resource_slug": "wool", "amount_per_n_animals": 0.5 }
+        { "resource_slug": "meat", "amount_per_n_animals": 0.5 },
+        { "resource_slug": "cattle-hide", "amount_per_n_animals": 0.3 }
       ],
-      "regular_outputs": [
-        { "resource_slug": "wool", "amount_per_n_animals": 0.1 }
-      ]
+      "regular_outputs": [],
+      "icon": "game:cow"
+    }
+  ],
+  "unit_types": [
+    {
+      "name": "Levy",
+      "description": "Hastily armed peasants called to defend the settlement.",
+      "soldiers_per_unit": 20,
+      "required_education_level": null,
+      "required_building": null,
+      "recruitment_costs": [{ "resource_slug": "spears", "amount": 5 }],
+      "upkeep_costs": [{ "resource_slug": "grain", "amount": 2 }],
+      "desertion_rate": 0.1
+    },
+    {
+      "name": "Spearman",
+      "description": "Trained infantry drilled in disciplined formations.",
+      "soldiers_per_unit": 15,
+      "required_education_level": "Literate",
+      "required_building": { "blueprint_slug": "barracks", "tier_number": 1 },
+      "recruitment_costs": [
+        { "resource_slug": "spears", "amount": 10 },
+        { "resource_slug": "shields", "amount": 10 }
+      ],
+      "upkeep_costs": [
+        { "resource_slug": "grain", "amount": 3 },
+        { "resource_slug": "ale", "amount": 1 }
+      ],
+      "desertion_rate": 0.05
+    },
+    {
+      "name": "Knight",
+      "description": "Armored cavalry drawn from the educated nobility.",
+      "soldiers_per_unit": 10,
+      "required_education_level": "Educated",
+      "required_building": { "blueprint_slug": "barracks", "tier_number": 2 },
+      "recruitment_costs": [
+        { "resource_slug": "armor", "amount": 15 },
+        { "resource_slug": "iron-tools", "amount": 10 }
+      ],
+      "upkeep_costs": [
+        { "resource_slug": "grain", "amount": 5 },
+        { "resource_slug": "ale", "amount": 2 }
+      ],
+      "desertion_rate": 0.02
     }
   ]
 }

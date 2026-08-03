@@ -7,28 +7,31 @@ import {
 } from "@/components/ui/tooltip";
 
 import type { Citizen, DeathCauseCategory } from "../../types/citizenTypes";
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 export function Readout({
   block,
+  children,
   label,
   mono,
   tooltip,
   value,
 }: {
   readonly block?: boolean;
+  // Custom content for the value slot (e.g. a chip). Takes precedence over `value`.
+  readonly children?: ReactNode;
   readonly label: string;
   readonly mono?: boolean;
   readonly tooltip?: string;
-  readonly value: string | null;
+  readonly value?: string | null;
 }): JSX.Element {
   return (
     <div
-      className={`rounded-md border border-border bg-background px-3 py-2 ${
-        block === true ? "sm:col-span-2" : ""
+      className={`flex gap-4 py-2.5 ${
+        block === true ? "flex-col" : "items-center justify-between"
       }`}
     >
-      <dt className="flex items-center gap-1 text-xs text-muted-foreground">
+      <dt className="eyebrow flex items-center gap-1">
         {label}
         {tooltip !== undefined ? (
           <Tooltip>
@@ -46,11 +49,13 @@ export function Readout({
         ) : null}
       </dt>
       <dd
-        className={`text-sm ${mono === true ? "font-mono text-xs" : ""} ${
-          block === true ? "whitespace-pre-wrap" : ""
-        }`}
+        className={`text-sm font-medium ${
+          mono === true ? "font-mono text-xs" : ""
+        } ${block === true ? "whitespace-pre-wrap" : "text-right"}`}
       >
-        {value === null || value === "" ? (
+        {children !== undefined ? (
+          children
+        ) : value === null || value === undefined || value === "" ? (
           <span className="italic text-muted-foreground">Not set</span>
         ) : (
           value
@@ -105,6 +110,25 @@ export function DeathCategoryChip({
   return (
     <span className="inline-flex items-center rounded-sm bg-destructive/15 px-2 py-0.5 text-xs text-destructive">
       {DEATH_CATEGORY_LABELS[category]}
+    </span>
+  );
+}
+
+export function CultureReligionChip({
+  color,
+  name,
+}: {
+  readonly color: string;
+  readonly name: string;
+}): JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+      <span
+        aria-hidden="true"
+        className="size-2.5 shrink-0 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      {name}
     </span>
   );
 }

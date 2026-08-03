@@ -11,10 +11,11 @@ export type JobIoEntryRow = {
 export type JobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly inputs_json: readonly JobIoEntryRow[];
   readonly is_trashed: boolean;
@@ -23,6 +24,7 @@ export type JobRow = {
   readonly linked_managed_population_type_id: string | null;
   readonly name: string;
   readonly outputs_json: readonly JobIoEntryRow[];
+  readonly required_education_level_id: string | null;
   readonly slug: string;
   readonly trader_capacity_per_worker: number | null;
   readonly updated_at: string;
@@ -30,12 +32,20 @@ export type JobRow = {
 };
 
 export const JOB_SELECT = [
-  "id,world_id,name,slug,icon,job_type,base_capacity,trader_capacity_per_worker",
-  "linked_deposit_type_id,linked_managed_population_type_id",
+  "id,world_id,name,slug,icon,icon_color,job_type,base_capacity,trader_capacity_per_worker",
+  "linked_deposit_type_id,linked_managed_population_type_id,required_education_level_id",
   "inputs_json,outputs_json,is_trashed,created_at,updated_at",
-  "deposit_types!deposit_types_job_id_fk(id)",
-  "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
-  "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
+  // A job is "active" if it's still linked from any deposit type's job list
+  // (deposit_type_jobs, #1246) or any managed population type's husbandry/
+  // culling job list (managed_population_husbandry_jobs /
+  // managed_population_culling_jobs, #1247) — replaces the old
+  // one-job-per-deposit-type / one-job-per-population-type embeds.
+  "deposit_type_jobs!deposit_type_jobs_job_world_fk(id)",
+  "husbandry_mpt:managed_population_husbandry_jobs!managed_population_husbandry_jobs_job_world_fk(id)",
+  "culling_mpt:managed_population_culling_jobs!managed_population_culling_jobs_job_world_fk(id)",
+  // Embedded solely so the page query can order by education level rank
+  // (see getJobsPage); not surfaced on JobDefinition.
+  "education_levels!job_definitions_required_education_level_fk(rank)",
 ].join(",");
 
 export function toJobIoEntry(row: JobIoEntryRow): JobIoEntry {
@@ -55,10 +65,11 @@ export function toJob(row: JobRow): JobDefinition {
     baseCapacity: row.base_capacity,
     createdAt: row.created_at,
     hasActiveReferences:
-      row.deposit_types.length > 0 ||
+      row.deposit_type_jobs.length > 0 ||
       row.husbandry_mpt.length > 0 ||
       row.culling_mpt.length > 0,
     icon: row.icon,
+    iconColor: row.icon_color,
     id: row.id,
     inputsJson: row.inputs_json.map(toJobIoEntry),
     isTrashed: row.is_trashed,
@@ -67,6 +78,7 @@ export function toJob(row: JobRow): JobDefinition {
     linkedManagedPopulationTypeId: row.linked_managed_population_type_id,
     name: row.name,
     outputsJson: row.outputs_json.map(toJobIoEntry),
+    requiredEducationLevelId: row.required_education_level_id,
     slug: row.slug,
     traderCapacityPerWorker: row.trader_capacity_per_worker,
     updatedAt: row.updated_at,

@@ -61,14 +61,26 @@ export function CharacterCard({
       <SidebarMenu>
         <SidebarMenuItem>
           {activeCharacter === null ? (
-            <SidebarMenuButton asChild size="lg" tooltip="World Admin">
+            <SidebarMenuButton
+              asChild
+              size="lg"
+              tooltip="World Admin"
+              className="group-data-[collapsible=icon]:justify-center"
+            >
               <div className="cursor-default hover:bg-transparent active:bg-transparent">
                 <WorldAdminIcon />
-                <span className="truncate font-medium">World Admin</span>
+                <span className="truncate font-medium group-data-[collapsible=icon]:hidden">
+                  World Admin
+                </span>
               </div>
             </SidebarMenuButton>
           ) : (
-            <SidebarMenuButton asChild size="lg" tooltip={activeCharacter.name}>
+            <SidebarMenuButton
+              asChild
+              size="lg"
+              tooltip={activeCharacter.name}
+              className="group-data-[collapsible=icon]:justify-center"
+            >
               <Link
                 to="/worlds/$worldId/citizens/$citizenId"
                 params={{ citizenId: activeCharacter.id, worldId }}
@@ -96,6 +108,7 @@ export function CharacterCard({
             <SidebarMenuButton
               size="lg"
               tooltip={activeCharacter?.name ?? "World Admin"}
+              className="group-data-[collapsible=icon]:justify-center"
             >
               {activeCharacter === null ? (
                 <WorldAdminIcon />
@@ -108,12 +121,14 @@ export function CharacterCard({
                 />
               )}
               {activeCharacter === null ? (
-                <span className="truncate font-medium">World Admin</span>
+                <span className="truncate font-medium group-data-[collapsible=icon]:hidden">
+                  World Admin
+                </span>
               ) : (
                 <CharacterLabel citizen={activeCharacter} />
               )}
               <ChevronsUpDown
-                className="ml-auto size-4 text-sidebar-foreground/50"
+                className="ml-auto size-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden"
                 aria-hidden="true"
               />
             </SidebarMenuButton>
@@ -200,11 +215,7 @@ export function CharacterCard({
 }
 
 function WorldAdminIcon(): JSX.Element {
-  return (
-    <div className="flex size-6 shrink-0 items-center justify-center">
-      <ShieldCheck className="size-4" aria-hidden="true" />
-    </div>
-  );
+  return <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />;
 }
 
 function CharacterLabel({
@@ -213,7 +224,7 @@ function CharacterLabel({
   readonly citizen: Citizen;
 }): JSX.Element {
   return (
-    <span className="grid flex-1 text-left leading-tight">
+    <span className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
       <span className="truncate font-medium">{citizen.name}</span>
       <span className="truncate text-xs text-sidebar-foreground/70">
         <CharacterRoleLabel citizen={citizen} />

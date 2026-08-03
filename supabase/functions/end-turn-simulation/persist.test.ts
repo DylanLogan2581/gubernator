@@ -41,17 +41,29 @@ function makeAuthContext(
 
 function makeMinimalPayload(): ApplyTurnTransitionPayload {
   return {
+    armyTurnSnapshots: [],
     assignmentClears: [],
     bornOnTurnBackfill: [],
     buildingStateChanges: [],
+    buildingTierUpgrades: [],
     buildingsCreated: [],
     citizenBirths: [],
     citizenDeaths: [],
+    citizenEducationPatches: [],
     constructionUpdates: [],
+    deceasedSoldierIds: [],
     depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
+    enrollmentGraduations: [],
+    enrollmentProgressUpdates: [],
     eventStatusPatches: [],
     logEntries: [],
     managedPopulationUpdates: [],
+    nationCurrencySnapshots: [],
+    nationCurrencyUpdates: [],
+    nationStockpileDeltas: [],
+    nationTurnSnapshots: [],
     notifications: [],
     partnershipChanges: [],
     readinessSummary: {
@@ -63,6 +75,7 @@ function makeMinimalPayload(): ApplyTurnTransitionPayload {
     settlementSnapshots: [],
     stockpileDeltas: [],
     tradeRouteOutcomes: [],
+    treatyStatusChanges: [],
   };
 }
 

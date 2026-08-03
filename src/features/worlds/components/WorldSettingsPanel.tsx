@@ -2,6 +2,7 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,20 +187,14 @@ function TurnOverrideSection({
     <section className="grid gap-4">
       <div className="space-y-1">
         <h3 className="text-base font-semibold">Current turn number</h3>
-        <div
-          role="note"
-          className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
-        >
-          <AlertTriangle
-            aria-hidden="true"
-            className="mt-0.5 h-4 w-4 shrink-0"
-          />
-          <span>
+        <Alert variant="warning">
+          <AlertTriangle aria-hidden="true" />
+          <AlertDescription>
             <strong>Direct override</strong> — does not run a turn transition.
             Use only for recovery / testing. Snapshots that exist at turns
             greater than the new value will cause this operation to be rejected.
-          </span>
-        </div>
+          </AlertDescription>
+        </Alert>
       </div>
 
       <form

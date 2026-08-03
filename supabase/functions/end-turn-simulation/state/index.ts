@@ -11,60 +11,100 @@ import {
 import {
   toBlueprintsAndTiers,
   toDeposits,
+  toDepositTypesAndJobs,
+  toManagedPopulationTypesAndJobs,
+  toSimArmy,
+  toSimArmyUnit,
   toSimBuilding,
   toSimCitizen,
   toSimCitizenAssignment,
-  toSimDepositType,
+  toSimCurrencyLedgerEntry,
+  toSimEducationEnrollment,
+  toSimEducationLevel,
   toSimEffect,
   toSimEvent,
   toSimJob,
   toSimManagedPop,
-  toSimManagedPopType,
+  toSimNation,
+  toSimNationCurrency,
+  toSimNationOffice,
+  toSimNationRelationship,
+  toSimNationStockpile,
+  toSimNationTaxPolicy,
   toSimPartnership,
   toSimProject,
   toSimSettlement,
   toSimStockpile,
   toSimTradeRoute,
+  toSimTreaty,
+  toSimUnitSoldier,
+  toSimUnitType,
   toWorldPopulationRules,
 } from "./mappers.ts";
 import {
+  fetchArmies,
+  fetchArmyUnits,
   fetchAssignments,
   fetchBlueprints,
   fetchBuildings,
   fetchCitizens,
   fetchDeposits,
   fetchDepositTypes,
+  fetchEducationEnrollments,
+  fetchEducationLevels,
   fetchEventEffects,
   fetchEvents,
   fetchJobs,
   fetchManagedPops,
   fetchManagedPopTypes,
   fetchNamesets,
+  fetchNationCurrencies,
+  fetchNationCurrencyLedgerEntries,
+  fetchNationOffices,
+  fetchNationRelationships,
+  fetchNationResourceStockpiles,
+  fetchNations,
+  fetchNationTaxPolicies,
+  fetchNationTreaties,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
   fetchSettlements,
   fetchStockpiles,
   fetchTradeRoutes,
+  fetchUnitSoldiers,
+  fetchUnitTypes,
   fetchWorldRow,
 } from "./queries.ts";
 import {
+  isArmyRow,
+  isArmyUnitRow,
   isAssignmentRow,
   isBuildingRow,
   isCitizenRow,
-  isDepositTypeRow,
+  isEducationEnrollmentRow,
+  isEducationLevelRow,
   isEventEffectRow,
   isEventRow,
   isJobRow,
   isManagedPopRow,
-  isManagedPopTypeRow,
   isNamesetRow,
+  isNationCurrencyLedgerRow,
+  isNationCurrencyRow,
+  isNationOfficeRow,
+  isNationRelationshipRow,
+  isNationRow,
+  isNationStockpileRow,
+  isNationTaxPolicyRow,
+  isNationTreatyRow,
   isPartnershipRow,
   isProjectRow,
   isResourceRow,
   isSettlementRow,
   isStockpileRow,
   isTradeRouteRow,
+  isUnitSoldierRow,
+  isUnitTypeRow,
   type SupabaseNamesetRow,
   type SupabaseSettlementRow,
 } from "./rowTypes.ts";
@@ -166,7 +206,7 @@ async function resolveEndTurnInputFromCtx(
   );
 
   // -------------------------------------------------------------------------
-  // Round 2: all 16 entity fetches parallelized via Promise.all (not N+1).
+  // Round 2: all 19 entity fetches parallelized via Promise.all (not N+1).
   // DB round-trip count fixed at 2 regardless of entity table size.
   // See LOAD_ARCHITECTURE.md for design rationale.
   // -------------------------------------------------------------------------
@@ -189,6 +229,20 @@ async function resolveEndTurnInputFromCtx(
     assignmentsResult,
     partnershipsResult,
     namesetsResult,
+    nationsResult,
+    nationOfficesResult,
+    nationRelationshipsResult,
+    nationResourceStockpilesResult,
+    nationTaxPoliciesResult,
+    nationTreatiesResult,
+    nationCurrenciesResult,
+    nationCurrencyLedgerEntriesResult,
+    educationLevelsResult,
+    educationEnrollmentsResult,
+    unitSoldiersResult,
+    armiesResult,
+    armyUnitsResult,
+    unitTypesResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -207,6 +261,20 @@ async function resolveEndTurnInputFromCtx(
     fetchAssignments(ctx, worldId),
     fetchPartnerships(ctx, worldId),
     fetchNamesets(ctx, worldId),
+    fetchNations(ctx, worldId),
+    fetchNationOffices(ctx, worldId),
+    fetchNationRelationships(ctx, worldId),
+    fetchNationResourceStockpiles(ctx, worldId),
+    fetchNationTaxPolicies(ctx, worldId),
+    fetchNationTreaties(ctx, worldId),
+    fetchNationCurrencies(ctx, worldId),
+    fetchNationCurrencyLedgerEntries(ctx, worldId, worldRow.current_turn_number),
+    fetchEducationLevels(ctx, worldId),
+    fetchEducationEnrollments(ctx, worldId),
+    fetchUnitSoldiers(ctx, worldId),
+    fetchArmies(ctx, worldId),
+    fetchArmyUnits(ctx, worldId),
+    fetchUnitTypes(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -227,6 +295,20 @@ async function resolveEndTurnInputFromCtx(
     assignmentsResult,
     partnershipsResult,
     namesetsResult,
+    nationsResult,
+    nationOfficesResult,
+    nationRelationshipsResult,
+    nationResourceStockpilesResult,
+    nationTaxPoliciesResult,
+    nationTreatiesResult,
+    nationCurrenciesResult,
+    nationCurrencyLedgerEntriesResult,
+    educationLevelsResult,
+    educationEnrollmentsResult,
+    unitSoldiersResult,
+    armiesResult,
+    armyUnitsResult,
+    unitTypesResult,
   ];
 
   for (const result of round2Results) {
@@ -266,6 +348,21 @@ async function resolveEndTurnInputFromCtx(
     (blueprintsResult as Extract<typeof blueprintsResult, { ok: true }>).rows,
   );
 
+  const { depositTypeJobs, depositTypes } = toDepositTypesAndJobs(
+    (depositTypesResult as Extract<typeof depositTypesResult, { ok: true }>)
+      .rows,
+  );
+
+  const { managedPopulationCullingJobs, managedPopulationHusbandryJobs, managedPopulationTypes } =
+    toManagedPopulationTypesAndJobs(
+      (
+        managedPopTypesResult as Extract<
+          typeof managedPopTypesResult,
+          { ok: true }
+        >
+      ).rows,
+    );
+
   // Group event effects by event_id
   const effectsByEventId = new Map<string, ReturnType<typeof toSimEffect>[]>();
   (eventEffectsResult as Extract<typeof eventEffectsResult, { ok: true }>).rows
@@ -278,6 +375,14 @@ async function resolveEndTurnInputFromCtx(
     });
 
   const input: SimulationInputState = {
+    armies: (armiesResult as Extract<typeof armiesResult, { ok: true }>).rows
+      .filter(isArmyRow)
+      .map(toSimArmy),
+    armyUnits: (
+      armyUnitsResult as Extract<typeof armyUnitsResult, { ok: true }>
+    ).rows
+      .filter(isArmyUnitRow)
+      .map(toSimArmyUnit),
     buildingBlueprints,
     buildingTiers,
     calendarConfig,
@@ -296,14 +401,21 @@ async function resolveEndTurnInputFromCtx(
     ).rows
       .filter(isProjectRow)
       .map(toSimProject),
-    depositTypes: (
-      depositTypesResult as Extract<typeof depositTypesResult, { ok: true }>
-    ).rows
-      .filter(isDepositTypeRow)
-      .map(toSimDepositType),
+    depositTypeJobs,
+    depositTypes,
     deposits: toDeposits(
       (depositsResult as Extract<typeof depositsResult, { ok: true }>).rows,
     ),
+    educationEnrollments: (
+      educationEnrollmentsResult as Extract<typeof educationEnrollmentsResult, { ok: true }>
+    ).rows
+      .filter(isEducationEnrollmentRow)
+      .map(toSimEducationEnrollment),
+    educationLevels: (
+      educationLevelsResult as Extract<typeof educationLevelsResult, { ok: true }>
+    ).rows
+      .filter(isEducationLevelRow)
+      .map(toSimEducationLevel),
     events: (eventsResult as Extract<typeof eventsResult, { ok: true }>).rows
       .filter(isEventRow)
       .map((row) => toSimEvent(row, effectsByEventId.get(row.id) ?? [])),
@@ -311,14 +423,9 @@ async function resolveEndTurnInputFromCtx(
     jobs: (jobsResult as Extract<typeof jobsResult, { ok: true }>).rows
       .filter(isJobRow)
       .map(toSimJob),
-    managedPopulationTypes: (
-      managedPopTypesResult as Extract<
-        typeof managedPopTypesResult,
-        { ok: true }
-      >
-    ).rows
-      .filter(isManagedPopTypeRow)
-      .map(toSimManagedPopType),
+    managedPopulationCullingJobs,
+    managedPopulationHusbandryJobs,
+    managedPopulationTypes,
     managedPopulations: (
       managedPopsResult as Extract<typeof managedPopsResult, { ok: true }>
     ).rows
@@ -326,6 +433,47 @@ async function resolveEndTurnInputFromCtx(
       .map(toSimManagedPop),
     fallbackNamesetIdBySettlementId,
     namesetConfigById,
+    nationCurrencies: (
+      nationCurrenciesResult as Extract<typeof nationCurrenciesResult, { ok: true }>
+    ).rows
+      .filter(isNationCurrencyRow)
+      .map(toSimNationCurrency),
+    nationCurrencyLedgerEntries: (
+      nationCurrencyLedgerEntriesResult as Extract<
+        typeof nationCurrencyLedgerEntriesResult,
+        { ok: true }
+      >
+    ).rows
+      .filter(isNationCurrencyLedgerRow)
+      .map(toSimCurrencyLedgerEntry),
+    nationOffices: (
+      nationOfficesResult as Extract<typeof nationOfficesResult, { ok: true }>
+    ).rows
+      .filter(isNationOfficeRow)
+      .map(toSimNationOffice),
+    nationRelationships: (
+      nationRelationshipsResult as Extract<typeof nationRelationshipsResult, { ok: true }>
+    ).rows
+      .filter(isNationRelationshipRow)
+      .map(toSimNationRelationship),
+    nationResourceStockpiles: (
+      nationResourceStockpilesResult as Extract<typeof nationResourceStockpilesResult, { ok: true }>
+    ).rows
+      .filter(isNationStockpileRow)
+      .map(toSimNationStockpile),
+    nationTaxPolicies: (
+      nationTaxPoliciesResult as Extract<typeof nationTaxPoliciesResult, { ok: true }>
+    ).rows
+      .filter(isNationTaxPolicyRow)
+      .map(toSimNationTaxPolicy),
+    nationTreaties: (
+      nationTreatiesResult as Extract<typeof nationTreatiesResult, { ok: true }>
+    ).rows
+      .filter(isNationTreatyRow)
+      .map(toSimTreaty),
+    nations: (nationsResult as Extract<typeof nationsResult, { ok: true }>).rows
+      .filter(isNationRow)
+      .map(toSimNation),
     npcFlavorConfig,
     partnerships: (
       partnershipsResult as Extract<typeof partnershipsResult, { ok: true }>
@@ -334,7 +482,8 @@ async function resolveEndTurnInputFromCtx(
       .map(toSimPartnership),
     populationRules,
     resources: systemResources.map((r) => ({
-      decayRate: r.decay_rate,
+      changeAmount: r.change_amount,
+      changeMode: r.change_mode,
       id: r.id,
     })),
     settlementBuildings: (
@@ -358,6 +507,16 @@ async function resolveEndTurnInputFromCtx(
       .filter(isTradeRouteRow)
       .map(toSimTradeRoute),
     turnNumber: worldRow.current_turn_number,
+    unitSoldiers: (
+      unitSoldiersResult as Extract<typeof unitSoldiersResult, { ok: true }>
+    ).rows
+      .filter(isUnitSoldierRow)
+      .map(toSimUnitSoldier),
+    unitTypes: (
+      unitTypesResult as Extract<typeof unitTypesResult, { ok: true }>
+    ).rows
+      .filter(isUnitTypeRow)
+      .map(toSimUnitType),
     worldId,
   };
 

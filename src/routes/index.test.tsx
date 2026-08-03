@@ -31,13 +31,13 @@ describe("home route auth guard", () => {
     requireSupabaseClient.mockReset();
   });
 
-  it("shows the marketing page to anonymous visitors", async () => {
+  it("shows the sign-in page to anonymous visitors", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ session: null }));
 
     renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { name: "Gubernator", level: 1 }),
+      await screen.findByRole("heading", { name: "Sign in", level: 1 }),
     ).toBeDefined();
   });
 
@@ -51,11 +51,11 @@ describe("home route auth guard", () => {
       expect(router.state.location.pathname).toBe("/worlds");
     });
     expect(
-      screen.queryByRole("heading", { name: "Gubernator", level: 1 }),
+      screen.queryByRole("heading", { name: "Sign in", level: 1 }),
     ).toBeNull();
   });
 
-  it("shows loading state while auth is resolving without flashing the marketing page", async () => {
+  it("shows loading state while auth is resolving without flashing the sign-in page", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ session: new Promise(() => undefined) }),
     );
@@ -66,7 +66,7 @@ describe("home route auth guard", () => {
       await screen.findByRole("status", { name: "Checking session…" }),
     ).toBeDefined();
     expect(
-      screen.queryByRole("heading", { name: "Gubernator", level: 1 }),
+      screen.queryByRole("heading", { name: "Sign in", level: 1 }),
     ).toBeNull();
   });
 });

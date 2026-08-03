@@ -1,27 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { type JSX } from "react";
-import { toast } from "sonner";
+import { useState, type JSX } from "react";
 
-import { EmptyState } from "@/components/shared/EmptyState";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   assignCitizenRoleMutationOptions,
+  citizenByIdQueryOptions,
+  CitizenPicker,
   managerScopeLabel,
-  playerCharactersInNationQueryOptions,
   revokeCitizenRoleMutationOptions,
+  settlementManagersInNationQueryOptions,
   type Citizen,
 } from "@/features/citizens";
 import type { Nation } from "@/features/nations";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import {
-  getRoleMutationErrorDescription,
-  invalidatePermissionsContext,
-} from "./Utils";
+import { invalidatePermissionsContext } from "./Utils";
 
 import { type RoleAssignmentControlsProps } from "./index";
 
@@ -50,67 +51,175 @@ function NationRoleAssignmentList({
   readonly isArchived: boolean;
   readonly nation: Nation;
 }): JSX.Element {
-  const playerCharactersQuery = useQuery(
-    playerCharactersInNationQueryOptions(nation.id),
+  const [selectedSettlementId, setSelectedSettlementId] = useState<
+    string | null
+  >(null);
+  const [selectedCitizenId, setSelectedCitizenId] = useState<string | null>(
+    null,
   );
 
-  if (playerCharactersQuery.isPending) {
-    return <LoadingState label="Loading player characters…" />;
+  const managersQuery = useQuery(
+    settlementManagersInNationQueryOptions(nation.id),
+  );
+  const settlementsQuery = useQuery(
+    settlementsByWorldQueryOptions(nation.worldId),
+  );
+  const selectedCitizenQuery = useQuery({
+    ...citizenByIdQueryOptions(selectedCitizenId ?? ""),
+    enabled: selectedCitizenId !== null,
+  });
+
+  if (managersQuery.isPending || settlementsQuery.isPending) {
+    return <LoadingState label="Loading settlement managers…" />;
   }
 
-  if (playerCharactersQuery.isError) {
+  if (managersQuery.isError) {
     return (
       <ErrorState
-        title="Player characters could not be loaded"
-        description={getErrorDescription(playerCharactersQuery.error)}
+        title="Settlement managers could not be loaded"
+        description={getErrorDescription(managersQuery.error)}
       />
     );
   }
 
-  const candidates = playerCharactersQuery.data.filter(
-    (citizen) => managerScopeLabel(citizen.roleType) !== "nation",
-  );
-
-  if (candidates.length === 0) {
+  if (settlementsQuery.isError) {
     return (
-      <EmptyState
-        title="No assignable player characters"
-        description="Player characters become assignable once created for one of this nation's settlements. Create one from a settlement's Citizens tab."
-        action={
-          <Button asChild size="sm" variant="outline">
-            <Link
-              to="/worlds/$worldId/nations/$nationId/settlements"
-              params={{ worldId: nation.worldId, nationId: nation.id }}
-            >
-              View settlements
-            </Link>
-          </Button>
-        }
+      <ErrorState
+        title="Settlements could not be loaded"
+        description={getErrorDescription(settlementsQuery.error)}
       />
     );
+  }
+
+  const managers = managersQuery.data;
+  const nationSettlements = settlementsQuery.data.filter(
+    (settlement) => settlement.nationId === nation.id,
+  );
+  const settlementNameById = new Map(
+    nationSettlements.map((settlement) => [settlement.id, settlement.name]),
+  );
+  const selectedCitizen = selectedCitizenQuery.data ?? null;
+
+  function handleSettlementChange(value: string): void {
+    setSelectedSettlementId(value === "" ? null : value);
+    setSelectedCitizenId(null);
   }
 
   return (
-    <ul className="grid gap-2" aria-label="Player characters">
-      {candidates.map((citizen) => (
-        <NationRoleAssignmentRow
-          key={citizen.id}
-          citizen={citizen}
-          isArchived={isArchived}
-        />
-      ))}
-    </ul>
+    <div className="grid gap-3">
+      {managers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No settlement managers assigned yet.
+        </p>
+      ) : (
+        <ul
+          className="divide-y divide-border border-y border-border"
+          aria-label="Settlement managers"
+        >
+          {managers.map((citizen) => (
+            <NationRoleAssignmentRow
+              key={citizen.id}
+              citizen={citizen}
+              isArchived={isArchived}
+              settlementName={
+                citizen.settlementId === null
+                  ? null
+                  : (settlementNameById.get(citizen.settlementId) ?? null)
+              }
+            />
+          ))}
+        </ul>
+      )}
+      <div className="grid gap-2">
+        <span className="eyebrow border-b border-border pb-2">
+          Assign a settlement manager
+        </span>
+        <div className="grid gap-1 text-sm">
+          <Label htmlFor="assign-settlement">Settlement</Label>
+          <NativeSelect
+            id="assign-settlement"
+            value={selectedSettlementId ?? ""}
+            onChange={(event) => {
+              handleSettlementChange(event.currentTarget.value);
+            }}
+          >
+            <option value="">Select a settlement…</option>
+            {nationSettlements.map((settlement) => (
+              <option key={settlement.id} value={settlement.id}>
+                {settlement.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        {selectedSettlementId === null ? (
+          <p className="text-xs text-muted-foreground">
+            Select a settlement to choose a citizen who lives there.
+          </p>
+        ) : (
+          <>
+            <CitizenPicker
+              citizenId={selectedCitizenId}
+              nationId={nation.id}
+              onChange={setSelectedCitizenId}
+              settlementId={selectedSettlementId}
+              statusFilter="alive"
+              worldId={nation.worldId}
+            />
+            <p className="text-xs text-muted-foreground">
+              Only citizens who live in the selected settlement can be assigned
+              as its manager.
+            </p>
+          </>
+        )}
+        {selectedCitizen === null ? null : (
+          <ul
+            className="divide-y divide-border border-y border-border"
+            aria-label="Selected citizen"
+          >
+            <NationRoleAssignmentRow
+              citizen={selectedCitizen}
+              existingManager={
+                selectedSettlementId === null
+                  ? null
+                  : (managers.find(
+                      (manager) =>
+                        manager.roleSettlementId === selectedSettlementId &&
+                        manager.id !== selectedCitizen.id,
+                    ) ?? null)
+              }
+              isArchived={isArchived}
+              settlementName={
+                selectedSettlementId === null
+                  ? null
+                  : (settlementNameById.get(selectedSettlementId) ?? null)
+              }
+              onAssigned={() => {
+                setSelectedCitizenId(null);
+                setSelectedSettlementId(null);
+              }}
+            />
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
 function NationRoleAssignmentRow({
   citizen,
+  existingManager = null,
   isArchived,
+  onAssigned,
+  settlementName,
 }: {
   readonly citizen: Citizen;
+  readonly existingManager?: Citizen | null;
   readonly isArchived: boolean;
+  readonly onAssigned?: () => void;
+  readonly settlementName: string | null;
 }): JSX.Element {
   const queryClient = useQueryClient();
+  const [isConfirmingReplace, setIsConfirmingReplace] = useState(false);
   const assignMutation = useMutation(
     assignCitizenRoleMutationOptions({ queryClient }),
   );
@@ -122,8 +231,9 @@ function NationRoleAssignmentRow({
   const isPending = assignMutation.isPending || revokeMutation.isPending;
   const isSettlementManager =
     managerScopeLabel(citizen.roleType) === "settlement";
+  const isNationManager = managerScopeLabel(citizen.roleType) === "nation";
 
-  function handleAssign(): void {
+  function runAssign(): void {
     if (settlementId === null) {
       return;
     }
@@ -138,16 +248,31 @@ function NationRoleAssignmentRow({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);
           notifyMutationSuccess(
-            `Assigned Settlement Manager to ${citizen.name}.`,
+            existingManager === null
+              ? `Assigned Settlement Manager to ${citizen.name}.`
+              : `Assigned Settlement Manager to ${citizen.name}, replacing ${existingManager.name}.`,
           );
+          setIsConfirmingReplace(false);
+          onAssigned?.();
         },
       },
     );
+  }
+
+  function handleAssign(): void {
+    if (settlementId === null) {
+      return;
+    }
+    if (existingManager !== null) {
+      setIsConfirmingReplace(true);
+      return;
+    }
+    runAssign();
   }
 
   function handleRevoke(): void {
@@ -157,7 +282,7 @@ function NationRoleAssignmentRow({
       { citizenId: citizen.id, worldId: citizen.worldId },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);
@@ -168,16 +293,35 @@ function NationRoleAssignmentRow({
   }
 
   return (
-    <li className="grid gap-2 rounded-md border border-border bg-background p-3">
+    <li className="grid gap-2 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="grid gap-0.5 text-sm">
-          <span className="font-medium">{citizen.name}</span>
+          <span className="flex items-center gap-2 font-medium">
+            {citizen.name}
+            <Badge
+              variant={citizen.citizenType === "npc" ? "secondary" : "outline"}
+            >
+              {citizen.citizenType === "npc" ? "NPC" : "Player"}
+            </Badge>
+          </span>
           <span className="text-xs text-muted-foreground">
-            {isSettlementManager ? "Settlement manager" : "No role"}
+            {isNationManager
+              ? "Nation manager"
+              : isSettlementManager
+                ? settlementName === null
+                  ? "Settlement manager"
+                  : `Settlement manager — ${settlementName}`
+                : settlementName === null
+                  ? "No role"
+                  : `Lives in ${settlementName}`}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isSettlementManager ? (
+          {isNationManager ? (
+            <span className="text-xs text-muted-foreground">
+              Already a Nation Manager
+            </span>
+          ) : isSettlementManager ? (
             <Button
               type="button"
               variant="outline"
@@ -202,6 +346,18 @@ function NationRoleAssignmentRow({
           )}
         </div>
       </div>
+      {existingManager === null ? null : (
+        <ConfirmDialog
+          open={isConfirmingReplace}
+          onOpenChange={setIsConfirmingReplace}
+          title="Replace settlement manager?"
+          description={`${existingManager.name} is currently the manager of ${settlementName ?? "this settlement"}. Assigning ${citizen.name} will remove ${existingManager.name}'s manager role.`}
+          confirmLabel="Replace manager"
+          confirmVariant="default"
+          isPending={assignMutation.isPending}
+          onConfirm={runAssign}
+        />
+      )}
     </li>
   );
 }

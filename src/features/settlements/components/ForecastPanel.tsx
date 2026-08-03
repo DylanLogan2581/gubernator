@@ -36,7 +36,7 @@ import type { WorldCalendarConfig } from "@/features/calendar";
 import { settlementResourceSnapshotsQueryOptions } from "@/features/reports";
 import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
 import { currentTurnStateQueryOptions } from "@/features/turns";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 
 import { settlementForecastQueryOptions } from "../queries/settlementForecastQueries";
 import { deriveSettlementForecastWarnings } from "../utils/settlementForecastWarnings";
@@ -182,14 +182,25 @@ function ForecastPanelContent({
   });
 
   const resourceInfoMap = useMemo<
-    ReadonlyMap<string, { readonly name: string; readonly icon: string | null }>
+    ReadonlyMap<
+      string,
+      {
+        readonly name: string;
+        readonly icon: string | null;
+        readonly iconColor: number | null;
+      }
+    >
   >(() => {
     const stockpiles = stockpilesQuery.data;
     if (stockpiles === undefined) return new Map();
     return new Map(
       stockpiles.map((s) => [
         s.resourceId,
-        { icon: s.resourceIcon, name: s.resourceName },
+        {
+          icon: s.resourceIcon,
+          iconColor: s.resourceIconColor,
+          name: s.resourceName,
+        },
       ]),
     );
   }, [stockpilesQuery.data]);
@@ -263,8 +274,7 @@ function ForecastPanelContent({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(info?.icon ?? null)}
-              tone={hashToCategoricalSlot(delta.resourceId)}
-              size="sm"
+              tone={resolveIconTone(info?.iconColor ?? null, delta.resourceId)}
             />
             <span>{name}</span>
           </div>

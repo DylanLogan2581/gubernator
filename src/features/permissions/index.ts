@@ -1,4 +1,5 @@
 export { ActiveCharacterSwitcher } from "./components/ActiveCharacterSwitcher";
+export { AdminPausedHint } from "./components/AdminPausedHint";
 export { AdminSuppressedNotice } from "./components/AdminSuppressedNotice";
 export { CharacterRoleLabel } from "./components/CharacterRoleLabel";
 export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
@@ -21,7 +22,6 @@ export {
   selectablePlayerCharactersQueryOptions,
 } from "./queries/activePlayerCharacterQueries";
 export { currentAccessContextQueryOptions } from "./queries/permissionQueries";
-export { permissionQueryKeys } from "./queries/permissionQueryKeys";
 export { createAccessContext } from "./utils/accessContext";
 export {
   checkCanManageNation,
@@ -29,6 +29,7 @@ export {
 } from "./utils/manageAuthority";
 export { toWorldAccessTarget } from "./utils/worldAccessTarget";
 export { useEffectiveCanAdmin } from "./hooks/useEffectiveCanAdmin";
+export { useNationManageAuthority } from "./hooks/useNationManageAuthority";
 export { useSettlementManageAuthority } from "./hooks/useSettlementManageAuthority";
 export {
   allUsersForSuperadminQueryOptions,
@@ -38,7 +39,6 @@ export {
   trashedWorldsForSuperadminQueryOptions,
   worldAdminsForUserQueryOptions,
 } from "./queries/superadminQueries";
-export { superadminQueryKeys } from "./queries/superadminQueryKeys";
 export {
   createUserMutationOptions,
   failStuckTransitionMutationOptions,
@@ -56,12 +56,7 @@ export type {
   NationManageInput,
   SettlementManageInput,
 } from "./utils/manageAuthority";
-export type { ActiveCharacterSwitcherProps } from "./components/ActiveCharacterSwitcher";
-export type { AdminSuppressedNoticeProps } from "./components/AdminSuppressedNotice";
-export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
-export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls/index";
 export type { ActivePlayerCharacterContextValue } from "./context/activePlayerCharacterContext";
-export type { ActivePlayerCharacterProviderProps } from "./context/ActivePlayerCharacterProvider";
 export type {
   ClearActivePlayerCharacterInput,
   SetActivePlayerCharacterInput,

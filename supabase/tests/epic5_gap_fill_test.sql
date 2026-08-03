@@ -12,11 +12,12 @@
 -- deposit_instances              | NEW  | NEW      | NEW | NEW   | ✓          | ✓          |
 -- deposit_instance_resources     | NEW  | NEW      | NEW | NEW   | ✓          | ✓          |
 -- managed_population_instances   | NEW  | NEW      | NEW | NEW   | ✓          | ✓          |
--- trade_routes (bilateral)       | ✓    | ✓        | ✓   | ✓     | ✓          | ✓          | gaps: one-side hidden, both-hidden+admin
+-- trade_routes (bilateral)       | ✓    | ✓        | ✓   | ✓     | ✓          | ✓          | gaps: one-side unmet, both-unmet+admin
 --
 -- Additional gap areas tested here:
---   • Trade routes bilateral: origin-hidden/dest-visible (third-party world-access user can read);
---     both-hidden pair invisible to PC but visible to world admin.
+--   • Trade routes bilateral: mixed pair (one endpoint's nation unmet by caller's
+--     nation) is invisible to non-admins under the both-visible AND rule;
+--     both-unmet pair invisible to PC but visible to world admin.
 --   • Assignment RPCs: SM of wrong settlement → 42501 for all four target types and bulk ops.
 --   • Bulk assignment npc_first strategy: NPC removed before PC when lowering count by 1.
 --
@@ -107,18 +108,16 @@ values
 
 -- Worlds
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'a5100000-0000-0000-0000-000000000001',
     'A5 World Alpha',
-    'private',
     'active'
   ),
   (
     'a5100000-0000-0000-0000-000000000002',
     'A5 World Beta',
-    'private',
     'active'
   );
 
@@ -130,40 +129,56 @@ values
     'a5000000-0000-0000-0000-000000000001'
   );
 
--- Nations: nation_1 and nation_2 are visible; nation_hmix and nation_hduo are
--- hidden (used for trade-route bilateral visibility gap tests).
+-- Nations: nation_1 and nation_2 will be recorded as having met each other
+-- (public.nation_discoveries, below); nation_hmix and nation_hduo remain
+-- unmet by any other nation (used for trade-route bilateral visibility gap
+-- tests).
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'a5200000-0000-0000-0000-000000000001',
     'a5100000-0000-0000-0000-000000000001',
-    'A5 Nation One',
-    false
+    'A5 Nation One'
   ),
   (
     'a5200000-0000-0000-0000-000000000002',
     'a5100000-0000-0000-0000-000000000001',
-    'A5 Nation Two',
-    false
+    'A5 Nation Two'
   ),
   (
     'a5200000-0000-0000-0000-000000000003',
     'a5100000-0000-0000-0000-000000000001',
-    'A5 Nation HMix',
-    true
+    'A5 Nation HMix (unmet)'
   ),
   (
     'a5200000-0000-0000-0000-000000000004',
     'a5100000-0000-0000-0000-000000000001',
-    'A5 Nation HDuo',
-    true
+    'A5 Nation HDuo (unmet)'
   ),
   (
     'a5200000-0000-0000-0000-000000000005',
     'a5100000-0000-0000-0000-000000000002',
-    'A5 Nation Beta',
-    false
+    'A5 Nation Beta'
+  );
+
+-- nation_1 and nation_2 have met (canonical order: nation_a_id < nation_b_id)
+-- so route_visible stays visible to callers whose home nation is nation_1
+-- or nation_2. Deliberately no discovery rows for nation_hmix / nation_hduo
+-- so they remain unmet by nation_1 and by each other.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'a5100000-0000-0000-0000-000000000001',
+    'a5200000-0000-0000-0000-000000000001',
+    'a5200000-0000-0000-0000-000000000002',
+    1
   );
 
 -- Settlements
@@ -248,46 +263,51 @@ values
 
 -- Deposit type (world-level; referenced by deposit_instances)
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a5610000-0000-0000-0000-000000000001',
     'a5100000-0000-0000-0000-000000000001',
     'A5 Iron Vein',
-    'a5-iron-vein',
-    'a5600000-0000-0000-0000-000000000002',
-    1
+    'a5-iron-vein'
   );
 
 -- Managed population type
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'a5620000-0000-0000-0000-000000000001',
     'a5100000-0000-0000-0000-000000000001',
     'A5 Cattle',
     'a5-cattle',
-    'a5600000-0000-0000-0000-000000000003',
-    'a5600000-0000-0000-0000-000000000004',
-    5,
     0.1
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'a5620000-0000-0000-0000-000000000001',
+    'a5600000-0000-0000-0000-000000000003',
+    5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'a5620000-0000-0000-0000-000000000001',
+    'a5600000-0000-0000-0000-000000000004',
+    10
   );
 
 -- Building blueprint + tier
@@ -449,6 +469,29 @@ values
     null
   );
 
+-- nation_visible_to_current_user's have-met arm (#1086) resolves the
+-- caller's own nation via their ACTIVE player_character, so pc_user, sm1_user
+-- and sm2_user each need an active selection for the trade-route visibility
+-- assertions (T21, T28-T31) below.
+insert into
+  public.user_active_player_characters (user_id, world_id, citizen_id)
+values
+  (
+    'a5000000-0000-0000-0000-000000000003',
+    'a5100000-0000-0000-0000-000000000001',
+    'a5500000-0000-0000-0000-000000000001'
+  ),
+  (
+    'a5000000-0000-0000-0000-000000000004',
+    'a5100000-0000-0000-0000-000000000001',
+    'a5500000-0000-0000-0000-000000000002'
+  ),
+  (
+    'a5000000-0000-0000-0000-000000000005',
+    'a5100000-0000-0000-0000-000000000001',
+    'a5500000-0000-0000-0000-000000000003'
+  );
+
 -- Construction projects (one per settlement for wrong-side test)
 insert into
   public.construction_projects (
@@ -566,9 +609,11 @@ values
   );
 
 -- Trade routes:
---   route_visible : settlement_1 (nation_1, not hidden) ↔ settlement_2 (nation_2, not hidden)
---   route_mixed   : settlement_1 (nation_1, not hidden) ↔ settlement_hmix (nation_hmix, hidden)
---   route_bothhid : settlement_hmix (hidden) ↔ settlement_hduo (hidden)
+--   route_visible : settlement_1 (nation_1) ↔ settlement_2 (nation_2) — nation_1
+--                   and nation_2 have met each other (see nation_discoveries above)
+--   route_mixed   : settlement_1 (nation_1, met by nation_2) ↔ settlement_hmix
+--                   (nation_hmix, unmet by nation_1 and nation_2)
+--   route_bothhid : settlement_hmix (unmet) ↔ settlement_hduo (unmet by anyone)
 insert into
   public.trade_routes (
     id,
@@ -993,8 +1038,10 @@ select
     'PC-holder can read managed_population_instances'
   );
 
--- T21: pc_user sees route_visible and route_mixed (both have settlement_1 as
--- a visible endpoint) but NOT route_bothhid (both endpoints hidden).
+-- T21: pc_user (home nation_1, has met nation_2) sees only route_visible.
+-- route_mixed and route_bothhid both require nation_hmix / nation_hduo to be
+-- visible too (the new SELECT rule requires BOTH endpoints' nations visible,
+-- not just one), and nation_1 has not met either of those nations.
 select
   is (
     (
@@ -1003,8 +1050,8 @@ select
       from
         public.trade_routes
     ),
-    2,
-    'PC-holder sees 2 of 3 trade routes (both-hidden pair excluded)'
+    1,
+    'PC-holder sees 1 of 3 trade routes (mixed and both-unmet pairs excluded)'
   );
 
 reset role;
@@ -1117,8 +1164,8 @@ select
       from
         public.trade_routes
     ),
-    2,
-    'SM sees same 2 trade routes as the PC-holder (both-hidden still excluded)'
+    1,
+    'SM sees same 1 trade route as the PC-holder (mixed and both-unmet still excluded)'
   );
 
 reset role;
@@ -1126,14 +1173,18 @@ reset role;
 -- ===========================================================================
 -- PART 2: TRADE ROUTES BILATERAL VISIBILITY GAPS
 -- Tests T29–T33 cover scenarios not exercised by trade_routes_rls_test.sql:
---   • route_mixed (origin visible, dest in hidden nation): user with general
---     world-alpha access sees it via the visible origin endpoint.
---   • route_bothhid (both endpoints hidden): PC user cannot see it; world
---     admin can (nation_visible_to_current_user bypasses is_hidden).
+--   • route_mixed (one endpoint's nation unmet by the caller's nation): the
+--     SELECT rule requires BOTH endpoints' nations visible (AND, not OR), so
+--     a visible origin no longer carries a mixed pair — it stays invisible
+--     to non-admins.
+--   • route_bothhid (both endpoints unmet by anyone): PC user cannot see it;
+--     world admin can (nation_visible_to_current_user bypasses the met/unmet
+--     check for admins).
 -- ===========================================================================
--- T29: pc_user CAN see route_mixed because its origin (settlement_1, nation_1,
--- not hidden) gives a visibility path even though the destination is in a
--- hidden nation.
+-- T29: pc_user CANNOT see route_mixed. Its origin (settlement_1, nation_1)
+-- is visible, but its destination (settlement_hmix, nation_hmix) is not —
+-- nation_1 has never met nation_hmix — and the new rule requires both
+-- endpoints' nations to be visible.
 set
   local role authenticated;
 
@@ -1150,12 +1201,12 @@ select
       where
         id = 'a5960000-0000-0000-0000-000000000002'
     ),
-    1,
-    'PC-holder sees route_mixed (one endpoint in hidden nation) via visible origin'
+    0,
+    'PC-holder cannot see route_mixed (destination nation unmet, both endpoints required visible)'
   );
 
--- T30: pc_user CANNOT see route_bothhid — both endpoints are in hidden nations
--- and pc_user holds no PC in either of those nations.
+-- T30: pc_user CANNOT see route_bothhid — both endpoints are in nations unmet
+-- by pc_user's home nation and pc_user holds no PC in either of those nations.
 select
   is (
     (
@@ -1167,14 +1218,15 @@ select
         id = 'a5960000-0000-0000-0000-000000000003'
     ),
     0,
-    'PC-holder cannot see route with both endpoints in hidden nations'
+    'PC-holder cannot see route with both endpoints in nations unmet by anyone'
   );
 
 reset role;
 
 -- T31: sm2_user (PC in settlement_2, nation_2 — not party to route_mixed at
--- all) CAN see route_mixed because the origin (settlement_1, nation_1) is
--- visible and sm2_user has world-alpha access via their own living PC.
+-- all) CANNOT see route_mixed. nation_2 has met nation_1 (so the origin is
+-- visible to sm2_user too), but nation_2 has never met nation_hmix, so the
+-- destination endpoint stays invisible and the AND rule hides the route.
 set
   local role authenticated;
 
@@ -1191,14 +1243,15 @@ select
       where
         id = 'a5960000-0000-0000-0000-000000000002'
     ),
-    1,
-    'third-party world-access user sees route_mixed via visible origin endpoint'
+    0,
+    'third-party same-world user cannot see route_mixed (destination nation unmet)'
   );
 
 reset role;
 
 -- T32: world admin CAN see route_bothhid because is_world_admin(world_alpha)
--- satisfies nation_visible_to_current_user for both hidden nations.
+-- satisfies nation_visible_to_current_user for both nations regardless of
+-- their met/unmet status.
 set
   local role authenticated;
 
@@ -1229,7 +1282,7 @@ select
         public.trade_routes
     ),
     3,
-    'world admin sees all 3 trade routes including both-hidden pair'
+    'world admin sees all 3 trade routes including both-unmet pair'
   );
 
 reset role;

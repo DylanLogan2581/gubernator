@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
 import {
   categoricalForegroundCssVar,
-  hashToCategoricalSlot,
+  resolveIconTone,
 } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -41,7 +41,7 @@ export function StockpileByResourceDonut({
 
   const slices = stockpilesQuery.data.map((stockpile) => ({
     color: categoricalForegroundCssVar(
-      hashToCategoricalSlot(stockpile.resourceId),
+      resolveIconTone(stockpile.resourceIconColor, stockpile.resourceId),
     ),
     icon: resolveEntityIcon(stockpile.resourceIcon),
     id: stockpile.resourceId,

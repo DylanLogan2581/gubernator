@@ -47,6 +47,21 @@ export const tierCostEntrySchema = z.strictObject({
   resourceId: resourceIdSchema,
 });
 
+const educationLevelIdSchema = z.guid("Select an education level.");
+const turnsSchema = z.int().min(1, "Turns must be at least 1.");
+const teacherCapacitySchema = z
+  .int()
+  .min(1, "Teacher capacity must be at least 1.");
+const studentsPerTeacherSchema = z
+  .int()
+  .min(1, "Students per teacher must be at least 1.");
+
+export const tierEducationLevelTransitionSchema = z.strictObject({
+  fromLevelId: educationLevelIdSchema.nullable(),
+  toLevelId: educationLevelIdSchema,
+  turns: turnsSchema,
+});
+
 export const tierEffectSchema = z.discriminatedUnion("type", [
   z.strictObject({
     amount: effectAmountSchema,
@@ -67,6 +82,15 @@ export const tierEffectSchema = z.discriminatedUnion("type", [
     amount: effectAmountSchema,
     type: z.literal("population_cap_increase"),
   }),
+  z.strictObject({
+    levels: z
+      .array(tierEducationLevelTransitionSchema)
+      .min(1, "At least one level transition is required."),
+    studentsPerTeacher: studentsPerTeacherSchema,
+    teacherCapacity: teacherCapacitySchema,
+    teacherJobId: jobIdSchema,
+    type: z.literal("education"),
+  }),
 ]);
 
 const tierCostArraySchema = z.array(tierCostEntrySchema);
@@ -78,10 +102,19 @@ const blueprintIconSchema = z
   .optional()
   .nullable();
 
+const blueprintIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
 export const createBlueprintInputSchema = z.strictObject({
   description: blueprintDescriptionSchema,
   gracePeriodTurns: gracePeriodTurnsSchema,
   icon: blueprintIconSchema,
+  iconColor: blueprintIconColorSchema,
   maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
   name: blueprintNameSchema,
   slug: blueprintSlugSchema,
@@ -94,6 +127,7 @@ export const updateBlueprintInputSchema = z
     description: blueprintDescriptionSchema,
     gracePeriodTurns: gracePeriodTurnsSchema,
     icon: blueprintIconSchema,
+    iconColor: blueprintIconColorSchema,
     maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
     name: blueprintNameSchema.optional(),
     slug: blueprintSlugSchema.optional(),
@@ -106,7 +140,8 @@ export const updateBlueprintInputSchema = z
       value.description === undefined &&
       value.gracePeriodTurns === undefined &&
       value.maxInstancesPerSettlement === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",
@@ -191,6 +226,12 @@ export type SoftDeleteBlueprintValues = z.output<
 >;
 export type TierCostEntryInput = z.input<typeof tierCostEntrySchema>;
 export type TierCostEntryValues = z.output<typeof tierCostEntrySchema>;
+export type TierEducationLevelTransitionInput = z.input<
+  typeof tierEducationLevelTransitionSchema
+>;
+export type TierEducationLevelTransitionValues = z.output<
+  typeof tierEducationLevelTransitionSchema
+>;
 export type TierEffectInput = z.input<typeof tierEffectSchema>;
 export type TierEffectValues = z.output<typeof tierEffectSchema>;
 export type UpdateBlueprintInput = z.input<typeof updateBlueprintInputSchema>;

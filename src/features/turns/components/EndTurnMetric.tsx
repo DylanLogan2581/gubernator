@@ -8,9 +8,11 @@ export function MetricTile({
   readonly value: string | number;
 }): JSX.Element {
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-2xl font-semibold tracking-normal">{value}</dd>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="font-mono text-xl leading-none font-semibold tabular-nums">
+        {value}
+      </dd>
     </div>
   );
 }

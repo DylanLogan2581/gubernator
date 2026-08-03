@@ -34,6 +34,10 @@ const husbandryWorkersPerNAnimalsSchema = z
   .int()
   .min(1, "Husbandry workers per N animals must be at least 1.");
 
+const maxCullPerWorkerSchema = z
+  .int()
+  .min(0, "Max cull per worker must be non-negative.");
+
 const growthRateSchema = z.number().min(0, "Growth rate must be non-negative.");
 
 export const populationResourceEntrySchema = z.strictObject({
@@ -45,44 +49,68 @@ export const populationResourceEntrySchema = z.strictObject({
 
 const populationResourceArraySchema = z.array(populationResourceEntrySchema);
 
+export const managedPopulationHusbandryJobSchema = z.strictObject({
+  jobId: jobIdSchema,
+  workersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
+});
+
+const managedPopulationHusbandryJobsArraySchema = z
+  .array(managedPopulationHusbandryJobSchema)
+  .min(1, "At least one husbandry job is required.")
+  .refine(
+    (jobs) => new Set(jobs.map((j) => j.jobId)).size === jobs.length,
+    "Each job may only be linked once as a husbandry job per population type.",
+  );
+
+export const managedPopulationCullingJobSchema = z.strictObject({
+  jobId: jobIdSchema,
+  maxCullPerWorker: maxCullPerWorkerSchema,
+});
+
+const managedPopulationCullingJobsArraySchema = z
+  .array(managedPopulationCullingJobSchema)
+  .min(1, "At least one culling job is required.")
+  .refine(
+    (jobs) => new Set(jobs.map((j) => j.jobId)).size === jobs.length,
+    "Each job may only be linked once as a culling job per population type.",
+  );
+
 const populationTypeIconSchema = z
   .string()
   .max(64, "Icon name is too long.")
   .optional()
   .nullable();
 
-export const createManagedPopulationTypeInputSchema = z
-  .strictObject({
-    cullingJobId: jobIdSchema,
-    cullingOutputsJson: populationResourceArraySchema.optional(),
-    growthRate: growthRateSchema,
-    husbandryJobId: jobIdSchema,
-    husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
-    icon: populationTypeIconSchema,
-    maintenanceRulesJson: populationResourceArraySchema.optional(),
-    name: populationTypeNameSchema,
-    regularOutputsJson: populationResourceArraySchema.optional(),
-    slug: populationTypeSlugSchema,
-    worldId: worldIdSchema,
-  })
-  .superRefine((value, ctx): void => {
-    if (value.husbandryJobId === value.cullingJobId) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Husbandry job and culling job must be different.",
-        path: ["cullingJobId"],
-      });
-    }
-  });
+const populationTypeIconColorSchema = z
+  .number()
+  .int()
+  .min(1, "Icon color must be between 1 and 8.")
+  .max(8, "Icon color must be between 1 and 8.")
+  .optional()
+  .nullable();
+
+export const createManagedPopulationTypeInputSchema = z.strictObject({
+  cullingJobs: managedPopulationCullingJobsArraySchema,
+  cullingOutputsJson: populationResourceArraySchema.optional(),
+  growthRate: growthRateSchema,
+  husbandryJobs: managedPopulationHusbandryJobsArraySchema,
+  icon: populationTypeIconSchema,
+  iconColor: populationTypeIconColorSchema,
+  maintenanceRulesJson: populationResourceArraySchema.optional(),
+  name: populationTypeNameSchema,
+  regularOutputsJson: populationResourceArraySchema.optional(),
+  slug: populationTypeSlugSchema,
+  worldId: worldIdSchema,
+});
 
 export const updateManagedPopulationTypeInputSchema = z
   .strictObject({
-    cullingJobId: jobIdSchema.optional(),
+    cullingJobs: managedPopulationCullingJobsArraySchema.optional(),
     cullingOutputsJson: populationResourceArraySchema.optional(),
     growthRate: growthRateSchema.optional(),
-    husbandryJobId: jobIdSchema.optional(),
-    husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema.optional(),
+    husbandryJobs: managedPopulationHusbandryJobsArraySchema.optional(),
     icon: populationTypeIconSchema,
+    iconColor: populationTypeIconColorSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     managedPopulationTypeId: managedPopulationTypeIdSchema,
     name: populationTypeNameSchema.optional(),
@@ -94,31 +122,19 @@ export const updateManagedPopulationTypeInputSchema = z
     if (
       value.name === undefined &&
       value.slug === undefined &&
-      value.husbandryJobId === undefined &&
-      value.cullingJobId === undefined &&
-      value.husbandryWorkersPerNAnimals === undefined &&
+      value.husbandryJobs === undefined &&
+      value.cullingJobs === undefined &&
       value.growthRate === undefined &&
       value.maintenanceRulesJson === undefined &&
       value.cullingOutputsJson === undefined &&
       value.regularOutputsJson === undefined &&
-      value.icon === undefined
+      value.icon === undefined &&
+      value.iconColor === undefined
     ) {
       ctx.addIssue({
         code: "custom",
         message: "At least one field must be provided.",
         path: ["name"],
-      });
-    }
-
-    if (
-      value.husbandryJobId !== undefined &&
-      value.cullingJobId !== undefined &&
-      value.husbandryJobId === value.cullingJobId
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Husbandry job and culling job must be different.",
-        path: ["cullingJobId"],
       });
     }
   });
@@ -173,4 +189,16 @@ export type PopulationResourceEntryInput = z.input<
 >;
 export type PopulationResourceEntryValues = z.output<
   typeof populationResourceEntrySchema
+>;
+export type ManagedPopulationHusbandryJobInput = z.input<
+  typeof managedPopulationHusbandryJobSchema
+>;
+export type ManagedPopulationHusbandryJobValues = z.output<
+  typeof managedPopulationHusbandryJobSchema
+>;
+export type ManagedPopulationCullingJobInput = z.input<
+  typeof managedPopulationCullingJobSchema
+>;
+export type ManagedPopulationCullingJobValues = z.output<
+  typeof managedPopulationCullingJobSchema
 >;

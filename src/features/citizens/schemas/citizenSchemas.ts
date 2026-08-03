@@ -145,6 +145,35 @@ export const updateCitizenNpcFieldsInputSchema = z.strictObject({
   worldId: worldIdSchema,
 });
 
+export const setCitizenCultureReligionInputSchema = z.strictObject({
+  citizenId: citizenIdSchema,
+  cultureId: z.union([z.guid(), z.null()]),
+  religionId: z.union([z.guid(), z.null()]),
+});
+
+// Bulk seeding tool: null leaves that field untouched on every alive citizen
+// in the settlement (unlike setCitizenCultureReligionInputSchema above, which
+// always clears on null since it edits one citizen's fields directly).
+export const bulkSetCitizenCultureReligionInputSchema = z.strictObject({
+  cultureId: z.union([z.guid(), z.null()]),
+  religionId: z.union([z.guid(), z.null()]),
+  settlementId: settlementIdSchema,
+});
+
+export const setCitizenEducationInputSchema = z.strictObject({
+  citizenId: citizenIdSchema,
+  educationLevelId: z.union([z.guid(), z.null()]),
+});
+
+// Bulk seeding tool: sets every alive citizen in the settlement to the given
+// level. Unlike setCitizenEducationInputSchema above, this is the only field
+// the RPC writes, so null is a valid target too (resets the settlement back
+// to uneducated) rather than "leave untouched".
+export const bulkSetCitizenEducationInputSchema = z.strictObject({
+  educationLevelId: z.union([z.guid(), z.null()]),
+  settlementId: settlementIdSchema,
+});
+
 export const markCitizenDeadInputSchema = z.strictObject({
   citizenId: citizenIdSchema,
   deathCause: optionalNpcTextSchema,
@@ -311,6 +340,30 @@ export type UpdateCitizenNpcFieldsInput = z.input<
 >;
 export type UpdateCitizenNpcFieldsValues = z.output<
   typeof updateCitizenNpcFieldsInputSchema
+>;
+export type SetCitizenCultureReligionInput = z.input<
+  typeof setCitizenCultureReligionInputSchema
+>;
+export type SetCitizenCultureReligionValues = z.output<
+  typeof setCitizenCultureReligionInputSchema
+>;
+export type BulkSetCitizenCultureReligionInput = z.input<
+  typeof bulkSetCitizenCultureReligionInputSchema
+>;
+export type BulkSetCitizenCultureReligionValues = z.output<
+  typeof bulkSetCitizenCultureReligionInputSchema
+>;
+export type SetCitizenEducationInput = z.input<
+  typeof setCitizenEducationInputSchema
+>;
+export type SetCitizenEducationValues = z.output<
+  typeof setCitizenEducationInputSchema
+>;
+export type BulkSetCitizenEducationInput = z.input<
+  typeof bulkSetCitizenEducationInputSchema
+>;
+export type BulkSetCitizenEducationValues = z.output<
+  typeof bulkSetCitizenEducationInputSchema
 >;
 export type MarkCitizenDeadInput = z.input<typeof markCitizenDeadInputSchema>;
 export type MarkCitizenDeadValues = z.output<typeof markCitizenDeadInputSchema>;

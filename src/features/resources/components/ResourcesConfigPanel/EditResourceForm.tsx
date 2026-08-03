@@ -1,10 +1,8 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
-import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
-import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { resourceCategoriesByWorldQueryOptions } from "@/features/resourceCategories";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -30,14 +28,12 @@ import {
 } from "../../schemas/resourceSchemas";
 import { buildCleanupDescription } from "../../utils/cleanupDescription";
 
-import type { Resource } from "../../types/resourceTypes";
+import {
+  ResourceFormFields,
+  type ResourceFieldErrors,
+} from "./ResourceFormFields";
 
-type ResourceFieldErrors = {
-  readonly baseStockpileCap?: string;
-  readonly decayRate?: string;
-  readonly name?: string;
-  readonly slug?: string;
-};
+import type { Resource, ResourceChangeMode } from "../../types/resourceTypes";
 
 type EditResourceFormProps = {
   readonly onClose: () => void;
@@ -64,10 +60,25 @@ export function EditResourceForm({
   const [baseStockpileCap, setBaseStockpileCap] = useState(
     String(resource.baseStockpileCap),
   );
-  const [decayRate, setDecayRate] = useState(String(resource.decayRate));
+  const [changeMode, setChangeMode] = useState<ResourceChangeMode>(
+    resource.changeMode,
+  );
+  const [changeAmount, setChangeAmount] = useState(
+    String(resource.changeAmount),
+  );
   const [icon, setIcon] = useState<string | null>(resource.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    resource.iconColor as CategoricalSlot | null,
+  );
+  const [categoryId, setCategoryId] = useState<string | null>(
+    resource.categoryId,
+  );
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof ResourceFieldErrors>();
+
+  const categoriesQuery = useQuery(
+    resourceCategoriesByWorldQueryOptions(worldId),
+  );
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
@@ -84,8 +95,11 @@ export function EditResourceForm({
 
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
-      decayRate: decayRate !== "" ? decayRate : undefined,
+      categoryId,
+      changeAmount: changeAmount !== "" ? changeAmount : undefined,
+      changeMode,
       icon,
+      iconColor,
       name,
       resourceId: resource.id,
       slug,
@@ -143,72 +157,27 @@ export function EditResourceForm({
           <DialogHeader>
             <DialogTitle>Edit resource</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-name">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
-                disabled={isPending}
-                id="edit-resource-name"
-                maxLength={resourceInputLimits.resourceNameMax}
-                value={name}
-                onChange={(e) => {
-                  handleNameChange(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
-              ) : null}
-              <SlugHint slug={slug} error={fieldErrors.slug} />
-            </Label>
-            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-cap">
-              <span className="text-muted-foreground">Base stockpile cap</span>
-              <Input
-                aria-invalid={fieldErrors.baseStockpileCap !== undefined}
-                disabled={isPending}
-                id="edit-resource-cap"
-                inputMode="decimal"
-                placeholder="0"
-                value={baseStockpileCap}
-                onChange={(e) => {
-                  setBaseStockpileCap(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.baseStockpileCap !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.baseStockpileCap}
-                </p>
-              ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-decay">
-              <span className="text-muted-foreground">Decay rate (%)</span>
-              <Input
-                aria-invalid={fieldErrors.decayRate !== undefined}
-                disabled={isPending}
-                id="edit-resource-decay"
-                inputMode="decimal"
-                placeholder="0"
-                value={decayRate}
-                onChange={(e) => {
-                  setDecayRate(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.decayRate !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.decayRate}
-                </p>
-              ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Icon</span>
-              <IconPicker
-                disabled={isPending}
-                value={icon}
-                onChange={setIcon}
-              />
-            </Label>
-          </div>
+          <ResourceFormFields
+            baseStockpileCap={baseStockpileCap}
+            categories={categoriesQuery.data}
+            categoryId={categoryId}
+            changeAmount={changeAmount}
+            changeMode={changeMode}
+            disabled={isPending}
+            fieldErrors={fieldErrors}
+            icon={icon}
+            iconColor={iconColor}
+            idPrefix="edit-resource"
+            name={name}
+            slug={slug}
+            onBaseStockpileCapChange={setBaseStockpileCap}
+            onCategoryIdChange={setCategoryId}
+            onChangeAmountChange={setChangeAmount}
+            onChangeModeChange={setChangeMode}
+            onIconChange={setIcon}
+            onIconColorChange={setIconColor}
+            onNameChange={handleNameChange}
+          />
           <DialogFooter className="sm:justify-between">
             <Button
               type="button"

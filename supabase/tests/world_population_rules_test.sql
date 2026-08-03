@@ -43,12 +43,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '91000000-0000-0000-0000-000000000001',
     'Population Rules Test World',
-    'private',
     'active'
   );
 
@@ -90,12 +89,11 @@ select
 -- World insert without explicit config gets valid defaults
 -- ===========================================================================
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '91000000-0000-0000-0000-000000000002',
     'Auto Default Population World',
-    'private',
     'active'
   );
 

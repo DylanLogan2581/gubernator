@@ -38,9 +38,21 @@ describe("TurnTransitionOutcomeEmptyState", () => {
 
 // -- TurnTransitionOutcomeContent --
 
+function renderContent(outcome: TurnTransitionOutcome): void {
+  render(
+    <QueryClientProvider client={createQueryClient()}>
+      <TurnTransitionOutcomeContent outcome={outcome} />
+    </QueryClientProvider>,
+  );
+}
+
 describe("TurnTransitionOutcomeContent", () => {
+  beforeEach(() => {
+    requireSupabaseClient.mockReturnValue(createPendingWorldClient());
+  });
+
   it("renders transition number and date in the populated state", () => {
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     expect(
       screen.getByRole("heading", { name: "Last transition" }),
@@ -49,7 +61,7 @@ describe("TurnTransitionOutcomeContent", () => {
   });
 
   it("renders delta metrics from settlement snapshots", () => {
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     expectMetric("Births", "3");
     expectMetric("Deaths", "1");
@@ -58,7 +70,7 @@ describe("TurnTransitionOutcomeContent", () => {
   });
 
   it("renders notifications grouped by type in collapsed state", () => {
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     expect(screen.getByText("Notifications this turn")).toBeDefined();
     expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
@@ -73,7 +85,7 @@ describe("TurnTransitionOutcomeContent", () => {
 
   it("expands group to show notifications when accordion is opened", async () => {
     const user = userEvent.setup();
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     const buildingsSuspendedTrigger = screen.getByText(
       "Buildings Suspended (1)",
@@ -86,7 +98,7 @@ describe("TurnTransitionOutcomeContent", () => {
   });
 
   it("collapses groups by default", () => {
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     const closedAccordionItems = document.querySelectorAll(
       "[data-state='closed']",
@@ -100,7 +112,7 @@ describe("TurnTransitionOutcomeContent", () => {
       notifications: [],
     };
 
-    render(<TurnTransitionOutcomeContent outcome={outcome} />);
+    renderContent(outcome);
 
     expect(
       screen.getByText("No notifications for this transition."),
@@ -124,7 +136,7 @@ describe("TurnTransitionOutcomeContent", () => {
       ],
     };
 
-    render(<TurnTransitionOutcomeContent outcome={outcome} />);
+    renderContent(outcome);
 
     expectMetric("Births", "6");
     expectMetric("Deaths", "4");
@@ -132,7 +144,7 @@ describe("TurnTransitionOutcomeContent", () => {
 
   it("filters groups when a category chip is clicked", async () => {
     const user = userEvent.setup();
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     // Initially both group triggers should be present (no filter active)
     expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
@@ -151,7 +163,7 @@ describe("TurnTransitionOutcomeContent", () => {
 
   it("resets filter when All chip is clicked", async () => {
     const user = userEvent.setup();
-    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+    renderContent(createPopulatedOutcome());
 
     // Select one category via toggle (include it)
     const buildingsChip = screen.getByRole("button", {
@@ -178,7 +190,7 @@ describe("TurnTransitionOutcomeContent", () => {
       finishedAt: "2026-05-15T08:30:00Z",
     };
 
-    render(<TurnTransitionOutcomeContent outcome={outcome} />);
+    renderContent(outcome);
 
     expect(screen.getByText("Turn 5 → 6 · 2026-05-15")).toBeDefined();
   });
@@ -189,9 +201,73 @@ describe("TurnTransitionOutcomeContent", () => {
       finishedAt: null,
     };
 
-    render(<TurnTransitionOutcomeContent outcome={outcome} />);
+    renderContent(outcome);
 
     expect(screen.getByText("Turn 5 → 6")).toBeDefined();
+  });
+
+  it("resolves resource names for diverged resources instead of raw ids", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createStockpilesClient("settlement-1", [
+        {
+          effective_cap: 1000,
+          is_system_resource: false,
+          quantity: 40,
+          resource_icon: null,
+          resource_icon_color: null,
+          resource_id: "resource-1",
+          resource_name: "Grain",
+          settlement_id: "settlement-1",
+        },
+      ]),
+    );
+
+    const outcome: TurnTransitionOutcome = {
+      ...createPopulatedOutcome(),
+      forecastSnapshot: {
+        bySettlement: {
+          "settlement-1": {
+            buildingUpkeepFailures: [],
+            completedProjects: [],
+            deathsBy: { homelessness: 0, other: 0, starvation: 0 },
+            resourceDeltas: [
+              {
+                consumed: 10,
+                netDelta: -10,
+                produced: 0,
+                quantityAfter: 30,
+                quantityBefore: 40,
+                resourceId: "resource-1",
+                tradeIn: 0,
+                tradeOut: 0,
+              },
+            ],
+            settlementId: "settlement-1",
+            tradeChanges: [],
+          },
+        },
+      },
+      settlementResourceSnapshots: [
+        {
+          consumedAmount: 10,
+          id: "res-snap-1",
+          producedAmount: 0,
+          quantityAfter: 25,
+          quantityBefore: 40,
+          resourceId: "resource-1",
+          settlementId: "settlement-1",
+          tradeInAmount: 0,
+          tradeOutAmount: 0,
+          turnNumber: 6,
+          worldId: "world-1",
+        },
+      ],
+    };
+
+    renderContent(outcome);
+
+    expect(await screen.findByText("Grain")).toBeDefined();
+    expect(screen.queryByText("resource-1")).toBeNull();
   });
 });
 
@@ -726,6 +802,37 @@ function createPendingWorldClient(): unknown {
   return {
     from: vi.fn((table: string) => {
       if (table === "turn_transitions") {
+        return builder;
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  };
+}
+
+type StockpileRow = {
+  readonly effective_cap: number;
+  readonly is_system_resource: boolean;
+  readonly quantity: number;
+  readonly resource_icon: string | null;
+  readonly resource_icon_color: number | null;
+  readonly resource_id: string;
+  readonly resource_name: string;
+  readonly settlement_id: string;
+};
+
+function createStockpilesClient(
+  _settlementId: string,
+  rows: readonly StockpileRow[],
+): unknown {
+  const builder: Record<string, unknown> = {};
+  builder.select = vi.fn(() => builder);
+  builder.eq = vi.fn(() => builder);
+  builder.order = vi.fn(() => builder);
+  builder.returns = vi.fn(() => Promise.resolve({ data: rows, error: null }));
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "settlement_stockpiles_view") {
         return builder;
       }
       throw new Error(`Unexpected table: ${table}`);

@@ -8,7 +8,8 @@ import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import type { EducationLevel } from "@/features/education";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -16,22 +17,12 @@ import {
   restoreJobMutationOptions,
   softDeleteJobMutationOptions,
 } from "../../mutations/jobsMutations";
+import { JOB_TYPE_LABELS } from "../../utils/jobTypeLabels";
 
 import { EditJobForm } from "./EditJobForm";
 
-import type { JobDefinition, JobType } from "../../types/jobTypes";
-import type { ColumnDef } from "@tanstack/react-table";
-
-const JOB_TYPE_LABELS: Record<JobType, string> = {
-  construction: "Construction",
-  culling: "Culling",
-  deposit: "Deposit",
-  husbandry: "Husbandry",
-  standard: "Standard",
-  trader: "Trader",
-};
-
-export { JOB_TYPE_LABELS };
+import type { JobDefinition } from "../../types/jobTypes";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type PendingAction = {
   readonly action: "trash" | "restore" | "hardDelete";
@@ -40,43 +31,22 @@ type PendingAction = {
 
 type JobsTableProps = {
   readonly canEdit: boolean;
+  readonly educationLevels: readonly EducationLevel[];
   readonly isPaginationDisabled: boolean;
   readonly jobs: readonly JobDefinition[];
   readonly onPageChange: (page: number) => void;
+  readonly onSortingChange: (sorting: SortingState) => void;
   readonly pageCount: number;
   readonly pageIndex: number;
   readonly queryClient: QueryClient;
   readonly showTrash: boolean;
+  readonly sorting: SortingState;
   readonly worldId: string;
 };
 
-function JobCapacityDisplay({
-  job,
-}: {
-  readonly job: JobDefinition;
-}): JSX.Element | null {
-  if (
-    (job.jobType === "standard" || job.jobType === "construction") &&
-    job.baseCapacity !== null
-  ) {
-    return (
-      <span className="tabular-nums text-sm text-muted-foreground">
-        {`${job.baseCapacity.toLocaleString()} capacity`}
-      </span>
-    );
-  }
-  if (job.jobType === "trader" && job.traderCapacityPerWorker !== null) {
-    return (
-      <span className="tabular-nums text-sm text-muted-foreground">
-        {`${job.traderCapacityPerWorker.toLocaleString()} per worker`}
-      </span>
-    );
-  }
-  return null;
-}
-
 function buildColumns({
   canEdit,
+  educationLevelNameById,
   hardDeletePendingId,
   onEdit,
   onHardDelete,
@@ -87,6 +57,7 @@ function buildColumns({
   trashPendingId,
 }: {
   readonly canEdit: boolean;
+  readonly educationLevelNameById: ReadonlyMap<string, string>;
   readonly hardDeletePendingId: string | null;
   readonly onEdit: (job: JobDefinition) => void;
   readonly onHardDelete: (job: JobDefinition) => void;
@@ -99,7 +70,8 @@ function buildColumns({
   return [
     {
       id: "name",
-      enableSorting: false,
+      accessorFn: (row) => row.name,
+      enableSorting: true,
       header: "Name",
       cell: ({ row }) => {
         const job = row.original;
@@ -107,25 +79,92 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(job.icon)}
-              tone={hashToCategoricalSlot(job.id)}
-              size="sm"
+              tone={resolveIconTone(job.iconColor, job.id)}
             />
             <span className="font-medium">{job.name}</span>
-            <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
           </div>
         );
       },
     },
     {
-      id: "stats",
-      enableSorting: false,
-      header: "Stats",
-      cell: ({ row }) => <JobCapacityDisplay job={row.original} />,
+      id: "type",
+      accessorFn: (row) => row.jobType,
+      enableSorting: true,
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {JOB_TYPE_LABELS[row.original.jobType]}
+        </Badge>
+      ),
+    },
+    {
+      id: "education",
+      accessorFn: (row) => row.requiredEducationLevelId ?? "",
+      enableSorting: true,
+      header: "Education level",
+      cell: ({ row }) => {
+        const job = row.original;
+        if (job.requiredEducationLevelId === null) {
+          return (
+            <span className="text-sm italic text-muted-foreground">
+              No requirement
+            </span>
+          );
+        }
+        return (
+          <span className="text-sm">
+            {educationLevelNameById.get(job.requiredEducationLevelId) ??
+              "education level"}
+          </span>
+        );
+      },
+    },
+    {
+      id: "capacity",
+      accessorFn: (row) => row.baseCapacity,
+      enableSorting: true,
+      header: "Capacity",
+      meta: { align: "right" },
+      cell: ({ row }) => {
+        const job = row.original;
+        if (
+          (job.jobType !== "standard" &&
+            job.jobType !== "construction" &&
+            job.jobType !== "teacher") ||
+          job.baseCapacity === null
+        ) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        return (
+          <span className="tabular-nums text-sm text-muted-foreground">
+            {job.baseCapacity.toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      id: "tradersPerWorker",
+      accessorFn: (row) => row.traderCapacityPerWorker,
+      enableSorting: true,
+      header: "Traders per worker",
+      meta: { align: "right" },
+      cell: ({ row }) => {
+        const job = row.original;
+        if (job.jobType !== "trader" || job.traderCapacityPerWorker === null) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        return (
+          <span className="tabular-nums text-sm text-muted-foreground">
+            {job.traderCapacityPerWorker.toLocaleString()}
+          </span>
+        );
+      },
     },
     {
       id: "actions",
       enableSorting: false,
       header: "Actions",
+      meta: { align: "right", fit: true },
       cell: ({ row }) => {
         const job = row.original;
 
@@ -217,13 +256,16 @@ function buildColumns({
 // doesn't mount hundreds of mutation hooks.
 export function JobsTable({
   canEdit,
+  educationLevels,
   isPaginationDisabled,
   jobs,
   onPageChange,
+  onSortingChange,
   pageCount,
   pageIndex,
   queryClient,
   showTrash,
+  sorting,
   worldId,
 }: JobsTableProps): JSX.Element {
   const [editingJob, setEditingJob] = useState<JobDefinition | null>(null);
@@ -292,8 +334,13 @@ export function JobsTable({
     );
   }
 
+  const educationLevelNameById = new Map(
+    educationLevels.map((level) => [level.id, level.name]),
+  );
+
   const columns = buildColumns({
     canEdit,
+    educationLevelNameById,
     hardDeletePendingId:
       pendingAction?.action === "hardDelete" ? pendingAction.id : null,
     onEdit: setEditingJob,
@@ -312,10 +359,8 @@ export function JobsTable({
         columns={columns}
         data={jobs}
         getRowId={(job) => job.id}
-        sorting={[]}
-        onSortingChange={() => {
-          // Server-side ordering is fixed (by name); no sortable columns.
-        }}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
         pageIndex={pageIndex}
         pageCount={pageCount}
         onPageChange={onPageChange}

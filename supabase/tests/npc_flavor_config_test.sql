@@ -43,12 +43,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '81000000-0000-0000-0000-000000000001',
     'NPC Flavor Test World',
-    'private',
     'active'
   );
 
@@ -82,12 +81,11 @@ select
 -- World insert without explicit config gets valid default
 -- ===========================================================================
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '81000000-0000-0000-0000-000000000002',
     'Auto Default Flavor World',
-    'private',
     'active'
   );
 

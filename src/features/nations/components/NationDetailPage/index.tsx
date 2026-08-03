@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { LockKeyhole } from "lucide-react";
-import { useEffect, type JSX, type ReactNode } from "react";
+import { type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
+import { DetailPageHeader } from "@/components/shared/DetailPageHeader";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
+  AdminPausedHint,
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
   type AccessContext,
@@ -19,6 +19,8 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationByIdQueryOptions } from "../../queries/nationsQueries";
+import { NationFlagAvatar } from "../NationFlagAvatar";
+import { NationSealAvatar } from "../NationSealAvatar";
 
 import { NationDetailContext } from "./NationDetailContext";
 import { NationDetailFrame } from "./NationDetailFrame";
@@ -153,8 +155,6 @@ function NationDetailContent({
   readonly worldId: string;
 }): JSX.Element {
   const nationQuery = useQuery(nationByIdQueryOptions(nationId));
-  // Must be called unconditionally before any early returns to satisfy rules-of-hooks.
-  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
 
   if (nationQuery.isPending) {
     return (
@@ -187,10 +187,6 @@ function NationDetailContent({
     );
   }
 
-  if (nation.isHidden && !effectiveCanAdmin) {
-    return <HiddenNationRedirect worldId={worldId} />;
-  }
-
   return (
     <NationDetailLoaded
       accessContext={accessContext}
@@ -200,28 +196,6 @@ function NationDetailContent({
     >
       {children}
     </NationDetailLoaded>
-  );
-}
-
-function HiddenNationRedirect({
-  worldId,
-}: {
-  readonly worldId: string;
-}): JSX.Element {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    void navigate({
-      params: { worldId },
-      replace: true,
-      to: "/worlds/$worldId/nations",
-    });
-  }, [navigate, worldId]);
-
-  return (
-    <NationDetailFrame worldId={worldId}>
-      <LoadingState label="Redirecting…" />
-    </NationDetailFrame>
   );
 }
 
@@ -241,37 +215,47 @@ function NationDetailLoaded({
   const isArchived = worldAccess.header.isArchived;
   const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
   const canEditDetails = effectiveCanAdmin && !isArchived;
-  const canToggleHidden = effectiveCanAdmin && !isArchived;
   const canDelete = effectiveCanAdmin && !isArchived;
 
   return (
     <NationDetailFrame worldId={worldId}>
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-normal">
-              {nation.name}
-            </h1>
-            {nation.isHidden ? (
-              <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                <LockKeyhole className="size-3" aria-hidden="true" />
-                Hidden
-              </span>
+      <DetailPageHeader
+        media={
+          <div className="flex shrink-0 items-start gap-2">
+            <NationFlagAvatar
+              className="w-16 shrink-0"
+              flagPath={nation.flagPath}
+              interactive
+              nationId={nation.id}
+              nationName={nation.name}
+            />
+            {nation.sealPath !== null ? (
+              <NationSealAvatar
+                className="w-12 shrink-0"
+                interactive
+                nationId={nation.id}
+                nationName={nation.name}
+                sealPath={nation.sealPath}
+              />
             ) : null}
           </div>
-          <p className="text-sm text-muted-foreground">
+        }
+        title={nation.name}
+        context={
+          <>
             Nation in{" "}
             <span className="font-medium">{worldAccess.header.name}</span>.
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
+
+      <AdminPausedHint canAdmin={worldAccess.canAdmin} />
 
       <NationDetailContext
         value={{
           accessContext,
           canDelete,
           canEditDetails,
-          canToggleHidden,
           effectiveCanAdmin,
           isArchived,
           nation,

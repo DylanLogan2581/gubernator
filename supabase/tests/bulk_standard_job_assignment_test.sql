@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (21);
+  plan (25);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -11,6 +11,7 @@ select
 --   ba1xxxxx = users          ba2xxxxx = worlds
 --   ba3xxxxx = nations        ba4xxxxx = settlements
 --   ba5xxxxx = job_definitions ba6xxxxx = citizens
+--   ba7xxxxx = education_levels (#1105 education requirement enforcement)
 -- ---------------------------------------------------------------------------
 insert into
   auth.users (
@@ -58,12 +59,11 @@ where
   id = 'ba100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ba200000-0000-0000-0000-000000000001',
     'BSJA World',
-    'private',
     'active'
   );
 
@@ -917,6 +917,172 @@ select
     ),
     2,
     'get_settlement_standard_job_counts: alive assigned NPCs are counted correctly'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- #1105: education requirement enforcement
+--
+-- Fixtures: two education levels (Basic rank 1, Skilled rank 2) and a new
+-- standard job (ba5...005, base_capacity=10) requiring Skilled. Three NPCs:
+--   ba6...008 = Skilled (qualifies)
+--   ba6...009 = Basic (does not qualify)
+--   ba6...010 = uneducated / null level (does not qualify)
+-- Qualified pool for this job = 1 (ba6...008 only).
+-- ===========================================================================
+insert into
+  public.education_levels (id, world_id, name, rank)
+values
+  (
+    'ba700000-0000-0000-0000-000000000001',
+    'ba200000-0000-0000-0000-000000000001',
+    'Basic',
+    1
+  ),
+  (
+    'ba700000-0000-0000-0000-000000000002',
+    'ba200000-0000-0000-0000-000000000001',
+    'Skilled',
+    2
+  );
+
+insert into
+  public.job_definitions (
+    id,
+    world_id,
+    name,
+    slug,
+    job_type,
+    base_capacity,
+    is_trashed,
+    required_education_level_id
+  )
+values
+  (
+    'ba500000-0000-0000-0000-000000000005',
+    'ba200000-0000-0000-0000-000000000001',
+    'BSJA Scholar Job',
+    'bsja-scholar-job',
+    'standard',
+    10,
+    false,
+    'ba700000-0000-0000-0000-000000000002'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    role_type,
+    education_level_id
+  )
+values
+  (
+    'ba600000-0000-0000-0000-000000000008',
+    'ba200000-0000-0000-0000-000000000001',
+    'ba400000-0000-0000-0000-000000000001',
+    'npc',
+    'BSJA NPC 8 (Skilled)',
+    'alive',
+    'none',
+    'ba700000-0000-0000-0000-000000000002'
+  ),
+  (
+    'ba600000-0000-0000-0000-000000000009',
+    'ba200000-0000-0000-0000-000000000001',
+    'ba400000-0000-0000-0000-000000000001',
+    'npc',
+    'BSJA NPC 9 (Basic)',
+    'alive',
+    'none',
+    'ba700000-0000-0000-0000-000000000001'
+  ),
+  (
+    'ba600000-0000-0000-0000-000000000010',
+    'ba200000-0000-0000-0000-000000000001',
+    'ba400000-0000-0000-0000-000000000001',
+    'npc',
+    'BSJA NPC 10 (uneducated)',
+    'alive',
+    'none',
+    null
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.set_bulk_standard_job_assignment(
+      'ba400000-0000-0000-0000-000000000001',
+      'ba500000-0000-0000-0000-000000000005',
+      2
+    )
+    $test$,
+    'P0001',
+    'Only 1 citizens meet the education requirement (Skilled)',
+    'education requirement: target exceeding qualified pool is rejected with exact message'
+  );
+
+select
+  lives_ok (
+    $test$
+    select public.set_bulk_standard_job_assignment(
+      'ba400000-0000-0000-0000-000000000001',
+      'ba500000-0000-0000-0000-000000000005',
+      1
+    )
+    $test$,
+    'education requirement: target within qualified pool succeeds'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        c.id
+      from
+        public.citizen_assignments ca
+        join public.citizens c on c.id = ca.citizen_id
+      where
+        ca.job_id = 'ba500000-0000-0000-0000-000000000005'
+    ),
+    'ba600000-0000-0000-0000-000000000008'::uuid,
+    'education requirement: only the qualified NPC is picked'
+  );
+
+-- ===========================================================================
+-- #1140: get_settlement_standard_job_counts denies cross-world caller
+--
+-- bsja_outsider (ba1...003) has no relation to the BSJA world -- not owner,
+-- not world_admin, not a player-character holder, and the world is private
+-- -- so current_user_has_world_access must reject the call with 42501.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select * from public.get_settlement_standard_job_counts('ba400000-0000-0000-0000-000000000001')
+    $test$,
+    '42501',
+    null,
+    'get_settlement_standard_job_counts: cross-world caller is rejected with 42501'
   );
 
 reset role;

@@ -1,3 +1,5 @@
+import type { TierEducationConfig } from "@/shared/education/tierEducationConfig";
+
 import type { TierEffect } from "./buildingTypes";
 
 export type SettlementBuildingState =
@@ -25,11 +27,13 @@ export type EffectsDigest = {
 export type SettlementBuilding = {
   readonly activatedOnTurnNumber: number;
   readonly blueprintIcon: string | null;
+  readonly blueprintIconColor: number | null;
   readonly blueprintName: string;
   readonly buildingBlueprintId: string;
   readonly createdAt: string;
   readonly currentTierId: string;
   readonly deactivatedInTransitionId: string | null;
+  readonly educationConfig: TierEducationConfig | null;
   readonly effectsDigest: EffectsDigest;
   readonly effectsJson: readonly TierEffect[];
   readonly id: string;
@@ -99,6 +103,8 @@ export function computeEffectsDigest(
           amount: effect.amount,
           resourceId: effect.resourceId,
         });
+        break;
+      case "education":
         break;
     }
   }

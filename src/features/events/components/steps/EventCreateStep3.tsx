@@ -8,6 +8,7 @@ import {
   worldCalendarConfigQueryOptions,
   WorldDatePicker,
 } from "@/features/calendar";
+import { cn } from "@/lib/utils";
 import {
   type CalendarDateInput,
   resolveTurnCalendarDate,
@@ -71,7 +72,14 @@ export function EventCreateStep3({
           >
             <div className="text-left">
               <div className="font-medium">Instant</div>
-              <div className="text-xs text-muted-foreground">
+              <div
+                className={cn(
+                  "text-xs",
+                  durationType === "instant"
+                    ? "text-primary-foreground/80"
+                    : "text-muted-foreground",
+                )}
+              >
                 Effect applies once
               </div>
             </div>
@@ -84,7 +92,14 @@ export function EventCreateStep3({
           >
             <div className="text-left">
               <div className="font-medium">Sustained</div>
-              <div className="text-xs text-muted-foreground">
+              <div
+                className={cn(
+                  "text-xs",
+                  durationType === "sustained"
+                    ? "text-primary-foreground/80"
+                    : "text-muted-foreground",
+                )}
+              >
                 Effect persists for multiple turns
               </div>
             </div>
@@ -145,7 +160,7 @@ export function EventCreateStep3({
           The event will activate after this turn number completes
         </p>
         {activationTurn < currentTurnNumber && activationTurn > 0 && (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-warning-foreground">
             Activation turn must be ≥ current turn (turn {currentTurnNumber})
           </p>
         )}

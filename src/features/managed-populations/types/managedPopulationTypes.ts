@@ -3,15 +3,27 @@ export type PopulationResourceEntry = {
   readonly resourceId: string;
 };
 
+export type ManagedPopulationHusbandryJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly workersPerNAnimals: number;
+};
+
+export type ManagedPopulationCullingJob = {
+  readonly id: string;
+  readonly jobId: string;
+  readonly maxCullPerWorker: number;
+};
+
 export type ManagedPopulationType = {
   readonly createdAt: string;
-  readonly cullingJobId: string;
+  readonly cullingJobs: readonly ManagedPopulationCullingJob[];
   readonly cullingOutputsJson: readonly PopulationResourceEntry[];
   readonly growthRate: number;
   readonly hasActiveReferences: boolean;
-  readonly husbandryJobId: string;
-  readonly husbandryWorkersPerNAnimals: number;
+  readonly husbandryJobs: readonly ManagedPopulationHusbandryJob[];
   readonly icon: string | null;
+  readonly iconColor: number | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly maintenanceRulesJson: readonly PopulationResourceEntry[];

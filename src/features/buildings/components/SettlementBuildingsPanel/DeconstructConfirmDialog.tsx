@@ -1,8 +1,7 @@
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { MutationConfirmDialog } from "@/components/shared/MutationConfirmDialog";
 
 import { manualDeconstructBuildingMutationOptions } from "../../mutations/settlementBuildingsMutations";
 
@@ -21,28 +20,9 @@ export function DeconstructConfirmDialog({
   queryClient,
   settlementId,
 }: DeconstructConfirmDialogProps): JSX.Element {
-  const deconstructMutation = useMutation(
-    manualDeconstructBuildingMutationOptions({ queryClient, settlementId }),
-  );
-
-  async function handleConfirm(): Promise<void> {
-    try {
-      await deconstructMutation.mutateAsync({
-        settlementBuildingId: building.id,
-      });
-      notifyMutationSuccess("Building deconstructed.");
-      onClose();
-    } catch (error) {
-      notifyMutationError(error, "Failed to deconstruct building.");
-    }
-  }
-
   return (
-    <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+    <MutationConfirmDialog
+      onClose={onClose}
       title={`Deconstruct ${building.blueprintName}?`}
       description={
         <>
@@ -54,8 +34,13 @@ export function DeconstructConfirmDialog({
         </>
       }
       confirmLabel="Deconstruct"
-      isPending={deconstructMutation.isPending}
-      onConfirm={handleConfirm}
+      mutationOptions={manualDeconstructBuildingMutationOptions({
+        queryClient,
+        settlementId,
+      })}
+      input={{ settlementBuildingId: building.id }}
+      successMessage="Building deconstructed."
+      errorFallback="Failed to deconstruct building."
     />
   );
 }

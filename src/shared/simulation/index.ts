@@ -3,6 +3,9 @@
 // Only the notification payload parsers/types are consumed by the frontend.
 // The full simulation engine lives in supabase/functions/_shared/simulation.
 
+export { LOG_CODES } from "./logCodes.ts";
+export type { LogCode } from "./logCodes.ts";
+
 export {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,

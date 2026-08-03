@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -62,6 +62,7 @@ vi.mock("@tanstack/react-router", () => ({
       </a>
     );
   },
+  useBlocker: () => ({ status: "idle" as const }),
   useNavigate: () => navigateMock,
 }));
 
@@ -138,18 +139,45 @@ describe("CitizenDetailPage", () => {
       await screen.findByRole("heading", { level: 1, name: "Aldra" }),
     ).toBeDefined();
     expect(screen.getByText("Player character.")).toBeDefined();
-    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Core edit" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
+    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
     expect(
       screen.getAllByRole("button", { name: /Edit/ }).length,
     ).toBeGreaterThan(0);
-
-    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
     expect(screen.getByRole("button", { name: "Mark dead" })).toBeDefined();
 
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
+  });
+
+  it("preserves a dirty core-info draft when switching tabs and back", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ name: "Aldra" }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Aldra" });
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editForm = screen.getByRole("form", { name: "Edit citizen core" });
+    const givenNameInput = within(editForm).getAllByRole("textbox")[0];
+    await userEvent.clear(givenNameInput);
+    await userEvent.type(givenNameInput, "Draft");
+
+    await userEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
+
+    expect(
+      within(
+        screen.getByRole("form", { name: "Edit citizen core" }),
+      ).getAllByRole("textbox")[0],
+    ).toHaveValue("Draft");
   });
 
   it("renders the deceased status and revive control for dead citizens viewed by admins", async () => {
@@ -174,7 +202,7 @@ describe("CitizenDetailPage", () => {
     expect(screen.getByText("Admin")).toBeDefined();
     expect(screen.getByText("fever")).toBeDefined();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Edit" }));
     expect(
       screen.getByRole("button", { name: "Revive citizen" }),
     ).toBeDefined();
@@ -263,7 +291,7 @@ describe("CitizenDetailPage", () => {
         name: "Brann",
         user_id: USER_ID,
       }),
-      worldVisibility: "public",
+      pcWorldIds: [WORLD_ID],
     });
     requireSupabaseClient.mockReturnValue(client);
 
@@ -305,7 +333,7 @@ describe("CitizenDetailPage", () => {
           name: "Cael",
           user_id: null,
         }),
-        worldVisibility: "public",
+        pcWorldIds: [WORLD_ID],
       }),
     );
 
@@ -331,7 +359,7 @@ describe("CitizenDetailPage", () => {
           name: "Renn",
           user_id: OTHER_USER_ID,
         }),
-        worldVisibility: "public",
+        pcWorldIds: [WORLD_ID],
       }),
     );
 
@@ -343,7 +371,7 @@ describe("CitizenDetailPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
     expect(screen.queryByTestId("role-assignment-controls")).toBeNull();
-    expect(screen.queryByText("Role and linked user")).toBeNull();
+    expect(screen.queryByText("Linked user")).toBeNull();
 
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
@@ -359,7 +387,7 @@ describe("CitizenDetailPage", () => {
           settlement_id: null,
           user_id: null,
         }),
-        worldVisibility: "public",
+        pcWorldIds: [WORLD_ID],
       }),
     );
 
@@ -388,12 +416,14 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const linkButton = await screen.findByRole("button", {
         name: "Link user",
       });
       await userEvent.click(linkButton);
 
-      const select = screen.getByRole("combobox");
+      const select = screen.getByRole("combobox", { name: "User" });
       expect(select).toBeDefined();
 
       const options = Array.from((select as HTMLSelectElement).options).map(
@@ -417,6 +447,8 @@ describe("CitizenDetailPage", () => {
       );
 
       renderPage();
+
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
 
       const linkButton = await screen.findByRole("button", {
         name: "Link user",
@@ -456,6 +488,8 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
       });
@@ -484,6 +518,8 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
       });
@@ -510,6 +546,8 @@ describe("CitizenDetailPage", () => {
       requireSupabaseClient.mockReturnValue(client);
 
       renderPage();
+
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
 
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
@@ -544,6 +582,8 @@ describe("CitizenDetailPage", () => {
       requireSupabaseClient.mockReturnValue(client);
 
       renderPage();
+
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
 
       const unlinkButton = await screen.findByRole("button", {
         name: "Unlink",
@@ -653,12 +693,14 @@ describe("CitizenDetailPage", () => {
 
       renderPage();
 
+      await userEvent.click(await screen.findByRole("tab", { name: "Edit" }));
+
       const linkButton = await screen.findByRole("button", {
         name: "Link user",
       });
       await userEvent.click(linkButton);
 
-      const select = await screen.findByRole("combobox");
+      const select = await screen.findByRole("combobox", { name: "User" });
       await userEvent.selectOptions(select, OTHER_USER_ID);
 
       await userEvent.click(screen.getByRole("button", { name: "Link user" }));
@@ -672,9 +714,7 @@ describe("CitizenDetailPage", () => {
     });
   });
 
-  it("renders parent A as a named link and parent B as an em-dash when absent", async () => {
-    const parentARow = createCitizenRow({ id: PARENT_A_ID, name: "Elder A" });
-
+  it("renders known ancestors as named links and empty parent slots as Unknown in the family tree", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -684,7 +724,35 @@ describe("CitizenDetailPage", () => {
           parent_a_citizen_id: PARENT_A_ID,
           parent_b_citizen_id: null,
         }),
-        citizenRowsById: { [PARENT_A_ID]: parentARow },
+        familyTreeRows: [
+          {
+            citizen_id: CITIZEN_ID,
+            direction: "self",
+            generation: 0,
+            name: "Child",
+            node_path: "root",
+            parent_path: null,
+            status: "alive",
+          },
+          {
+            citizen_id: PARENT_A_ID,
+            direction: "ancestor",
+            generation: -1,
+            name: "Elder A",
+            node_path: "root.A",
+            parent_path: "root",
+            status: "alive",
+          },
+          {
+            citizen_id: null,
+            direction: "unknown",
+            generation: -1,
+            name: null,
+            node_path: "root.B",
+            parent_path: "root",
+            status: null,
+          },
+        ],
       }),
     );
 
@@ -694,7 +762,7 @@ describe("CitizenDetailPage", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     const link = await screen.findByRole("link", { name: "Elder A" });
     expect((link as HTMLAnchorElement).href).toContain(PARENT_A_ID);
-    expect(screen.getByText("—")).toBeDefined();
+    expect(screen.getByText("Unknown")).toBeDefined();
   });
 
   it("shows a 'Back to {name}' link pointing to the settlement for citizens with a settlement", async () => {
@@ -918,7 +986,6 @@ const NATION_ROW = {
   created_at: "2026-05-01T00:00:00.000Z",
   description: null,
   id: NATION_ID,
-  is_hidden: false,
   name: "Homeland",
   updated_at: "2026-05-01T00:00:00.000Z",
   world_id: WORLD_ID,
@@ -929,19 +996,21 @@ function createClient({
   assignmentRow = null,
   citizen,
   citizenRowsById = {},
+  familyTreeRows,
   jobRows = [],
+  pcWorldIds = [],
   usersRows = [USER_ROW],
   usersQueryFails = false,
-  worldVisibility = "private",
 }: {
   readonly adminRows: ReadonlyArray<{ readonly world_id: string }>;
   readonly assignmentRow?: unknown;
   readonly citizen: CitizenRowFixture;
   readonly citizenRowsById?: Readonly<Record<string, CitizenRowFixture>>;
+  readonly familyTreeRows?: readonly unknown[];
   readonly jobRows?: readonly unknown[];
+  readonly pcWorldIds?: readonly string[];
   readonly usersRows?: readonly (typeof USER_ROW)[];
   readonly usersQueryFails?: boolean;
-  readonly worldVisibility?: string;
 }): unknown {
   const worldRow = {
     archived_at: null,
@@ -953,7 +1022,6 @@ function createClient({
     name: "Test World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: worldVisibility,
   };
 
   return {
@@ -995,7 +1063,7 @@ function createClient({
     }),
     rpc: vi.fn().mockImplementation((name: string) => {
       if (name === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       if (name === "search_users_for_admin_picker") {
         if (usersQueryFails) {
@@ -1008,6 +1076,20 @@ function createClient({
           data: usersRows.map((u) => ({ id: u.id, username: u.username })),
           error: null,
         });
+      }
+      if (name === "get_citizen_family_tree") {
+        const data = familyTreeRows ?? [
+          {
+            citizen_id: citizen.id,
+            direction: "self",
+            generation: 0,
+            name: citizen.name,
+            node_path: "root",
+            parent_path: null,
+            status: citizen.status,
+          },
+        ];
+        return { returns: () => Promise.resolve({ data, error: null }) };
       }
       return undefined;
     }),

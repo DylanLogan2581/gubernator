@@ -61,6 +61,7 @@ function createEvent(overrides: Partial<EventWithGroup> = {}): EventWithGroup {
     amount_value: null,
     multiplier_value: null,
     extra_data_jsonb: null,
+    icon: null,
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     group: null,
@@ -102,6 +103,14 @@ const EMPTY_SEARCH: EventsSearchParams = {
   sort: "created_at",
 };
 
+function setViewportWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
 function renderList(
   search: EventsSearchParams = EMPTY_SEARCH,
   overrides: {
@@ -130,6 +139,10 @@ describe("EventsList", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     navigateMock.mockReset();
+  });
+
+  afterEach(() => {
+    setViewportWidth(1024);
   });
 
   it("renders events with status and scope badges", async () => {
@@ -307,6 +320,25 @@ describe("EventsList", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("renders and selects a card instead of the table on narrow viewports", async () => {
+    setViewportWidth(500);
+    requireSupabaseClient.mockReturnValue(
+      buildClient([
+        createEvent({ name: "Drought", status: "active", scope_type: "world" }),
+      ]),
+    );
+    const user = userEvent.setup();
+
+    renderList();
+
+    const card = await screen.findByText("Drought");
+    expect(screen.queryByRole("table")).toBeNull();
+
+    await user.click(card);
+
+    expect(await screen.findByTestId("event-detail")).toBeDefined();
   });
 
   it("hides the create button when canCreate is false", async () => {

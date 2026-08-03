@@ -10,7 +10,15 @@
 import type {
   SimCitizen,
   SimCitizenAssignment,
+  SimCurrencyLedgerEntry,
+  SimEducationEnrollment,
+  SimEducationLevel,
+  SimNation,
+  SimNationCurrency,
+  SimNationOffice,
+  SimNationTaxPolicy,
   SimSettlement,
+  SimTreaty,
   SimulationContext,
   SimulationInputState,
   SimulationSharedState,
@@ -47,6 +55,7 @@ export function makeSharedState(): SimulationSharedState {
     pendingManagedPopulationDeltas: new Map(),
     pendingPopCapBySettlement: new Map(),
     pendingStockpiles: new Map(),
+    pendingNationStockpiles: new Map(),
   };
 }
 
@@ -54,18 +63,33 @@ export function makeInputState(
   overrides: Partial<SimulationInputState> = {},
 ): SimulationInputState {
   return {
+    armies: [],
+    armyUnits: [],
     buildingBlueprints: [],
     buildingTiers: [],
     calendarConfig: CALENDAR_CONFIG,
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
+    depositTypeJobs: [],
     depositTypes: [],
     deposits: [],
+    educationEnrollments: [],
+    educationLevels: [],
     events: [],
     jobs: [],
+    managedPopulationCullingJobs: [],
+    managedPopulationHusbandryJobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationCurrencies: [],
+    nationCurrencyLedgerEntries: [],
+    nationOffices: [],
+    nationRelationships: [],
+    nationResourceStockpiles: [],
+    nationTaxPolicies: [],
+    nationTreaties: [],
+    nations: [],
     partnerships: [],
     populationRules: POPULATION_RULES,
     resources: [],
@@ -75,6 +99,8 @@ export function makeInputState(
     systemResourceIds: { foodId: "food", freshWaterId: "water" },
     tradeRoutes: [],
     turnNumber: 1,
+    unitSoldiers: [],
+    unitTypes: [],
     worldId: "w1",
     ...overrides,
   };
@@ -104,13 +130,100 @@ export function makeCitizen(
   return {
     bornOnTurnNumber: 1,
     citizenType: "npc",
+    cultureId: null,
+    educationLevelId: null,
     givenName: overrides.id,
     namesetId: null,
     parentACitizenId: null,
     parentBCitizenId: null,
+    religionId: null,
+    roleNationId: null,
+    roleSettlementId: null,
+    roleType: "none",
     sex: "male",
     status: "alive",
     surname: null,
+    ...overrides,
+  };
+}
+
+export function makeNation(
+  overrides: Partial<SimNation> & { id: string },
+): SimNation {
+  return {
+    governmentType: "monarchy",
+    name: "Testland",
+    taxRate: 0,
+    tradePolicy: "free",
+    ...overrides,
+  };
+}
+
+export function makeNationTaxPolicy(
+  overrides: Partial<SimNationTaxPolicy> & { nationId: string },
+): SimNationTaxPolicy {
+  return {
+    exempt: false,
+    flatAmount: 0,
+    method: "percent_production",
+    minStockpileFloor: 0,
+    rate: 0,
+    settlementId: null,
+    taxedResourceIds: null,
+    ...overrides,
+  };
+}
+
+export function makeCurrency(
+  overrides: Partial<SimNationCurrency> & { id: string; nationId: string },
+): SimNationCurrency {
+  return {
+    backingRatio: null,
+    backingResourceId: null,
+    confidence: 1,
+    currencyType: "fiat",
+    isInDefault: false,
+    moneySupply: 0,
+    reserveQuantity: 0,
+    name: "Testmark",
+    ...overrides,
+  };
+}
+
+export function makeLedgerEntry(
+  overrides: Partial<SimCurrencyLedgerEntry> & { currencyId: string },
+): SimCurrencyLedgerEntry {
+  return {
+    action: "mint",
+    amount: 0,
+    ...overrides,
+  };
+}
+
+export function makeNationOffice(
+  overrides: Partial<SimNationOffice> & { citizenId: string },
+): SimNationOffice {
+  return {
+    excludesFromLabor: true,
+    ...overrides,
+  };
+}
+
+export function makeTreaty(
+  overrides: Partial<SimTreaty> & {
+    id: string;
+    proposerNationId: string;
+    responderNationId: string;
+  },
+): SimTreaty {
+  return {
+    endsTurnNumber: null,
+    marriageCitizenAId: null,
+    marriageCitizenBId: null,
+    treatyType: "tribute",
+    tributePayer: null,
+    tributeQuantityPerTurn: null,
+    tributeResourceId: null,
     ...overrides,
   };
 }
@@ -127,6 +240,33 @@ export function makeAssignment(
     managedPopulationInstanceId: null,
     tradeRouteEnd: null,
     tradeRouteId: null,
+    ...overrides,
+  };
+}
+
+export function makeEducationLevel(
+  overrides: Partial<SimEducationLevel> & { id: string; rank: number },
+): SimEducationLevel {
+  return {
+    name: overrides.id,
+    naturalBornPercent: 0,
+    worldId: "w1",
+    ...overrides,
+  };
+}
+
+export function makeEnrollment(
+  overrides: Partial<SimEducationEnrollment> & {
+    id: string;
+    citizenId: string;
+    settlementBuildingId: string;
+    targetLevelId: string;
+  },
+): SimEducationEnrollment {
+  return {
+    enrolledTurnNumber: 1,
+    progressTurns: 0,
+    worldId: "w1",
     ...overrides,
   };
 }

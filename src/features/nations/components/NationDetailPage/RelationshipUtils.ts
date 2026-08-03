@@ -36,37 +36,37 @@ export function getStanceIconConfig(stance: string): {
     case "neutral":
       return {
         Icon: MinusCircle,
-        colorClass: "text-yellow-500",
+        colorClass: "text-muted-foreground",
         label: "Neutral stance",
       };
     case "friendly":
       return {
         Icon: Heart,
-        colorClass: "text-green-500",
+        colorClass: "text-success-foreground",
         label: "Friendly stance",
       };
     case "hostile":
       return {
         Icon: AlertTriangle,
-        colorClass: "text-red-500",
+        colorClass: "text-warning-foreground",
         label: "Hostile stance",
       };
     case "at_war":
       return {
         Icon: Swords,
-        colorClass: "text-red-700",
+        colorClass: "text-destructive",
         label: "At war",
       };
     case "allied":
       return {
         Icon: Hand,
-        colorClass: "text-green-500",
+        colorClass: "text-success-foreground",
         label: "Allied stance",
       };
     case "non_aggression_pact":
       return {
         Icon: Shield,
-        colorClass: "text-yellow-500",
+        colorClass: "text-muted-foreground",
         label: "Non-aggression pact",
       };
     default:
@@ -81,17 +81,17 @@ export function getStanceIconConfig(stance: string): {
 export function getStanceBadgeClassName(stance: string): string {
   switch (stance) {
     case "neutral":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300";
+      return "bg-muted text-muted-foreground";
     case "friendly":
-      return "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300";
+      return "bg-success text-success-foreground";
     case "hostile":
-      return "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300";
+      return "bg-warning text-warning-foreground";
     case "at_war":
-      return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300";
+      return "bg-destructive/10 text-destructive";
     case "allied":
-      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300";
+      return "bg-success text-success-foreground";
     case "non_aggression_pact":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300";
+      return "bg-muted text-muted-foreground";
     default:
       return "bg-muted text-muted-foreground";
   }

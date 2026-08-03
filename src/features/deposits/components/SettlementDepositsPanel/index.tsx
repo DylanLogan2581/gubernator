@@ -11,7 +11,6 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -86,22 +85,23 @@ export function SettlementDepositsPanel({
     instancesQuery.data?.find((i) => i.id === selectedInstanceId) ?? null;
 
   return (
-    <Card aria-labelledby="settlement-deposits-heading" className="grid gap-3">
-      <div className="px-4 pt-4">
-        <DepositsPanelHeader
-          canAdmin={canAdmin && !isArchived}
-          instancesLoaded={!instancesQuery.isPending}
-          queryClient={queryClient}
-          settlementId={settlementId}
-          showRemoved={showRemoved}
-          worldId={worldId}
-          onToggleRemoved={() => {
-            setShowRemoved((prev) => !prev);
-          }}
-        />
-      </div>
+    <section
+      aria-labelledby="settlement-deposits-heading"
+      className="grid min-w-0 grid-cols-1 gap-3"
+    >
+      <DepositsPanelHeader
+        canAdmin={canAdmin && !isArchived}
+        instancesLoaded={!instancesQuery.isPending}
+        queryClient={queryClient}
+        settlementId={settlementId}
+        showRemoved={showRemoved}
+        worldId={worldId}
+        onToggleRemoved={() => {
+          setShowRemoved((prev) => !prev);
+        }}
+      />
 
-      <CardContent>
+      <div>
         {instancesQuery.isPending ? (
           <TableSkeleton columnCount={6} rowCount={5} />
         ) : instancesQuery.isError ? (
@@ -151,8 +151,8 @@ export function SettlementDepositsPanel({
             }}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -361,7 +361,7 @@ function DepositsStatusGroup({
         {label} ({instances.length})
       </button>
       {!isCollapsed ? (
-        <div id={panelId}>
+        <div className="overflow-x-auto rounded-md border" id={panelId}>
           <Table className="w-full text-sm">
             <TableHeader>
               <TableRow className="text-muted-foreground">

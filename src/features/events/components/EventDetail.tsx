@@ -8,10 +8,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,16 +33,17 @@ import { managedPopulationTypeByIdQueryOptions } from "@/features/managed-popula
 import { nationByIdQueryOptions } from "@/features/nations";
 import { resourceByIdQueryOptions } from "@/features/resources";
 import { settlementByIdQueryOptions } from "@/features/settlements";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   cancelEventMutationOptions,
   deleteEventMutationOptions,
-  isEventMutationError,
 } from "../mutations/eventMutations";
 import {
   eventDetailQueryOptions,
   isEventsError,
 } from "../queries/eventQueries";
+import { resolveEventIcon } from "../utils/eventIcon";
 
 import { EventScopeBadge, EventStatusBadge } from "./EventBadges";
 
@@ -106,7 +107,7 @@ export function EventDetail({
         eventId: event.id,
         worldId,
       });
-      toast.success("Event cancelled");
+      notifyMutationSuccess("Event cancelled");
       setShowCancelDialog(false);
       if (onCancelled !== undefined) {
         onCancelled();
@@ -115,11 +116,7 @@ export function EventDetail({
         await (navigate as any)({ to: `/worlds/${worldId}/events` });
       }
     } catch (error) {
-      if (isEventMutationError(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to cancel event");
-      }
+      notifyMutationError(error, "Failed to cancel event");
     }
   };
 
@@ -129,7 +126,7 @@ export function EventDetail({
         eventId: event.id,
         worldId,
       });
-      toast.success("Event deleted");
+      notifyMutationSuccess("Event deleted");
       setShowDeleteDialog(false);
       if (onDeleted !== undefined) {
         onDeleted();
@@ -138,11 +135,7 @@ export function EventDetail({
         await (navigate as any)({ to: `/worlds/${worldId}/events` });
       }
     } catch (error) {
-      if (isEventMutationError(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to delete event");
-      }
+      notifyMutationError(error, "Failed to delete event");
     }
   };
 
@@ -181,7 +174,7 @@ export function EventDetail({
         </div>
       )}
 
-      <div className={isPanel ? "" : "rounded-lg border bg-card p-6"}>
+      <div>
         <div className="space-y-4">
           {isPanel ? (
             <div className="flex items-center justify-between gap-2">
@@ -196,24 +189,17 @@ export function EventDetail({
               <EventStatusBadge status={event.status} />
             </div>
           ) : (
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold">{event.group?.name}</h1>
-                {event.group?.description !== null ? (
-                  <p className="mt-2 text-muted-foreground">
-                    {event.group?.description}
-                  </p>
-                ) : null}
-              </div>
-              <EventStatusBadge status={event.status} />
-            </div>
+            <PageHeader
+              icon={resolveEventIcon(event.icon)}
+              title={event.group?.name ?? ""}
+              description={event.group?.description ?? undefined}
+              actions={<EventStatusBadge status={event.status} />}
+            />
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Scope
-              </p>
+              <p className="eyebrow">Scope</p>
               <div className="mt-1 flex items-center gap-2">
                 <EventScopeBadge scopeType={event.scope_type} />
                 <ScopeDisplay
@@ -225,9 +211,7 @@ export function EventDetail({
             </div>
 
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Duration
-              </p>
+              <p className="eyebrow">Duration</p>
               <p className="mt-1 font-medium">
                 {event.duration_type === "sustained"
                   ? `Sustained (${event.remaining_transitions}/${event.duration_transitions} turns)`
@@ -236,9 +220,7 @@ export function EventDetail({
             </div>
 
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Activation Turn
-              </p>
+              <p className="eyebrow">Activation Turn</p>
               <p className="mt-1 font-medium">
                 After turn {event.activate_on_transition_after_turn_number}
               </p>
@@ -247,9 +229,7 @@ export function EventDetail({
 
           {event.duration_type === "sustained" && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Progress
-              </p>
+              <p className="eyebrow">Progress</p>
               <Progress value={progressPercent} className="h-2" />
               <p className="text-xs text-muted-foreground">
                 {event.remaining_transitions} of {event.duration_transitions}{" "}
@@ -260,9 +240,7 @@ export function EventDetail({
 
           {event.memories.length > 0 && (
             <div className="space-y-2 rounded-md bg-muted p-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Citizen Memories
-              </p>
+              <p className="eyebrow">Citizen Memories</p>
               <div className="space-y-2">
                 {event.memories.map((memory) => (
                   <div key={memory.id}>
@@ -278,9 +256,7 @@ export function EventDetail({
 
           {event.effects.length > 0 && (
             <div className="space-y-3 border-t pt-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Effects
-              </p>
+              <p className="eyebrow">Effects</p>
               <div className="space-y-2">
                 {event.effects.map((effect) => (
                   <EffectItem key={effect.id} effect={effect} />
@@ -463,7 +439,7 @@ type EffectItemProps = {
 
 function EffectItem({ effect }: EffectItemProps): JSX.Element {
   return (
-    <div className="rounded-md border bg-muted/50 p-3 text-sm space-y-2">
+    <div className="text-sm space-y-2">
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium capitalize">
           {effect.effect_type.replace(/_/g, " ")}

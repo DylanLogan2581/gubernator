@@ -1,4 +1,8 @@
 import { normalizeSupabaseError } from "@/features/auth";
+import { buildingsQueryKeys } from "@/features/buildings";
+import { depositsQueryKeys } from "@/features/deposits";
+import { jobsQueryKeys } from "@/features/jobs";
+import { managedPopulationsQueryKeys } from "@/features/managed-populations";
 import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
@@ -24,7 +28,6 @@ import {
   type SoftDeleteResourceInput,
   type UpdateResourceInput,
 } from "../schemas/resourceSchemas";
-import { validateResourceReferencesAgainstWorld } from "../utils/validateResourceReferences";
 
 import type {
   HardDeleteResourceResult,
@@ -33,6 +36,7 @@ import type {
   RestoreResourceResult,
   SoftDeleteResourceResult,
 } from "../types/resourceTypes";
+import type { QueryClient, UseMutationOptions } from "@tanstack/react-query";
 import type { z } from "zod";
 
 type ResourceMutationErrorCode =
@@ -87,9 +91,72 @@ const resourceMutations = buildTrashLifecycleMutations<
 
 export const createResourceMutationOptions = resourceMutations.create;
 export const updateResourceMutationOptions = resourceMutations.update;
-export const softDeleteResourceMutationOptions = resourceMutations.softDelete;
 export const restoreResourceMutationOptions = resourceMutations.restore;
 export const hardDeleteResourceMutationOptions = resourceMutations.hardDelete;
+
+export function softDeleteResourceMutationOptions(opts: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): UseMutationOptions<
+  SoftDeleteResourceResult,
+  Error,
+  SoftDeleteResourceInput
+> {
+  const base = resourceMutations.softDelete(opts);
+  return {
+    ...base,
+    onSuccess: async (result, variables, onMutateResult, context) => {
+      await base.onSuccess?.(result, variables, onMutateResult, context);
+      await invalidateResourceCleanupCaches(
+        opts.queryClient,
+        result.cleanupSummary,
+      );
+    },
+  };
+}
+
+async function invalidateResourceCleanupCaches(
+  queryClient: QueryClient,
+  cleanupSummary: ResourceCleanupSummary,
+): Promise<void> {
+  const tasks: Array<Promise<unknown>> = [];
+
+  if (
+    cleanupSummary.jobDefinitionsInputsCleaned > 0 ||
+    cleanupSummary.jobDefinitionsOutputsCleaned > 0
+  ) {
+    tasks.push(queryClient.invalidateQueries({ queryKey: jobsQueryKeys.all }));
+  }
+
+  if (
+    cleanupSummary.buildingTierConstructionCostsCleaned > 0 ||
+    cleanupSummary.buildingTierEffectsCleaned > 0 ||
+    cleanupSummary.buildingTierUpkeepCostsCleaned > 0
+  ) {
+    tasks.push(
+      queryClient.invalidateQueries({ queryKey: buildingsQueryKeys.all }),
+    );
+  }
+
+  if (cleanupSummary.depositTypesWorkerInputsCleaned > 0) {
+    tasks.push(
+      queryClient.invalidateQueries({ queryKey: depositsQueryKeys.all }),
+    );
+  }
+
+  if (
+    cleanupSummary.managedPopulationCullingOutputsCleaned > 0 ||
+    cleanupSummary.managedPopulationMaintenanceCleaned > 0
+  ) {
+    tasks.push(
+      queryClient.invalidateQueries({
+        queryKey: managedPopulationsQueryKeys.all,
+      }),
+    );
+  }
+
+  await Promise.all(tasks);
+}
 
 async function createResource(
   client: GubernatorSupabaseClient,
@@ -97,20 +164,15 @@ async function createResource(
 ): Promise<Resource> {
   const values = parseInput(createResourceInputSchema, input);
 
-  const refIssues = validateResourceReferencesAgainstWorld({});
-  if (refIssues.length > 0) {
-    throw new ResourceMutationError({
-      code: "resource_input_invalid",
-      message: "Resource references are invalid.",
-    });
-  }
-
   const { data, error } = await client
     .from("resources")
     .insert({
       base_stockpile_cap: values.baseStockpileCap ?? 0,
-      decay_rate: values.decayRate ?? 0,
+      category_id: values.categoryId ?? null,
+      change_amount: values.changeAmount ?? 0,
+      change_mode: values.changeMode ?? "percent",
       icon: values.icon ?? null,
+      icon_color: values.iconColor ?? null,
       name: values.name.trim(),
       slug: values.slug.trim(),
       world_id: values.worldId,
@@ -138,18 +200,13 @@ async function updateResource(
 ): Promise<Resource> {
   const values = parseInput(updateResourceInputSchema, input);
 
-  const refIssues = validateResourceReferencesAgainstWorld({});
-  if (refIssues.length > 0) {
-    throw new ResourceMutationError({
-      code: "resource_input_invalid",
-      message: "Resource references are invalid.",
-    });
-  }
-
   const updatePayload: {
     base_stockpile_cap?: number;
-    decay_rate?: number;
+    category_id?: string | null;
+    change_amount?: number;
+    change_mode?: "percent" | "flat";
     icon?: string | null;
+    icon_color?: number | null;
     name?: string;
     slug?: string;
   } = {};
@@ -163,11 +220,20 @@ async function updateResource(
   if (values.baseStockpileCap !== undefined) {
     updatePayload.base_stockpile_cap = values.baseStockpileCap;
   }
-  if (values.decayRate !== undefined) {
-    updatePayload.decay_rate = values.decayRate;
+  if (values.changeMode !== undefined) {
+    updatePayload.change_mode = values.changeMode;
+  }
+  if (values.changeAmount !== undefined) {
+    updatePayload.change_amount = values.changeAmount;
   }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;
+  }
+  if (values.iconColor !== undefined) {
+    updatePayload.icon_color = values.iconColor;
+  }
+  if (values.categoryId !== undefined) {
+    updatePayload.category_id = values.categoryId;
   }
 
   const { data, error } = await client

@@ -8,20 +8,20 @@
 // On turn advance (migration 20260503000001): is_ready_current_turn := auto_ready_enabled,
 // ready_set_at := null.
 //
+// Effective readiness is `is_ready_current_turn OR auto_ready_enabled`: once auto-ready is on, the
+// settlement counts as ready regardless of the underlying is_ready_current_turn flag, since
+// auto-ready guarantees it will be applied at the next turn advance.
+//
 // Truth table — legal (autoReadyEnabled, isReadyCurrentTurn) combinations and their UI state:
 //   false, false → "not-ready",      isReadyForCurrentTurn=false  initial state or after turn
 //                                                                 advance with auto off
 //   false, true  → "manually-ready", isReadyForCurrentTurn=true   user set ready this turn via
 //                                                                 set_settlement_readiness(true)
-//   true,  false → "auto-ready",     isReadyForCurrentTurn=false  auto-ready just enabled mid-turn;
-//                                                                 takes effect at next turn advance
+//   true,  false → "auto-ready",     isReadyForCurrentTurn=true   auto-ready enabled mid-turn;
+//                                                                 counts as ready now, applied at
+//                                                                 next turn advance
 //   true,  true  → "auto-ready",     isReadyForCurrentTurn=true   normal state after turn advance
 //                                                                 with auto on
-//
-// `kind` is a display modifier (does auto-ready govern this settlement?) that is independent of
-// `isReadyForCurrentTurn`, which always mirrors the underlying is_ready_current_turn flag. A
-// settlement can be "auto-ready" and still not ready for the current turn (enabled mid-turn,
-// before the next advance applies it).
 //
 // Legal transitions:
 //   not-ready      → manually-ready         set_settlement_readiness(true)          [manage permission]
@@ -42,7 +42,6 @@ export type SettlementReadinessStateInput = {
 
 export type SettlementReadinessState =
   | { readonly isReadyForCurrentTurn: true; readonly kind: "auto-ready" }
-  | { readonly isReadyForCurrentTurn: false; readonly kind: "auto-ready" }
   | { readonly isReadyForCurrentTurn: true; readonly kind: "manually-ready" }
   | { readonly isReadyForCurrentTurn: false; readonly kind: "not-ready" };
 
@@ -50,10 +49,7 @@ export function deriveSettlementReadinessState(
   input: SettlementReadinessStateInput,
 ): SettlementReadinessState {
   if (input.autoReadyEnabled) {
-    return {
-      isReadyForCurrentTurn: input.isReadyCurrentTurn,
-      kind: "auto-ready",
-    };
+    return { isReadyForCurrentTurn: true, kind: "auto-ready" };
   }
   if (input.isReadyCurrentTurn) {
     return { isReadyForCurrentTurn: true, kind: "manually-ready" };

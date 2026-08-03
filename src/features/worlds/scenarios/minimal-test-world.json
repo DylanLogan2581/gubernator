@@ -1,5 +1,5 @@
 {
-  "template_version": 1,
+  "template_version": 2,
   "meta": {
     "name": "Minimal Test World",
     "slug": "minimal-test-world",
@@ -63,19 +63,25 @@
       }
     }
   ],
+  "resource_categories": [],
+  "education_levels": [],
+  "cultures": [],
+  "religions": [],
   "resources": [
     {
       "name": "Grain",
       "slug": "grain",
       "base_stockpile_cap": 500,
-      "decay_rate": 0.01,
+      "change_mode": "percent",
+      "change_amount": -0.01,
       "is_system_resource": false
     },
     {
       "name": "Wood",
       "slug": "wood",
       "base_stockpile_cap": 300,
-      "decay_rate": 0.0,
+      "change_mode": "percent",
+      "change_amount": 0.0,
       "is_system_resource": false
     }
   ],
@@ -125,5 +131,6 @@
     }
   ],
   "deposit_types": [],
-  "managed_population_types": []
+  "managed_population_types": [],
+  "unit_types": []
 }

@@ -6,7 +6,7 @@
 begin;
 
 select
-  plan (19);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -35,18 +35,16 @@ values
 -- World 1: where managed_population_types live.
 -- World 2: provides cross-world resources for rejection tests.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'MPTV Main World',
-    'private',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'MPTV Other World',
-    'private',
     'active'
   );
 
@@ -84,54 +82,6 @@ values
     true
   );
 
--- Husbandry and culling job pairs — one per test that inserts a pop type row.
-insert into
-  public.job_definitions (id, world_id, name, slug, job_type)
-values
-  (
-    'f4000000-0000-0000-0000-000000000001',
-    'f2000000-0000-0000-0000-000000000001',
-    'Cattle Husbandry',
-    'cattle-husbandry',
-    'husbandry'
-  ),
-  (
-    'f4000000-0000-0000-0000-000000000002',
-    'f2000000-0000-0000-0000-000000000001',
-    'Cattle Culling',
-    'cattle-culling',
-    'culling'
-  );
-
--- Extra job pairs for each test that inserts a pop type row.
-insert into
-  public.job_definitions (id, world_id, name, slug, job_type)
-select
-  format(
-    'f4000000-0000-0000-0000-%s',
-    lpad((n * 2 + 1)::text, 12, '0')
-  )::uuid,
-  'f2000000-0000-0000-0000-000000000001',
-  format('Husbandry %s', n),
-  format('husbandry-%s', n),
-  'husbandry'
-from
-  generate_series(1, 19) as n;
-
-insert into
-  public.job_definitions (id, world_id, name, slug, job_type)
-select
-  format(
-    'f4000000-0000-0000-0000-%s',
-    lpad((n * 2 + 2)::text, 12, '0')
-  )::uuid,
-  'f2000000-0000-0000-0000-000000000001',
-  format('Culling %s', n),
-  format('culling-%s', n),
-  'culling'
-from
-  generate_series(1, 19) as n;
-
 -- ===========================================================================
 -- MAINTENANCE_RULES_JSON SHAPE VALIDATION
 -- All tests run as the postgres superuser (no role set) so RLS is bypassed
@@ -142,15 +92,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'mt1',
-      'f4000000-0000-0000-0000-000000000003',
-      'f4000000-0000-0000-0000-000000000004',
-      1, 0,
+      0,
       '"not an array"'
     )
     $test$,
@@ -164,15 +111,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'mt2',
-      'f4000000-0000-0000-0000-000000000005',
-      'f4000000-0000-0000-0000-000000000006',
-      1, 0,
+      0,
       '[{"amount_per_n_animals": 1}]'
     )
     $test$,
@@ -186,15 +130,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'mt3',
-      'f4000000-0000-0000-0000-000000000007',
-      'f4000000-0000-0000-0000-000000000008',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": "ten"}]'
     )
     $test$,
@@ -208,15 +149,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'mt4',
-      'f4000000-0000-0000-0000-000000000009',
-      'f4000000-0000-0000-0000-000000000010',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 1, "extra": true}]'
     )
     $test$,
@@ -230,15 +168,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'mt5',
-      'f4000000-0000-0000-0000-000000000011',
-      'f4000000-0000-0000-0000-000000000012',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000002", "amount_per_n_animals": 1}]'
     )
     $test$,
@@ -252,15 +187,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'mt6',
-      'f4000000-0000-0000-0000-000000000013',
-      'f4000000-0000-0000-0000-000000000014',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000003", "amount_per_n_animals": 1}]'
     )
     $test$,
@@ -277,15 +209,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co1',
-      'f4000000-0000-0000-0000-000000000015',
-      'f4000000-0000-0000-0000-000000000016',
-      1, 0,
+      0,
       '"not an array"'
     )
     $test$,
@@ -299,15 +228,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co2',
-      'f4000000-0000-0000-0000-000000000017',
-      'f4000000-0000-0000-0000-000000000018',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000002", "amount_per_n_animals": 1}]'
     )
     $test$,
@@ -321,15 +247,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co3',
-      'f4000000-0000-0000-0000-000000000019',
-      'f4000000-0000-0000-0000-000000000020',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000003", "amount_per_n_animals": 1}]'
     )
     $test$,
@@ -343,15 +266,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co4',
-      'f4000000-0000-0000-0000-000000000033',
-      'f4000000-0000-0000-0000-000000000034',
-      1, 0,
+      0,
       '[{"amount_per_n_animals": 1}]'
     )
     $test$,
@@ -365,15 +285,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co5',
-      'f4000000-0000-0000-0000-000000000035',
-      'f4000000-0000-0000-0000-000000000036',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": "ten"}]'
     )
     $test$,
@@ -387,15 +304,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co6',
-      'f4000000-0000-0000-0000-000000000037',
-      'f4000000-0000-0000-0000-000000000038',
-      1, 0,
+      0,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 1, "extra": true}]'
     )
     $test$,
@@ -409,15 +323,12 @@ select
   throws_ok (
     $test$
     insert into public.managed_population_types (
-      world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f2000000-0000-0000-0000-000000000001',
       'Test', 'co7',
-      'f4000000-0000-0000-0000-000000000039',
-      'f4000000-0000-0000-0000-000000000040',
-      1, 0,
+      0,
       '[{"resource_id": "00000000-0000-0000-0000-000000000000", "amount_per_n_animals": 1}]'
     )
     $test$,
@@ -434,16 +345,13 @@ select
   lives_ok (
     $test$
     insert into public.managed_population_types (
-      id, world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate
+      id, world_id, name, slug, growth_rate
     )
     values (
       'f5000000-0000-0000-0000-000000000001',
       'f2000000-0000-0000-0000-000000000001',
       'Empty Rules Pop', 'empty-rules-pop',
-      'f4000000-0000-0000-0000-000000000001',
-      'f4000000-0000-0000-0000-000000000002',
-      1, 0
+      0
     )
     $test$,
     'empty maintenance_rules_json and culling_outputs_json (default) are accepted'
@@ -454,16 +362,13 @@ select
   lives_ok (
     $test$
     insert into public.managed_population_types (
-      id, world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, maintenance_rules_json
+      id, world_id, name, slug, growth_rate, maintenance_rules_json
     )
     values (
       'f5000000-0000-0000-0000-000000000002',
       'f2000000-0000-0000-0000-000000000001',
       'Maintained Pop', 'maintained-pop',
-      'f4000000-0000-0000-0000-000000000021',
-      'f4000000-0000-0000-0000-000000000022',
-      2, 0.05,
+      0.05,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 3}]'
     )
     $test$,
@@ -475,16 +380,13 @@ select
   lives_ok (
     $test$
     insert into public.managed_population_types (
-      id, world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+      id, world_id, name, slug, growth_rate, culling_outputs_json
     )
     values (
       'f5000000-0000-0000-0000-000000000003',
       'f2000000-0000-0000-0000-000000000001',
       'Culling Pop', 'culling-pop',
-      'f4000000-0000-0000-0000-000000000023',
-      'f4000000-0000-0000-0000-000000000024',
-      1, 0.10,
+      0.10,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 5}]'
     )
     $test$,
@@ -496,17 +398,14 @@ select
   lives_ok (
     $test$
     insert into public.managed_population_types (
-      id, world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate,
+      id, world_id, name, slug, growth_rate,
       maintenance_rules_json, culling_outputs_json
     )
     values (
       'f5000000-0000-0000-0000-000000000004',
       'f2000000-0000-0000-0000-000000000001',
       'Full Pop', 'full-pop',
-      'f4000000-0000-0000-0000-000000000025',
-      'f4000000-0000-0000-0000-000000000026',
-      3, 0.08,
+      0.08,
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 2},
         {"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 1}]',
       '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 4}]'
@@ -520,39 +419,16 @@ select
   lives_ok (
     $test$
     insert into public.managed_population_types (
-      id, world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate
+      id, world_id, name, slug, growth_rate
     )
     values (
       'f5000000-0000-0000-0000-000000000005',
       'f2000000-0000-0000-0000-000000000001',
       'Zero Growth Pop', 'zero-growth-pop',
-      'f4000000-0000-0000-0000-000000000027',
-      'f4000000-0000-0000-0000-000000000028',
-      1, 0
+      0
     )
     $test$,
     'growth_rate of zero is accepted'
-  );
-
--- husbandry_workers_per_n_animals = 1 is accepted (minimum positive value)
-select
-  lives_ok (
-    $test$
-    insert into public.managed_population_types (
-      id, world_id, name, slug, husbandry_job_id, culling_job_id,
-      husbandry_workers_per_n_animals, growth_rate
-    )
-    values (
-      'f5000000-0000-0000-0000-000000000006',
-      'f2000000-0000-0000-0000-000000000001',
-      'Min Workers Pop', 'min-workers-pop',
-      'f4000000-0000-0000-0000-000000000029',
-      'f4000000-0000-0000-0000-000000000030',
-      1, 0
-    )
-    $test$,
-    'husbandry_workers_per_n_animals = 1 is accepted'
   );
 
 select

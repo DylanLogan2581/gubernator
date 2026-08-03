@@ -68,12 +68,11 @@ where
   id = 'aa100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'aa200000-0000-0000-0000-000000000001',
     'MDT World',
-    'private',
     'active'
   );
 

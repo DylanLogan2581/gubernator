@@ -120,18 +120,17 @@ function WorldShellContent({
   }
 
   return (
-    <WorldShellFrame>
+    <div className="flex flex-col gap-4">
       <WorldDashboardHeroBanner
         inWorldDateLabel={worldQuery.data.header.inWorldDateLabel}
         isArchived={worldQuery.data.header.isArchived}
         name={worldQuery.data.header.name}
         status={worldQuery.data.header.status}
-        visibility={worldQuery.data.header.visibility}
         worldId={worldId}
       />
 
       {worldQuery.data.header.isArchived ? (
-        <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           This world is archived and available for review.
         </p>
       ) : null}
@@ -142,8 +141,8 @@ function WorldShellContent({
         <div className="flex flex-col gap-4">
           <SettlementReadinessListPanel
             accessContext={accessContext}
-            canAdmin={effectiveCanAdmin}
-            canManage={effectiveCanAdmin}
+            canAdmin={worldQuery.data.canAdmin}
+            canManage={worldQuery.data.canAdmin}
             isArchived={worldQuery.data.header.isArchived}
             worldId={worldId}
           />
@@ -160,7 +159,7 @@ function WorldShellContent({
         </div>
         <div className="flex flex-col gap-4">
           <WorldActiveEventsFeed worldId={worldId} />
-          <WorldTurnLogExcerpt worldId={worldId} />
+          <WorldTurnLogExcerpt worldId={worldId} className="flex-1" />
         </div>
         {effectiveCanAdmin ? (
           <div className="xl:col-span-2">
@@ -171,7 +170,7 @@ function WorldShellContent({
           </div>
         ) : null}
       </div>
-    </WorldShellFrame>
+    </div>
   );
 }
 

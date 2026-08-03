@@ -8,7 +8,7 @@ import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -16,12 +16,13 @@ import {
   restoreResourceMutationOptions,
   softDeleteResourceMutationOptions,
 } from "../../mutations/resourcesMutations";
+import { buildChangePreviewText } from "../../utils/changePreviewText";
 import { buildCleanupDescription } from "../../utils/cleanupDescription";
 
 import { EditResourceForm } from "./EditResourceForm";
 
 import type { Resource } from "../../types/resourceTypes";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type PendingAction = {
   readonly action: "trash" | "restore" | "hardDelete";
@@ -32,11 +33,13 @@ type ResourcesTableProps = {
   readonly canEdit: boolean;
   readonly isPaginationDisabled: boolean;
   readonly onPageChange: (page: number) => void;
+  readonly onSortingChange: (sorting: SortingState) => void;
   readonly pageCount: number;
   readonly pageIndex: number;
   readonly queryClient: QueryClient;
   readonly resources: readonly Resource[];
   readonly showTrash: boolean;
+  readonly sorting: SortingState;
   readonly worldId: string;
 };
 
@@ -64,7 +67,8 @@ function buildColumns({
   return [
     {
       id: "name",
-      enableSorting: false,
+      accessorFn: (row) => row.name,
+      enableSorting: true,
       header: "Name",
       cell: ({ row }) => {
         const resource = row.original;
@@ -72,8 +76,7 @@ function buildColumns({
           <div className="flex items-center gap-2">
             <IconChip
               icon={resolveEntityIcon(resource.icon)}
-              tone={hashToCategoricalSlot(resource.id)}
-              size="sm"
+              tone={resolveIconTone(resource.iconColor, resource.id)}
             />
             <span className="font-medium">{resource.name}</span>
             {resource.isSystemResource ? (
@@ -84,15 +87,63 @@ function buildColumns({
       },
     },
     {
-      id: "stats",
-      enableSorting: false,
-      header: "Stats",
+      id: "category",
+      accessorFn: (row) => row.category?.name ?? "",
+      enableSorting: true,
+      header: "Category",
+      cell: ({ row }) => {
+        const category = row.original.category;
+        if (category === null) {
+          return (
+            <span className="text-sm italic text-muted-foreground">
+              Uncategorized
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1.5 text-sm">
+            <span
+              aria-hidden="true"
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
+            {category.name}
+          </span>
+        );
+      },
+    },
+    {
+      id: "cap",
+      accessorFn: (row) => row.baseStockpileCap,
+      enableSorting: true,
+      header: "Storage cap",
+      meta: { align: "right" },
+      cell: ({ row }) => (
+        <span className="tabular-nums text-sm text-muted-foreground">
+          {row.original.baseStockpileCap.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "change",
+      accessorFn: (row) => row.changeAmount,
+      enableSorting: true,
+      header: "Growth / decay",
+      meta: { align: "right" },
       cell: ({ row }) => {
         const resource = row.original;
+        if (
+          resource.changeAmount === 0 ||
+          Number.isNaN(resource.changeAmount)
+        ) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        const changeText = buildChangePreviewText(
+          resource.changeMode,
+          resource.changeAmount,
+        );
         return (
-          <span className="tabular-nums text-sm text-muted-foreground">
-            {`Cap ${resource.baseStockpileCap.toLocaleString()} · Decay ${resource.decayRate.toString()}%`}
-          </span>
+          <span className="text-sm text-muted-foreground">{changeText}</span>
         );
       },
     },
@@ -100,6 +151,7 @@ function buildColumns({
       id: "actions",
       enableSorting: false,
       header: "Actions",
+      meta: { align: "right", fit: true },
       cell: ({ row }) => {
         const resource = row.original;
 
@@ -192,11 +244,13 @@ export function ResourcesTable({
   canEdit,
   isPaginationDisabled,
   onPageChange,
+  onSortingChange,
   pageCount,
   pageIndex,
   queryClient,
   resources,
   showTrash,
+  sorting,
   worldId,
 }: ResourcesTableProps): JSX.Element {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
@@ -289,10 +343,8 @@ export function ResourcesTable({
         columns={columns}
         data={resources}
         getRowId={(resource) => resource.id}
-        sorting={[]}
-        onSortingChange={() => {
-          // Server-side ordering is fixed (by name); no sortable columns.
-        }}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
         pageIndex={pageIndex}
         pageCount={pageCount}
         onPageChange={onPageChange}

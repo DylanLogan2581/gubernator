@@ -34,12 +34,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Test World',
-    'private',
     'active'
   );
 
@@ -149,88 +148,82 @@ values
 
 -- Deposit types: one active, one pre-trashed.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'ab500000-0000-0000-0000-000000000001',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Coal',
-    'smoke-coal',
-    'ab300000-0000-0000-0000-000000000003',
-    1
+    'smoke-coal'
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker,
-    is_trashed
-  )
+  public.deposit_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ab500000-0000-0000-0000-000000000002',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Coal Trashed',
     'smoke-coal-trashed',
-    'ab300000-0000-0000-0000-000000000003',
-    1,
     true
   );
 
 -- Managed population types: one active, one pre-trashed.
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'ab600000-0000-0000-0000-000000000001',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Cattle',
-    'smoke-cattle',
-    'ab300000-0000-0000-0000-000000000004',
-    'ab300000-0000-0000-0000-000000000005',
-    10
+    'smoke-cattle'
   );
 
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    is_trashed
-  )
+  public.managed_population_types (id, world_id, name, slug, is_trashed)
 values
   (
     'ab600000-0000-0000-0000-000000000002',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Cattle Trashed',
     'smoke-cattle-trashed',
-    'ab300000-0000-0000-0000-000000000004',
-    'ab300000-0000-0000-0000-000000000005',
-    10,
     true
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'ab600000-0000-0000-0000-000000000001',
+    'ab300000-0000-0000-0000-000000000004',
+    10
+  ),
+  (
+    'ab600000-0000-0000-0000-000000000002',
+    'ab300000-0000-0000-0000-000000000004',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'ab600000-0000-0000-0000-000000000001',
+    'ab300000-0000-0000-0000-000000000005',
+    10
+  ),
+  (
+    'ab600000-0000-0000-0000-000000000002',
+    'ab300000-0000-0000-0000-000000000005',
+    10
   );
 
 -- ===========================================================================

@@ -14,6 +14,7 @@ import {
   worldNamingConfigSchema,
   type WorldNamingConfig,
 } from "@/lib/worldNamingConfigSchemas";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { worldQueryKeys } from "../queries/worldQueryKeys";
 
@@ -32,7 +33,6 @@ type WorldNamingSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 export type SaveWorldNamingConfigInput = {
@@ -40,7 +40,7 @@ export type SaveWorldNamingConfigInput = {
   readonly worldId: string;
 };
 
-const WORLD_NAMING_SAVE_ACCESS_SELECT = "archived_at,id,status,visibility";
+const WORLD_NAMING_SAVE_ACCESS_SELECT = "archived_at,id,status";
 const WORLD_NAMING_SAVE_UPDATE_SELECT = "id";
 
 export class SaveWorldNamingConfigError extends Error {
@@ -116,13 +116,15 @@ async function saveWorldNamingConfig(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SaveWorldNamingConfigError({
-      code: "world_naming_config_archived",
-      message: "Archived worlds are read-only.",
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SaveWorldNamingConfigError({
+        code: "world_naming_config_archived",
+        message: "Archived worlds are read-only.",
+        worldId: input.worldId,
+      }),
+  );
 
   const { data, error } = await client
     .from("worlds")

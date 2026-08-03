@@ -75,7 +75,6 @@ type TestNationRow = {
   readonly created_at: string;
   readonly description: string | null;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
   readonly updated_at: string;
@@ -91,7 +90,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 
 function createCalendarConfig(): unknown {
@@ -122,7 +120,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "private",
     ...overrides,
   };
 }
@@ -134,7 +131,6 @@ function createNationRow(
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
     id: NATION_ID,
-    is_hidden: false,
     name: "Nation",
     nameset_id: null,
     updated_at: "2026-01-02T00:00:00.000Z",
@@ -159,12 +155,14 @@ function createClient({
   adminRows = [],
   isSuperAdmin = false,
   nationRows,
+  pcWorldIds = [],
   session,
   worldRows,
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly isSuperAdmin?: boolean;
   readonly nationRows: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: { readonly user: { readonly id: string } };
   readonly worldRows: readonly TestWorldRow[];
 }): unknown {
@@ -244,7 +242,7 @@ function createClient({
     }),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
@@ -258,7 +256,6 @@ function ContextProbe(): JSX.Element {
   const {
     canDelete,
     canEditDetails,
-    canToggleHidden,
     effectiveCanAdmin,
     isArchived,
     nation,
@@ -271,8 +268,6 @@ function ContextProbe(): JSX.Element {
       <dd>{String(canDelete)}</dd>
       <dt>canEditDetails</dt>
       <dd>{String(canEditDetails)}</dd>
-      <dt>canToggleHidden</dt>
-      <dd>{String(canToggleHidden)}</dd>
       <dt>effectiveCanAdmin</dt>
       <dd>{String(effectiveCanAdmin)}</dd>
       <dt>isArchived</dt>
@@ -386,9 +381,6 @@ describe("NationDetailPage", () => {
     expect(
       screen.getByText("canEditDetails").nextElementSibling,
     ).toHaveTextContent("true");
-    expect(
-      screen.getByText("canToggleHidden").nextElementSibling,
-    ).toHaveTextContent("true");
     expect(screen.getByText("canDelete").nextElementSibling).toHaveTextContent(
       "true",
     );
@@ -401,8 +393,9 @@ describe("NationDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [createNationRow()],
+        pcWorldIds: [WORLD_ID],
         session: { user: { id: "user-2" } },
-        worldRows: [createWorldRow({ visibility: "public" })],
+        worldRows: [createWorldRow()],
       }),
     );
     renderPage();
@@ -410,9 +403,6 @@ describe("NationDetailPage", () => {
 
     expect(
       screen.getByText("canEditDetails").nextElementSibling,
-    ).toHaveTextContent("false");
-    expect(
-      screen.getByText("canToggleHidden").nextElementSibling,
     ).toHaveTextContent("false");
     expect(screen.getByText("canDelete").nextElementSibling).toHaveTextContent(
       "false",
@@ -477,42 +467,6 @@ describe("NationDetailPage", () => {
     expect(screen.getByText("canDelete").nextElementSibling).toHaveTextContent(
       "false",
     );
-  });
-
-  it("redirects out when the nation is hidden and the viewer cannot manage the world", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
-        session: { user: { id: "user-2" } },
-        worldRows: [createWorldRow({ visibility: "public" })],
-      }),
-    );
-    renderPage();
-
-    await screen.findByRole("status", { name: "Redirecting…" });
-    expect(navigateMock).toHaveBeenCalledWith({
-      params: { worldId: WORLD_ID },
-      replace: true,
-      to: "/worlds/$worldId/nations",
-    });
-    expect(screen.queryByRole("heading", { name: "Veilreach" })).toBeNull();
-  });
-
-  it("shows the hidden badge to world admins viewing a hidden nation", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        adminRows: [{ world_id: WORLD_ID }],
-        nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
-        session: { user: { id: USER_ID } },
-        worldRows: [createWorldRow()],
-      }),
-    );
-    renderPage();
-
-    expect(
-      await screen.findByRole("heading", { level: 1, name: "Veilreach" }),
-    ).toBeDefined();
-    expect(screen.getByText("Hidden")).toBeDefined();
   });
 });
 

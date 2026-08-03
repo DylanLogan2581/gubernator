@@ -1,12 +1,18 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import { pickChildNamesetId } from "./childNameset.ts";
+import { generateName } from "../../../naming/index.ts";
 
+import { pickChildNamesetId } from "./childNameset.ts";
+import { pickInheritedFieldId } from "./inheritedField.ts";
+import { pickNaturalBornEducationLevelId } from "./naturalBornEducation.ts";
+
+import type { NamingParent } from "../../../naming/index.ts";
 import type { SeededRng } from "../../seededRng.ts";
 import type {
   CitizenBirth,
   NpcFlavorConfig,
   SimCitizen,
+  SimEducationLevel,
   SimNamingConfig,
   SimPartnership,
   SimSettlement,
@@ -57,62 +63,21 @@ function generateBirthName(
     return { givenName: "", surname: null };
   }
 
-  const normalized = sex.trim().toLowerCase();
-  const pool = normalized === "male"
-    ? namingConfig.male_given_names
-    : normalized === "female"
-    ? namingConfig.female_given_names
-    : [
-      ...namingConfig.male_given_names,
-      ...namingConfig.female_given_names,
-    ];
-
-  if (pool.length === 0) return { givenName: "", surname: null };
-
-  const givenName = pool[Math.floor(rng() * pool.length)] ?? "";
-
-  let surname: string | null;
-  switch (namingConfig.convention) {
-    case "pool":
-      surname = pickFromPool(rng, namingConfig.surnames);
-      break;
-    case "patronymic": {
-      const [father, other] = parentsBySex(parentA, parentB, "male");
-      surname = nonEmpty(father?.givenName) ?? nonEmpty(other?.givenName);
-      break;
-    }
-    case "matronymic": {
-      const [mother, other] = parentsBySex(parentA, parentB, "female");
-      surname = nonEmpty(mother?.givenName) ?? nonEmpty(other?.givenName);
-      break;
-    }
-    case "family-name": {
-      const first = rng() < 0.5 ? parentA : parentB;
-      const second = first === parentA ? parentB : parentA;
-      surname = nonEmpty(first.surname) ?? nonEmpty(second.surname);
-      break;
-    }
-    default:
-      surname = null;
-  }
-
-  return { givenName, surname };
+  return generateName({
+    config: namingConfig,
+    parentA: toNamingParent(parentA),
+    parentB: toNamingParent(parentB),
+    rng,
+    sex,
+  });
 }
 
-function nonEmpty(value: string | null | undefined): string | null {
-  if (value === null || value === undefined) return null;
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? null : trimmed;
-}
-
-function parentsBySex(
-  parentA: SimCitizen,
-  parentB: SimCitizen,
-  sex: "male" | "female",
-): [SimCitizen | undefined, SimCitizen | undefined] {
-  if (parentA.sex === sex) return [parentA, parentB];
-  if (parentB.sex === sex) return [parentB, parentA];
-  return [undefined, parentA];
+function toNamingParent(citizen: SimCitizen): NamingParent {
+  return {
+    givenName: citizen.givenName,
+    sex: citizen.sex,
+    surname: citizen.surname,
+  };
 }
 
 export type FertilityResult = {
@@ -136,6 +101,7 @@ export function applyFertilityForSettlement(
   fallbackNamesetId: string | null,
   turnNumber: number,
   rng: SeededRng,
+  educationLevels: readonly SimEducationLevel[],
 ): FertilityResult {
   const sid = settlement.id;
   const foodStock = stockpileQty.get(`${sid}:${systemResourceIds.foodId}`) ?? 0;
@@ -195,12 +161,30 @@ export function applyFertilityForSettlement(
       citizenB,
     );
 
+    const cultureId = pickInheritedFieldId(
+      rng,
+      citizenA.cultureId,
+      citizenB.cultureId,
+    );
+    const religionId = pickInheritedFieldId(
+      rng,
+      citizenA.religionId,
+      citizenB.religionId,
+    );
+    const educationLevelId = pickNaturalBornEducationLevelId(
+      rng,
+      educationLevels,
+    );
+
     citizenBirths.push({
       ...flavor,
+      cultureId,
+      educationLevelId,
       givenName,
       namesetId: childNamesetId,
       parentACitizenId: partnership.citizenAId,
       parentBCitizenId: partnership.citizenBId,
+      religionId,
       sex,
       settlementId: sid,
       surname,

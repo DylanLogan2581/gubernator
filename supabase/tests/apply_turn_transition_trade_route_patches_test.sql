@@ -46,27 +46,24 @@ where
 --   World 2: paused route resumes
 --   World 3: route unchanged (not included in tradeRouteOutcomes)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a8200000-0000-0000-0000-000000000001',
     'ATTTR Shortfall World',
     5,
-    'private',
     'active'
   ),
   (
     'a8200000-0000-0000-0000-000000000002',
     'ATTTR Resume World',
     5,
-    'private',
     'active'
   ),
   (
     'a8200000-0000-0000-0000-000000000003',
     'ATTTR Noop World',
     5,
-    'private',
     'active'
   );
 

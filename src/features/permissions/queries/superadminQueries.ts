@@ -1,3 +1,8 @@
+import {
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
+} from "@supabase/supabase-js";
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
@@ -6,6 +11,12 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+
+import { WORLD_RETENTION_DEFAULTS } from "../types/superadminTypes";
+import {
+  isSendEmailErrorPayload,
+  readSendEmailErrorPayload,
+} from "../utils/sendEmailErrorPayload";
 
 import { superadminQueryKeys } from "./superadminQueryKeys";
 
@@ -16,7 +27,9 @@ import type {
   SuperadminUser,
   SuperadminWorld,
   SuperadminWorldAdmin,
+  WorldRetentionConfig,
 } from "../types/superadminTypes";
+import type { SendEmailErrorPayload } from "../utils/sendEmailErrorPayload";
 
 type AllUsersQueryKey = ReturnType<typeof superadminQueryKeys.users>;
 type AllWorldsQueryKey = ReturnType<typeof superadminQueryKeys.worlds>;
@@ -65,6 +78,15 @@ type WorldAdminsForUserQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly SuperadminWorldAdmin[],
   WorldAdminsForUserQueryKey
+>;
+type RetentionConfigQueryKey = ReturnType<
+  typeof superadminQueryKeys.retentionConfig
+>;
+type RetentionConfigQueryOptions = UseQueryOptions<
+  WorldRetentionConfig,
+  AuthUiError,
+  WorldRetentionConfig,
+  RetentionConfigQueryKey
 >;
 
 export function allUsersForSuperadminQueryOptions(
@@ -130,6 +152,52 @@ export function worldAdminsForUserQueryOptions(
     queryFn: () => getWorldAdminsForUser(client, userId),
     queryKey: superadminQueryKeys.worldAdminsForUser(userId),
   });
+}
+
+export function worldRetentionConfigQueryOptions(
+  worldId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): RetentionConfigQueryOptions {
+  // The client is the configured Supabase singleton in app code; tests inject a fake.
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    enabled: worldId !== "",
+    queryFn: () => getWorldRetentionConfig(client, worldId),
+    queryKey: superadminQueryKeys.retentionConfig(worldId),
+  });
+}
+
+type WorldRetentionConfigRow = {
+  readonly log_retention_turns: number | null;
+  readonly memory_retention_turns: number | null;
+  readonly snapshot_retention_turns: number | null;
+};
+
+async function getWorldRetentionConfig(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+): Promise<WorldRetentionConfig> {
+  const { data, error } = await client
+    .from("world_retention_config")
+    .select(
+      "log_retention_turns,memory_retention_turns,snapshot_retention_turns",
+    )
+    .eq("world_id", worldId)
+    .maybeSingle<WorldRetentionConfigRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    logRetentionTurns:
+      data?.log_retention_turns ?? WORLD_RETENTION_DEFAULTS.logRetentionTurns,
+    memoryRetentionTurns: data?.memory_retention_turns ?? null,
+    snapshotRetentionTurns:
+      data?.snapshot_retention_turns ??
+      WORLD_RETENTION_DEFAULTS.snapshotRetentionTurns,
+    worldId,
+  };
 }
 
 async function getAllWorlds(
@@ -213,10 +281,7 @@ async function getWorldAdminsForUser(
 
 type SendEmailStatusFunctionResponse =
   | { readonly ok: true; readonly data: SmtpStatus }
-  | {
-      readonly ok: false;
-      readonly error: { readonly code: string; readonly message: string };
-    };
+  | SendEmailErrorPayload;
 
 function isSendEmailStatusSuccessResponse(
   value: unknown,
@@ -229,15 +294,35 @@ function isSendEmailStatusSuccessResponse(
   );
 }
 
-function isSendEmailStatusErrorResponse(
-  value: unknown,
-): value is Extract<SendEmailStatusFunctionResponse, { ok: false }> {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { ok: unknown }).ok === false &&
-    typeof (value as { error: unknown }).error === "object"
-  );
+function smtpStatusErrorMessage(code: string, message: string): string {
+  if (code === "origin_not_allowed") {
+    return "This app's origin is not in SEND_EMAIL_ALLOWED_ORIGINS — run the dev server on port 5173 or add this origin to the allowlist.";
+  }
+  return message;
+}
+
+const EDGE_FUNCTION_UNREACHABLE_MESSAGE =
+  "Couldn't reach the email service. If running locally, make sure Supabase edge functions are being served.";
+
+/**
+ * A local/unserved edge runtime surfaces as a gateway-level non-2xx (e.g. Kong
+ * 503) rather than a real response from the function, so it's indistinguishable
+ * from other FunctionsHttpError statuses except by status code.
+ */
+function isEdgeFunctionUnreachableError(error: unknown): boolean {
+  if (
+    error instanceof FunctionsFetchError ||
+    error instanceof FunctionsRelayError
+  ) {
+    return true;
+  }
+
+  if (error instanceof FunctionsHttpError) {
+    const status = (error.context as { status?: unknown } | undefined)?.status;
+    return status === 502 || status === 503 || status === 504;
+  }
+
+  return false;
 }
 
 async function getSmtpStatus(
@@ -248,6 +333,22 @@ async function getSmtpStatus(
   });
 
   if (response.error !== null) {
+    if (isEdgeFunctionUnreachableError(response.error)) {
+      throw normalizeSupabaseError(
+        new Error(EDGE_FUNCTION_UNREACHABLE_MESSAGE),
+      );
+    }
+    const errorPayload = await readSendEmailErrorPayload(response.error);
+    if (errorPayload !== null) {
+      throw normalizeSupabaseError(
+        new Error(
+          smtpStatusErrorMessage(
+            errorPayload.error.code,
+            errorPayload.error.message,
+          ),
+        ),
+      );
+    }
     throw normalizeSupabaseError(response.error);
   }
 
@@ -255,8 +356,15 @@ async function getSmtpStatus(
     return response.data.data;
   }
 
-  if (isSendEmailStatusErrorResponse(response.data)) {
-    throw normalizeSupabaseError(new Error(response.data.error.message));
+  if (isSendEmailErrorPayload(response.data)) {
+    throw normalizeSupabaseError(
+      new Error(
+        smtpStatusErrorMessage(
+          response.data.error.code,
+          response.data.error.message,
+        ),
+      ),
+    );
   }
 
   throw normalizeSupabaseError(

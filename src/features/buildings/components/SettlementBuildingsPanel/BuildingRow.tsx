@@ -1,4 +1,5 @@
 import { type QueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { IconChip } from "@/components/shared/IconChip";
@@ -6,8 +7,10 @@ import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { UpgradeBuildingDialog } from "@/features/construction";
+import { SchoolEducationSection } from "@/features/education";
 import { type TurnTransitionOutcome } from "@/features/turns";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -79,6 +82,8 @@ type BuildingRowProps = {
   readonly building: SettlementBuilding;
   readonly canDeconstruct: boolean;
   readonly canAdmin: boolean;
+  readonly canManageSettlement: boolean;
+  readonly isArchived: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
@@ -92,6 +97,8 @@ export function BuildingRow({
   building,
   canAdmin,
   canDeconstruct,
+  canManageSettlement,
+  isArchived,
   jobNames,
   latestOutcome,
   queryClient,
@@ -101,29 +108,66 @@ export function BuildingRow({
   worldId,
 }: BuildingRowProps): JSX.Element {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [trashActionOpen, setTrashActionOpen] = useState<
     "restore" | "hard-delete" | null
   >(null);
+  const [educationOpen, setEducationOpen] = useState(false);
   const effectChips = buildEffectChips(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
+  const canUpgrade = canManageSettlement && !isArchived;
+  const showUpgradeButton = canUpgrade && building.state === "active";
   const isDeconstructed =
     building.state === "auto_deconstructed" ||
     building.state === "manually_deconstructed";
   const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
   const showStateBadge = building.state !== "active";
+  const isSchool = building.educationConfig !== null;
+  const showActionsColumn = canAdmin || canUpgrade;
+  const columnCount =
+    3 + (showTierColumn ? 1 : 0) + (showActionsColumn ? 1 : 0);
 
   return (
     <>
       <TableRow className="border-b border-border last:border-0">
         <TableCell className="py-2 pr-4">
           <span className="flex items-center gap-2">
+            {isSchool ? (
+              <Button
+                aria-expanded={educationOpen}
+                aria-label={
+                  educationOpen
+                    ? "Hide education section"
+                    : "Show education section"
+                }
+                className="h-6 w-6 shrink-0 p-0"
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setEducationOpen((prev) => !prev);
+                }}
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={educationOpen ? "h-4 w-4" : "h-4 w-4 -rotate-90"}
+                />
+              </Button>
+            ) : (
+              <span aria-hidden="true" className="h-6 w-6 shrink-0" />
+            )}
             <IconChip
               icon={resolveEntityIcon(building.blueprintIcon)}
-              tone={hashToCategoricalSlot(building.buildingBlueprintId)}
-              size="sm"
+              tone={resolveIconTone(
+                building.blueprintIconColor,
+                building.buildingBlueprintId,
+              )}
             />
             {building.name ?? building.blueprintName}
           </span>
+        </TableCell>
+        <TableCell className="w-12 py-2 pr-4">
+          <Badge variant="secondary">1</Badge>
         </TableCell>
         {showTierColumn ? (
           <TableCell className="py-2 pr-4">
@@ -154,21 +198,36 @@ export function BuildingRow({
             </Badge>
           ) : null}
         </TableCell>
-        {canAdmin ? (
+        {showActionsColumn ? (
           <TableCell className="w-28 py-2 text-right">
-            {showDeconstructButton ? (
-              <Button
-                aria-label={`Deconstruct ${building.blueprintName}`}
-                size="sm"
-                type="button"
-                variant="destructive"
-                onClick={() => {
-                  setConfirmOpen(true);
-                }}
-              >
-                Deconstruct
-              </Button>
-            ) : null}
+            <div className="flex flex-wrap justify-end gap-1">
+              {showUpgradeButton ? (
+                <Button
+                  aria-label={`Upgrade ${building.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setUpgradeOpen(true);
+                  }}
+                >
+                  Upgrade
+                </Button>
+              ) : null}
+              {showDeconstructButton ? (
+                <Button
+                  aria-label={`Deconstruct ${building.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setConfirmOpen(true);
+                  }}
+                >
+                  Deconstruct
+                </Button>
+              ) : null}
+            </div>
             {isDeconstructed ? (
               <div className="flex gap-1 justify-end">
                 <Button
@@ -198,6 +257,36 @@ export function BuildingRow({
           </TableCell>
         ) : null}
       </TableRow>
+      {isSchool && educationOpen && building.educationConfig !== null ? (
+        <TableRow className="border-b border-border last:border-0">
+          <TableCell className="py-0 pr-4" colSpan={columnCount}>
+            <SchoolEducationSection
+              canManageSettlement={canManageSettlement}
+              educationConfig={building.educationConfig}
+              isArchived={isArchived}
+              queryClient={queryClient}
+              settlementBuildingId={building.id}
+              settlementBuildingName={building.name ?? building.blueprintName}
+              settlementId={settlementId}
+              worldId={worldId}
+            />
+          </TableCell>
+        </TableRow>
+      ) : null}
+      {upgradeOpen ? (
+        <UpgradeBuildingDialog
+          buildingBlueprintId={building.buildingBlueprintId}
+          buildingName={building.name ?? building.blueprintName}
+          currentTierNumber={building.tierNumber}
+          queryClient={queryClient}
+          settlementBuildingId={building.id}
+          settlementId={settlementId}
+          worldId={worldId}
+          onClose={() => {
+            setUpgradeOpen(false);
+          }}
+        />
+      ) : null}
       {confirmOpen ? (
         <DeconstructConfirmDialog
           building={building}

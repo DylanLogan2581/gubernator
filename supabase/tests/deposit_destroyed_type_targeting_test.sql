@@ -48,20 +48,18 @@ values
 
 -- World A (caller's world) and World B (foreign world, for the reject case)
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'fed20000-0000-0000-0000-000000000001',
     'FED World A',
     0,
-    'private',
     'active'
   ),
   (
     'fed20000-0000-0000-0000-000000000002',
     'FED World B',
     0,
-    'private',
     'active'
   );
 
@@ -113,30 +111,19 @@ values
 
 -- Deposit type in the caller's world, and a foreign-world deposit type for the reject case.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'fed60000-0000-0000-0000-000000000001',
     'fed20000-0000-0000-0000-000000000001',
     'FED Iron Vein A',
-    'fed-iron-vein-a',
-    'fed50000-0000-0000-0000-000000000001',
-    1
+    'fed-iron-vein-a'
   ),
   (
     'fed60000-0000-0000-0000-000000000002',
     'fed20000-0000-0000-0000-000000000002',
     'FED Iron Vein B',
-    'fed-iron-vein-b',
-    'fed50000-0000-0000-0000-000000000002',
-    1
+    'fed-iron-vein-b'
   );
 
 -- Update-path fixture: an event group + event already living in World A

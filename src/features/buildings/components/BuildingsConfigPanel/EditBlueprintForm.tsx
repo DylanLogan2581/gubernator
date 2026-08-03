@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
+import { PaletteSlotPicker } from "@/components/shared/PaletteSlotPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { CategoricalSlot } from "@/lib/categoricalPalette";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -75,6 +77,9 @@ export function EditBlueprintForm({
       : "",
   );
   const [icon, setIcon] = useState<string | null>(blueprint.icon);
+  const [iconColor, setIconColor] = useState<CategoricalSlot | null>(
+    blueprint.iconColor as CategoricalSlot | null,
+  );
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof BlueprintFieldErrors>();
 
@@ -92,6 +97,7 @@ export function EditBlueprintForm({
       gracePeriodTurns:
         gracePeriodTurns !== "" ? parseInt(gracePeriodTurns, 10) : undefined,
       icon,
+      iconColor,
       maxInstancesPerSettlement:
         maxInstances !== "" ? parseInt(maxInstances, 10) : undefined,
       name,
@@ -184,7 +190,7 @@ export function EditBlueprintForm({
             </div>
             <div className="grid gap-1">
               <Label htmlFor="edit-grace-period-turns">
-                Grace period (turns)
+                Upkeep grace period (turns)
               </Label>
               <Input
                 id="edit-grace-period-turns"
@@ -197,6 +203,10 @@ export function EditBlueprintForm({
                   setGracePeriodTurns(e.currentTarget.value);
                 }}
               />
+              <p className="text-xs text-muted-foreground">
+                Turns a building can miss upkeep before it is suspended. 0 =
+                suspend on first missed upkeep.
+              </p>
               {fieldErrors.gracePeriodTurns !== undefined ? (
                 <p className="text-xs text-destructive">
                   {fieldErrors.gracePeriodTurns}
@@ -232,6 +242,14 @@ export function EditBlueprintForm({
                 disabled={isPending}
                 value={icon}
                 onChange={setIcon}
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label>Icon color</Label>
+              <PaletteSlotPicker
+                disabled={isPending}
+                value={iconColor}
+                onChange={setIconColor}
               />
             </div>
           </div>

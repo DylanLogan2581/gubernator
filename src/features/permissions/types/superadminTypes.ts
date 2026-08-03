@@ -37,6 +37,26 @@ export type PruneWorldDataResult = {
   readonly message: string;
 };
 
+export const WORLD_RETENTION_DEFAULTS = {
+  logRetentionTurns: 200,
+  memoryRetentionTurns: null,
+  snapshotRetentionTurns: 200,
+} as const;
+
+export type WorldRetentionConfig = {
+  readonly worldId: string;
+  readonly logRetentionTurns: number;
+  readonly snapshotRetentionTurns: number;
+  readonly memoryRetentionTurns: number | null;
+};
+
+export type SetWorldRetentionConfigInput = {
+  readonly worldId: string;
+  readonly logRetentionTurns: number | null;
+  readonly snapshotRetentionTurns: number | null;
+  readonly memoryRetentionTurns: number | null;
+};
+
 export type SuperadminRunningTransition = {
   readonly id: string;
   readonly world_id: string;
@@ -110,8 +130,26 @@ export type SendEmailResult = {
   readonly renderedHtml?: string;
 };
 
-export type SmtpStatus = {
+export type SmtpConfigSource = "database" | "environment";
+
+export type SmtpStatus =
+  | {
+      readonly configured: true;
+      readonly source: SmtpConfigSource;
+      readonly host: string;
+      readonly port: number;
+      readonly username?: string;
+      readonly hasPassword: boolean;
+      readonly senderName: string;
+      readonly adminEmail: string;
+    }
+  | { readonly configured: false; readonly missing: readonly string[] };
+
+export type UpdateSmtpSettingsInput = {
   readonly host: string;
-  readonly senderName: string;
+  readonly port: number;
+  readonly username?: string;
+  readonly password?: string;
   readonly adminEmail: string;
+  readonly senderName: string;
 };

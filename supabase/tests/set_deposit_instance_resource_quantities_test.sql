@@ -54,12 +54,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'SDIRQ World',
-    'private',
     'active'
   );
 
@@ -127,22 +126,13 @@ values
   );
 
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'f5000000-0000-0000-0000-000000000001',
     'f2000000-0000-0000-0000-000000000001',
     'SDIRQ Iron Seam',
-    'sdirq-iron-seam',
-    'f8000000-0000-0000-0000-000000000001',
-    10
+    'sdirq-iron-seam'
   );
 
 insert into

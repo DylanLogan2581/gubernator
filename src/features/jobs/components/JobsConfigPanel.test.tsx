@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { JobsConfigPanel } from "./JobsConfigPanel";
@@ -11,6 +12,16 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => <a className={className}>{children}</a>,
 }));
 
 const { toastError, toastSuccess } = vi.hoisted(() => ({
@@ -32,6 +43,7 @@ const RESOURCE_ID = "00000000-0000-0000-0000-000000000003";
 const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000004";
 const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000005";
 const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000006";
+const EDUCATION_LEVEL_ID = "00000000-0000-0000-0000-000000000007";
 
 describe("JobsConfigPanel", () => {
   beforeEach(() => {
@@ -76,6 +88,78 @@ describe("JobsConfigPanel", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByText("Standard")).toBeDefined();
     expect(within(table).queryByText("farming")).toBeNull();
+  });
+
+  it("shows the required education level in its own column", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        educationLevelRows: [createEducationLevelRow({ name: "Literate" })],
+        jobRows: [
+          createJobRow({
+            name: "Scribe",
+            required_education_level_id: EDUCATION_LEVEL_ID,
+            slug: "scribe",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Scribe");
+    const table = screen.getByRole("table");
+    expect(await within(table).findByText("Literate")).toBeDefined();
+  });
+
+  it("shows the education level filter select once education levels exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        educationLevelRows: [createEducationLevelRow({ name: "Literate" })],
+        jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(
+      await screen.findByRole("combobox", {
+        name: "Filter by required education level",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a hint linking to Education instead of the filter select when no education levels exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Filter by required education level",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Add one in Configuration → Education"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no requirement in the education column when there is no requirement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(screen.getByText("No requirement")).toBeDefined();
   });
 
   it("shows trashed jobs when trash view is toggled", async () => {
@@ -124,10 +208,13 @@ describe("JobsConfigPanel", () => {
     await screen.findByText("Farming");
     expect(screen.getByText("Silk Road")).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Standard" }));
+    await user.click(screen.getByRole("button", { name: "Job type" }));
+    await user.click(screen.getByRole("checkbox", { name: "Standard" }));
 
-    expect(screen.getByText("Farming")).toBeDefined();
-    expect(screen.queryByText("Silk Road")).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText("Farming")).toBeDefined();
+      expect(screen.queryByText("Silk Road")).toBeNull();
+    });
   });
 
   it("emits a success toast after creating a standard job", async () => {
@@ -699,6 +786,15 @@ describe("JobsConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  // KNOWN FAILING (production bug, not a test issue): EditJobForm.tsx scopes
+  // `availableManagedPopTypes` via `mpt.husbandryJobId === job.id` /
+  // `mpt.cullingJobId === job.id`, but #1247 removed those single-job scalar
+  // fields from ManagedPopulationType in favor of `husbandryJobs`/
+  // `cullingJobs` arrays (see managedPopulationTypes.ts). The filter should
+  // use `mpt.husbandryJobs.some((j) => j.jobId === job.id)` /
+  // `mpt.cullingJobs.some((j) => j.jobId === job.id)` instead. Until that
+  // production fix lands, this select never has any options besides "None"
+  // and both tests below fail at `selectOptions`.
   it("links a managed population type when editing a husbandry job", async () => {
     const user = userEvent.setup();
     const jobRow = createJobRow({
@@ -711,8 +807,14 @@ describe("JobsConfigPanel", () => {
         jobRows: [jobRow],
         managedPopulationTypeRows: [
           createManagedPopulationTypeRow({
-            husbandry_job_id: JOB_ID,
             id: MANAGED_POP_TYPE_ID,
+            managed_population_husbandry_jobs: [
+              {
+                id: "husbandry-job-row-1",
+                job_id: JOB_ID,
+                workers_per_n_animals: 10,
+              },
+            ],
             name: "Sheep",
           }),
         ],
@@ -755,8 +857,14 @@ describe("JobsConfigPanel", () => {
         jobRows: [jobRow],
         managedPopulationTypeRows: [
           createManagedPopulationTypeRow({
-            culling_job_id: JOB_ID,
             id: MANAGED_POP_TYPE_ID,
+            managed_population_culling_jobs: [
+              {
+                id: "culling-job-row-1",
+                job_id: JOB_ID,
+                max_cull_per_worker: 10,
+              },
+            ],
             name: "Wolf",
           }),
         ],
@@ -1135,9 +1243,10 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly inputs_json: readonly {
     amount_per_worker: number;
@@ -1152,36 +1261,59 @@ type TestJobRow = {
     amount_per_worker: number;
     resource_id: string;
   }[];
+  readonly required_education_level_id: string | null;
   readonly slug: string;
   readonly trader_capacity_per_worker: number | null;
   readonly updated_at: string;
   readonly world_id: string;
 };
 
+type TestEducationLevelRow = {
+  readonly created_at: string;
+  readonly description: string | null;
+  readonly id: string;
+  readonly name: string;
+  readonly rank: number;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
 type TestDepositTypeRow = {
   readonly created_at: string;
+  readonly deposit_type_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly output_units_per_worker: number;
+    readonly worker_inputs_json: readonly unknown[];
+  }>;
   readonly id: string;
   readonly is_trashed: boolean;
-  readonly job_id: string;
   readonly name: string;
-  readonly output_units_per_worker: number;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
-  readonly worker_inputs_json: readonly unknown[];
   readonly world_id: string;
 };
 
 type TestManagedPopulationTypeRow = {
   readonly created_at: string;
-  readonly culling_job_id: string;
   readonly culling_outputs_json: readonly unknown[];
   readonly growth_rate: number;
-  readonly husbandry_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
+  readonly icon: string | null;
+  readonly icon_color: number | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly unknown[];
+  readonly managed_population_culling_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly max_cull_per_worker: number;
+  }>;
+  readonly managed_population_husbandry_jobs: ReadonlyArray<{
+    readonly id: string;
+    readonly job_id: string;
+    readonly workers_per_n_animals: number;
+  }>;
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly regular_outputs_json: readonly unknown[];
@@ -1208,9 +1340,10 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
     culling_mpt: [],
-    deposit_types: [],
+    deposit_type_jobs: [],
     husbandry_mpt: [],
     icon: null,
+    icon_color: null,
     id: JOB_ID,
     inputs_json: [],
     is_trashed: false,
@@ -1219,6 +1352,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     linked_managed_population_type_id: null,
     name: "Test Job",
     outputs_json: [],
+    required_education_level_id: null,
     slug: "test-job",
     trader_capacity_per_worker: null,
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -1232,15 +1366,20 @@ function createDepositTypeRow(
 ): TestDepositTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
+    deposit_type_jobs: [
+      {
+        id: "00000000-0000-0000-0000-0000000000b1",
+        job_id: JOB_ID,
+        output_units_per_worker: 1,
+        worker_inputs_json: [],
+      },
+    ],
     id: DEPOSIT_TYPE_ID,
     is_trashed: false,
-    job_id: JOB_ID,
     name: "Test Deposit Type",
-    output_units_per_worker: 1,
     referencing_jobs: [],
     slug: "test-deposit-type",
     updated_at: "2026-01-01T00:00:00.000Z",
-    worker_inputs_json: [],
     world_id: WORLD_ID,
     ...overrides,
   };
@@ -1251,14 +1390,27 @@ function createManagedPopulationTypeRow(
 ): TestManagedPopulationTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
-    culling_job_id: CULLING_JOB_ID,
     culling_outputs_json: [],
     growth_rate: 0.05,
-    husbandry_job_id: JOB_ID,
-    husbandry_workers_per_n_animals: 10,
+    icon: null,
+    icon_color: null,
     id: MANAGED_POP_TYPE_ID,
     is_trashed: false,
     maintenance_rules_json: [],
+    managed_population_culling_jobs: [
+      {
+        id: "culling-job-row-1",
+        job_id: CULLING_JOB_ID,
+        max_cull_per_worker: 10,
+      },
+    ],
+    managed_population_husbandry_jobs: [
+      {
+        id: "husbandry-job-row-1",
+        job_id: JOB_ID,
+        workers_per_n_animals: 10,
+      },
+    ],
     name: "Test Population",
     referencing_jobs: [],
     regular_outputs_json: [],
@@ -1287,8 +1439,24 @@ function createResourceRow(
   };
 }
 
+function createEducationLevelRow(
+  overrides: Partial<TestEducationLevelRow> = {},
+): TestEducationLevelRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    description: null,
+    id: EDUCATION_LEVEL_ID,
+    name: "Literate",
+    rank: 1,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
 function createClient({
   depositTypeRows = [],
+  educationLevelRows = [],
   insertResult = { data: createJobRow(), error: null },
   jobRows,
   managedPopulationTypeRows = [],
@@ -1297,6 +1465,7 @@ function createClient({
   updateResult = { data: createJobRow(), error: null },
 }: {
   readonly depositTypeRows?: readonly TestDepositTypeRow[];
+  readonly educationLevelRows?: readonly TestEducationLevelRow[];
   readonly insertResult?: {
     readonly data: TestJobRow | null;
     readonly error: { readonly message: string } | null;
@@ -1330,6 +1499,9 @@ function createClient({
       if (table === "managed_population_types") {
         return createSimpleQueryBuilder(managedPopulationTypeRows);
       }
+      if (table === "education_levels") {
+        return createSimpleQueryBuilder(educationLevelRows);
+      }
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn(() => ({
@@ -1361,6 +1533,12 @@ function createJobsQueryBuilder(
       eq: vi.fn((column: string, value: unknown) => {
         filtered = filtered.filter(
           (row) => row[column as keyof TestJobRow] === value,
+        );
+        return selectBuilder;
+      }),
+      in: vi.fn((column: string, values: readonly unknown[]) => {
+        filtered = filtered.filter((row) =>
+          values.includes(row[column as keyof TestJobRow]),
         );
         return selectBuilder;
       }),

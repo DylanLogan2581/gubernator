@@ -49,6 +49,7 @@ export {
   softDeleteManagedPopulationTypeInputSchema,
   updateManagedPopulationTypeInputSchema,
 } from "./schemas/managedPopulationSchemas";
+export { calculateNeededWorkers } from "./utils/calculateNeededWorkers";
 export { validateManagedPopulationTypeReferencesAgainstWorld } from "./utils/validateManagedPopulationTypeReferences";
 
 export type { CreateManagedPopulationInstanceMutationIssue } from "./mutations/createManagedPopulationInstanceMutations";

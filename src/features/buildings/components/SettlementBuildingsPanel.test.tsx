@@ -124,7 +124,7 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_type_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
@@ -196,6 +196,7 @@ function createClient({
   blueprintRows = [],
   buildingRows = [],
   citizenRows = [],
+  constructionProjectRows = [],
   jobRows = [],
   latestSnapshotRow = null,
   latestTransitionRow = null,
@@ -207,6 +208,7 @@ function createClient({
   readonly blueprintRows?: readonly TestBlueprintRow[];
   readonly buildingRows?: readonly TestBuildingRow[];
   readonly citizenRows?: readonly TestCitizenRow[];
+  readonly constructionProjectRows?: readonly unknown[];
   readonly jobRows?: readonly TestJobRow[];
   readonly latestSnapshotRow?: TestSnapshotLookupRow | null;
   readonly latestTransitionRow?: TestTransitionRow | null;
@@ -337,6 +339,9 @@ function createClient({
       }
       if (table === "building_blueprint_tiers") {
         return createSimpleQueryBuilder(tierRows);
+      }
+      if (table === "construction_projects") {
+        return createSimpleQueryBuilder(constructionProjectRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -496,12 +501,12 @@ describe("SettlementBuildingsPanel", () => {
 
     renderPanel({ canAdmin: false, isArchived: false });
 
-    expect(await screen.findByText("Longhouse ×4")).toBeDefined();
-    expect(screen.queryAllByText("Longhouse")).toHaveLength(0);
+    expect(await screen.findByText("Longhouse")).toBeDefined();
+    expect(screen.getByText("4")).toBeDefined();
 
-    await user.click(screen.getByText("Longhouse ×4"));
+    await user.click(screen.getByText("Longhouse"));
 
-    expect(await screen.findAllByText("Longhouse")).toHaveLength(4);
+    expect(await screen.findAllByText("Longhouse")).toHaveLength(5);
   });
 
   it("renders amber Suspended badge for suspended buildings", async () => {
@@ -544,8 +549,8 @@ describe("SettlementBuildingsPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     // Click trash toggle to show deconstructed buildings
-    const trashToggle = screen.getByRole("button", {
-      name: "Show deconstructed",
+    const trashToggle = await screen.findByRole("button", {
+      name: "Show deconstructed (1)",
     });
     await userEvent.click(trashToggle);
 
@@ -556,6 +561,55 @@ describe("SettlementBuildingsPanel", () => {
     expect(badge).toBeDefined();
     expect(badge.getAttribute("data-variant")).toBe("destructive");
     expect(badge.getAttribute("title")).toBe("Missed upkeep 3×");
+  });
+
+  it("hides the show-deconstructed toggle when no deconstructed buildings exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.queryByRole("button", { name: /deconstructed/i })).toBeNull();
+  });
+
+  it("labels the show-deconstructed toggle with a count when deconstructed buildings exist", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+          createBuildingRow({
+            building_blueprints: { name: "Granary" },
+            id: BUILDING_ID_2,
+            state: "auto_deconstructed",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    const toggle = await screen.findByRole("button", {
+      name: "Show deconstructed (1)",
+    });
+    await userEvent.click(toggle);
+    expect(
+      screen.getByRole("button", { name: "Hide deconstructed" }),
+    ).toBeDefined();
   });
 
   it("shows transition-sourced tooltip when latest outcome has a matching log entry", async () => {
@@ -664,7 +718,7 @@ describe("SettlementBuildingsPanel", () => {
             base_capacity: null,
             created_at: "2026-05-01T00:00:00.000Z",
             culling_mpt: [],
-            deposit_types: [],
+            deposit_type_jobs: [],
             husbandry_mpt: [],
             id: JOB_ID,
             inputs_json: [],
@@ -1077,19 +1131,87 @@ describe("SettlementBuildingsPanel", () => {
     });
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  it("shows Start construction button for settlement managers when not archived", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: true,
+      isArchived: false,
+    });
+
+    expect(
+      await screen.findByRole("button", { name: "Start construction" }),
+    ).toBeDefined();
+  });
+
+  it("hides Start construction button for users who cannot manage the settlement", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: false,
+      isArchived: false,
+    });
+
+    await screen.findByText("No buildings");
+    expect(
+      screen.queryByRole("button", { name: "Start construction" }),
+    ).toBeNull();
+  });
+
+  it("hides Start construction button when the world is archived", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: true,
+      isArchived: true,
+    });
+
+    await screen.findByText("No buildings");
+    expect(
+      screen.queryByRole("button", { name: "Start construction" }),
+    ).toBeNull();
+  });
+
+  it("opens the Start construction dialog when a manager clicks the button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ blueprintRows: [], buildingRows: [] }),
+    );
+
+    renderPanel({
+      canAdmin: false,
+      canManageSettlement: true,
+      isArchived: false,
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Start construction" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Start construction" }),
+    ).toBeDefined();
+  });
 });
 
 function renderPanel({
   canAdmin,
+  canManageSettlement = canAdmin,
   isArchived,
 }: {
   readonly canAdmin: boolean;
+  readonly canManageSettlement?: boolean;
   readonly isArchived: boolean;
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementBuildingsPanel
         canAdmin={canAdmin}
+        canManageSettlement={canManageSettlement}
         isArchived={isArchived}
         settlementId={SETTLEMENT_ID}
         worldId={WORLD_ID}

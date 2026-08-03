@@ -64,13 +64,12 @@ describe("toCitizenAssignment", () => {
     expect(result.job).toBeNull();
   });
 
-  it("maps a deposit assignment with joined deposit type and job names", () => {
+  it("maps a deposit assignment with the joined deposit type name", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "deposit",
       deposit_instance: {
         deposit_types: {
-          job: { name: "Miner" },
           name: "Iron",
         },
         id: "dep-1",
@@ -82,7 +81,6 @@ describe("toCitizenAssignment", () => {
 
     expect(result.assignmentType).toBe("deposit");
     expect(result.depositInstance).toEqual({
-      depositTypeJobName: "Miner",
       depositTypeName: "Iron",
       id: "dep-1",
       name: "Iron Vein",
@@ -90,15 +88,14 @@ describe("toCitizenAssignment", () => {
     expect(result.job).toBeNull();
   });
 
-  it("maps a husbandry assignment with joined population type and job names", () => {
+  it("maps a husbandry assignment with joined population type name", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "husbandry",
       managed_population_instance: {
         id: "pop-1",
         managed_population_types: {
-          culling_job: { name: "Slaughter" },
-          husbandry_job: { name: "Shepherd" },
+          name: "Sheep",
         },
         name: "Flock A",
       },
@@ -108,23 +105,21 @@ describe("toCitizenAssignment", () => {
 
     expect(result.assignmentType).toBe("husbandry");
     expect(result.managedPopulationInstance).toEqual({
-      cullingJobName: "Slaughter",
-      husbandryJobName: "Shepherd",
       id: "pop-1",
+      managedPopulationTypeName: "Sheep",
       name: "Flock A",
     });
     expect(result.job).toBeNull();
   });
 
-  it("maps a culling assignment with joined population type and job names", () => {
+  it("maps a culling assignment with joined population type name", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "culling",
       managed_population_instance: {
         id: "pop-1",
         managed_population_types: {
-          culling_job: { name: "Slaughter" },
-          husbandry_job: { name: "Shepherd" },
+          name: "Sheep",
         },
         name: "Flock A",
       },
@@ -133,8 +128,9 @@ describe("toCitizenAssignment", () => {
     const result = toCitizenAssignment(row);
 
     expect(result.assignmentType).toBe("culling");
-    expect(result.managedPopulationInstance?.cullingJobName).toBe("Slaughter");
-    expect(result.managedPopulationInstance?.husbandryJobName).toBe("Shepherd");
+    expect(result.managedPopulationInstance?.managedPopulationTypeName).toBe(
+      "Sheep",
+    );
     expect(result.managedPopulationInstance?.name).toBe("Flock A");
   });
 
@@ -190,7 +186,7 @@ describe("toCitizenAssignment", () => {
 });
 
 describe("currentAssignmentForCitizenQueryOptions", () => {
-  it("disambiguates deposit_types→job_definitions via named FK constraint", async () => {
+  it("embeds deposit_types without the dropped single-job FK (#1246)", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     const eq = vi.fn(() => ({ maybeSingle }));
     const select = vi.fn(() => ({ eq }));
@@ -205,7 +201,10 @@ describe("currentAssignmentForCitizenQueryOptions", () => {
     );
 
     expect(select).toHaveBeenCalledWith(
-      expect.stringContaining("deposit_types_job_id_fk"),
+      expect.stringContaining("deposit_instances(id,name,deposit_types(name))"),
+    );
+    expect(select).toHaveBeenCalledWith(
+      expect.not.stringContaining("deposit_types_job_id_fk"),
     );
   });
 

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { DetailPageFrame } from "@/components/shared/DetailPageFrame";
 
 import type { JSX, ReactNode } from "react";
 
@@ -13,14 +13,16 @@ export function NationDetailFrame({
   readonly worldId: string;
 }): JSX.Element {
   return (
-    <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" size="sm" className="w-fit">
+    <DetailPageFrame
+      backButtonClassName="print:hidden"
+      backLink={
         <Link to="/worlds/$worldId/nations" params={{ worldId }}>
           <ArrowLeft aria-hidden="true" />
           Back to nations
         </Link>
-      </Button>
+      }
+    >
       {children}
-    </div>
+    </DetailPageFrame>
   );
 }

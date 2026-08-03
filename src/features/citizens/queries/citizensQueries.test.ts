@@ -6,6 +6,7 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import {
   citizenAggregateStatsForSettlementQueryOptions,
   citizensByIdsQueryOptions,
+  cultureReligionCompositionForSettlementQueryOptions,
 } from "./citizensQueries";
 
 function createQueryClient(): QueryClient {
@@ -96,27 +97,39 @@ describe("citizensByIdsQueryOptions", () => {
   });
 });
 
+function aggregateRow(
+  overrides: Partial<{
+    readonly id: string;
+    readonly citizen_type: "npc" | "player_character";
+    readonly status: "alive" | "dead";
+    readonly assignment_type: string | null;
+    readonly is_labor_excluded_officeholder: boolean;
+    readonly is_enrolled_in_education: boolean;
+    readonly is_soldier: boolean;
+  }>,
+): unknown {
+  return {
+    id: "citizen-1",
+    citizen_type: "npc",
+    status: "alive",
+    assignment_type: null,
+    is_labor_excluded_officeholder: false,
+    is_enrolled_in_education: false,
+    is_soldier: false,
+    ...overrides,
+  };
+}
+
 describe("citizenAggregateStatsForSettlementQueryOptions", () => {
   it("excludes dead citizens from the unassigned breakdown", async () => {
     const { client } = createClient([
-      {
-        id: "citizen-1",
-        citizen_type: "npc",
-        status: "alive",
-        citizen_assignments: null,
-      },
-      {
-        id: "citizen-2",
-        citizen_type: "npc",
-        status: "dead",
-        citizen_assignments: null,
-      },
-      {
+      aggregateRow({ id: "citizen-1", citizen_type: "npc", status: "alive" }),
+      aggregateRow({ id: "citizen-2", citizen_type: "npc", status: "dead" }),
+      aggregateRow({
         id: "citizen-3",
         citizen_type: "player_character",
         status: "dead",
-        citizen_assignments: null,
-      },
+      }),
     ]);
 
     const queryClient = createQueryClient();
@@ -129,5 +142,94 @@ describe("citizenAggregateStatsForSettlementQueryOptions", () => {
     expect(stats.assignmentTypeBreakdown.unassigned).toBe(1);
     expect(stats.unassignedNpcCount).toBe(1);
     expect(stats.unassignedPcCount).toBe(0);
+  });
+
+  it("counts an assigned citizen under its job's assignment type, not unassigned", async () => {
+    const { client } = createClient([
+      aggregateRow({ id: "citizen-1", assignment_type: "standard_job" }),
+      aggregateRow({ id: "citizen-2" }),
+    ]);
+
+    const queryClient = createQueryClient();
+    const stats = await queryClient.fetchQuery(
+      citizenAggregateStatsForSettlementQueryOptions("settlement-1", client),
+    );
+
+    expect(stats.assignmentTypeBreakdown.standard_job).toBe(1);
+    expect(stats.assignmentTypeBreakdown.unassigned).toBe(1);
+    expect(stats.unassignedNpcCount).toBe(1);
+  });
+
+  it("excludes labor-excluded office-holders, education enrollees, and soldiers from unassigned", async () => {
+    const { client } = createClient([
+      aggregateRow({
+        id: "citizen-officeholder",
+        is_labor_excluded_officeholder: true,
+      }),
+      aggregateRow({
+        id: "citizen-student",
+        is_enrolled_in_education: true,
+      }),
+      aggregateRow({
+        id: "citizen-soldier",
+        is_soldier: true,
+      }),
+      aggregateRow({ id: "citizen-assignable" }),
+    ]);
+
+    const queryClient = createQueryClient();
+    const stats = await queryClient.fetchQuery(
+      citizenAggregateStatsForSettlementQueryOptions("settlement-1", client),
+    );
+
+    expect(stats.unassignedNpcCount).toBe(1);
+    expect(stats.ineligibleIdleNpcCount).toBe(3);
+    expect(stats.assignmentTypeBreakdown.unassigned).toBe(1);
+  });
+
+  it("reports zero unassigned when every idle citizen is labor-ineligible", async () => {
+    const { client } = createClient([
+      aggregateRow({
+        id: "citizen-officeholder",
+        is_labor_excluded_officeholder: true,
+      }),
+    ]);
+
+    const queryClient = createQueryClient();
+    const stats = await queryClient.fetchQuery(
+      citizenAggregateStatsForSettlementQueryOptions("settlement-1", client),
+    );
+
+    expect(stats.unassignedNpcCount).toBe(0);
+    expect(stats.ineligibleIdleNpcCount).toBe(1);
+  });
+});
+
+describe("cultureReligionCompositionForSettlementQueryOptions", () => {
+  it("groups alive citizens by culture and religion, bucketing nulls as unassigned", async () => {
+    const { client, builder } = createClient([
+      { culture_id: "culture-1", religion_id: "religion-1" },
+      { culture_id: "culture-1", religion_id: null },
+      { culture_id: null, religion_id: "religion-1" },
+    ]);
+
+    const queryClient = createQueryClient();
+    const composition = await queryClient.fetchQuery(
+      cultureReligionCompositionForSettlementQueryOptions(
+        "settlement-1",
+        client,
+      ),
+    );
+
+    expect(composition.byCultureId).toEqual({
+      "culture-1": 2,
+      unassigned: 1,
+    });
+    expect(composition.byReligionId).toEqual({
+      "religion-1": 2,
+      unassigned: 1,
+    });
+    expect(builder.eq).toHaveBeenCalledWith("settlement_id", "settlement-1");
+    expect(builder.eq).toHaveBeenCalledWith("status", "alive");
   });
 });

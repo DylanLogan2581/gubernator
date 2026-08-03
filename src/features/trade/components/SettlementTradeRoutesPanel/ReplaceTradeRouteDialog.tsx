@@ -12,7 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { CitizenPicker } from "@/features/citizens";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
@@ -35,7 +37,7 @@ type LegErrors = {
 };
 
 type ReplaceTradeRouteDialogProps = {
-  readonly activeCharacterId: string;
+  readonly activeCharacterId: string | null;
   readonly counterpart: string;
   readonly onClose: () => void;
   readonly queryClient: QueryClient;
@@ -80,8 +82,13 @@ export function ReplaceTradeRouteDialog({
       : [createLegDraft()],
   );
   const [legErrors, setLegErrors] = useState<LegErrors[]>([]);
+  const [pickedCitizenId, setPickedCitizenId] = useState<string | null>(null);
+  const [proposingCitizenError, setProposingCitizenError] = useState<
+    string | undefined
+  >(undefined);
 
   const resources = resourcesQuery.data ?? [];
+  const proposingCitizenId = activeCharacterId ?? pickedCitizenId;
 
   function addLeg(): void {
     setLegs((prev) => [...prev, createLegDraft()]);
@@ -100,6 +107,7 @@ export function ReplaceTradeRouteDialog({
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     setLegErrors([]);
+    setProposingCitizenError(undefined);
 
     const errs: LegErrors[] = legs.map((leg) => {
       const e: LegErrors = {};
@@ -111,8 +119,12 @@ export function ReplaceTradeRouteDialog({
       return e;
     });
 
-    if (errs.some((e) => Object.keys(e).length > 0)) {
-      setLegErrors(errs);
+    const hasLegErrors = errs.some((e) => Object.keys(e).length > 0);
+    if (hasLegErrors || proposingCitizenId === null) {
+      if (hasLegErrors) setLegErrors(errs);
+      if (proposingCitizenId === null) {
+        setProposingCitizenError("Select a proposing citizen.");
+      }
       return;
     }
 
@@ -128,7 +140,7 @@ export function ReplaceTradeRouteDialog({
           originSettlementId: route.originSettlementId,
         },
         oldRouteId: route.id,
-        proposingCitizenId: activeCharacterId,
+        proposingCitizenId,
       },
       {
         onError: (error) => {
@@ -161,6 +173,25 @@ export function ReplaceTradeRouteDialog({
             <span className="font-medium text-foreground">{counterpart}</span>.
             A new proposal will be created pending approval.
           </DialogDescription>
+          {activeCharacterId === null ? (
+            <div className="grid gap-1">
+              <Label htmlFor="replace-trade-route-citizen">
+                Proposing citizen
+              </Label>
+              <CitizenPicker
+                citizenId={pickedCitizenId}
+                id="replace-trade-route-citizen"
+                onChange={setPickedCitizenId}
+                settlementId={route.originSettlementId}
+                worldId={worldId}
+              />
+              {proposingCitizenError !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {proposingCitizenError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid gap-2">
             <span className="text-sm text-muted-foreground">Resources</span>
             {legs.map((leg, index) => (

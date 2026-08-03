@@ -67,6 +67,15 @@ async function fetchRows({
   }
 
   if (!response.ok) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "http_error",
+        table,
+        status: response.status,
+        timestamp: new Date().toISOString(),
+      }),
+    );
     return {
       ok: false,
       reason: {
@@ -109,7 +118,11 @@ async function fetchRowsPaginated({
     let response: Response;
 
     try {
-      const rangeHeader = `rows=${offset}-${offset + pageSize - 1}`;
+      // PostgREST honours the default `items` range unit; a `rows=` prefix is
+      // parsed as an unknown unit and silently ignored, so every page returns
+      // the first `max-rows` rows and pagination never advances (infinite loop
+      // / OOM for any table exceeding one page). Send the bare `start-end`.
+      const rangeHeader = `${offset}-${offset + pageSize - 1}`;
       response = await supabaseFetch(
         `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
         {
@@ -133,6 +146,16 @@ async function fetchRowsPaginated({
     }
 
     if (!response.ok) {
+      // eslint-disable-next-line no-restricted-syntax
+      console.log(
+        JSON.stringify({
+          event: "http_error",
+          table,
+          status: response.status,
+          timestamp: new Date().toISOString(),
+          offset,
+        }),
+      );
       return {
         ok: false,
         reason: {
@@ -261,6 +284,15 @@ export async function fetchWorldRow(
   }
 
   if (!response.ok) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "http_error",
+        table: "worlds",
+        status: response.status,
+        timestamp: new Date().toISOString(),
+      }),
+    );
     return {
       ok: false,
       reason: {
@@ -304,7 +336,7 @@ export function fetchSettlements(
       "nations.world_id": `eq.${worldId}`,
       order: "id.asc",
       select:
-        "id,name,nameset_id,nation_id,is_ready_current_turn,auto_ready_enabled,nations!inner(nameset_id,world_id)",
+        "id,name,nameset_id,nation_id,is_ready_current_turn,auto_ready_enabled,nations!settlements_nation_id_fkey!inner(nameset_id,world_id)",
     },
   });
 }
@@ -336,7 +368,7 @@ export function fetchResources(
       world_id: `eq.${worldId}`,
       is_system_resource: "eq.true",
       is_trashed: "eq.false",
-      select: "decay_rate,id,slug",
+      select: "change_amount,change_mode,id,slug",
     },
   });
 }
@@ -353,7 +385,7 @@ export function fetchJobs(
       is_trashed: "eq.false",
       order: "id.asc",
       select:
-        "id,name,job_type,base_capacity,trader_capacity_per_worker,linked_deposit_type_id,linked_managed_population_type_id,inputs_json,outputs_json",
+        "id,name,job_type,base_capacity,trader_capacity_per_worker,linked_deposit_type_id,linked_managed_population_type_id,required_education_level_id,inputs_json,outputs_json",
     },
   });
 }
@@ -386,7 +418,8 @@ export function fetchDepositTypes(
       world_id: `eq.${worldId}`,
       is_trashed: "eq.false",
       order: "id.asc",
-      select: "id,name,job_id,output_units_per_worker,worker_inputs_json",
+      select:
+        "id,name,deposit_type_jobs(id,deposit_type_id,job_id,output_units_per_worker,worker_inputs_json)",
     },
   });
 }
@@ -403,7 +436,7 @@ export function fetchManagedPopTypes(
       is_trashed: "eq.false",
       order: "id.asc",
       select:
-        "id,name,husbandry_job_id,culling_job_id,husbandry_workers_per_n_animals,growth_rate,maintenance_rules_json,culling_outputs_json,regular_outputs_json",
+        "id,name,growth_rate,maintenance_rules_json,culling_outputs_json,regular_outputs_json,managed_population_husbandry_jobs(id,managed_population_type_id,job_id,workers_per_n_animals),managed_population_culling_jobs(id,managed_population_type_id,job_id,max_cull_per_worker)",
     },
   });
 }
@@ -420,7 +453,246 @@ export function fetchCitizens(
       status: "eq.alive",
       order: "id.asc",
       select:
-        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id",
+        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id,culture_id,religion_id,education_level_id,role_type,role_nation_id,role_settlement_id",
+    },
+  });
+}
+
+export function fetchNations(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "nations",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,name,government_type,tax_rate,trade_policy",
+    },
+  });
+}
+
+export function fetchNationOffices(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_offices",
+    params: {
+      world_id: `eq.${worldId}`,
+      ended_turn_number: "is.null",
+      order: "id.asc",
+      select: "citizen_id,office_types(excludes_from_labor)",
+    },
+  });
+}
+
+export function fetchUnitSoldiers(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "unit_soldiers",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,unit_id,citizen_id,home_settlement_id",
+    },
+  });
+}
+
+// #1110: military upkeep simulation phase. armies/unit_types are world-scoped
+// directly; army_units has no world_id column, so it's scoped via an
+// armies!inner(world_id) embed (same pattern as
+// fetchNationResourceStockpiles' nations!inner join above).
+export function fetchArmies(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "armies",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,nation_id,name,funding_source,stationed_settlement_id",
+    },
+  });
+}
+
+export function fetchArmyUnits(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "army_units",
+    params: {
+      "armies.world_id": `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,army_id,unit_type_id,armies!inner(world_id)",
+    },
+  });
+}
+
+export function fetchUnitTypes(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "unit_types",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,desertion_rate,upkeep_costs_json",
+    },
+  });
+}
+
+export function fetchEducationLevels(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "education_levels",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,world_id,name,rank,natural_born_percent",
+    },
+  });
+}
+
+export function fetchEducationEnrollments(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "education_enrollments",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "id,world_id,settlement_building_id,citizen_id,target_level_id,progress_turns,enrolled_turn_number",
+    },
+  });
+}
+
+export function fetchNationRelationships(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  // Scoped via the from_nation_id side's world; the same-world check trigger
+  // (20260528000002) guarantees to_nation_id always agrees, and hostile/
+  // at_war rows are bilaterally mirrored (20260812000000) so both directions
+  // are always present as their own from_nation_id row.
+  return fetchRows({
+    ctx,
+    table: "nation_relationships",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "from_nation_id,to_nation_id,current_stance,nations!nation_relationships_from_nation_id_fkey!inner(world_id)",
+    },
+  });
+}
+
+export function fetchNationResourceStockpiles(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_resource_stockpiles",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      order: "nation_id.asc",
+      select: "nation_id,resource_id,quantity,nations!inner(world_id)",
+    },
+  });
+}
+
+// #1375: nation_tax_policies has no world_id column, so scope via the nation
+// join like nation_resource_stockpiles.
+export function fetchNationTaxPolicies(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_tax_policies",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "nation_id,settlement_id,method,rate,flat_amount,taxed_resource_ids,min_stockpile_floor,exempt,nations!inner(world_id)",
+    },
+  });
+}
+
+// #1090: scoped via the proposer side's world; the same-world check on
+// nation_treaties guarantees responder_nation_id always agrees. Only active
+// treaties act in simulation — proposed/declined/withdrawn/expired/broken
+// rows have no per-turn effect.
+export function fetchNationTreaties(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_treaties",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      status: "eq.active",
+      order: "id.asc",
+      select:
+        "id,proposer_nation_id,responder_nation_id,treaty_type,terms,ends_turn_number,nations!nation_treaties_proposer_nation_id_fkey!inner(world_id)",
+    },
+  });
+}
+
+// #1094: nation_currencies carries world_id directly (unlike nation_resource_
+// stockpiles), so no join is needed to scope by world.
+export function fetchNationCurrencies(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_currencies",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "id,nation_id,name,currency_type,backing_resource_id,backing_ratio,money_supply,reserve_quantity,confidence,is_in_default",
+    },
+  });
+}
+
+// #1094: ledger rows for the turn being processed only — the phase sums
+// mint/burn amounts per currency to derive this turn's confidence drift.
+// Scoped via the currency's world (nation_currencies.world_id), like
+// nation_resource_stockpiles' nations!inner join.
+export function fetchNationCurrencyLedgerEntries(
+  ctx: FetchContext,
+  worldId: string,
+  turnNumber: number,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_currency_ledger",
+    params: {
+      "nation_currencies.world_id": `eq.${worldId}`,
+      turn_number: `eq.${turnNumber}`,
+      order: "currency_id.asc",
+      select: "currency_id,action,amount,nation_currencies!inner(world_id)",
     },
   });
 }
@@ -512,6 +784,7 @@ export function fetchStockpiles(
     table: "settlement_stockpiles_view",
     params: {
       settlement_id: buildInFilter(settlementIds),
+      order: "settlement_id.asc,resource_id.asc",
       select: "settlement_id,resource_id,quantity,effective_cap",
     },
   });
@@ -546,7 +819,7 @@ export function fetchProjects(
       status: "in.(in_progress,queued,paused)",
       order: "queue_position.asc",
       select:
-        "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,target_tier:building_blueprint_tiers!target_tier_id(worker_turns_required)",
+        "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,upgrade_settlement_building_id,target_tier:building_blueprint_tiers!target_tier_id(worker_turns_required)",
     },
   });
 }

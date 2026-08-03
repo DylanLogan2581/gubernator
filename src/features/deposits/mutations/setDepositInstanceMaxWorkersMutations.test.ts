@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
+import { citizensQueryKeys } from "@/features/citizens";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import { depositsQueryKeys } from "../queries/depositsQueryKeys";
@@ -103,6 +104,11 @@ describe("setDepositInstanceMaxWorkersMutationOptions", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: depositsQueryKeys.instancesBySettlement(SETTLEMENT_ID),
+      }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: citizensQueryKeys.assignmentsInSettlement(SETTLEMENT_ID),
       }),
     );
   });

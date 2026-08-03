@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Loader2, Lock } from "lucide-react";
+import { AlertTriangle, Loader2, Package } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -16,7 +16,6 @@ import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { settlementForecastQueryOptions } from "@/features/settlements";
-import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
+import { resolveIconTone } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -80,23 +79,19 @@ export function SettlementStockpilesPanel({
   }, [forecastQuery.data, settlementId]);
 
   return (
-    <Card
+    <section
       aria-labelledby="settlement-stockpiles-heading"
-      className="grid gap-3"
+      className="grid min-w-0 grid-cols-1 gap-3"
     >
-      <div className="flex items-center justify-between gap-2 px-4 pt-4">
+      <div className="flex items-center justify-between gap-2">
         <h2
           id="settlement-stockpiles-heading"
           className="text-base font-medium"
         >
           Stockpiles
         </h2>
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Stockpiles are simulation-managed
-        </span>
       </div>
-      <CardContent>
+      <div>
         {stockpilesQuery.isPending ? (
           <TableSkeleton columnCount={5} rowCount={5} />
         ) : stockpilesQuery.isError ? (
@@ -122,8 +117,8 @@ export function SettlementStockpilesPanel({
             worldId={worldId}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -169,42 +164,44 @@ function StockpilesTable({
     stockpiles.find((s) => s.resourceId === selectedResourceId) ?? null;
 
   const list = (
-    <Table className="w-full text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead scope="col">Resource</TableHead>
-          <TableHead scope="col" className="tabular-nums">
-            Capacity
-          </TableHead>
-          <TableHead scope="col" className="tabular-nums">
-            Forecast
-          </TableHead>
-          <TableHead scope="col" className="w-16" aria-label="Status" />
-          <TableHead scope="col" className="w-24" aria-label="Actions" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {stockpiles.map((stockpile) => (
-          <StockpileRow
-            key={stockpile.resourceId}
-            canEdit={canEdit}
-            forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
-            isForecastError={isForecastError}
-            isForecastPending={isForecastPending}
-            isSelected={stockpile.resourceId === selectedResourceId}
-            nationId={nationId}
-            stockpile={stockpile}
-            worldId={worldId}
-            onEdit={() => {
-              setEditingStockpile(stockpile);
-            }}
-            onSelect={() => {
-              setSelectedResourceId(stockpile.resourceId);
-            }}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="w-full text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Resource</TableHead>
+            <TableHead scope="col" className="whitespace-nowrap tabular-nums">
+              Capacity
+            </TableHead>
+            <TableHead scope="col" className="whitespace-nowrap tabular-nums">
+              Forecast
+            </TableHead>
+            <TableHead scope="col" className="w-16" aria-label="Status" />
+            <TableHead scope="col" className="w-24" aria-label="Actions" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {stockpiles.map((stockpile) => (
+            <StockpileRow
+              key={stockpile.resourceId}
+              canEdit={canEdit}
+              forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
+              isForecastError={isForecastError}
+              isForecastPending={isForecastPending}
+              isSelected={stockpile.resourceId === selectedResourceId}
+              nationId={nationId}
+              stockpile={stockpile}
+              worldId={worldId}
+              onEdit={() => {
+                setEditingStockpile(stockpile);
+              }}
+              onSelect={() => {
+                setSelectedResourceId(stockpile.resourceId);
+              }}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 
   return (
@@ -231,6 +228,12 @@ function StockpilesTable({
         onCloseDetail={() => {
           setSelectedResourceId(null);
         }}
+        emptyState={
+          <EmptyState
+            icon={Package}
+            title="Select a resource to view details"
+          />
+        }
       />
 
       {editingStockpile !== null ? (
@@ -291,8 +294,10 @@ function StockpileRow({
         <div className="flex items-center gap-2">
           <IconChip
             icon={resolveEntityIcon(stockpile.resourceIcon)}
-            tone={hashToCategoricalSlot(stockpile.resourceId)}
-            size="sm"
+            tone={resolveIconTone(
+              stockpile.resourceIconColor,
+              stockpile.resourceId,
+            )}
           />
           <span>{stockpile.resourceName}</span>
           {stockpile.isSystemResource ? (
@@ -362,9 +367,9 @@ function CapacityBar({
   const fillPercent = Math.min(100, Math.max(0, ratio * 100));
   const fillColorClass =
     ratio >= 1
-      ? "bg-red-600 dark:bg-red-500"
+      ? "bg-destructive"
       : ratio > 0.8
-        ? "bg-amber-500 dark:bg-amber-400"
+        ? "bg-warning-foreground"
         : "bg-primary";
 
   return (
@@ -423,7 +428,7 @@ function ForecastValue({
   }
   if (forecastDelta > 0) {
     return (
-      <span className="text-green-700 dark:text-green-500">
+      <span className="text-success-foreground">
         +{formatInt(forecastDelta)}
       </span>
     );
@@ -431,7 +436,7 @@ function ForecastValue({
   if (forecastDelta < 0) {
     return (
       <Link
-        className="text-red-700 underline underline-offset-2 hover:no-underline dark:text-red-500"
+        className="text-destructive underline underline-offset-2 hover:no-underline"
         params={{ nationId, settlementId, worldId }}
         to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
         onClick={(e) => {

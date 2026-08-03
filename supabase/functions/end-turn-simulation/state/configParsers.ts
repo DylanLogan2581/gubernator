@@ -1,5 +1,11 @@
+import { NAME_CONVENTIONS } from "../../_shared/naming/index.ts";
 import { isRecord } from "../utils.ts";
 
+import type {
+  NameConvention,
+  NamePattern,
+  NamePatternElement,
+} from "../../_shared/naming/index.ts";
 import type { NpcFlavorConfig, SimNamingConfig } from "../../_shared/simulation/simulationTypes.ts";
 import type { TurnCalendarConfig } from "../../_shared/turnCalendarPrimitives.ts";
 
@@ -156,9 +162,18 @@ export function parseWorldNpcFlavorConfig(
 }
 
 export function parseWorldNamingConfig(value: unknown): SimNamingConfig | null {
-  if (!isRecord(value)) return null;
+  if (!isRecord(value) || !isNameConvention(value.convention)) return null;
+  const convention = value.convention;
+
+  if (value.type === "generated") {
+    const parts = parseNamingParts(value.parts);
+    if (parts === null) return null;
+    const patterns = parseNamingPatterns(value.patterns, parts);
+    if (patterns === null) return null;
+    return { type: "generated", convention, parts, patterns };
+  }
+
   if (
-    typeof value.convention !== "string" ||
     !isStringArray(value.male_given_names) ||
     !isStringArray(value.female_given_names) ||
     !isStringArray(value.surnames)
@@ -166,11 +181,64 @@ export function parseWorldNamingConfig(value: unknown): SimNamingConfig | null {
     return null;
   }
   return {
-    convention: value.convention,
+    type: "list",
+    convention,
     female_given_names: value.female_given_names,
     male_given_names: value.male_given_names,
     surnames: value.surnames,
   };
+}
+
+function parseNamingParts(
+  value: unknown,
+): Readonly<Record<string, readonly string[]>> | null {
+  if (!isRecord(value)) return null;
+  const parts: Record<string, readonly string[]> = {};
+  for (const [key, entries] of Object.entries(value)) {
+    if (!isStringArray(entries)) return null;
+    parts[key] = entries;
+  }
+  return parts;
+}
+
+function parseNamingPatterns(
+  value: unknown,
+  parts: Readonly<Record<string, readonly string[]>>,
+): { female_given: NamePattern; male_given: NamePattern; surname: NamePattern } | null {
+  if (!isRecord(value)) return null;
+
+  const femaleGiven = parseNamePattern(value.female_given, parts);
+  const maleGiven = parseNamePattern(value.male_given, parts);
+  const surname = parseNamePattern(value.surname, parts);
+  if (femaleGiven === null || maleGiven === null || surname === null) {
+    return null;
+  }
+
+  return { female_given: femaleGiven, male_given: maleGiven, surname };
+}
+
+function parseNamePattern(
+  value: unknown,
+  parts: Readonly<Record<string, readonly string[]>>,
+): NamePattern | null {
+  if (!Array.isArray(value)) return null;
+
+  const pattern: NamePatternElement[] = [];
+  for (const element of value) {
+    if (typeof element === "string") {
+      pattern.push(element);
+      continue;
+    }
+    if (
+      !isStringArray(element) ||
+      element.length === 0 ||
+      !element.every((listKey) => listKey in parts)
+    ) {
+      return null;
+    }
+    pattern.push(element);
+  }
+  return pattern;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,6 +251,13 @@ function hasOnlyExpectedFields(
 ): boolean {
   return Object.keys(body).every((fieldName) =>
     expectedFields.some((expectedField) => expectedField === fieldName)
+  );
+}
+
+function isNameConvention(value: unknown): value is NameConvention {
+  return (
+    typeof value === "string" &&
+    NAME_CONVENTIONS.includes(value as NameConvention)
   );
 }
 

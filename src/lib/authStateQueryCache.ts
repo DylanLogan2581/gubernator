@@ -3,9 +3,14 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 export const authStateQueryCacheKeys = {
   authAll: ["auth"] as const,
+  armiesAll: ["armies"] as const,
   buildingsAll: ["buildings"] as const,
   calendarAll: ["calendar"] as const,
   citizensAll: ["citizens"] as const,
+  culturesAll: ["cultures"] as const,
+  religionsAll: ["religions"] as const,
+  educationLevelsAll: ["education-levels"] as const,
+  educationEnrollmentsAll: ["education-enrollments"] as const,
   currentAppUser: () =>
     [...authStateQueryCacheKeys.authAll, "current-app-user"] as const,
   currentSession: () =>
@@ -18,17 +23,24 @@ export const authStateQueryCacheKeys = {
   notificationsAll: ["notifications"] as const,
   permissionsAll: ["permissions"] as const,
   resourcesAll: ["resources"] as const,
+  resourceCategoriesAll: ["resource-categories"] as const,
   settlementsAll: ["settlements"] as const,
   turnsAll: ["turns"] as const,
+  unitTypesAll: ["unit-types"] as const,
   worldAccessAll: ["world-access"] as const,
   worldsAll: ["worlds"] as const,
 } as const;
 
 const authDependentQueryKeys = [
   authStateQueryCacheKeys.currentAppUser(),
+  authStateQueryCacheKeys.armiesAll,
   authStateQueryCacheKeys.buildingsAll,
   authStateQueryCacheKeys.calendarAll,
   authStateQueryCacheKeys.citizensAll,
+  authStateQueryCacheKeys.culturesAll,
+  authStateQueryCacheKeys.religionsAll,
+  authStateQueryCacheKeys.educationLevelsAll,
+  authStateQueryCacheKeys.educationEnrollmentsAll,
   authStateQueryCacheKeys.depositsAll,
   authStateQueryCacheKeys.jobsAll,
   authStateQueryCacheKeys.managedPopulationsAll,
@@ -36,9 +48,11 @@ const authDependentQueryKeys = [
   authStateQueryCacheKeys.notificationsAll,
   authStateQueryCacheKeys.permissionsAll,
   authStateQueryCacheKeys.resourcesAll,
+  authStateQueryCacheKeys.resourceCategoriesAll,
   authStateQueryCacheKeys.settlementsAll,
   authStateQueryCacheKeys.tradeAll,
   authStateQueryCacheKeys.turnsAll,
+  authStateQueryCacheKeys.unitTypesAll,
   authStateQueryCacheKeys.worldAccessAll,
   authStateQueryCacheKeys.worldsAll,
 ] as const satisfies readonly QueryKey[];

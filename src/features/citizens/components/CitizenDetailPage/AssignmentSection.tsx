@@ -58,7 +58,7 @@ function CitizenAssignmentSummary({
   }
 
   return (
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <dl className="grid divide-y divide-border border-y border-border">
       <Readout
         label="Type"
         value={assignmentTypeLabel(assignment.assignmentType)}
@@ -100,16 +100,12 @@ function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
     }
     case "deposit": {
       if (assignment.depositInstance === null) return null;
-      return `${assignment.depositInstance.name} — ${assignment.depositInstance.depositTypeJobName}`;
+      return `${assignment.depositInstance.name} — ${assignment.depositInstance.depositTypeName}`;
     }
     case "husbandry":
     case "culling": {
       if (assignment.managedPopulationInstance === null) return null;
-      const jobName =
-        assignment.assignmentType === "husbandry"
-          ? assignment.managedPopulationInstance.husbandryJobName
-          : assignment.managedPopulationInstance.cullingJobName;
-      return `${assignment.managedPopulationInstance.name} — ${jobName}`;
+      return `${assignment.managedPopulationInstance.name} — ${assignment.managedPopulationInstance.managedPopulationTypeName}`;
     }
     case "trade_route": {
       if (assignment.tradeRoute === null) return null;

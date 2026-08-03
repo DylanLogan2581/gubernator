@@ -6,8 +6,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorldCalendarConfig } from "@/features/calendar";
 
-import { writeWorldScopePin } from "../utils/worldScopePin";
-
 import { WorldListPage } from "./WorldListPage";
 
 import type { ReactNode } from "react";
@@ -145,23 +143,23 @@ describe("WorldListPage", () => {
   it("renders accessible worlds", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
+        adminRows: [
+          { world_id: "00000000-0000-0000-0000-000000000101" },
+          { world_id: "00000000-0000-0000-0000-000000000202" },
+        ],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
-            name: "Public World",
-            visibility: "public",
+            name: "Admin World",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Private World",
-            visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
             name: "Inaccessible World",
-            visibility: "private",
           }),
         ],
       }),
@@ -169,92 +167,82 @@ describe("WorldListPage", () => {
 
     renderWorldListPage();
 
-    expect(await screen.findByText("Public World")).toBeDefined();
+    expect(await screen.findByText("Admin World")).toBeDefined();
     expect(screen.getByText("Private World")).toBeDefined();
     expect(screen.queryByText("Inaccessible World")).toBeNull();
-    expect(screen.getByRole("link", { name: /Public World/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Admin World/i })).toHaveAttribute(
       "href",
       "/worlds/00000000-0000-0000-0000-000000000101",
     );
   });
 
-  it("uses a responsive card grid for the world list", async () => {
+  it("renders a single world as a full-width showcase card", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ name: "Grid World" })],
+        worldRows: [createWorldRow({ name: "Solo World" })],
       }),
     );
 
     renderWorldListPage();
 
-    await screen.findByText("Grid World");
+    await screen.findByText("Solo World");
+    const list = screen.getByRole("list", { name: "Accessible worlds" });
+    expect(list).toHaveClass("grid");
+    expect(list).not.toHaveClass("sm:grid-cols-2");
+    expect(list).not.toHaveClass("lg:grid-cols-3");
+  });
+
+  it("renders 2-4 worlds in a prominent two-column layout", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: Array.from({ length: 3 }, (_, index) =>
+          createWorldRow({
+            id: `00000000-0000-0000-0000-00000000030${index}`,
+            name: `Two Col World ${index}`,
+          }),
+        ),
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Two Col World 0");
+    const list = screen.getByRole("list", { name: "Accessible worlds" });
+    expect(list).toHaveClass("sm:grid-cols-2");
+    expect(list).not.toHaveClass("lg:grid-cols-3");
+  });
+
+  it("uses the dense responsive grid for 5+ worlds", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: Array.from({ length: 5 }, (_, index) =>
+          createWorldRow({
+            id: `00000000-0000-0000-0000-00000000050${index}`,
+            name: `Grid World ${index}`,
+          }),
+        ),
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Grid World 0");
     expect(screen.getByRole("list", { name: "Accessible worlds" })).toHaveClass(
       "sm:grid-cols-2",
       "lg:grid-cols-3",
     );
   });
 
-  it("shows a resume link to the pinned nation when a scope pin is stored", async () => {
-    const worldId = "00000000-0000-0000-0000-000000000501";
-    writeWorldScopePin(worldId, { nationId: "nation-1", settlementId: null });
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, name: "Resume World" })],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("Resume World");
-    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
-      "href",
-      `/worlds/${worldId}/nations/nation-1`,
-    );
-  });
-
-  it("shows a resume link to the pinned settlement when both nation and settlement are stored", async () => {
-    const worldId = "00000000-0000-0000-0000-000000000502";
-    writeWorldScopePin(worldId, {
-      nationId: "nation-1",
-      settlementId: "settlement-1",
-    });
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({ id: worldId, name: "Resume Settlement World" }),
-        ],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("Resume Settlement World");
-    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
-      "href",
-      `/worlds/${worldId}/nations/nation-1/settlements/settlement-1`,
-    );
-  });
-
-  it("does not show a resume link when no scope pin is stored", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ name: "No Pin World" })],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("No Pin World");
-    expect(screen.queryByRole("link", { name: "Resume" })).toBeNull();
-  });
-
   it("shows a world icon with the first letter of the world name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -268,38 +256,13 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     expect(await screen.findByText("Calendar World")).toBeDefined();
-    expect(screen.getByText("C")).toBeDefined();
+    expect(screen.getAllByText("C")).toHaveLength(2);
   });
 
-  it("shows a tooltip explaining the Hidden badge on hover", async () => {
-    const user = userEvent.setup();
+  it("renders the computed in-world date", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({
-            id: "00000000-0000-0000-0000-000000000202",
-            name: "Private World",
-            visibility: "private",
-          }),
-        ],
-      }),
-    );
-
-    renderWorldListPage();
-
-    const badge = await screen.findByText("Hidden");
-    await user.hover(badge);
-
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      /Hidden from players/i,
-    );
-  });
-
-  it("renders planning turn and computed in-world date", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -314,15 +277,14 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     expect(await screen.findByText("Calendar World")).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("3")).toBeDefined();
-    expect(screen.getByText("In-world date")).toBeDefined();
+    expect(screen.getByText("Current Date")).toBeDefined();
     expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
   });
 
   it("renders a safe fallback for missing or invalid calendar config", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        isSuperAdmin: true,
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -481,18 +443,130 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     await screen.findByText("No accessible worlds");
-    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    const trashToggle = screen.getByRole("button", { name: "Trash" });
+    expect(trashToggle).toHaveAttribute("aria-pressed", "false");
+    await user.click(trashToggle);
     await screen.findByText("Trashed World");
 
     expect(
-      screen.getByText(/Permanent deletion happens in Superadmin/),
+      screen.getByText("Permanent deletion happens in", { exact: false }),
     ).toBeDefined();
     expect(
-      screen.getByRole("link", { name: "Go to Superadmin → Worlds" }),
+      screen.getByRole("link", { name: "the Superadmin area" }),
     ).toHaveAttribute("href", "/superadmin/worlds");
     expect(
       screen.queryByRole("button", { name: "Delete permanently" }),
     ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Back to worlds" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("toggles back to the active world list from the trash view", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+        trashedWorldRows: [
+          createWorldRow({ name: "Trashed World", is_trashed: true }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Test World");
+    await user.click(screen.getByRole("button", { name: "Trash" }));
+    await screen.findByText("Trashed World");
+
+    await user.click(screen.getByRole("button", { name: "Back to worlds" }));
+
+    await screen.findByText("Test World");
+    expect(screen.queryByText("Trashed World")).toBeNull();
+  });
+
+  it("toggles the trash view via keyboard activation", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        trashedWorldRows: [
+          createWorldRow({ name: "Trashed World", is_trashed: true }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No accessible worlds");
+    const trashToggle = screen.getByRole("button", { name: "Trash" });
+    trashToggle.focus();
+    await user.keyboard("{Enter}");
+
+    await screen.findByText("Trashed World");
+  });
+
+  it("auto-opens the create dialog when action is 'create' and clears it", async () => {
+    const onClearAction = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage({ action: "create", onClearAction });
+
+    await screen.findByText("Test World");
+    expect(
+      await screen.findByRole("dialog", { name: "Create world" }),
+    ).toBeDefined();
+    expect(onClearAction).toHaveBeenCalled();
+  });
+
+  it("opens the import file picker when action is 'import' and clears it", async () => {
+    const onClearAction = vi.fn();
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click");
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage({ action: "import", onClearAction });
+
+    await screen.findByText("Test World");
+    await waitFor(() => {
+      expect(clickSpy).toHaveBeenCalled();
+    });
+    expect(onClearAction).toHaveBeenCalled();
+
+    clickSpy.mockRestore();
+  });
+
+  it("ignores the action param for non-superadmins", async () => {
+    const onClearAction = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000001" }],
+        isSuperAdmin: false,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage({ action: "create", onClearAction });
+
+    await screen.findByText("Test World");
+    expect(screen.queryByText("Create world")).toBeNull();
+    expect(onClearAction).not.toHaveBeenCalled();
   });
 
   it("restores a trashed world", async () => {
@@ -532,9 +606,11 @@ describe("WorldListPage", () => {
     renderWorldListPage();
 
     await screen.findByText("No accessible worlds");
-    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await user.click(screen.getByRole("button", { name: "Trash" }));
     await screen.findByText("Trashed World");
-    await user.click(screen.getByRole("button", { name: "Restore" }));
+    await user.click(
+      screen.getByRole("button", { name: "Restore Trashed World" }),
+    );
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith("restore_world", {
@@ -548,11 +624,17 @@ describe("WorldListPage", () => {
   });
 });
 
-function renderWorldListPage(): void {
+function renderWorldListPage({
+  action,
+  onClearAction,
+}: {
+  readonly action?: "create" | "import";
+  readonly onClearAction?: () => void;
+} = {}): void {
   render(
     <TooltipProvider>
       <QueryClientProvider client={createQueryClient()}>
-        <WorldListPage />
+        <WorldListPage action={action} onClearAction={onClearAction} />
       </QueryClientProvider>
     </TooltipProvider>,
   );
@@ -646,7 +728,6 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 };
 type TestCalendarConfigJson =
   | WorldCalendarConfig
@@ -677,7 +758,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

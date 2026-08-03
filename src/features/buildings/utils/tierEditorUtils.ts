@@ -16,12 +16,23 @@ export type CostRowState = {
   amount: string;
 };
 
+export type EducationLevelTransitionRowState = {
+  id: string;
+  fromLevelId: string;
+  toLevelId: string;
+  turns: string;
+};
+
 export type EffectRowState = {
   id: string;
   effectType: EffectTypeName | "";
   jobId: string;
   resourceId: string;
   amount: string;
+  teacherJobId: string;
+  teacherCapacity: string;
+  studentsPerTeacher: string;
+  levels: EducationLevelTransitionRowState[];
 };
 
 export type TierFormErrors = {
@@ -69,6 +80,23 @@ export function buildEffectInputs(
       case "population_cap_increase":
         result.push({ amount, type: "population_cap_increase" });
         break;
+      case "education":
+        result.push({
+          levels: r.levels.map((l) => ({
+            fromLevelId: l.fromLevelId !== "" ? l.fromLevelId : null,
+            toLevelId: l.toLevelId,
+            turns: l.turns !== "" ? parseInt(l.turns, 10) : 0,
+          })),
+          studentsPerTeacher:
+            r.studentsPerTeacher !== ""
+              ? parseInt(r.studentsPerTeacher, 10)
+              : 0,
+          teacherCapacity:
+            r.teacherCapacity !== "" ? parseInt(r.teacherCapacity, 10) : 0,
+          teacherJobId: r.teacherJobId,
+          type: "education",
+        });
+        break;
       case "":
         break;
       default: {
@@ -94,35 +122,46 @@ export function tierEffectsToState(
   effects: readonly TierEffect[],
 ): EffectRowState[] {
   return effects.map((e) => {
-    const base = { amount: String(e.amount), id: generateLocalId() };
+    const base = {
+      amount: "amount" in e ? String(e.amount) : "",
+      id: generateLocalId(),
+      jobId: "",
+      levels: [] as EducationLevelTransitionRowState[],
+      resourceId: "",
+      studentsPerTeacher: "",
+      teacherCapacity: "",
+      teacherJobId: "",
+    };
     switch (e.type) {
       case "job_capacity_increase":
-        return {
-          ...base,
-          effectType: "job_capacity_increase",
-          jobId: e.jobId,
-          resourceId: "",
-        };
+        return { ...base, effectType: "job_capacity_increase", jobId: e.jobId };
       case "passive_resource_production":
         return {
           ...base,
           effectType: "passive_resource_production",
-          jobId: "",
           resourceId: e.resourceId,
         };
       case "resource_storage_increase":
         return {
           ...base,
           effectType: "resource_storage_increase",
-          jobId: "",
           resourceId: e.resourceId,
         };
       case "population_cap_increase":
+        return { ...base, effectType: "population_cap_increase" };
+      case "education":
         return {
           ...base,
-          effectType: "population_cap_increase",
-          jobId: "",
-          resourceId: "",
+          effectType: "education",
+          levels: e.levels.map((l) => ({
+            fromLevelId: l.fromLevelId ?? "",
+            id: generateLocalId(),
+            toLevelId: l.toLevelId,
+            turns: String(l.turns),
+          })),
+          studentsPerTeacher: String(e.studentsPerTeacher),
+          teacherCapacity: String(e.teacherCapacity),
+          teacherJobId: e.teacherJobId,
         };
       default: {
         const _exhaustive: never = e;

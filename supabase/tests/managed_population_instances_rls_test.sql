@@ -87,18 +87,16 @@ where
   id = 'f1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'MPI Private World',
-    'private',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'MPI Outsider World',
-    'private',
     'active'
   );
 
@@ -149,25 +147,13 @@ values
 
 -- Population type in the primary world (used for most tests).
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'f6000000-0000-0000-0000-000000000001',
     'f2000000-0000-0000-0000-000000000001',
     'MPI Cattle',
     'mpi-cattle',
-    'f5000000-0000-0000-0000-000000000001',
-    'f5000000-0000-0000-0000-000000000002',
-    2,
     0.05
   ),
   -- Population type in the outsider world (used for cross-world trigger test).
@@ -176,10 +162,43 @@ values
     'f2000000-0000-0000-0000-000000000002',
     'MPI Outsider Cattle',
     'mpi-outsider-cattle',
-    'f5000000-0000-0000-0000-000000000003',
-    'f5000000-0000-0000-0000-000000000004',
-    1,
     0.03
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'f6000000-0000-0000-0000-000000000001',
+    'f5000000-0000-0000-0000-000000000001',
+    2
+  ),
+  (
+    'f6000000-0000-0000-0000-000000000002',
+    'f5000000-0000-0000-0000-000000000003',
+    1
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'f6000000-0000-0000-0000-000000000001',
+    'f5000000-0000-0000-0000-000000000002',
+    10
+  ),
+  (
+    'f6000000-0000-0000-0000-000000000002',
+    'f5000000-0000-0000-0000-000000000004',
+    10
   );
 
 insert into

@@ -27,6 +27,9 @@ type SettlementJobCountRow = {
   readonly job_id: string;
   readonly job_name: string;
   readonly job_slug: string;
+  readonly qualified_citizen_count: number;
+  readonly required_education_level_id: string | null;
+  readonly required_education_level_name: string | null;
   readonly world_id: string;
 };
 
@@ -65,6 +68,9 @@ function toSettlementJobCount(row: SettlementJobCountRow): SettlementJobCount {
     jobId: row.job_id,
     jobName: row.job_name,
     jobSlug: row.job_slug,
+    qualifiedCitizenCount: row.qualified_citizen_count,
+    requiredEducationLevelId: row.required_education_level_id,
+    requiredEducationLevelName: row.required_education_level_name,
     worldId: row.world_id,
   };
 }

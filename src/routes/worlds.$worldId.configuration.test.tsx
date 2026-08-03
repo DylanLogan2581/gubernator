@@ -35,12 +35,12 @@ describe("world configuration route", () => {
   it("redirects authenticated non-admin users to the world shell", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        pcWorldIds: ["00000000-0000-0000-0000-000000000101"],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            visibility: "public",
           }),
         ],
         adminRows: [],
@@ -67,7 +67,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
             name: "Admin World",
-            visibility: "private",
           }),
         ],
       }),
@@ -82,6 +81,60 @@ describe("world configuration route", () => {
     ).toHaveTextContent("Resources");
   });
 
+  it("corrects an unknown ?tab= to the default tab in the URL", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000505";
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: worldId }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: worldId,
+            name: "Admin World",
+          }),
+        ],
+      }),
+    );
+
+    const router = renderAt(`/worlds/${worldId}/configuration?tab=bogus`);
+
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Resources");
+
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ tab: "resources" });
+    });
+  });
+
+  it("redirects the legacy ?tab=cultures-religions alias to ?tab=cultures", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000606";
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: worldId }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: worldId,
+            name: "Admin World",
+          }),
+        ],
+      }),
+    );
+
+    const router = renderAt(
+      `/worlds/${worldId}/configuration?tab=cultures-religions`,
+    );
+
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Cultures");
+
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ tab: "cultures" });
+    });
+  });
+
   it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -91,7 +144,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Admin World",
-            visibility: "private",
           }),
         ],
       }),
@@ -104,6 +156,71 @@ describe("world configuration route", () => {
     expect(
       await screen.findByRole("combobox", { name: "Configuration section" }),
     ).toHaveTextContent("Jobs");
+  });
+
+  // Regression for #1192: a pinned SETTLEMENT/NATION scope (from a prior
+  // visit to a settlement page) must not leak into the WORLD sidebar's
+  // active-tab highlighting while on the configuration route — the
+  // settlement/nation sections should stay unhighlighted since their own
+  // section guard (AppSidebar's isOnSettlementPage/isOnNationPage) only
+  // reads a section from the pathname while actually on that scope's route.
+  it("keeps the world admin sidebar active with Education highlighted despite a pinned settlement scope", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000404";
+    const nationId = "00000000-0000-0000-0000-000000000405";
+    const settlementId = "00000000-0000-0000-0000-000000000406";
+
+    localStorage.setItem(
+      `gubernator:world-scope-pin:${worldId}`,
+      JSON.stringify({ nationId, settlementId }),
+    );
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: worldId }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: worldId,
+            name: "Admin World",
+          }),
+        ],
+        nationRows: [
+          createNationRow({ id: nationId, name: "Homeland", worldId }),
+        ],
+        settlementRows: [
+          createSettlementSummaryRow({
+            id: settlementId,
+            nationId,
+            nationName: "Homeland",
+          }),
+        ],
+      }),
+    );
+
+    renderAt(`/worlds/${worldId}/configuration?tab=education`);
+
+    const educationLink = await screen.findByRole("link", {
+      name: /Education/,
+    });
+    expect(educationLink).toHaveAttribute("data-active", "true");
+
+    const constructionLink = await screen.findByRole("link", {
+      name: /Construction/,
+    });
+    expect(constructionLink).toHaveAttribute("data-active", "false");
+
+    const resourcesLink = screen.getByRole("link", { name: /Resources/ });
+    expect(resourcesLink).toHaveAttribute("data-active", "false");
+
+    // Only the clicked config tab should be marked active anywhere in the
+    // sidebar — no SETTLEMENT/NATION section link (e.g. a stale "Overview"
+    // or "Construction") should light up from the pinned scope.
+    const activeLinks = screen
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("data-active") === "true");
+    expect(activeLinks.map((link) => link.textContent)).toEqual([
+      educationLink.textContent,
+    ]);
   });
 });
 
@@ -146,20 +263,38 @@ type TestWorldRow = {
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
+};
+
+type TestNationRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly world_id: string;
+};
+
+type TestSettlementSummaryRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly nation_id: string;
+  readonly nations: { readonly name: string };
 };
 
 function createClient({
   adminRows = [],
+  nationRows = [],
+  pcWorldIds = [],
   session,
+  settlementRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly nationRows?: readonly TestNationRow[];
+  readonly pcWorldIds?: readonly string[];
   readonly session: {
     readonly user: {
       readonly id: string;
     };
   };
+  readonly settlementRows?: readonly TestSettlementSummaryRow[];
   readonly worldRows?: readonly TestWorldRow[];
 }): unknown {
   const userRow = createUser(session.user.id);
@@ -184,6 +319,14 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
 
+      if (table === "nations") {
+        return createNationsQueryBuilder(nationRows);
+      }
+
+      if (table === "settlements") {
+        return createSettlementsQueryBuilder(settlementRows);
+      }
+
       if (table === "user_active_player_characters") {
         const b: Record<string, unknown> = {};
         b.eq = vi.fn(() => b);
@@ -205,10 +348,61 @@ function createClient({
     removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: pcWorldIds, error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
+  };
+}
+
+function chainBuilder(result: unknown): Record<string, unknown> {
+  const builder: Record<string, unknown> = {};
+  builder.eq = vi.fn(() => builder);
+  builder.order = vi.fn(() => builder);
+  builder.returns = vi.fn(() => Promise.resolve(result));
+  builder.then = (
+    resolve: (value: unknown) => unknown,
+    reject?: (reason: unknown) => unknown,
+  ) => Promise.resolve(result).then(resolve, reject);
+  return builder;
+}
+
+function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
+  return {
+    select: vi.fn(() => chainBuilder({ data: rows, error: null })),
+  };
+}
+
+function createSettlementsQueryBuilder(
+  rows: readonly TestSettlementSummaryRow[],
+): unknown {
+  return {
+    select: vi.fn(() => chainBuilder({ data: rows, error: null })),
+  };
+}
+
+function createNationRow(overrides: {
+  readonly id: string;
+  readonly name: string;
+  readonly worldId: string;
+}): TestNationRow {
+  return {
+    id: overrides.id,
+    name: overrides.name,
+    world_id: overrides.worldId,
+  };
+}
+
+function createSettlementSummaryRow(overrides: {
+  readonly id: string;
+  readonly nationId: string;
+  readonly nationName: string;
+}): TestSettlementSummaryRow {
+  return {
+    id: overrides.id,
+    name: "Hometown",
+    nation_id: overrides.nationId,
+    nations: { name: overrides.nationName },
   };
 }
 
@@ -247,7 +441,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     name: "World",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

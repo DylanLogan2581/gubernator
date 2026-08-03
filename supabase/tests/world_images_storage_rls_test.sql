@@ -52,12 +52,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status, current_turn_number)
+  public.worlds (id, name, status, current_turn_number)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'World Images World',
-    'private',
     'active',
     5
   );

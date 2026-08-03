@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { Citizen } from "@/features/citizens";
 import { unpairedAliveCitizensInWorldQueryOptions } from "@/features/citizens";
+import { notifyMutationError } from "@/lib/notify";
 
 import { usePartnerCandidates } from "../hooks/usePartnerCandidates";
 import { reassignPartnerMutationOptions } from "../mutations/partnershipsMutations";
-import { getPartnershipMutationErrorDescription } from "../utils/partnershipErrors";
 
 import {
   ChangeReasonField,
@@ -85,6 +84,11 @@ export function ReassignPartnerForm({
       return;
     }
 
+    const previousPartnerCitizenId =
+      partnership.citizenAId === retainedCitizenId
+        ? partnership.citizenBId
+        : partnership.citizenAId;
+
     mutation.mutate(
       {
         changeReason,
@@ -92,12 +96,13 @@ export function ReassignPartnerForm({
         formedOnTurnNumber: parsedFormed,
         newPartnerCitizenId: newPartnerId,
         oldPartnershipId: partnership.id,
+        previousPartnerCitizenId,
         retainedCitizenId,
         turnTransitionId,
       },
       {
         onError: (error) => {
-          toast.error(getPartnershipMutationErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: onClose,
       },
@@ -107,7 +112,7 @@ export function ReassignPartnerForm({
   return (
     <form
       aria-label="Reassign partner"
-      className="grid gap-2 rounded-md border border-border bg-card px-3 py-2"
+      className="grid gap-2"
       noValidate
       onSubmit={handleSubmit}
     >

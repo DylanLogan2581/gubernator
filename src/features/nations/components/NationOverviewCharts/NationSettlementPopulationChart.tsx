@@ -60,7 +60,7 @@ export function NationSettlementPopulationChart({
   return (
     <div className="space-y-3">
       <ChartContainer config={chartConfig} className={CHART_HEIGHT_CLASSNAME}>
-        <BarChart data={data} layout="vertical" margin={{ left: 8 }}>
+        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 20 }}>
           <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
           <YAxis
             type="category"
@@ -80,7 +80,13 @@ export function NationSettlementPopulationChart({
           />
           <Bar dataKey="population" radius={4}>
             {data.map((entry) => (
-              <Cell key={entry.settlementId} fill={entry.fill} />
+              // fill attr alone won't paint var(--...) colors in Chromium; the
+              // style prop resolves through CSSOM so it does.
+              <Cell
+                key={entry.settlementId}
+                fill={entry.fill}
+                style={{ fill: entry.fill }}
+              />
             ))}
           </Bar>
         </BarChart>

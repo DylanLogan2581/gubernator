@@ -57,13 +57,12 @@ where
   id = 'f8100000-0000-0000-0000-000000000002';
 
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'f8200000-0000-0000-0000-000000000001',
     'TCN World 1',
     5,
-    'private',
     'active'
   );
 

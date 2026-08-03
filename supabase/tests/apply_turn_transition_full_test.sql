@@ -120,27 +120,24 @@ where
 --   World 2 (turn 2, archived): for P0001 guard test
 --   World 3 (turn 7, active): idempotency world
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'd6200000-0000-0000-0000-000000000001',
     'ATTFE Main World',
     5,
-    'private',
     'active'
   ),
   (
     'd6200000-0000-0000-0000-000000000002',
     'ATTFE Archived World',
     2,
-    'private',
     'active'
   ),
   (
     'd6200000-0000-0000-0000-000000000003',
     'ATTFE Idempotency World',
     7,
-    'private',
     'active'
   );
 

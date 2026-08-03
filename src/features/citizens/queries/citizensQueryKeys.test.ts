@@ -47,6 +47,19 @@ describe("citizensQueryKeys", () => {
     ]);
   });
 
+  it("creates stable culture/religion composition keys scoped by settlement and nation", () => {
+    expect(
+      citizensQueryKeys.settlementCultureReligionComposition("settlement-1"),
+    ).toEqual([
+      "citizens",
+      "settlement-culture-religion-composition",
+      "settlement-1",
+    ]);
+    expect(
+      citizensQueryKeys.nationCultureReligionComposition("nation-1"),
+    ).toEqual(["citizens", "nation-culture-religion-composition", "nation-1"]);
+  });
+
   it("creates stable partnership keys scoped by citizen id", () => {
     expect(citizensQueryKeys.partnershipsForCitizen("c-1")).toEqual([
       "citizens",
@@ -93,6 +106,10 @@ describe("citizensQueryKeys", () => {
       "citizens",
       "player-characters-in-nation",
       "nation-1",
+    ]);
+    expect(citizensQueryKeys.unpairedAliveAll()).toEqual([
+      "citizens",
+      "unpaired-alive-in-world",
     ]);
     expect(citizensQueryKeys.unpairedAliveInWorld("world-1")).toEqual([
       "citizens",

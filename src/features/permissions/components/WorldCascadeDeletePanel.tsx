@@ -15,6 +15,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { previewWorldDeleteMutationOptions } from "../mutations/superadminMutations";
 import { trashedWorldsForSuperadminQueryOptions } from "../queries/superadminQueries";
+import { superadminQueryKeys } from "../queries/superadminQueryKeys";
 
 import type { PreviewWorldDeleteResult } from "../types/superadminTypes";
 
@@ -56,6 +57,9 @@ export function WorldCascadeDeletePanel(): JSX.Element {
           setPreview(null);
           setConfirmOpen(false);
           setSelectedWorldId("");
+          void queryClient.invalidateQueries({
+            queryKey: superadminQueryKeys.trashedWorlds(),
+          });
           notifyMutationSuccess("World permanently deleted.");
         },
         onError: (error) => {
@@ -109,9 +113,11 @@ export function WorldCascadeDeletePanel(): JSX.Element {
   );
 
   return (
-    <div className="mt-6 rounded-lg border border-border p-4">
-      <h2 className="text-base font-semibold">World Hard Delete</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <section className="mt-6">
+      <h2 className="border-b border-border pb-2 text-base font-semibold text-seal">
+        World Hard Delete
+      </h2>
+      <p className="mt-2 text-sm text-muted-foreground">
         Permanently delete a trashed world and all cascade-dependent data.
         Preview counts before confirming. Superadmin only.
       </p>
@@ -175,7 +181,7 @@ export function WorldCascadeDeletePanel(): JSX.Element {
       )}
 
       {preview !== null && (
-        <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
+        <div className="mt-4 text-sm">
           <p className="font-medium">
             Cascade preview for &ldquo;
             {selectedWorld?.name ?? selectedWorldId}&rdquo;
@@ -255,6 +261,6 @@ export function WorldCascadeDeletePanel(): JSX.Element {
         isPending={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
-    </div>
+    </section>
   );
 }

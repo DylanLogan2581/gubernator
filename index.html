@@ -13,6 +13,23 @@
       content="A turn-based world simulation and management application."
     />
     <title>Gubernator</title>
+    <script>
+      // Apply the stored theme before first paint to avoid a flash. Mirrors
+      // the ThemeProvider logic in src/lib/theme.tsx (#1381).
+      (function () {
+        try {
+          var theme = localStorage.getItem("gubernator-theme");
+          var root = document.documentElement;
+          if (theme === "dark") {
+            root.classList.add("dark");
+          } else if (theme === "light") {
+            root.classList.add("light");
+          }
+        } catch (error) {
+          /* private browsing / storage disabled — fall back to OS theme */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

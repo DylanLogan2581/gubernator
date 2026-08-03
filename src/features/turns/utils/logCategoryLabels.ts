@@ -1,6 +1,9 @@
-// Human-readable labels for every known turn log category.
-// Unknown codes fall back to the raw code string at point of use.
-export const LOG_CATEGORY_LABELS: Readonly<Record<string, string>> = {
+import type { LogCode } from "@/shared/simulation";
+
+// Human-readable labels for every known turn log category. Keyed on the shared
+// LogCode union so a newly emitted code fails the type check here until it is
+// labeled. Unknown codes fall back to the raw code string at point of use.
+export const LOG_CATEGORY_LABELS: Readonly<Record<LogCode, string>> = {
   basic_turn_advancement: "Turn Advancement",
   "building.auto_deconstructed": "Building Auto-Deconstructed",
   "building.recovered": "Building Recovered",
@@ -37,8 +40,17 @@ export const LOG_CATEGORY_LABELS: Readonly<Record<string, string>> = {
   "standard_job.processed": "Job Processed",
   starvation: "Starvation",
   "stockpile.clamped": "Stockpile Clamped",
-  "stockpile.decayed": "Stockpile Decay",
+  "stockpile.changed": "Stockpile Growth/Decay",
   tampered: "Tampered",
   "trade_route.paused": "Trade Route Paused",
   "trade_route.resumed": "Trade Route Resumed",
 };
+
+// Resolves a (possibly unknown) log-category code to its label, falling back to
+// the raw code string. Accepts any string so callers holding untyped codes
+// (e.g. the active filter value) can look up without an unchecked cast.
+export function logCategoryLabel(code: string): string {
+  return (
+    (LOG_CATEGORY_LABELS as Readonly<Record<string, string>>)[code] ?? code
+  );
+}

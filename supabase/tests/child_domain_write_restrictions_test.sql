@@ -10,8 +10,8 @@
 --     updates (nation_id, created_at, updated_at, is_ready_current_turn,
 --     ready_set_at, last_ready_at, auto_ready_enabled,
 --     ready_set_by_citizen_id).
---   • Allowed user-editable columns still work (nations.name/description/
---     is_hidden, settlements.name/description/coord_x/coord_z).
+--   • Allowed user-editable columns still work (nations.name/description,
+--     settlements.name/description/coord_x/coord_z).
 --   • Pre-seeding readiness/identity columns on INSERT is rejected.
 --   • set_settlement_readiness and set_settlement_auto_ready do mutate the
 --     intended fields when called by an admin, and are no-ops for callers
@@ -55,28 +55,25 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '81000000-0000-0000-0000-000000000001',
     'Child Domain World',
-    'private',
     'active'
   ),
   (
     '81000000-0000-0000-0000-000000000002',
     'Child Domain Other World',
-    'private',
     'active'
   );
 
 insert into
-  public.worlds (id, name, visibility, status, archived_at)
+  public.worlds (id, name, status, archived_at)
 values
   (
     '81000000-0000-0000-0000-000000000003',
     'Child Domain Archived World',
-    'private',
     'archived',
     now()
   );
@@ -310,10 +307,10 @@ select
   lives_ok (
     $test$
     update public.nations
-    set name = 'Renamed Nation', description = 'New description', is_hidden = true
+    set name = 'Renamed Nation', description = 'New description'
     where id = '82000000-0000-0000-0000-000000000001'
   $test$,
-    'admin can update nations.name/description/is_hidden'
+    'admin can update nations.name/description'
   );
 
 select

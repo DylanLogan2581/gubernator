@@ -5,9 +5,8 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Landmark, LockKeyhole, Plus } from "lucide-react";
+import { ArrowRight, Landmark, Plus } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
-import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -26,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AdminPausedHint,
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
 } from "@/features/permissions";
@@ -37,15 +37,18 @@ import {
 import type { WorldRouteAccess } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import {
-  createNationMutationOptions,
-  isNationMutationError,
-} from "../mutations/nationsMutations";
+import { createNationMutationOptions } from "../mutations/nationsMutations";
 import { nationsListQueryOptions } from "../queries/nationsQueries";
+import {
+  NATION_GOVERNMENT_TYPES,
+  formatNationGovernmentType,
+} from "../types/nationTypes";
 
-import type { Nation } from "../types/nationTypes";
+import { NationFlagAvatar } from "./NationFlagAvatar";
+
+import type { Nation, NationGovernmentType } from "../types/nationTypes";
 
 type NationListPageProps = {
   readonly worldId: string;
@@ -169,6 +172,8 @@ function NationListContent({
         }
       />
 
+      <AdminPausedHint canAdmin={worldAccess.canAdmin} />
+
       {nationsQuery.isPending ? (
         <LoadingState label="Loading nations…" />
       ) : nationsQuery.isError ? (
@@ -210,17 +215,19 @@ function NationListItem({
       <Link
         to="/worlds/$worldId/nations/$nationId"
         params={{ nationId: nation.id, worldId }}
-        className="grid grid-cols-[1fr_auto] items-center gap-4 p-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="grid grid-cols-[auto_1fr_auto] items-center gap-4 p-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
+        <NationFlagAvatar
+          className="w-14 shrink-0"
+          flagPath={nation.flagPath}
+          nationId={nation.id}
+        />
         <div className="grid min-w-0 gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2 className="truncate text-base font-medium">{nation.name}</h2>
-            {nation.isHidden ? (
-              <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                <LockKeyhole className="size-3" aria-hidden="true" />
-                Hidden
-              </span>
-            ) : null}
+            <h2 className="min-w-0 text-base font-medium">{nation.name}</h2>
+            <span className="inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {formatNationGovernmentType(nation.governmentType)}
+            </span>
           </div>
           {descriptionPreview === null ? (
             <p className="text-sm italic text-muted-foreground">
@@ -251,7 +258,13 @@ function CreateNationSection({
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [foundedTurnNumber, setFoundedTurnNumber] = useState("");
+  const [governmentType, setGovernmentType] =
+    useState<NationGovernmentType>("monarchy");
   const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [foundedTurnError, setFoundedTurnError] = useState<string | undefined>(
+    undefined,
+  );
 
   const createMutation = useMutation(
     createNationMutationOptions({ queryClient }),
@@ -260,7 +273,10 @@ function CreateNationSection({
   function resetForm(): void {
     setName("");
     setDescription("");
+    setFoundedTurnNumber("");
+    setGovernmentType("monarchy");
     setNameError(undefined);
+    setFoundedTurnError(undefined);
     createMutation.reset();
   }
 
@@ -272,6 +288,7 @@ function CreateNationSection({
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     setNameError(undefined);
+    setFoundedTurnError(undefined);
     createMutation.reset();
 
     const trimmedName = name.trim();
@@ -280,15 +297,30 @@ function CreateNationSection({
       return;
     }
 
+    const trimmedFoundedTurn = foundedTurnNumber.trim();
+    let parsedFoundedTurn: number | null = null;
+    if (trimmedFoundedTurn.length > 0) {
+      const parsed = Number(trimmedFoundedTurn);
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        setFoundedTurnError(
+          "Founded turn must be a whole number, 0 or greater.",
+        );
+        return;
+      }
+      parsedFoundedTurn = parsed;
+    }
+
     createMutation.mutate(
       {
         description: description.trim().length === 0 ? null : description,
+        foundedTurnNumber: parsedFoundedTurn,
+        governmentType,
         name,
         worldId,
       },
       {
         onError: (error) => {
-          toast.error(getCreateErrorDescription(error));
+          notifyMutationError(error);
         },
         onSuccess: (nation) => {
           notifyMutationSuccess(`Nation "${nation.name}" created.`);
@@ -360,6 +392,62 @@ function CreateNationSection({
                 onChange={(event) => setDescription(event.currentTarget.value)}
               />
             </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="nation-create-founded-turn"
+            >
+              <span className="text-muted-foreground">
+                Founded turn (optional)
+              </span>
+              <Input
+                aria-invalid={foundedTurnError === undefined ? undefined : true}
+                aria-describedby={
+                  foundedTurnError === undefined
+                    ? undefined
+                    : "nation-founded-turn-error"
+                }
+                id="nation-create-founded-turn"
+                inputMode="numeric"
+                value={foundedTurnNumber}
+                onChange={(event) => {
+                  setFoundedTurnNumber(event.currentTarget.value);
+                  if (foundedTurnError !== undefined) {
+                    setFoundedTurnError(undefined);
+                  }
+                }}
+              />
+              {foundedTurnError === undefined ? null : (
+                <p
+                  id="nation-founded-turn-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {foundedTurnError}
+                </p>
+              )}
+            </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="nation-create-government-type"
+            >
+              <span className="text-muted-foreground">Government type</span>
+              <select
+                id="nation-create-government-type"
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                value={governmentType}
+                onChange={(event) => {
+                  setGovernmentType(
+                    event.currentTarget.value as NationGovernmentType,
+                  );
+                }}
+              >
+                {NATION_GOVERNMENT_TYPES.map((option) => (
+                  <option key={option} value={option}>
+                    {formatNationGovernmentType(option)}
+                  </option>
+                ))}
+              </select>
+            </Label>
             <DialogFooter>
               <Button
                 type="button"
@@ -405,15 +493,4 @@ function getDescriptionPreview(description: string | null): string | null {
   }
 
   return `${collapsed.slice(0, limit).trimEnd()}…`;
-}
-
-function getCreateErrorDescription(error: unknown): string {
-  if (isNationMutationError(error)) {
-    const firstIssue = error.issues[0];
-    if (firstIssue !== undefined) {
-      return firstIssue.message;
-    }
-    return error.message;
-  }
-  return getErrorDescription(error);
 }

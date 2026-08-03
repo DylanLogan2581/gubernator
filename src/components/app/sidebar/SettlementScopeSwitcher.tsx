@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
@@ -17,6 +17,7 @@ export type SettlementSection =
   | "construction"
   | "deposits"
   | "forecast"
+  | "government"
   | "history"
   | "overview"
   | "populations"
@@ -39,6 +40,7 @@ type SettlementSectionRouteId =
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
+  | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/government"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/history"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports"
@@ -62,6 +64,8 @@ function sectionRouteId(
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits";
     case "forecast":
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast";
+    case "government":
+      return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/government";
     case "history":
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/history";
     case "populations":
@@ -103,6 +107,7 @@ export function SettlementScopeSwitcher({
     <ScopeGroupSwitcher
       emptyLabel="No settlements yet"
       errorLabel="Settlements could not be loaded"
+      icon={<MapPin aria-hidden="true" />}
       isError={settlementsQuery.isError}
       isPending={settlementsQuery.isPending}
       items={settlements.map((settlement) => ({
@@ -135,6 +140,7 @@ export function SettlementScopeSwitcher({
       }))}
       menuLabel="Settlements"
       title={<>SETTLEMENT{current !== null ? ` · ${current.name}` : ""}</>}
+      tooltipLabel={`SETTLEMENT${current !== null ? ` · ${current.name}` : ""}`}
     />
   );
 }

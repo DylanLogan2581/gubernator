@@ -26,6 +26,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { createConstructionProjectMutationOptions } from "../../mutations/createConstructionProjectMutations";
 import { constructionProjectsBySettlementQueryOptions } from "../../queries/constructionProjectsQueries";
 
+import { TierCostBreakdown } from "./TierCostBreakdown";
 import { getCapOverflowError } from "./utils/ConstructionQueueUtils";
 
 export function CreateProjectDialog({
@@ -41,9 +42,12 @@ export function CreateProjectDialog({
 }): JSX.Element {
   const blueprintSelectId = useId();
   const tierSelectId = useId();
+  const upgradeSelectId = useId();
 
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
   const [selectedTierId, setSelectedTierId] = useState("");
+  const [selectedUpgradeBuildingId, setSelectedUpgradeBuildingId] =
+    useState("");
 
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
   const projectsQuery = useQuery(
@@ -76,12 +80,39 @@ export function CreateProjectDialog({
     (t) => t.id === selectedTierId,
   );
 
-  const capOverflowError = getCapOverflowError(
-    selectedBlueprint,
-    selectedBlueprintId,
-    projectsQuery.data ?? [],
-    buildingsQuery.data ?? [],
+  // Active buildings of the selected blueprint that can be upgraded — i.e. that
+  // are not already at the blueprint's highest tier (#1372).
+  const maxTierNumber = (tiersQuery.data ?? []).reduce(
+    (max, t) => Math.max(max, t.tierNumber),
+    0,
   );
+  const upgradeableBuildings = (buildingsQuery.data ?? []).filter(
+    (b) =>
+      b.buildingBlueprintId === selectedBlueprintId &&
+      b.state === "active" &&
+      b.tierNumber < maxTierNumber,
+  );
+
+  const upgradeBuilding = upgradeableBuildings.find(
+    (b) => b.id === selectedUpgradeBuildingId,
+  );
+  const isUpgrade = upgradeBuilding !== undefined;
+  const fromTierNumber = upgradeBuilding?.tierNumber ?? 0;
+
+  // In upgrade mode only higher tiers than the building's current tier are valid.
+  const selectableTiers = (tiersQuery.data ?? []).filter(
+    (t) => t.tierNumber > fromTierNumber,
+  );
+
+  // The instance cap only applies to direct builds; upgrades reuse a building.
+  const capOverflowError = isUpgrade
+    ? null
+    : getCapOverflowError(
+        selectedBlueprint,
+        selectedBlueprintId,
+        projectsQuery.data ?? [],
+        buildingsQuery.data ?? [],
+      );
 
   async function handleCreate(): Promise<void> {
     if (selectedBlueprintId === "" || selectedTierId === "") return;
@@ -90,11 +121,23 @@ export function CreateProjectDialog({
         blueprintId: selectedBlueprintId,
         settlementId,
         targetTierId: selectedTierId,
+        ...(isUpgrade
+          ? { upgradeSettlementBuildingId: selectedUpgradeBuildingId }
+          : {}),
       });
-      notifyMutationSuccess("Construction project started.");
+      notifyMutationSuccess(
+        isUpgrade
+          ? "Building upgrade started."
+          : "Construction project started.",
+      );
       onClose();
     } catch (error) {
-      notifyMutationError(error, "Failed to start construction project.");
+      notifyMutationError(
+        error,
+        isUpgrade
+          ? "Failed to start building upgrade."
+          : "Failed to start construction project.",
+      );
     }
   }
 
@@ -133,6 +176,7 @@ export function CreateProjectDialog({
                 onChange={(e) => {
                   setSelectedBlueprintId(e.target.value);
                   setSelectedTierId("");
+                  setSelectedUpgradeBuildingId("");
                 }}
               >
                 <option value="">Select a blueprint…</option>
@@ -150,9 +194,33 @@ export function CreateProjectDialog({
             ) : null}
           </div>
 
+          {selectedBlueprintId !== "" && upgradeableBuildings.length > 0 ? (
+            <div className="grid gap-1.5">
+              <Label htmlFor={upgradeSelectId}>Upgrade existing building</Label>
+              <NativeSelect
+                className="w-full"
+                id={upgradeSelectId}
+                value={selectedUpgradeBuildingId}
+                onChange={(e) => {
+                  setSelectedUpgradeBuildingId(e.target.value);
+                  setSelectedTierId("");
+                }}
+              >
+                <option value="">Build new (start at tier 1)</option>
+                {upgradeableBuildings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name ?? b.blueprintName} (currently tier {b.tierNumber})
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+          ) : null}
+
           {selectedBlueprintId !== "" ? (
             <div className="grid gap-1.5">
-              <Label htmlFor={tierSelectId}>Tier</Label>
+              <Label htmlFor={tierSelectId}>
+                {isUpgrade ? "Target tier" : "Tier"}
+              </Label>
               {tiersQuery.isPending ? (
                 <p className="text-sm text-muted-foreground">Loading tiers…</p>
               ) : tiersQuery.isError ? (
@@ -169,7 +237,7 @@ export function CreateProjectDialog({
                   }}
                 >
                   <option value="">Select a tier…</option>
-                  {(tiersQuery.data ?? []).map((t) => (
+                  {selectableTiers.map((t) => (
                     <option key={t.id} value={t.id}>
                       Tier {t.tierNumber}
                     </option>
@@ -179,22 +247,13 @@ export function CreateProjectDialog({
             </div>
           ) : null}
 
-          {selectedTier !== undefined &&
-          selectedTier.constructionCostsJson.length > 0 ? (
-            <div className="grid gap-1.5">
-              <p className="text-sm font-medium">Construction cost</p>
-              <ul className="grid gap-0.5">
-                {selectedTier.constructionCostsJson.map((cost) => (
-                  <li
-                    key={cost.resourceId}
-                    className="text-sm text-muted-foreground"
-                  >
-                    {resourceNames.get(cost.resourceId) ?? cost.resourceId}:{" "}
-                    {cost.amount}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {selectedTier !== undefined && (tiersQuery.data?.length ?? 0) > 0 ? (
+            <TierCostBreakdown
+              fromTierNumber={fromTierNumber}
+              resourceNames={resourceNames}
+              targetTierNumber={selectedTier.tierNumber}
+              tiers={tiersQuery.data ?? []}
+            />
           ) : null}
         </div>
 

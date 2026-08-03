@@ -9,21 +9,22 @@ import {
   Archive,
   ArrowRight,
   Globe2,
-  History,
-  LockKeyhole,
   Plus,
+  RotateCcw,
   ShieldCheck,
   Trash2,
+  User,
 } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
   type JSX,
   type ReactNode,
+  type RefObject,
 } from "react";
-import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -53,7 +54,12 @@ import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import {
+  notifyError,
+  notifyMutationError,
+  notifyMutationSuccess,
+  resolveMutationErrorMessage,
+} from "@/lib/notify";
 import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
@@ -62,25 +68,39 @@ import {
   trashWorldMutationOptions,
 } from "../mutations/worldAdminMutations";
 import { importWorldFromTemplateMutationOptions } from "../mutations/worldTemplateMutations";
+import { worldListStatsQueryOptions } from "../queries/worldListStatsQueries";
 import {
   accessibleWorldsQueryOptions,
   trashedWorldsQueryOptions,
 } from "../queries/worldQueries";
 import { parseWorldTemplate } from "../queries/worldTemplateExportQueries";
 import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
-import { readWorldScopePin } from "../utils/worldScopePin";
+import {
+  formatLastTurnLabel,
+  formatPlayerCharacterCount,
+} from "../utils/worldDisplay";
 import { computeDryRunReport } from "../utils/worldTemplateDryRun";
 
 import { WorldAvatar } from "./WorldAvatar";
+import { WorldCardImage } from "./WorldCardImage";
 import {
   DryRunSummary,
   ImportErrorDialog,
   WorldTemplateImportButton,
+  type WorldTemplateImportButtonHandle,
 } from "./WorldTemplateImportButton";
 
-import type { AccessibleWorld } from "../types/worldTypes";
+import type { AccessibleWorld, WorldListStats } from "../types/worldTypes";
 
-export function WorldListPage(): JSX.Element {
+export type WorldListPageAction = "create" | "import" | undefined;
+
+export function WorldListPage({
+  action,
+  onClearAction,
+}: {
+  readonly action?: WorldListPageAction;
+  readonly onClearAction?: () => void;
+}): JSX.Element {
   const queryClient = useQueryClient();
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
@@ -116,20 +136,57 @@ export function WorldListPage(): JSX.Element {
     );
   }
 
-  return <WorldListContent accessContext={accessContextQuery.data} />;
+  return (
+    <WorldListContent
+      accessContext={accessContextQuery.data}
+      action={action}
+      onClearAction={onClearAction}
+    />
+  );
 }
 
 function WorldListContent({
   accessContext,
+  action,
+  onClearAction,
 }: {
   readonly accessContext: AccessContext;
+  readonly action?: WorldListPageAction;
+  readonly onClearAction?: () => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const importButtonRef = useRef<WorldTemplateImportButtonHandle>(null);
+
+  const onClearActionRef = useRef(onClearAction);
+  useEffect(() => {
+    onClearActionRef.current = onClearAction;
+  }, [onClearAction]);
 
   const worldsQuery = useQuery(accessibleWorldsQueryOptions(accessContext));
   const trashedWorldsQuery = useQuery(trashedWorldsQueryOptions(accessContext));
+  const worldStatsQuery = useQuery(worldListStatsQueryOptions());
+
+  useEffect(() => {
+    // Wait until the world list (and its actions, including the import
+    // button that owns the file input) has actually mounted — otherwise
+    // the ref is still null and the action would be cleared without effect.
+    if (
+      action === undefined ||
+      !accessContext.isSuperAdmin ||
+      worldsQuery.isPending
+    ) {
+      return;
+    }
+    if (action === "create") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect, @eslint-react/set-state-in-effect -- deep-link: opens the dialog once the world-list content (and the query it depends on) has mounted
+      setShowCreateDialog(true);
+    } else {
+      importButtonRef.current?.openFilePicker();
+    }
+    onClearActionRef.current?.();
+  }, [action, accessContext.isSuperAdmin, worldsQuery.isPending]);
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
@@ -161,114 +218,49 @@ function WorldListContent({
     );
   }
 
-  if (showTrash && accessContext.isSuperAdmin) {
-    const trashed = trashedWorldsQuery.data ?? [];
-    return (
-      <WorldListFrame>
-        <div className="grid gap-4">
-          <PageHeader
-            icon={Trash2}
-            title="Trash"
-            actions={
-              <TrashToggleButton
-                showTrash
-                onToggle={() => {
-                  setShowTrash(false);
-                }}
-              />
-            }
-          />
-          <p className="text-sm text-muted-foreground">
-            Permanent deletion happens in Superadmin → Worlds.{" "}
-            <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link to="/superadmin/worlds">Go to Superadmin → Worlds</Link>
-            </Button>
-          </p>
-          {trashedWorldsQuery.isPending ? (
-            <LoadingState label="Loading trashed worlds…" />
-          ) : trashedWorldsQuery.isError ? (
-            <ErrorState
-              title="Trashed worlds could not be loaded"
-              description={getErrorDescription(trashedWorldsQuery.error)}
-            />
-          ) : trashed.length === 0 ? (
-            <AccessDeniedState
-              title="No worlds in trash"
-              description="Worlds you move to trash will appear here."
-            />
-          ) : (
-            <ul className="grid gap-2" aria-label="Trashed worlds">
-              {trashed.map((world) => (
-                <TrashedWorldRow
-                  key={world.id}
-                  queryClient={queryClient}
-                  world={world}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      </WorldListFrame>
-    );
-  }
-
+  const effectiveShowTrash = showTrash && accessContext.isSuperAdmin;
   const activeWorlds = worldsQuery.data;
+  const trashed = trashedWorldsQuery.data ?? [];
+  const worldStats = worldStatsQuery.data;
 
   return (
     <WorldListFrame>
       <div className="grid gap-4">
         <PageHeader
-          icon={Globe2}
-          title="Worlds"
+          icon={effectiveShowTrash ? Trash2 : Globe2}
+          title={effectiveShowTrash ? "Trash" : "Worlds"}
           actions={
-            <>
-              {accessContext.isSuperAdmin ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowCreateDialog(true);
-                  }}
-                >
-                  <Plus aria-hidden="true" />
-                  Create world
-                </Button>
-              ) : null}
-              {accessContext.isSuperAdmin ? (
-                <WorldTemplateImportButton queryClient={queryClient} />
-              ) : null}
-              {accessContext.isSuperAdmin ? (
-                <TrashToggleButton
-                  showTrash={false}
-                  onToggle={() => {
-                    setShowTrash(true);
-                  }}
-                />
-              ) : null}
-            </>
+            <WorldListActions
+              accessContext={accessContext}
+              effectiveShowTrash={effectiveShowTrash}
+              importButtonRef={importButtonRef}
+              queryClient={queryClient}
+              onCreateWorld={() => {
+                setShowCreateDialog(true);
+              }}
+              onToggleTrash={() => {
+                setShowTrash(!effectiveShowTrash);
+              }}
+            />
           }
         />
 
-        {activeWorlds.length === 0 ? (
-          <AccessDeniedState
-            title="No accessible worlds"
-            description="Your Gubernator account does not currently have access to any worlds."
+        {effectiveShowTrash ? (
+          <TrashSection
+            error={trashedWorldsQuery.error}
+            isError={trashedWorldsQuery.isError}
+            isPending={trashedWorldsQuery.isPending}
+            queryClient={queryClient}
+            trashed={trashed}
+            worldStats={worldStats}
           />
         ) : (
-          <ul
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-            aria-label="Accessible worlds"
-          >
-            {activeWorlds.map((world) => (
-              <WorldListItem
-                key={world.id}
-                isSuperAdmin={accessContext.isSuperAdmin}
-                queryClient={queryClient}
-                world={world}
-              />
-            ))}
-          </ul>
+          <ActiveWorldsSection
+            activeWorlds={activeWorlds}
+            isSuperAdmin={accessContext.isSuperAdmin}
+            queryClient={queryClient}
+            worldStats={worldStats}
+          />
         )}
       </div>
 
@@ -281,6 +273,162 @@ function WorldListContent({
         />
       ) : null}
     </WorldListFrame>
+  );
+}
+
+function WorldListActions({
+  accessContext,
+  effectiveShowTrash,
+  importButtonRef,
+  queryClient,
+  onCreateWorld,
+  onToggleTrash,
+}: {
+  readonly accessContext: AccessContext;
+  readonly effectiveShowTrash: boolean;
+  readonly importButtonRef: RefObject<WorldTemplateImportButtonHandle | null>;
+  readonly queryClient: QueryClient;
+  readonly onCreateWorld: () => void;
+  readonly onToggleTrash: () => void;
+}): JSX.Element {
+  if (effectiveShowTrash) {
+    return (
+      <TrashToggleButton
+        showTrash={effectiveShowTrash}
+        onToggle={onToggleTrash}
+      />
+    );
+  }
+
+  return (
+    <>
+      {accessContext.isSuperAdmin ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCreateWorld}
+        >
+          <Plus aria-hidden="true" />
+          Create world
+        </Button>
+      ) : null}
+      {accessContext.isSuperAdmin ? (
+        <WorldTemplateImportButton
+          ref={importButtonRef}
+          queryClient={queryClient}
+        />
+      ) : null}
+      {accessContext.isSuperAdmin ? (
+        <TrashToggleButton
+          showTrash={effectiveShowTrash}
+          onToggle={onToggleTrash}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function TrashSection({
+  isError,
+  isPending,
+  error,
+  queryClient,
+  trashed,
+  worldStats,
+}: {
+  readonly isError: boolean;
+  readonly isPending: boolean;
+  readonly error: unknown;
+  readonly queryClient: QueryClient;
+  readonly trashed: readonly AccessibleWorld[];
+  readonly worldStats: ReadonlyMap<string, WorldListStats> | undefined;
+}): JSX.Element {
+  return (
+    <>
+      <p className="text-sm text-muted-foreground">
+        Permanent deletion happens in{" "}
+        <Button asChild variant="link" size="sm" className="h-auto p-0">
+          <Link to="/superadmin/worlds">the Superadmin area</Link>
+        </Button>
+        .
+      </p>
+      {isPending ? (
+        <LoadingState label="Loading trashed worlds…" />
+      ) : isError ? (
+        <ErrorState
+          title="Trashed worlds could not be loaded"
+          description={getErrorDescription(error)}
+        />
+      ) : trashed.length === 0 ? (
+        <AccessDeniedState
+          title="No worlds in trash"
+          description="Worlds you move to trash will appear here."
+        />
+      ) : (
+        <ul className="grid gap-2" aria-label="Trashed worlds">
+          {trashed.map((world) => (
+            <TrashedWorldRow
+              key={world.id}
+              queryClient={queryClient}
+              stats={worldStats?.get(world.id)}
+              world={world}
+            />
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+function activeWorldsLayoutClassName(count: number): string {
+  if (count === 1) {
+    // Single world: large full-width showcase card.
+    return "grid gap-3";
+  }
+  if (count <= 4) {
+    // 2-4 worlds: prominent two-column layout with larger cards.
+    return "grid gap-3 sm:grid-cols-2";
+  }
+  // 5+ worlds: original dense grid.
+  return "grid gap-3 sm:grid-cols-2 lg:grid-cols-3";
+}
+
+function ActiveWorldsSection({
+  activeWorlds,
+  isSuperAdmin,
+  queryClient,
+  worldStats,
+}: {
+  readonly activeWorlds: readonly AccessibleWorld[];
+  readonly isSuperAdmin: boolean;
+  readonly queryClient: QueryClient;
+  readonly worldStats: ReadonlyMap<string, WorldListStats> | undefined;
+}): JSX.Element {
+  if (activeWorlds.length === 0) {
+    return (
+      <AccessDeniedState
+        title="No accessible worlds"
+        description="Your Gubernator account does not currently have access to any worlds."
+      />
+    );
+  }
+
+  return (
+    <ul
+      className={activeWorldsLayoutClassName(activeWorlds.length)}
+      aria-label="Accessible worlds"
+    >
+      {activeWorlds.map((world) => (
+        <WorldListItem
+          key={world.id}
+          isSuperAdmin={isSuperAdmin}
+          queryClient={queryClient}
+          stats={worldStats?.get(world.id)}
+          world={world}
+        />
+      ))}
+    </ul>
   );
 }
 
@@ -299,7 +447,10 @@ function TrashToggleButton({
   readonly showTrash: boolean;
   readonly onToggle: () => void;
 }): JSX.Element {
-  const label = showTrash ? "Hide trash" : "Show trash";
+  const label = showTrash ? "Back to worlds" : "Trash";
+  const description = showTrash
+    ? "Back to active worlds"
+    : "Show trashed worlds";
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -307,47 +458,31 @@ function TrashToggleButton({
           type="button"
           variant="ghost"
           size="sm"
-          aria-label={label}
           aria-pressed={showTrash}
           onClick={onToggle}
         >
           <Trash2 aria-hidden="true" />
-          Trash
+          {label}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent>{description}</TooltipContent>
     </Tooltip>
   );
-}
-
-type ResumeTarget = {
-  readonly nationId: string;
-  readonly settlementId: string | null;
-};
-
-// #1005's stored scope pin is a free "where was I" bookmark per world
-// (localStorage, no request needed) — surface it as a resume shortcut when
-// present, otherwise the card just links to the world dashboard as before.
-function resumeTargetForWorld(worldId: string): ResumeTarget | null {
-  const pin = readWorldScopePin(worldId);
-  if (pin.nationId === null) {
-    return null;
-  }
-  return { nationId: pin.nationId, settlementId: pin.settlementId };
 }
 
 function WorldListItem({
   isSuperAdmin,
   queryClient,
+  stats,
   world,
 }: {
   readonly isSuperAdmin: boolean;
   readonly queryClient: QueryClient;
+  readonly stats: WorldListStats | undefined;
   readonly world: AccessibleWorld;
 }): JSX.Element {
   const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
   const trashMutation = useMutation(trashWorldMutationOptions({ queryClient }));
-  const resumeTarget = resumeTargetForWorld(world.id);
 
   async function handleTrash(): Promise<void> {
     try {
@@ -355,90 +490,34 @@ function WorldListItem({
       notifyMutationSuccess("World moved to trash.");
       setTrashConfirmOpen(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to move world to trash.",
-      );
+      notifyMutationError(error, "Failed to move world to trash.");
     }
   }
 
   return (
-    <li className="group grid gap-3 rounded-md border border-border bg-card p-3 text-card-foreground">
+    <li className="group grid gap-3 overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10">
       <Link
         to="/worlds/$worldId"
         params={{ worldId: world.id }}
         className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <div className="flex min-w-0 items-center gap-3">
-          <WorldIcon world={world} />
-          <div className="min-w-0 flex-1 space-y-1">
-            <h2 className="truncate text-base font-medium">{world.name}</h2>
-            <WorldBadge world={world} />
-          </div>
-          <ArrowRight
-            className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </div>
-        <dl className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-          <div>
-            <dt className="font-medium text-foreground">Planning turn</dt>
-            <dd>{world.planningTurnNumber}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-foreground">In-world date</dt>
-            <dd>{world.inWorldDateLabel}</dd>
-          </div>
-        </dl>
+        <WorldCardBody stats={stats} world={world} />
       </Link>
-      {resumeTarget !== null || isSuperAdmin ? (
-        <div className="flex items-center justify-between gap-2">
-          {resumeTarget !== null ? (
-            <Button asChild variant="outline" size="sm">
-              {resumeTarget.settlementId !== null ? (
-                <Link
-                  to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-                  params={{
-                    nationId: resumeTarget.nationId,
-                    settlementId: resumeTarget.settlementId,
-                    worldId: world.id,
-                  }}
-                >
-                  <History aria-hidden="true" />
-                  Resume
-                </Link>
-              ) : (
-                <Link
-                  to="/worlds/$worldId/nations/$nationId"
-                  params={{
-                    nationId: resumeTarget.nationId,
-                    worldId: world.id,
-                  }}
-                >
-                  <History aria-hidden="true" />
-                  Resume
-                </Link>
-              )}
-            </Button>
-          ) : (
-            <span />
-          )}
-          {isSuperAdmin ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Move ${world.name} to trash`}
-              title="Move to trash"
-              disabled={trashMutation.isPending}
-              onClick={() => {
-                setTrashConfirmOpen(true);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
-          ) : null}
+      {isSuperAdmin ? (
+        <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${world.name} to trash`}
+            title="Move to trash"
+            disabled={trashMutation.isPending}
+            onClick={() => {
+              setTrashConfirmOpen(true);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
         </div>
       ) : null}
       {trashConfirmOpen ? (
@@ -466,9 +545,11 @@ function WorldListItem({
 
 function TrashedWorldRow({
   queryClient,
+  stats,
   world,
 }: {
   readonly queryClient: QueryClient;
+  readonly stats: WorldListStats | undefined;
   readonly world: AccessibleWorld;
 }): JSX.Element {
   const restoreMutation = useMutation(
@@ -480,9 +561,7 @@ function TrashedWorldRow({
       { worldId: world.id },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to restore world.",
-          );
+          notifyMutationError(error, "Failed to restore world.");
         },
         onSuccess: () => {
           notifyMutationSuccess("World restored.");
@@ -492,28 +571,101 @@ function TrashedWorldRow({
   }
 
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
-      <div className="grid gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{world.name}</span>
-          <Badge variant="outline">trashed</Badge>
-        </div>
-        <span className="text-xs text-muted-foreground capitalize">
-          {world.status} · {world.visibility}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
+    <li className="grid gap-3 overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10">
+      <WorldCardBody stats={stats} world={world} trashed />
+      <div className="-mt-3 flex items-center justify-end gap-2 px-3 pb-3">
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Restore ${world.name}`}
+          title="Restore"
           disabled={restoreMutation.isPending}
           onClick={handleRestore}
         >
-          Restore
+          <RotateCcw aria-hidden="true" />
         </Button>
       </div>
     </li>
+  );
+}
+
+// Shared presentational body for a world card in the /worlds list. The trashed
+// variant grays the hero, overlays a trash glyph, mutes the arrow, and swaps
+// the access badge for a "trashed" marker (#1359).
+function WorldCardBody({
+  stats,
+  world,
+  trashed = false,
+}: {
+  readonly stats: WorldListStats | undefined;
+  readonly world: AccessibleWorld;
+  readonly trashed?: boolean;
+}): JSX.Element {
+  return (
+    <div className="grid gap-3">
+      <div className="relative">
+        <div className={trashed ? "opacity-60 grayscale" : undefined}>
+          <WorldCardImage world={world} />
+        </div>
+        {trashed ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Trash2
+              className="size-8 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
+        ) : null}
+      </div>
+      <div className="grid gap-3 px-3 pb-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <WorldAvatar
+            className="shrink-0"
+            thumbnailPath={world.thumbnailPath}
+            worldId={world.id}
+            worldName={world.name}
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="truncate text-base font-medium">{world.name}</h2>
+            {trashed ? (
+              <Badge variant="outline">trashed</Badge>
+            ) : (
+              <WorldBadge world={world} />
+            )}
+          </div>
+          <ArrowRight
+            className={
+              trashed
+                ? "size-4 shrink-0 text-muted-foreground/40"
+                : "size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            }
+            aria-hidden="true"
+          />
+        </div>
+        <dl className="grid gap-2 text-xs text-muted-foreground">
+          <div>
+            <dt className="font-medium text-foreground">Current Date</dt>
+            <dd>{world.inWorldDateLabel}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-foreground">Player characters</dt>
+            <dd>
+              {stats === undefined
+                ? "—"
+                : formatPlayerCharacterCount(stats.playerCharacterCount)}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-foreground">Last turn</dt>
+            <dd>
+              {stats === undefined
+                ? "—"
+                : formatLastTurnLabel(stats.lastTransitionAt)}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
   );
 }
 
@@ -531,23 +683,6 @@ function WorldBadge({
     );
   }
 
-  if (world.isHidden) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline">
-            <LockKeyhole className="size-3" aria-hidden="true" />
-            Hidden
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          Hidden from players; only visible to admins and users with explicit
-          access.
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
   if (world.canManage) {
     return (
       <Badge variant="outline">
@@ -559,25 +694,9 @@ function WorldBadge({
 
   return (
     <Badge variant="outline">
-      <Globe2 className="size-3" aria-hidden="true" />
-      Public
+      <User className="size-3" aria-hidden="true" />
+      Member
     </Badge>
-  );
-}
-
-function WorldIcon({
-  world,
-}: {
-  readonly world: AccessibleWorld;
-}): JSX.Element {
-  return (
-    <WorldAvatar
-      className="shrink-0"
-      size="lg"
-      thumbnailPath={world.thumbnailPath}
-      worldId={world.id}
-      worldName={world.name}
-    />
   );
 }
 
@@ -601,7 +720,6 @@ function CreateWorldDialog({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [fieldErrors, setFieldErrors] = useState<CreateWorldFieldErrors>({});
   const [templateChoice, setTemplateChoice] = useState<string>("none");
   const [uploadedTemplate, setUploadedTemplate] =
@@ -675,14 +793,10 @@ function CreateWorldDialog({
 
     if (effectiveTemplate === null) {
       createMutation.mutate(
-        { name, visibility },
+        { name },
         {
           onError: (error) => {
-            toast.error(
-              error instanceof Error
-                ? error.message
-                : "Failed to create world.",
-            );
+            notifyMutationError(error, "Failed to create world.");
           },
           onSuccess: () => {
             notifyMutationSuccess("World created.");
@@ -692,20 +806,20 @@ function CreateWorldDialog({
       );
     } else {
       if (dryRunReport !== null && dryRunReport.danglingRefs.length > 0) {
-        toast.error("Template has cross-reference errors", {
+        notifyError("Template has cross-reference errors", {
           description: "Resolve the errors in the template before importing.",
         });
         return;
       }
       importMutation.mutate(
-        { name, visibility, template: effectiveTemplate },
+        { name, template: effectiveTemplate },
         {
           onError: (error) => {
-            toast.error("Import failed", {
-              description:
-                error instanceof Error
-                  ? error.message
-                  : "Could not import template.",
+            notifyError("Import failed", {
+              description: resolveMutationErrorMessage(
+                error,
+                "Could not import template.",
+              ),
             });
           },
           onSuccess: () => {
@@ -823,24 +937,6 @@ function CreateWorldDialog({
                 {fieldErrors.name !== undefined ? (
                   <p className="text-xs text-destructive">{fieldErrors.name}</p>
                 ) : null}
-              </Label>
-
-              {/* Visibility */}
-              <Label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Visibility</span>
-                <NativeSelect
-                  className="w-full"
-                  disabled={isPending}
-                  value={visibility}
-                  onChange={(e) => {
-                    setVisibility(
-                      e.currentTarget.value as "public" | "private",
-                    );
-                  }}
-                >
-                  <option value="private">Private</option>
-                  <option value="public">Public</option>
-                </NativeSelect>
               </Label>
             </div>
             <DialogFooter>

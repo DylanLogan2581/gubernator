@@ -9,6 +9,8 @@ import {
 const JOB_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const RESOURCE_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const ROW_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const LEVEL_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+const LEVEL_ID_2 = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
 
 function makeRow(overrides: Partial<EffectRowState>): EffectRowState {
   return {
@@ -16,7 +18,11 @@ function makeRow(overrides: Partial<EffectRowState>): EffectRowState {
     effectType: "",
     id: ROW_ID,
     jobId: "",
+    levels: [],
     resourceId: "",
+    studentsPerTeacher: "",
+    teacherCapacity: "",
+    teacherJobId: "",
     ...overrides,
   };
 }
@@ -72,6 +78,61 @@ describe("buildEffectInputs", () => {
     ]);
 
     expect(result).toEqual([{ amount: 5, type: "population_cap_increase" }]);
+  });
+
+  it("maps education, converting an empty fromLevelId to null", () => {
+    const result = buildEffectInputs([
+      makeRow({
+        effectType: "education",
+        levels: [
+          { fromLevelId: "", id: "l1", toLevelId: LEVEL_ID, turns: "3" },
+          {
+            fromLevelId: LEVEL_ID,
+            id: "l2",
+            toLevelId: LEVEL_ID_2,
+            turns: "4",
+          },
+        ],
+        studentsPerTeacher: "5",
+        teacherCapacity: "2",
+        teacherJobId: JOB_ID,
+      }),
+    ]);
+
+    expect(result).toEqual([
+      {
+        levels: [
+          { fromLevelId: null, toLevelId: LEVEL_ID, turns: 3 },
+          { fromLevelId: LEVEL_ID, toLevelId: LEVEL_ID_2, turns: 4 },
+        ],
+        studentsPerTeacher: 5,
+        teacherCapacity: 2,
+        teacherJobId: JOB_ID,
+        type: "education",
+      },
+    ]);
+  });
+
+  it("defaults empty education numeric strings to 0", () => {
+    const result = buildEffectInputs([
+      makeRow({
+        effectType: "education",
+        levels: [{ fromLevelId: "", id: "l1", toLevelId: LEVEL_ID, turns: "" }],
+        studentsPerTeacher: "",
+        teacherCapacity: "",
+        teacherJobId: JOB_ID,
+      }),
+    ]);
+
+    expect(result).toEqual([
+      {
+        levels: [{ fromLevelId: null, toLevelId: LEVEL_ID, turns: 0 }],
+        studentsPerTeacher: 0,
+        teacherCapacity: 0,
+        teacherJobId: JOB_ID,
+        type: "education",
+      },
+    ]);
   });
 
   it("skips rows with empty effectType", () => {
@@ -167,6 +228,33 @@ describe("tierEffectsToState", () => {
       effectType: "population_cap_increase",
       jobId: "",
       resourceId: "",
+    });
+  });
+
+  it("converts education, mapping a null fromLevelId to an empty string", () => {
+    const rows = tierEffectsToState([
+      {
+        levels: [
+          { fromLevelId: null, toLevelId: LEVEL_ID, turns: 3 },
+          { fromLevelId: LEVEL_ID, toLevelId: LEVEL_ID_2, turns: 4 },
+        ],
+        studentsPerTeacher: 5,
+        teacherCapacity: 2,
+        teacherJobId: JOB_ID,
+        type: "education",
+      },
+    ]);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      effectType: "education",
+      levels: [
+        { fromLevelId: "", toLevelId: LEVEL_ID, turns: "3" },
+        { fromLevelId: LEVEL_ID, toLevelId: LEVEL_ID_2, turns: "4" },
+      ],
+      studentsPerTeacher: "5",
+      teacherCapacity: "2",
+      teacherJobId: JOB_ID,
     });
   });
 

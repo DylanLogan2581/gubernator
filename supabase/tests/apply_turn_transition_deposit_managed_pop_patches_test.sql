@@ -52,41 +52,36 @@ where
 --   World 4: managed population decline
 --   World 5: managed population extinction + worker unassignment
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a7200000-0000-0000-0000-000000000001',
     'ATTDMP Extraction World',
     3,
-    'private',
     'active'
   ),
   (
     'a7200000-0000-0000-0000-000000000002',
     'ATTDMP Depletion World',
     3,
-    'private',
     'active'
   ),
   (
     'a7200000-0000-0000-0000-000000000003',
     'ATTDMP Growth World',
     3,
-    'private',
     'active'
   ),
   (
     'a7200000-0000-0000-0000-000000000004',
     'ATTDMP Decline World',
     3,
-    'private',
     'active'
   ),
   (
     'a7200000-0000-0000-0000-000000000005',
     'ATTDMP Extinction World',
     3,
-    'private',
     'active'
   );
 
@@ -235,30 +230,19 @@ values
 
 -- deposit_types: one per deposit world
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'a7700000-0000-0000-0000-000000000001',
     'a7200000-0000-0000-0000-000000000001',
     'ATTDMP Iron Vein 1',
-    'attdmp-iron-vein-1',
-    'a7600000-0000-0000-0000-000000000001',
-    10
+    'attdmp-iron-vein-1'
   ),
   (
     'a7700000-0000-0000-0000-000000000002',
     'a7200000-0000-0000-0000-000000000002',
     'ATTDMP Iron Vein 2',
-    'attdmp-iron-vein-2',
-    'a7600000-0000-0000-0000-000000000002',
-    10
+    'attdmp-iron-vein-2'
   );
 
 -- deposit_instances: world 1 (partial extraction), world 2 (will deplete)
@@ -307,25 +291,13 @@ values
 
 -- managed_population_types: one per managed-pop world (3, 4, 5)
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals,
-    growth_rate
-  )
+  public.managed_population_types (id, world_id, name, slug, growth_rate)
 values
   (
     'a7a00000-0000-0000-0000-000000000003',
     'a7200000-0000-0000-0000-000000000003',
     'ATTDMP Cattle 3',
     'attdmp-cattle-3',
-    'a7600000-0000-0000-0000-000000000003',
-    'a7600000-0000-0000-0000-000000000004',
-    10,
     0.1
   ),
   (
@@ -333,9 +305,6 @@ values
     'a7200000-0000-0000-0000-000000000004',
     'ATTDMP Cattle 4',
     'attdmp-cattle-4',
-    'a7600000-0000-0000-0000-000000000005',
-    'a7600000-0000-0000-0000-000000000006',
-    10,
     0.1
   ),
   (
@@ -343,10 +312,53 @@ values
     'a7200000-0000-0000-0000-000000000005',
     'ATTDMP Cattle 5',
     'attdmp-cattle-5',
-    'a7600000-0000-0000-0000-000000000007',
-    'a7600000-0000-0000-0000-000000000008',
-    10,
     0.1
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'a7a00000-0000-0000-0000-000000000003',
+    'a7600000-0000-0000-0000-000000000003',
+    10
+  ),
+  (
+    'a7a00000-0000-0000-0000-000000000004',
+    'a7600000-0000-0000-0000-000000000005',
+    10
+  ),
+  (
+    'a7a00000-0000-0000-0000-000000000005',
+    'a7600000-0000-0000-0000-000000000007',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'a7a00000-0000-0000-0000-000000000003',
+    'a7600000-0000-0000-0000-000000000004',
+    10
+  ),
+  (
+    'a7a00000-0000-0000-0000-000000000004',
+    'a7600000-0000-0000-0000-000000000006',
+    10
+  ),
+  (
+    'a7a00000-0000-0000-0000-000000000005',
+    'a7600000-0000-0000-0000-000000000008',
+    10
   );
 
 -- managed_population_instances

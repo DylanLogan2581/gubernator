@@ -3,6 +3,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 export type {
+  ArmyTurnSnapshot,
   AssignmentClear,
   BuildingCreated,
   BuildingStateChange,
@@ -13,7 +14,11 @@ export type {
   DeathCauseCategory,
   DepositResourceDelta,
   DepositUpdate,
+  DesertedSoldier,
+  DisbandedUnit,
   ManagedPopulationUpdate,
+  NationStockpileDelta,
+  NationTurnSnapshot,
   NpcFlavorConfig,
   PartnershipChange,
   ReadinessSummary,
@@ -23,6 +28,8 @@ export type {
   SettlementSnapshotManagedPopEntry,
   SettlementSnapshotTradeEntry,
   SettlementSnapshotWarnings,
+  SimArmy,
+  SimArmyUnit,
   SimAssignmentType,
   SimBuildingBlueprint,
   SimBuildingState,
@@ -37,6 +44,7 @@ export type {
   SimDepositResource,
   SimDepositStatus,
   SimDepositType,
+  SimDepositTypeJob,
   SimJob,
   SimJobIoEntry,
   SimJobType,
@@ -60,6 +68,8 @@ export type {
   SimulationNotification,
   SimulationNotificationScope,
   SimulationResult,
+  SimUnitSoldier,
+  SimUnitType,
   SimWorkerInputEntry,
   StockpileDelta,
   TradeRouteOutcome,
@@ -76,6 +86,9 @@ export type {
   SimulationNotificationType,
   SimulationPhase,
 } from "./simulationConstants.ts";
+
+export { LOG_CODES } from "./logCodes.ts";
+export type { LogCode } from "./logCodes.ts";
 
 export {
   addDecimal,
@@ -114,6 +127,12 @@ export type { PhaseTradeRoutesOutput } from "./phases/phaseTradeRoutes.ts";
 
 export { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
 export type { PhaseManagedPopulationsOutput } from "./phases/phaseManagedPopulations.ts";
+
+export { phaseNationalEconomy } from "./phases/phaseNationalEconomy.ts";
+export type { PhaseNationalEconomyOutput } from "./phases/phaseNationalEconomy.ts";
+
+export { phaseMilitaryUpkeep } from "./phases/phaseMilitaryUpkeep.ts";
+export type { PhaseMilitaryUpkeepOutput } from "./phases/phaseMilitaryUpkeep.ts";
 
 export { phaseCitizenConsumption } from "./phases/phaseCitizenConsumption.ts";
 export type { PhaseCitizenConsumptionOutput } from "./phases/phaseCitizenConsumption.ts";

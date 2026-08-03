@@ -7,7 +7,14 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
-import { RESOURCE_SELECT, toResource, type ResourceRow } from "./resourceRow";
+import {
+  RESOURCE_DIRECTORY_SELECT,
+  RESOURCE_SELECT,
+  toResource,
+  toResourceFromDirectoryRow,
+  type ResourceDirectoryRow,
+  type ResourceRow,
+} from "./resourceRow";
 import { resourcesQueryKeys } from "./resourcesQueryKeys";
 
 import type { Resource } from "../types/resourceTypes";
@@ -70,10 +77,20 @@ export function resourceByIdQueryOptions(
   });
 }
 
+export type ResourcesSortBy = "name" | "category" | "cap" | "change";
+
+// Sentinel for the "Uncategorized" filter option, distinct from any real
+// resource_categories.id (a uuid), so the page query can tell "no filter"
+// (categoryId === null) apart from "filter to resources with no category".
+export const UNCATEGORIZED_RESOURCE_CATEGORY_FILTER = "uncategorized";
+
 export type ResourcesPageParams = {
+  readonly categoryId?: string | null;
   readonly page: number;
   readonly pageSize: number;
   readonly search?: string;
+  readonly sortBy?: ResourcesSortBy;
+  readonly sortDirection?: "asc" | "desc";
   readonly trash: boolean;
 };
 
@@ -114,9 +131,16 @@ async function getResourcesPage(
   const pageEnd = pageStart + params.pageSize - 1;
   const search = params.search?.trim() ?? "";
 
+  // Sorting by category needs the resources_directory_view (#1242) rather
+  // than an embedded resource_categories select: PostgREST only orders an
+  // embedded relation's own nested payload by referencedTable, never the
+  // parent (resources) rows, so category sort is a no-op against the base
+  // table. The view flattens resource_categories.name onto the row (via a
+  // left join, so uncategorized resources are still included) and lets it
+  // be ordered like any other top-level column.
   let query = client
-    .from("resources")
-    .select(RESOURCE_SELECT, { count: "exact" })
+    .from("resources_directory_view")
+    .select(RESOURCE_DIRECTORY_SELECT, { count: "exact" })
     .eq("world_id", worldId)
     .eq("is_trashed", params.trash);
 
@@ -124,18 +148,44 @@ async function getResourcesPage(
     query = query.ilike("name", `%${search}%`);
   }
 
+  if (params.categoryId === UNCATEGORIZED_RESOURCE_CATEGORY_FILTER) {
+    query = query.is("category_id", null);
+  } else if (params.categoryId !== undefined && params.categoryId !== null) {
+    query = query.eq("category_id", params.categoryId);
+  }
+
+  const sortAscending = params.sortDirection !== "desc";
+
+  if (params.sortBy === "category") {
+    query = query
+      .order("category_name", {
+        ascending: sortAscending,
+        nullsFirst: sortAscending,
+      })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "cap") {
+    query = query
+      .order("base_stockpile_cap", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else if (params.sortBy === "change") {
+    query = query
+      .order("change_amount", { ascending: sortAscending })
+      .order("name", { ascending: true });
+  } else {
+    query = query.order("name", { ascending: sortAscending });
+  }
+
   const { data, error, count } = await query
-    .order("name", { ascending: true })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
-    .returns<ResourceRow[]>();
+    .returns<ResourceDirectoryRow[]>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
 
   return {
-    items: data.map(toResource),
+    items: data.map(toResourceFromDirectoryRow),
     totalCount: count ?? 0,
   };
 }

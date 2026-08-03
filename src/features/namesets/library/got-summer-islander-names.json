@@ -1,0 +1,55 @@
+{
+  "id": "got-summer-islander-names",
+  "displayName": "Summer Islanders",
+  "category": "Pop Culture",
+  "sourceUrl": "https://fantasynamegenerators.com/got-summer-islander-names.php",
+  "config": {
+    "type": "generated",
+    "convention": "pool",
+    "parts": {
+      "nm5": [
+        "Ch",
+        "H",
+        "J",
+        "L",
+        "M",
+        "N",
+        "R",
+        "S",
+        "T",
+        "X",
+        "Xh",
+        "Z",
+        "Zh"
+      ],
+      "nm2": ["a", "o"],
+      "nm6": ["dh", "l", "ll", "lh", "n", "nd", "nt", "r", "rr", "t", "s", "z"],
+      "nm1": ["B", "Bh", "D", "J", "M", "S", "T", "X", "Xh", "Z", "Zh"],
+      "nm3": [
+        "b",
+        "bh",
+        "dh",
+        "l",
+        "lth",
+        "ll",
+        "lh",
+        "n",
+        "nt",
+        "qu",
+        "r",
+        "rr"
+      ],
+      "nm4": ["r", "l", "s"],
+      "nm7": ["Ch", "D", "Q", "Qh", "R", "Rh", "S", "T", "X", "Xh", "Z", "Zh"],
+      "nm8": ["a", "o", "aa"],
+      "nm9": ["qu", "d", "l", "m", "n", "q", "r", "s", "x"],
+      "nm10": ["a", "o"],
+      "nm11": ["n", "q", "s"]
+    },
+    "patterns": {
+      "female_given": [["nm5"], ["nm2"], ["nm6"], ["nm2"]],
+      "male_given": [["nm1"], ["nm2"], ["nm3"], ["nm2"], ["nm4"]],
+      "surname": [["nm7"], ["nm8"], ["nm9"], ["nm10"], ["nm11"]]
+    }
+  }
+}

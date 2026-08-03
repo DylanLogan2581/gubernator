@@ -88,8 +88,13 @@ export function TablePagination({
   pageCount,
   onPageChange,
   isDisabled = false,
-}: TablePaginationProps): JSX.Element {
+}: TablePaginationProps): JSX.Element | null {
   const safePageCount = Math.max(pageCount, 1);
+
+  if (safePageCount <= 1) {
+    return null;
+  }
+
   const currentPage = Math.min(Math.max(page, 0), safePageCount - 1) + 1;
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === safePageCount;

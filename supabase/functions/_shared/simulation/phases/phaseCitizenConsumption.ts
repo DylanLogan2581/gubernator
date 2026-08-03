@@ -21,10 +21,41 @@ export type PhaseCitizenConsumptionOutput = {
   readonly stockpileDeltas: readonly StockpileDelta[];
 };
 
+function formatStarvationDeathDetail({
+  foodDeficit,
+  foodRequired,
+  foodStock,
+  settlementName,
+  turnNumber,
+  waterDeficit,
+  waterRequired,
+  waterStock,
+}: {
+  readonly foodDeficit: number;
+  readonly foodRequired: number;
+  readonly foodStock: number;
+  readonly settlementName: string;
+  readonly turnNumber: number;
+  readonly waterDeficit: number;
+  readonly waterRequired: number;
+  readonly waterStock: number;
+}): string {
+  const shortage = foodDeficit >= waterDeficit ? "food" : "fresh water";
+  return (
+    `Died of starvation on turn ${turnNumber} — ${settlementName} ran out of ${shortage} ` +
+    `(had ${formatStockpileForDisplay(foodStock)} food and ${
+      formatStockpileForDisplay(waterStock)
+    } water for ${formatStockpileForDisplay(foodRequired)} food and ${
+      formatStockpileForDisplay(waterRequired)
+    } water required).`
+  );
+}
+
 export function phaseCitizenConsumption(
   context: SimulationContext,
+  effectiveSettlementIdByCitizenId: ReadonlyMap<string, string>,
 ): PhaseCitizenConsumptionOutput {
-  const { citizens, populationRules, settlements, systemResourceIds } = context.input;
+  const { citizens, populationRules, settlements, systemResourceIds, turnNumber } = context.input;
   const { pendingEventMultipliers } = context.shared;
 
   const { foodId, freshWaterId } = systemResourceIds;
@@ -41,8 +72,13 @@ export function phaseCitizenConsumption(
   for (const settlement of settlements) {
     const sid = settlement.id;
 
+    // A soldier consumes at their army's stationed settlement, not their home
+    // settlement (#1111) — see effectiveSettlementIdByCitizenId's construction
+    // in runSimulation.ts.
     const aliveInSettlement = citizens.filter(
-      (c) => c.status === "alive" && c.settlementId === sid,
+      (c) =>
+        c.status === "alive" &&
+        (effectiveSettlementIdByCitizenId.get(c.id) ?? c.settlementId) === sid,
     );
     const aliveCount = aliveInSettlement.length;
 
@@ -118,11 +154,16 @@ export function phaseCitizenConsumption(
         });
 
         const toKill = sorted.slice(0, starvationDeaths);
-        const deathDetail = `food: ${formatStockpileForDisplay(foodStock)}/${
-          formatStockpileForDisplay(foodRequired)
-        }, water: ${formatStockpileForDisplay(waterStock)}/${
-          formatStockpileForDisplay(waterRequired)
-        }`;
+        const deathDetail = formatStarvationDeathDetail({
+          foodDeficit,
+          foodRequired,
+          foodStock,
+          settlementName: settlement.name,
+          turnNumber,
+          waterDeficit,
+          waterRequired,
+          waterStock,
+        });
 
         for (const citizen of toKill) {
           allDeaths.push({

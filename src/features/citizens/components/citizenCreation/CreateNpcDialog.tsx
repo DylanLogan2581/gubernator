@@ -1,7 +1,6 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Save, Shuffle, UserPlus, Wand2 } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ import {
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyError, notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 import { generateLocalId } from "@/lib/uid";
 
@@ -221,7 +220,7 @@ export function CreateNpcDialog({
         },
         {
           onError: (error) => {
-            toast.error(getCreationErrorDescription(error));
+            notifyError(getCreationErrorDescription(error));
           },
           onSuccess: (citizen) => {
             notifyMutationSuccess("NPC created.");

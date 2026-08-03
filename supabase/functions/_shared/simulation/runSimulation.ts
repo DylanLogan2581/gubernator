@@ -7,20 +7,28 @@ import { phaseBuildingUpkeep } from "./phases/phaseBuildingUpkeep.ts";
 import { phaseCitizenConsumption } from "./phases/phaseCitizenConsumption.ts";
 import { phaseConstruction } from "./phases/phaseConstruction.ts";
 import { phaseDepositExtraction } from "./phases/phaseDepositExtraction.ts";
+import { phaseEducation } from "./phases/phaseEducation.ts";
 import { phaseEvents } from "./phases/phaseEvents.ts";
 import { phaseHomelessness } from "./phases/phaseHomelessness.ts";
 import { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 import { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
+import { phaseMilitaryUpkeep } from "./phases/phaseMilitaryUpkeep.ts";
+import { phaseNationalEconomy } from "./phases/phaseNationalEconomy.ts";
 import { phasePartnerships } from "./phases/phasePartnerships/index.ts";
 import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
 import { phaseResourceDecay } from "./phases/phaseResourceDecay.ts";
 import { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 import { phaseStockpileClamp } from "./phases/phaseStockpileClamp.ts";
+import { phaseSuccession } from "./phases/phaseSuccession.ts";
 import { phaseTradeRoutes } from "./phases/phaseTradeRoutes.ts";
+import { phaseTreaties, phaseTreatyMarriageNotes } from "./phases/phaseTreaties.ts";
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
 import type {
+  DisbandedUnit,
   ManagedPopulationUpdate,
+  NationStockpileDelta,
+  NationTurnSnapshot,
   ReadinessSummary,
   SimulationContext,
   SimulationInputState,
@@ -50,6 +58,11 @@ export function runSimulation(
   const pendingStockpiles = new Map<string, number>();
   for (const sp of input.stockpiles) {
     pendingStockpiles.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
+  }
+
+  const pendingNationStockpiles = new Map<string, number>();
+  for (const sp of input.nationResourceStockpiles) {
+    pendingNationStockpiles.set(`${sp.nationId}:${sp.resourceId}`, sp.quantity);
   }
 
   const tierById = new Map(input.buildingTiers.map((t) => [t.id, t]));
@@ -97,6 +110,7 @@ export function runSimulation(
       pendingPopCapBySettlement,
       pendingStockpiles,
       pendingDepositDestroys,
+      pendingNationStockpiles,
     },
   };
 
@@ -105,6 +119,44 @@ export function runSimulation(
       const key = `${d.settlementId}:${d.resourceId}`;
       pendingStockpiles.set(key, (pendingStockpiles.get(key) ?? 0) + d.delta);
     }
+  }
+
+  function applyNationDeltas(deltas: readonly NationStockpileDelta[]): void {
+    for (const d of deltas) {
+      const key = `${d.nationId}:${d.resourceId}`;
+      pendingNationStockpiles.set(key, (pendingNationStockpiles.get(key) ?? 0) + d.delta);
+    }
+  }
+
+  // Merges phaseNationalEconomy's tax snapshots with phaseTreaties' tribute
+  // snapshots into one row per nation — nation_turn_snapshots has a unique
+  // (turn_transition_id, nation_id) constraint, so two separate entries for
+  // the same nation would silently drop whichever inserts second.
+  function mergeNationTurnSnapshots(
+    snapshotLists: ReadonlyArray<readonly NationTurnSnapshot[]>,
+  ): NationTurnSnapshot[] {
+    const byNationId = new Map<string, NationTurnSnapshot>();
+    for (const snapshots of snapshotLists) {
+      for (const snapshot of snapshots) {
+        const existing = byNationId.get(snapshot.nationId);
+        byNationId.set(snapshot.nationId, {
+          nationId: snapshot.nationId,
+          taxCollectedByResource: {
+            ...existing?.taxCollectedByResource,
+            ...snapshot.taxCollectedByResource,
+          },
+          tributePaidByResource: {
+            ...existing?.tributePaidByResource,
+            ...snapshot.tributePaidByResource,
+          },
+          tributeReceivedByResource: {
+            ...existing?.tributeReceivedByResource,
+            ...snapshot.tributeReceivedByResource,
+          },
+        });
+      }
+    }
+    return [...byNationId.values()];
   }
 
   // -------------------------------------------------------------------------
@@ -195,6 +247,18 @@ export function runSimulation(
   }
 
   // -------------------------------------------------------------------------
+  // Phase 4.5 — Education
+  // -------------------------------------------------------------------------
+  // #1104's issue text says "before construction", but that note was written
+  // against a stale line-numbered draft of this pipeline. The concrete
+  // acceptance criterion ("a building that went inactive this turn must
+  // teach nothing this turn") requires seeing this-turn building state
+  // changes, which only exist after phaseBuildingUpkeep (p4) runs — so
+  // education runs here instead, after p4 and before Phase 5.
+
+  const p4dot5 = phaseEducation(context, p4.buildingStateChanges);
+
+  // -------------------------------------------------------------------------
   // Phase 5 — Passive Effects
   // -------------------------------------------------------------------------
 
@@ -209,6 +273,32 @@ export function runSimulation(
   applyDeltas(p6.stockpileDeltas);
 
   // -------------------------------------------------------------------------
+  // Phase 6.5 — National Economy (tax collection in kind)
+  // -------------------------------------------------------------------------
+  // Tax base is gross production from jobs (p1) and deposits (p2) only, per
+  // the spec — not passive effects or managed populations. Runs before
+  // citizen consumption so consumption sees post-tax stockpiles.
+
+  const nationalEconomyProductionDeltas: StockpileDelta[] = [
+    ...p1.stockpileDeltas.filter((d) => d.delta > 0),
+    ...p2.stockpileDeltas.filter((d) => d.delta > 0),
+  ];
+  const p6dot5 = phaseNationalEconomy(context, nationalEconomyProductionDeltas);
+  applyDeltas(p6dot5.stockpileDeltas);
+  applyNationDeltas(p6dot5.nationStockpileDeltas);
+
+  // -------------------------------------------------------------------------
+  // Phase 6.75 — Treaties: tribute + expiry (#1090)
+  // -------------------------------------------------------------------------
+  // Runs right after nation tax collection so tribute can spend from
+  // freshly-taxed goods the same transition. Royal marriage death notes are
+  // handled separately (phaseTreatyMarriageNotes, below) once this-turn
+  // deaths from every mortality-causing phase are known.
+
+  const p6dot75 = phaseTreaties(context);
+  applyNationDeltas(p6dot75.nationStockpileDeltas);
+
+  // -------------------------------------------------------------------------
   // Phase 7 — Managed Populations
   // -------------------------------------------------------------------------
 
@@ -216,10 +306,45 @@ export function runSimulation(
   applyDeltas(p7.stockpileDeltas);
 
   // -------------------------------------------------------------------------
+  // Phase 7.5 — Military Upkeep (#1110)
+  // -------------------------------------------------------------------------
+  // Runs after national economy (post-tax nation/settlement stockpiles) and
+  // before citizen consumption, per the issue's ordering requirement.
+
+  const p7dot5 = phaseMilitaryUpkeep(context);
+  applyDeltas(p7dot5.stockpileDeltas);
+  applyNationDeltas(p7dot5.nationStockpileDeltas);
+
+  // -------------------------------------------------------------------------
+  // Soldier residency (#1111): an enlisted soldier's effective settlement for
+  // consumption is their army's stationed settlement, not their home
+  // settlement (citizens.settlement_id is never mutated by enlistment or
+  // stationing). A soldier who deserted this turn (phase 7.5, above) has
+  // already returned to civilian life at their resolved settlement, so they
+  // are excluded here and fall back to citizens.settlementId like everyone
+  // else. Soldiers are always NPCs (recruit_soldiers restricts eligibility).
+  // -------------------------------------------------------------------------
+
+  const desertedSoldierIdsThisTurn = new Set(p7dot5.desertedSoldiers.map((d) => d.soldierId));
+  const armyIdByUnitId = new Map(input.armyUnits.map((u) => [u.id, u.armyId]));
+  const armyById = new Map(input.armies.map((a) => [a.id, a]));
+
+  const effectiveSettlementIdByCitizenId = new Map<string, string>();
+  const enlistedSoldierCitizenIds = new Set<string>();
+  for (const soldier of input.unitSoldiers) {
+    if (desertedSoldierIdsThisTurn.has(soldier.id)) continue;
+    const armyId = armyIdByUnitId.get(soldier.unitId);
+    const army = armyId !== undefined ? armyById.get(armyId) : undefined;
+    if (army === undefined) continue;
+    enlistedSoldierCitizenIds.add(soldier.citizenId);
+    effectiveSettlementIdByCitizenId.set(soldier.citizenId, army.stationedSettlementId);
+  }
+
+  // -------------------------------------------------------------------------
   // Phase 8 — Citizen Consumption
   // -------------------------------------------------------------------------
 
-  const p8 = phaseCitizenConsumption(context);
+  const p8 = phaseCitizenConsumption(context, effectiveSettlementIdByCitizenId);
   applyDeltas(p8.stockpileDeltas);
 
   // Propagate phase-8 deaths into shared state so downstream phases (10+) see
@@ -238,7 +363,7 @@ export function runSimulation(
   // Phase 10 — Homelessness
   // -------------------------------------------------------------------------
 
-  const p10 = phaseHomelessness(context);
+  const p10 = phaseHomelessness(context, enlistedSoldierCitizenIds);
 
   // -------------------------------------------------------------------------
   // Phase 11 — Events
@@ -323,14 +448,18 @@ export function runSimulation(
   // Phase 12.5 — Resource Decay (mutates pendingStockpiles in place)
   // -------------------------------------------------------------------------
 
-  // Index resources by ID for quick decay rate lookup.
+  // Index resources by ID for quick change mode/amount lookup.
   const resourcesByWorldId = new Map(
-    input.resources.map((r) => [r.id, { decayRate: r.decayRate }]),
+    input.resources.map((r) => [
+      r.id,
+      { changeAmount: r.changeAmount, changeMode: r.changeMode },
+    ]),
   );
 
   const p12dot5 = phaseResourceDecay(
     pendingStockpiles,
     resourcesByWorldId,
+    effectiveStorageCaps,
     stockpileKeyIndex,
   );
 
@@ -339,13 +468,94 @@ export function runSimulation(
   // -------------------------------------------------------------------------
 
   const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths, ...p11.citizenDeaths];
+  const allDeathIds = new Set(allDeaths.map((d) => d.citizenId));
+
+  // -------------------------------------------------------------------------
+  // Soldier death cascade (#1111): any death-causing phase above (8/10/11)
+  // can kill an enlisted soldier. unit_soldiers rows for dead citizens must
+  // be cascade-removed within this same transition; a unit that loses its
+  // last soldier to death disbands, same as the desertion-driven disband
+  // check in phaseMilitaryUpkeep.
+  // -------------------------------------------------------------------------
+
+  const deathCauseVerb: Record<string, string> = {
+    event: "died",
+    homeless: "died from homelessness",
+    manual_admin: "died",
+    starvation: "starved",
+    unknown: "died",
+  };
+
+  const soldiersByUnitIdExcludingDeserted = new Map<string, typeof input.unitSoldiers[number][]>();
+  for (const soldier of input.unitSoldiers) {
+    if (desertedSoldierIdsThisTurn.has(soldier.id)) continue;
+    const list = soldiersByUnitIdExcludingDeserted.get(soldier.unitId) ?? [];
+    list.push(soldier);
+    soldiersByUnitIdExcludingDeserted.set(soldier.unitId, list);
+  }
+  const deathByCitizenId = new Map(allDeaths.map((d) => [d.citizenId, d]));
+
+  const deceasedSoldierIds: string[] = [];
+  const soldierDeathCascadeLogs: SimulationLogEntry[] = [];
+  const soldierDeathDisbandedUnits: DisbandedUnit[] = [];
+
+  for (const [unitId, soldiers] of soldiersByUnitIdExcludingDeserted) {
+    const deceased = soldiers.filter((s) => allDeathIds.has(s.citizenId));
+    if (deceased.length === 0) continue;
+
+    const armyId = armyIdByUnitId.get(unitId);
+    const army = armyId !== undefined ? armyById.get(armyId) : undefined;
+    if (army === undefined) continue;
+
+    for (const soldier of deceased) {
+      deceasedSoldierIds.push(soldier.id);
+    }
+
+    const verbCounts = new Map<string, number>();
+    for (const soldier of deceased) {
+      const verb = deathCauseVerb[deathByCitizenId.get(soldier.citizenId)?.category ?? "unknown"];
+      verbCounts.set(verb, (verbCounts.get(verb) ?? 0) + 1);
+    }
+    const summary = [...verbCounts.entries()]
+      .map(([verb, count]) => `${count} ${verb}`)
+      .join(", ");
+
+    // detail mirrors the issue's example phrasing, e.g.
+    // "2 soldiers of the 1st Spears starved".
+    soldierDeathCascadeLogs.push({
+      category: "military.soldiers_died",
+      nationId: army.nationId,
+      payload: {
+        armyId: army.id,
+        deadSoldierCount: deceased.length,
+        detail: `${deceased.length} soldier${
+          deceased.length === 1 ? "" : "s"
+        } of ${army.name} ${summary}.`,
+        unitId,
+      },
+      phase: "soldierDeathCascade",
+    });
+
+    const remaining = soldiers.length - deceased.length;
+    if (remaining === 0) {
+      soldierDeathDisbandedUnits.push({ armyId: army.id, unitId });
+      soldierDeathCascadeLogs.push({
+        category: "military.unit_disbanded",
+        nationId: army.nationId,
+        payload: { armyId: army.id, unitId },
+        phase: "soldierDeathCascade",
+      });
+    }
+  }
+
+  const pSuccession = phaseSuccession(context, allDeaths);
+  const pTreatyMarriageNotes = phaseTreatyMarriageNotes(context, allDeaths);
 
   // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
   // can be selected for partnership formation and then die of homelessness in
   // the same turn. apply_turn_transition rejects "active" partnership entries
   // whose partners are already dead (guard added in epic-6). Drop any "formed"
   // change where either partner appears in allDeaths so the payload stays valid.
-  const allDeathIds = new Set(allDeaths.map((d) => d.citizenId));
   const partnershipChanges = p9.partnershipChanges.filter((pc) => {
     if (pc.type !== "formed") return true;
     return !allDeathIds.has(pc.citizenAId) && !allDeathIds.has(pc.citizenBId);
@@ -414,7 +624,9 @@ export function runSimulation(
     ...p2.stockpileDeltas.filter((d) => d.delta < 0),
     ...p3.stockpileDeltas,
     ...p4.stockpileDeltas,
+    ...p6dot5.stockpileDeltas,
     ...p7.stockpileDeltas.filter((d) => d.delta < 0),
+    ...p7dot5.stockpileDeltas,
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas.filter((d) => d.delta < 0),
     ...p12dot5.stockpileDeltas,
@@ -428,6 +640,7 @@ export function runSimulation(
     citizenBirths: allCitizenBirths,
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
+    educationSummaryBySettlementId: p4dot5.educationSummaryBySettlementId,
     managedPopulationUpdates,
     partnershipChanges,
     pendingStockpiles,
@@ -445,9 +658,13 @@ export function runSimulation(
     ...p2.logs,
     ...p3.logs,
     ...p4.logs,
+    ...p4dot5.logs,
     ...p5.logs,
     ...p6.logs,
+    ...p6dot5.logs,
+    ...p6dot75.logs,
     ...p7.logs,
+    ...p7dot5.logs,
     ...p8.logs,
     ...filteredP9Logs,
     ...p10.logs,
@@ -455,17 +672,24 @@ export function runSimulation(
     ...p12.logs,
     ...p12dot5.logs,
     ...p13.logs,
+    ...pSuccession.logs,
+    ...pTreatyMarriageNotes.logs,
+    ...soldierDeathCascadeLogs,
   ];
 
   const notifications: SimulationNotification[] = [
     ...p2.notifications,
     ...p3.notifications,
     ...p4.notifications,
+    ...p4dot5.notifications,
+    ...p6dot5.notifications,
     ...p7.notifications,
+    ...p7dot5.notifications,
     ...p8.notifications,
     ...filteredP9Notifications,
     ...p10.notifications,
     ...p11.notifications,
+    ...pSuccession.notifications,
   ];
 
   const stockpileDeltas: StockpileDelta[] = [
@@ -475,13 +699,16 @@ export function runSimulation(
     ...p4.stockpileDeltas,
     ...p5.stockpileDeltas,
     ...p6.stockpileDeltas,
+    ...p6dot5.stockpileDeltas,
     ...p7.stockpileDeltas,
+    ...p7dot5.stockpileDeltas,
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas,
     ...p12dot5.stockpileDeltas,
   ];
 
   return {
+    armyTurnSnapshots: p7dot5.armyTurnSnapshots,
     assignmentClears: [
       ...p2.assignmentClears,
       ...p3.assignmentClears,
@@ -495,15 +722,33 @@ export function runSimulation(
       })),
     ],
     buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
+    buildingTierUpgrades: p3.buildingTierUpgrades,
     buildingsCreated: p3.buildingsCreated,
     citizenBirths: allCitizenBirths,
     citizenDeaths: allDeaths,
+    citizenEducationPatches: p4dot5.citizenEducationPatches,
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
     depositUpdates: [...p2.depositUpdates, ...p11.depositUpdates],
+    deceasedSoldierIds,
+    desertedSoldiers: p7dot5.desertedSoldiers,
+    disbandedUnits: [...p7dot5.disbandedUnits, ...soldierDeathDisbandedUnits],
+    enrollmentGraduations: p4dot5.enrollmentGraduations,
+    enrollmentProgressUpdates: p4dot5.enrollmentProgressUpdates,
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates,
+    nationCurrencySnapshots: p6dot5.nationCurrencySnapshots,
+    nationCurrencyUpdates: p6dot5.nationCurrencyUpdates,
+    nationStockpileDeltas: [
+      ...p6dot5.nationStockpileDeltas,
+      ...p6dot75.nationStockpileDeltas,
+      ...p7dot5.nationStockpileDeltas,
+    ],
+    nationTurnSnapshots: mergeNationTurnSnapshots([
+      p6dot5.nationTurnSnapshots,
+      p6dot75.nationTurnSnapshots,
+    ]),
     notifications,
     partnershipChanges,
     readinessSummary: computeReadinessSummary(input),
@@ -511,6 +756,7 @@ export function runSimulation(
     settlementSnapshots: p13.settlementSnapshots,
     stockpileDeltas,
     tradeRouteOutcomes: p6.tradeRouteOutcomes,
+    treatyStatusChanges: p6dot75.treatyStatusChanges,
   };
 }
 

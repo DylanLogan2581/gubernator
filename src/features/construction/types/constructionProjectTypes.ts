@@ -1,3 +1,5 @@
+import type { TierCostEntry } from "@/features/buildings";
+
 export type ConstructionProjectStatus =
   | "cancelled"
   | "complete"
@@ -10,6 +12,7 @@ export type ConstructionProject = {
   readonly blueprintName: string;
   readonly buildingBlueprintId: string;
   readonly completedInTransitionId: string | null;
+  readonly constructionCostsJson: readonly TierCostEntry[];
   readonly createdAt: string;
   readonly id: string;
   readonly progressWorkerTurns: number;

@@ -1,18 +1,3 @@
-import { getErrorDescription } from "@/lib/errorUtils";
-
-import { isPartnershipMutationError } from "../mutations/partnershipsMutations";
-
-export function getPartnershipMutationErrorDescription(error: unknown): string {
-  if (isPartnershipMutationError(error)) {
-    const firstIssue = error.issues[0];
-    if (firstIssue !== undefined) {
-      return firstIssue.message;
-    }
-    return error.message;
-  }
-  return getErrorDescription(error);
-}
-
 export function getAdminUnavailableReason({
   currentTurnQuery,
   isArchived,

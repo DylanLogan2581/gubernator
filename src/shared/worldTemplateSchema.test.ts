@@ -73,14 +73,16 @@ const VALID_TEMPLATE = {
       name: "Grain",
       slug: "grain",
       base_stockpile_cap: 1000,
-      decay_rate: 0.01,
+      change_amount: -0.01,
+      change_mode: "percent",
       is_system_resource: false,
     },
     {
       name: "Wood",
       slug: "wood",
       base_stockpile_cap: 500,
-      decay_rate: 0.0,
+      change_amount: 0.0,
+      change_mode: "percent",
       is_system_resource: false,
     },
   ],
@@ -124,18 +126,21 @@ const VALID_TEMPLATE = {
     {
       name: "Iron Vein",
       slug: "iron-vein",
-      job_slug: "farming",
-      output_units_per_worker: 3,
-      worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+      jobs: [
+        {
+          job_slug: "farming",
+          output_units_per_worker: 3,
+          worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+        },
+      ],
     },
   ],
   managed_population_types: [
     {
       name: "Sheep",
       slug: "sheep",
-      husbandry_job_slug: "husbandry",
-      culling_job_slug: "culling",
-      husbandry_workers_per_n_animals: 5,
+      husbandry_jobs: [{ job_slug: "husbandry", workers_per_n_animals: 5 }],
+      culling_jobs: [{ job_slug: "culling", max_cull_per_worker: 10 }],
       growth_rate: 0.05,
       maintenance_rules: [
         { resource_slug: "grain", amount_per_n_animals: 0.1 },
@@ -159,7 +164,7 @@ describe("worldTemplateSchema", () => {
   });
 
   it("rejects wrong template_version", () => {
-    const bad = { ...VALID_TEMPLATE, template_version: 2 };
+    const bad = { ...VALID_TEMPLATE, template_version: 1 };
     const result = worldTemplateSchema.safeParse(bad);
     expect(result.success).toBe(false);
   });
@@ -167,7 +172,14 @@ describe("worldTemplateSchema", () => {
   it("rejects missing required field in resources", () => {
     const bad = {
       ...VALID_TEMPLATE,
-      resources: [{ name: "Grain", slug: "grain", decay_rate: 0.01 }],
+      resources: [
+        {
+          name: "Grain",
+          slug: "grain",
+          change_amount: -0.01,
+          change_mode: "percent",
+        },
+      ],
     };
     const result = worldTemplateSchema.safeParse(bad);
     expect(result.success).toBe(false);
@@ -216,5 +228,318 @@ describe("worldTemplateSchema", () => {
     };
     const result = worldTemplateSchema.safeParse(minimal);
     expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("defaults v2 registries to empty arrays when omitted", () => {
+    const result = worldTemplateSchema.safeParse(VALID_TEMPLATE);
+    expect(result.success, result.error?.message).toBe(true);
+    if (result.success) {
+      expect(result.data.resource_categories).toEqual([]);
+      expect(result.data.education_levels).toEqual([]);
+      expect(result.data.cultures).toEqual([]);
+      expect(result.data.religions).toEqual([]);
+      expect(result.data.unit_types).toEqual([]);
+    }
+  });
+
+  it("accepts icon/category/education refs on resources and jobs", () => {
+    const withRefs = {
+      ...VALID_TEMPLATE,
+      resource_categories: [{ name: "Food", color: "#4caf50", sort_order: 0 }],
+      education_levels: [
+        {
+          name: "Basic",
+          description: null,
+          rank: 1,
+          natural_born_percent: 10,
+        },
+      ],
+      resources: [
+        {
+          ...VALID_TEMPLATE.resources[0],
+          icon: "wheat",
+          category: "Food",
+        },
+      ],
+      jobs: [
+        {
+          ...VALID_TEMPLATE.jobs[0],
+          icon: null,
+          required_education_level: "Basic",
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withRefs);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("tolerates an old resource category export that still has icon", () => {
+    const withOldCategoryIcon = {
+      ...VALID_TEMPLATE,
+      resource_categories: [
+        { name: "Food", icon: "wheat", color: "#4caf50", sort_order: 0 },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withOldCategoryIcon);
+    expect(result.success, result.error?.message).toBe(true);
+    if (result.success) {
+      expect(result.data.resource_categories[0]).not.toHaveProperty("icon");
+    }
+  });
+
+  it("rejects duplicate education level ranks", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      education_levels: [
+        { name: "Basic", description: null, rank: 1, natural_born_percent: 0 },
+        {
+          name: "Scholar",
+          description: null,
+          rank: 1,
+          natural_born_percent: 0,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects natural_born_percent values summing above 100", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      education_levels: [
+        {
+          name: "Basic",
+          description: null,
+          rank: 1,
+          natural_born_percent: 60,
+        },
+        {
+          name: "Scholar",
+          description: null,
+          rank: 2,
+          natural_born_percent: 50,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a tier education effect", () => {
+    const withEducationEffect = {
+      ...VALID_TEMPLATE,
+      education_levels: [
+        { name: "Basic", description: null, rank: 1, natural_born_percent: 0 },
+      ],
+      jobs: [
+        ...VALID_TEMPLATE.jobs,
+        {
+          name: "Tutor",
+          slug: "tutor",
+          job_type: "teacher",
+          base_capacity: 5,
+          trader_capacity_per_worker: null,
+          inputs: [],
+          outputs: [],
+        },
+      ],
+      blueprints: [
+        {
+          ...VALID_TEMPLATE.blueprints[0],
+          tiers: [
+            {
+              ...VALID_TEMPLATE.blueprints[0].tiers[0],
+              effects: [
+                {
+                  type: "education",
+                  teacher_job_slug: "tutor",
+                  teacher_capacity: 2,
+                  students_per_teacher: 5,
+                  levels: [{ from_level: null, to_level: "Basic", turns: 3 }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withEducationEffect);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("accepts a unit type with a building requirement", () => {
+    const withUnitType = {
+      ...VALID_TEMPLATE,
+      unit_types: [
+        {
+          name: "Militia",
+          description: null,
+          soldiers_per_unit: 10,
+          required_education_level: null,
+          required_building: { blueprint_slug: "granary", tier_number: 1 },
+          recruitment_costs: [{ resource_slug: "wood", amount: 5 }],
+          upkeep_costs: [{ resource_slug: "grain", amount: 1 }],
+          desertion_rate: 0.05,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withUnitType);
+    expect(result.success, result.error?.message).toBe(true);
+  });
+
+  it("accepts a deposit type with multiple linked jobs", () => {
+    const withMultipleJobs = {
+      ...VALID_TEMPLATE,
+      deposit_types: [
+        {
+          name: "Copper Vein",
+          slug: "copper-vein",
+          jobs: [
+            {
+              job_slug: "copper-miner",
+              output_units_per_worker: 4,
+              worker_inputs: [],
+            },
+            {
+              job_slug: "skilled-copper-miner",
+              output_units_per_worker: 8,
+              worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+            },
+          ],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withMultipleJobs);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(result.data?.deposit_types[0]?.jobs).toHaveLength(2);
+  });
+
+  it("is lenient toward legacy single-job deposit type templates (job_slug flattened onto the deposit type)", () => {
+    const legacyShape = {
+      ...VALID_TEMPLATE,
+      deposit_types: [
+        {
+          name: "Iron Vein",
+          slug: "iron-vein",
+          job_slug: "farming",
+          output_units_per_worker: 3,
+          worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(legacyShape);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(result.data?.deposit_types[0]?.jobs).toEqual([
+      {
+        job_slug: "farming",
+        output_units_per_worker: 3,
+        worker_inputs: [{ resource_slug: "grain", amount_per_worker: 1 }],
+      },
+    ]);
+  });
+
+  it("accepts a managed population type with multiple husbandry and culling jobs", () => {
+    const withMultipleJobs = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          ...VALID_TEMPLATE.managed_population_types[0],
+          husbandry_jobs: [
+            { job_slug: "husbandry", workers_per_n_animals: 5 },
+            { job_slug: "senior-husbandry", workers_per_n_animals: 10 },
+          ],
+          culling_jobs: [
+            { job_slug: "culling", max_cull_per_worker: 10 },
+            { job_slug: "skilled-culling", max_cull_per_worker: 20 },
+          ],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(withMultipleJobs);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(
+      result.data?.managed_population_types[0]?.husbandry_jobs,
+    ).toHaveLength(2);
+    expect(result.data?.managed_population_types[0]?.culling_jobs).toHaveLength(
+      2,
+    );
+  });
+
+  it("is lenient toward legacy single-job managed population type templates (husbandry_job_slug/culling_job_slug flattened)", () => {
+    const legacyShape = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          name: "Sheep",
+          slug: "sheep",
+          husbandry_job_slug: "husbandry",
+          culling_job_slug: "culling",
+          husbandry_workers_per_n_animals: 5,
+          growth_rate: 0.05,
+          maintenance_rules: [
+            { resource_slug: "grain", amount_per_n_animals: 0.1 },
+          ],
+          culling_outputs: [],
+          regular_outputs: [],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(legacyShape);
+    expect(result.success, result.error?.message).toBe(true);
+    expect(result.data?.managed_population_types[0]?.husbandry_jobs).toEqual([
+      { job_slug: "husbandry", workers_per_n_animals: 5 },
+    ]);
+    expect(result.data?.managed_population_types[0]?.culling_jobs).toEqual([
+      { job_slug: "culling", max_cull_per_worker: 10 },
+    ]);
+  });
+
+  it("rejects a managed population type with an empty husbandry_jobs array", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          ...VALID_TEMPLATE.managed_population_types[0],
+          husbandry_jobs: [],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a managed population type with an empty culling_jobs array", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      managed_population_types: [
+        {
+          ...VALID_TEMPLATE.managed_population_types[0],
+          culling_jobs: [],
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a unit type with an out-of-range desertion rate", () => {
+    const bad = {
+      ...VALID_TEMPLATE,
+      unit_types: [
+        {
+          name: "Militia",
+          description: null,
+          soldiers_per_unit: 10,
+          required_education_level: null,
+          required_building: null,
+          recruitment_costs: [],
+          upkeep_costs: [],
+          desertion_rate: 1.5,
+        },
+      ],
+    };
+    const result = worldTemplateSchema.safeParse(bad);
+    expect(result.success).toBe(false);
   });
 });

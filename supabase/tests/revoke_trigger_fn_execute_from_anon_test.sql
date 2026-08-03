@@ -273,7 +273,7 @@ select
   is (
     has_function_privilege(
       'anon',
-      'public.create_citizen_internal ( uuid, uuid, text, text, text, text, uuid, integer, uuid, uuid, text, text, text, text, text, text, text, text, uuid )'::regprocedure,
+      'public.create_citizen_internal ( uuid, uuid, text, text, text, text, uuid, integer, uuid, uuid, text, text, text, text, text, text, text, text, uuid, uuid, uuid, uuid )'::regprocedure,
       'EXECUTE'
     ),
     false,

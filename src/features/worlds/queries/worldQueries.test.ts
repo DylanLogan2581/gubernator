@@ -65,7 +65,6 @@ describe("accessibleWorldsQueryOptions", () => {
           name: "Verdant Reach",
           status: "active",
           updated_at: "2026-01-02T00:00:00.000Z",
-          visibility: "private",
         },
       ],
       error: null,
@@ -92,14 +91,13 @@ describe("accessibleWorldsQueryOptions", () => {
         canManage: true,
         currentTurnNumber: 5,
         isArchived: false,
-        isHidden: true,
         name: "Verdant Reach",
         slug: "verdant-reach-00000000",
       }),
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,hero_path,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at",
     );
     expect(eq).toHaveBeenCalledWith("is_trashed", false);
     expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
@@ -138,7 +136,6 @@ describe("accessibleWorldsQueryOptions", () => {
           name: "Private Other World",
           status: "active",
           updated_at: "2026-01-02T00:00:00.000Z",
-          visibility: "private",
         },
       ],
       error: null,
@@ -192,7 +189,6 @@ describe("worldRouteAccessQueryOptions", () => {
         current_turn_number: 8,
         id: "00000000-0000-0000-0000-000000000101",
         name: "Verdant Reach",
-        visibility: "private",
       }),
       error: null,
     });
@@ -230,14 +226,13 @@ describe("worldRouteAccessQueryOptions", () => {
       planningTurnNumber: 8,
       slug: "verdant-reach-00000000",
       status: "active",
-      visibility: "private",
     });
     expect(routeAccess.world.id).toBe("00000000-0000-0000-0000-000000000101");
     expect(routeAccess.world.name).toBe("Verdant Reach");
     expect(routeAccess.world.slug).toBe("verdant-reach-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,hero_path,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at",
     );
     expect(eq).toHaveBeenCalledWith(
       "id",
@@ -251,7 +246,6 @@ describe("worldRouteAccessQueryOptions", () => {
       data: createWorldRow({
         id: "00000000-0000-0000-0000-000000000101",
         name: "Renamed Verdant Reach",
-        visibility: "private",
       }),
       error: null,
     });
@@ -388,7 +382,7 @@ describe("worldRouteAccessQueryOptions", () => {
     const accessContext = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
-      worldAdminWorldIds: [],
+      worldAdminWorldIds: ["00000000-0000-0000-0000-000000000404"],
     });
 
     const routeAccess = await queryClient.fetchQuery(
@@ -463,7 +457,6 @@ function createWorldRow(
     readonly name: string;
     readonly status: string;
     readonly updated_at: string;
-    readonly visibility: string;
   }> = {},
 ): {
   readonly archived_at: string | null;
@@ -476,7 +469,6 @@ function createWorldRow(
   readonly name: string;
   readonly status: string;
   readonly updated_at: string;
-  readonly visibility: string;
 } {
   return {
     archived_at: null,
@@ -489,7 +481,6 @@ function createWorldRow(
     name: "Verdant Reach",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
-    visibility: "public",
     ...overrides,
   };
 }

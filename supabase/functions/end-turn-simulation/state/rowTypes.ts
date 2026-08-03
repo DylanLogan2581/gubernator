@@ -40,7 +40,8 @@ export type SupabaseNamesetRow = {
 };
 
 export type SupabaseResourceRow = {
-  readonly decay_rate: number;
+  readonly change_amount: number;
+  readonly change_mode: "percent" | "flat";
   readonly id: string;
   readonly slug: string;
 };
@@ -60,6 +61,7 @@ export type SupabaseJobRow = {
   readonly trader_capacity_per_worker: number | null;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
+  readonly required_education_level_id: string | null;
   readonly inputs_json: unknown;
   readonly outputs_json: unknown;
 };
@@ -101,12 +103,19 @@ export type SupabaseProjectRow = {
   readonly status: string;
   readonly queue_position: number;
   readonly progress_worker_turns: number;
+  readonly upgrade_settlement_building_id: string | null;
   readonly target_tier: { readonly worker_turns_required: number } | null;
 };
 
 export type SupabaseDepositTypeRow = {
   readonly id: string;
   readonly name: string;
+  readonly deposit_type_jobs: readonly unknown[];
+};
+
+export type SupabaseDepositTypeJobRow = {
+  readonly id: string;
+  readonly deposit_type_id: string;
   readonly job_id: string;
   readonly output_units_per_worker: number;
   readonly worker_inputs_json: unknown;
@@ -131,13 +140,26 @@ export type SupabaseDepositRow = {
 export type SupabaseManagedPopTypeRow = {
   readonly id: string;
   readonly name: string;
-  readonly husbandry_job_id: string;
-  readonly culling_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
   readonly growth_rate: number;
   readonly maintenance_rules_json: unknown;
   readonly culling_outputs_json: unknown;
   readonly regular_outputs_json: unknown;
+  readonly managed_population_husbandry_jobs: readonly unknown[];
+  readonly managed_population_culling_jobs: readonly unknown[];
+};
+
+export type SupabaseManagedPopHusbandryJobRow = {
+  readonly id: string;
+  readonly managed_population_type_id: string;
+  readonly job_id: string;
+  readonly workers_per_n_animals: number;
+};
+
+export type SupabaseManagedPopCullingJobRow = {
+  readonly id: string;
+  readonly managed_population_type_id: string;
+  readonly job_id: string;
+  readonly max_cull_per_worker: number;
 };
 
 export type SupabaseManagedPopRow = {
@@ -166,7 +188,10 @@ export type SupabaseTradeRouteRow = {
 
 export type SupabaseCitizenRow = {
   readonly id: string;
+  readonly culture_id: string | null;
+  readonly education_level_id: string | null;
   readonly nameset_id: string | null;
+  readonly religion_id: string | null;
   readonly settlement_id: string | null;
   readonly citizen_type: string;
   readonly given_name: string;
@@ -176,6 +201,118 @@ export type SupabaseCitizenRow = {
   readonly born_on_turn_number: number | null;
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
+  readonly role_type: string;
+  readonly role_nation_id: string | null;
+  readonly role_settlement_id: string | null;
+};
+
+export type SupabaseNationRow = {
+  readonly id: string;
+  readonly government_type: string;
+  readonly name: string;
+  readonly tax_rate: number;
+  readonly trade_policy: string;
+};
+
+export type SupabaseNationOfficeRow = {
+  readonly citizen_id: string;
+  readonly office_types: { readonly excludes_from_labor: boolean } | null;
+};
+
+export type SupabaseUnitSoldierRow = {
+  readonly id: string;
+  readonly unit_id: string;
+  readonly citizen_id: string;
+  readonly home_settlement_id: string | null;
+};
+
+export type SupabaseArmyRow = {
+  readonly id: string;
+  readonly nation_id: string;
+  readonly name: string;
+  readonly funding_source: string;
+  readonly stationed_settlement_id: string;
+};
+
+export type SupabaseArmyUnitRow = {
+  readonly id: string;
+  readonly army_id: string;
+  readonly unit_type_id: string;
+};
+
+export type SupabaseUnitTypeRow = {
+  readonly id: string;
+  readonly desertion_rate: number;
+  readonly upkeep_costs_json: unknown;
+};
+
+export type SupabaseEducationLevelRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly name: string;
+  readonly natural_born_percent: number;
+  readonly rank: number;
+};
+
+export type SupabaseEducationEnrollmentRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly settlement_building_id: string;
+  readonly citizen_id: string;
+  readonly target_level_id: string;
+  readonly progress_turns: number;
+  readonly enrolled_turn_number: number;
+};
+
+export type SupabaseNationRelationshipRow = {
+  readonly current_stance: string;
+  readonly from_nation_id: string;
+  readonly to_nation_id: string;
+};
+
+export type SupabaseNationStockpileRow = {
+  readonly nation_id: string;
+  readonly resource_id: string;
+  readonly quantity: number;
+};
+
+export type SupabaseNationTaxPolicyRow = {
+  readonly nation_id: string;
+  readonly settlement_id: string | null;
+  readonly method: string;
+  readonly rate: number;
+  readonly flat_amount: number;
+  readonly taxed_resource_ids: readonly string[] | null;
+  readonly min_stockpile_floor: number;
+  readonly exempt: boolean;
+};
+
+export type SupabaseNationTreatyRow = {
+  readonly id: string;
+  readonly proposer_nation_id: string;
+  readonly responder_nation_id: string;
+  readonly treaty_type: string;
+  readonly terms: Record<string, unknown>;
+  readonly ends_turn_number: number | null;
+};
+
+export type SupabaseNationCurrencyRow = {
+  readonly id: string;
+  readonly nation_id: string;
+  readonly name: string;
+  readonly currency_type: string;
+  readonly backing_resource_id: string | null;
+  readonly backing_ratio: number | null;
+  readonly money_supply: number;
+  readonly reserve_quantity: number;
+  readonly confidence: number;
+  readonly is_in_default: boolean;
+};
+
+export type SupabaseNationCurrencyLedgerRow = {
+  readonly currency_id: string;
+  readonly action: string;
+  readonly amount: number | null;
 };
 
 export type SupabaseAssignmentRow = {
@@ -277,7 +414,8 @@ export function isNamesetRow(v: unknown): v is SupabaseNamesetRow {
 export function isResourceRow(v: unknown): v is SupabaseResourceRow {
   return (
     isRecord(v) &&
-    typeof v.decay_rate === "number" &&
+    typeof v.change_amount === "number" &&
+    (v.change_mode === "percent" || v.change_mode === "flat") &&
     typeof v.id === "string" &&
     typeof v.slug === "string"
   );
@@ -305,7 +443,9 @@ export function isJobRow(v: unknown): v is SupabaseJobRow {
     (v.linked_deposit_type_id === null ||
       typeof v.linked_deposit_type_id === "string") &&
     (v.linked_managed_population_type_id === null ||
-      typeof v.linked_managed_population_type_id === "string")
+      typeof v.linked_managed_population_type_id === "string") &&
+    (v.required_education_level_id === null ||
+      typeof v.required_education_level_id === "string")
   );
 }
 
@@ -355,6 +495,8 @@ export function isProjectRow(v: unknown): v is SupabaseProjectRow {
     typeof v.status === "string" &&
     typeof v.queue_position === "number" &&
     typeof v.progress_worker_turns === "number" &&
+    (v.upgrade_settlement_building_id === null ||
+      typeof v.upgrade_settlement_building_id === "string") &&
     (v.target_tier === null ||
       (isRecord(v.target_tier) &&
         typeof v.target_tier.worker_turns_required === "number"))
@@ -366,6 +508,17 @@ export function isDepositTypeRow(v: unknown): v is SupabaseDepositTypeRow {
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.name === "string" &&
+    Array.isArray(v.deposit_type_jobs)
+  );
+}
+
+export function isDepositTypeJobRow(
+  v: unknown,
+): v is SupabaseDepositTypeJobRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.deposit_type_id === "string" &&
     typeof v.job_id === "string" &&
     typeof v.output_units_per_worker === "number"
   );
@@ -402,10 +555,33 @@ export function isManagedPopTypeRow(
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.name === "string" &&
-    typeof v.husbandry_job_id === "string" &&
-    typeof v.culling_job_id === "string" &&
-    typeof v.husbandry_workers_per_n_animals === "number" &&
-    typeof v.growth_rate === "number"
+    typeof v.growth_rate === "number" &&
+    Array.isArray(v.managed_population_husbandry_jobs) &&
+    Array.isArray(v.managed_population_culling_jobs)
+  );
+}
+
+export function isManagedPopHusbandryJobRow(
+  v: unknown,
+): v is SupabaseManagedPopHusbandryJobRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.managed_population_type_id === "string" &&
+    typeof v.job_id === "string" &&
+    typeof v.workers_per_n_animals === "number"
+  );
+}
+
+export function isManagedPopCullingJobRow(
+  v: unknown,
+): v is SupabaseManagedPopCullingJobRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.managed_population_type_id === "string" &&
+    typeof v.job_id === "string" &&
+    typeof v.max_cull_per_worker === "number"
   );
 }
 
@@ -444,6 +620,9 @@ export function isCitizenRow(v: unknown): v is SupabaseCitizenRow {
   return (
     isRecord(v) &&
     typeof v.id === "string" &&
+    (v.culture_id === null || typeof v.culture_id === "string") &&
+    (v.education_level_id === null || typeof v.education_level_id === "string") &&
+    (v.religion_id === null || typeof v.religion_id === "string") &&
     (v.settlement_id === null || typeof v.settlement_id === "string") &&
     typeof v.citizen_type === "string" &&
     typeof v.given_name === "string" &&
@@ -455,7 +634,167 @@ export function isCitizenRow(v: unknown): v is SupabaseCitizenRow {
     (v.parent_a_citizen_id === null ||
       typeof v.parent_a_citizen_id === "string") &&
     (v.parent_b_citizen_id === null ||
-      typeof v.parent_b_citizen_id === "string")
+      typeof v.parent_b_citizen_id === "string") &&
+    typeof v.role_type === "string" &&
+    (v.role_nation_id === null || typeof v.role_nation_id === "string") &&
+    (v.role_settlement_id === null ||
+      typeof v.role_settlement_id === "string")
+  );
+}
+
+export function isNationRow(v: unknown): v is SupabaseNationRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.government_type === "string" &&
+    typeof v.name === "string" &&
+    typeof v.tax_rate === "number" &&
+    typeof v.trade_policy === "string"
+  );
+}
+
+export function isNationOfficeRow(v: unknown): v is SupabaseNationOfficeRow {
+  return (
+    isRecord(v) &&
+    typeof v.citizen_id === "string" &&
+    (v.office_types === null ||
+      (isRecord(v.office_types) &&
+        typeof v.office_types.excludes_from_labor === "boolean"))
+  );
+}
+
+export function isUnitSoldierRow(v: unknown): v is SupabaseUnitSoldierRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.unit_id === "string" &&
+    typeof v.citizen_id === "string" &&
+    (v.home_settlement_id === null || typeof v.home_settlement_id === "string")
+  );
+}
+
+export function isArmyRow(v: unknown): v is SupabaseArmyRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.nation_id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.funding_source === "string" &&
+    typeof v.stationed_settlement_id === "string"
+  );
+}
+
+export function isArmyUnitRow(v: unknown): v is SupabaseArmyUnitRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.army_id === "string" &&
+    typeof v.unit_type_id === "string"
+  );
+}
+
+export function isUnitTypeRow(v: unknown): v is SupabaseUnitTypeRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.desertion_rate === "number"
+  );
+}
+
+export function isEducationLevelRow(v: unknown): v is SupabaseEducationLevelRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.world_id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.natural_born_percent === "number" &&
+    typeof v.rank === "number"
+  );
+}
+
+export function isEducationEnrollmentRow(
+  v: unknown,
+): v is SupabaseEducationEnrollmentRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.world_id === "string" &&
+    typeof v.settlement_building_id === "string" &&
+    typeof v.citizen_id === "string" &&
+    typeof v.target_level_id === "string" &&
+    typeof v.progress_turns === "number" &&
+    typeof v.enrolled_turn_number === "number"
+  );
+}
+
+export function isNationRelationshipRow(
+  v: unknown,
+): v is SupabaseNationRelationshipRow {
+  return (
+    isRecord(v) &&
+    typeof v.current_stance === "string" &&
+    typeof v.from_nation_id === "string" &&
+    typeof v.to_nation_id === "string"
+  );
+}
+
+export function isNationStockpileRow(v: unknown): v is SupabaseNationStockpileRow {
+  return (
+    isRecord(v) &&
+    typeof v.nation_id === "string" &&
+    typeof v.resource_id === "string" &&
+    typeof v.quantity === "number"
+  );
+}
+
+export function isNationTaxPolicyRow(v: unknown): v is SupabaseNationTaxPolicyRow {
+  return (
+    isRecord(v) &&
+    typeof v.nation_id === "string" &&
+    (v.settlement_id === null || typeof v.settlement_id === "string") &&
+    typeof v.method === "string" &&
+    typeof v.rate === "number" &&
+    typeof v.flat_amount === "number" &&
+    (v.taxed_resource_ids === null || Array.isArray(v.taxed_resource_ids)) &&
+    typeof v.min_stockpile_floor === "number" &&
+    typeof v.exempt === "boolean"
+  );
+}
+
+export function isNationTreatyRow(v: unknown): v is SupabaseNationTreatyRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.proposer_nation_id === "string" &&
+    typeof v.responder_nation_id === "string" &&
+    typeof v.treaty_type === "string" &&
+    isRecord(v.terms) &&
+    (v.ends_turn_number === null || typeof v.ends_turn_number === "number")
+  );
+}
+
+export function isNationCurrencyRow(v: unknown): v is SupabaseNationCurrencyRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.nation_id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.currency_type === "string" &&
+    (v.backing_resource_id === null || typeof v.backing_resource_id === "string") &&
+    (v.backing_ratio === null || typeof v.backing_ratio === "number") &&
+    typeof v.money_supply === "number" &&
+    typeof v.reserve_quantity === "number" &&
+    typeof v.confidence === "number" &&
+    typeof v.is_in_default === "boolean"
+  );
+}
+
+export function isNationCurrencyLedgerRow(v: unknown): v is SupabaseNationCurrencyLedgerRow {
+  return (
+    isRecord(v) &&
+    typeof v.currency_id === "string" &&
+    typeof v.action === "string" &&
+    (v.amount === null || typeof v.amount === "number")
   );
 }
 

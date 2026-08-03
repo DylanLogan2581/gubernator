@@ -64,12 +64,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 World',
-    'private',
     'active'
   );
 
@@ -93,6 +92,23 @@ values
     '5e300000-0000-0000-0000-000000000002',
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 Dest Nation'
+  );
+
+-- propose_trade_route/replace_trade_route (#1086) reject endpoints whose
+-- nations have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    '5e200000-0000-0000-0000-000000000001',
+    '5e300000-0000-0000-0000-000000000001',
+    '5e300000-0000-0000-0000-000000000002',
+    1
   );
 
 insert into
@@ -186,42 +202,48 @@ values
 
 -- Deposit type
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     '5e900000-0000-0000-0000-000000000001',
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 Coal',
-    'smoke5-coal',
-    '5e800000-0000-0000-0000-000000000002',
-    1
+    'smoke5-coal'
   );
 
 -- Managed population type
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     '5eb00000-0000-0000-0000-000000000001',
     '5e200000-0000-0000-0000-000000000001',
     'Smoke5 Cattle',
-    'smoke5-cattle',
+    'smoke5-cattle'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    '5eb00000-0000-0000-0000-000000000001',
     '5e800000-0000-0000-0000-000000000003',
+    10
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    '5eb00000-0000-0000-0000-000000000001',
     '5e800000-0000-0000-0000-000000000004',
     10
   );

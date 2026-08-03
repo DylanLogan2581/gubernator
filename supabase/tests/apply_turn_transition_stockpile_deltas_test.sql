@@ -46,34 +46,30 @@ where
 --   World 3 (turn 5): server-side clamp test
 --   World 4 (turn 8): ON CONFLICT idempotency test
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (id, name, current_turn_number, status)
 values
   (
     'a5200000-0000-0000-0000-000000000001',
     'ATTSD Single Delta World',
     5,
-    'private',
     'active'
   ),
   (
     'a5200000-0000-0000-0000-000000000002',
     'ATTSD Multi Resource World',
     5,
-    'private',
     'active'
   ),
   (
     'a5200000-0000-0000-0000-000000000003',
     'ATTSD Clamp World',
     5,
-    'private',
     'active'
   ),
   (
     'a5200000-0000-0000-0000-000000000004',
     'ATTSD Idempotency World',
     8,
-    'private',
     'active'
   );
 

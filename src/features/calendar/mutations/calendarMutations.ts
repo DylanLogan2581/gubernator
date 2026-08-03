@@ -13,6 +13,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { assertWorldWritable } from "@/lib/worldWritable";
 
 import { calendarQueryKeys } from "../queries/calendarQueryKeys";
 import {
@@ -33,7 +34,6 @@ type WorldCalendarSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly status: string;
-  readonly visibility: string;
 };
 
 export type SaveWorldCalendarConfigInput = {
@@ -41,7 +41,7 @@ export type SaveWorldCalendarConfigInput = {
   readonly worldId: string;
 };
 
-const WORLD_CALENDAR_SAVE_ACCESS_SELECT = "archived_at,id,status,visibility";
+const WORLD_CALENDAR_SAVE_ACCESS_SELECT = "archived_at,id,status";
 const WORLD_CALENDAR_SAVE_UPDATE_SELECT = "id";
 
 export class SaveWorldCalendarConfigError extends Error {
@@ -123,13 +123,15 @@ async function saveWorldCalendarConfig(
     });
   }
 
-  if (world.status === "archived" || world.archived_at !== null) {
-    throw new SaveWorldCalendarConfigError({
-      code: "world_calendar_config_archived",
-      message: "Archived worlds are read-only.",
-      worldId: input.worldId,
-    });
-  }
+  assertWorldWritable(
+    world,
+    () =>
+      new SaveWorldCalendarConfigError({
+        code: "world_calendar_config_archived",
+        message: "Archived worlds are read-only.",
+        worldId: input.worldId,
+      }),
+  );
 
   const { data, error } = await client
     .from("worlds")

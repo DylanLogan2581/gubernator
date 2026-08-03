@@ -93,7 +93,7 @@ begin
   -- 1. World
   -- -------------------------------------------------------------------------
   insert into public.worlds (
-    id, name, current_turn_number, visibility, status,
+    id, name, current_turn_number, status,
     calendar_config_json,
     partnership_seek_chance, fertility_chance,
     minimum_partnership_age_turns, maximum_fertility_age_turns,
@@ -103,7 +103,6 @@ begin
     v_world,
     'Benchmark World (large)',
     0,
-    'private',
     'active',
     public.default_calendar_config(),
     0.20,
@@ -140,12 +139,11 @@ begin
   -- 3. Nations (5)
   -- -------------------------------------------------------------------------
   for v_n in 1..N_NATIONS loop
-    insert into public.nations (id, world_id, name, is_hidden, nameset_id)
+    insert into public.nations (id, world_id, name, nameset_id)
     values (
       ('00000000-0000-0000-0002-' || lpad((200 + v_n)::text, 12, '0'))::uuid,
       v_world,
       'Nation ' || v_n,
-      false,
       v_nameset
     );
   end loop;

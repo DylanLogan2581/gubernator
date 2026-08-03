@@ -38,12 +38,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, status)
 values
   (
     'e1000000-0000-0000-0000-000000000002',
     'FK Test World',
-    'private',
     'active'
   );
 
@@ -150,23 +149,24 @@ values
   );
 
 -- Deposit type + instance for deposit tests.
--- deposit_types.job_id FK is DEFERRABLE INITIALLY DEFERRED, so any UUID works
--- here; the constraint is never checked because this transaction is rolled back.
+-- deposit_type_jobs.job_id FK is DEFERRABLE INITIALLY DEFERRED, so any UUID
+-- works here; the constraint is never checked because this transaction is
+-- rolled back.
 insert into
-  public.deposit_types (
-    id,
-    world_id,
-    name,
-    slug,
-    job_id,
-    output_units_per_worker
-  )
+  public.deposit_types (id, world_id, name, slug)
 values
   (
     'e8000000-0000-0000-0000-000000000001',
     'e1000000-0000-0000-0000-000000000002',
     'FK Test Deposit Type',
-    'fk-test-deposit-type',
+    'fk-test-deposit-type'
+  );
+
+insert into
+  public.deposit_type_jobs (deposit_type_id, job_id, output_units_per_worker)
+values
+  (
+    'e8000000-0000-0000-0000-000000000001',
     'ecffffff-ffff-ffff-ffff-000000000001',
     1
   );
@@ -183,27 +183,43 @@ values
   );
 
 -- Managed population type + instance for husbandry/culling tests.
--- husbandry_job_id and culling_job_id FKs are DEFERRABLE INITIALLY DEFERRED.
--- They must be distinct (immediate CHECK constraint).
+-- managed_population_husbandry_jobs.job_id and
+-- managed_population_culling_jobs.job_id FKs are DEFERRABLE INITIALLY
+-- DEFERRED, so any UUID works here.
 insert into
-  public.managed_population_types (
-    id,
-    world_id,
-    name,
-    slug,
-    husbandry_job_id,
-    culling_job_id,
-    husbandry_workers_per_n_animals
-  )
+  public.managed_population_types (id, world_id, name, slug)
 values
   (
     'e9000000-0000-0000-0000-000000000001',
     'e1000000-0000-0000-0000-000000000002',
     'FK Test Pop Type',
-    'fk-test-pop-type',
+    'fk-test-pop-type'
+  );
+
+insert into
+  public.managed_population_husbandry_jobs (
+    managed_population_type_id,
+    job_id,
+    workers_per_n_animals
+  )
+values
+  (
+    'e9000000-0000-0000-0000-000000000001',
     'ecffffff-ffff-ffff-ffff-000000000002',
-    'ecffffff-ffff-ffff-ffff-000000000003',
     5
+  );
+
+insert into
+  public.managed_population_culling_jobs (
+    managed_population_type_id,
+    job_id,
+    max_cull_per_worker
+  )
+values
+  (
+    'e9000000-0000-0000-0000-000000000001',
+    'ecffffff-ffff-ffff-ffff-000000000003',
+    10
   );
 
 insert into
