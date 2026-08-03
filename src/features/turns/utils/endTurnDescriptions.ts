@@ -44,17 +44,21 @@ export function getControlDescription({
 export function getTurnProgressLabel(
   stage: TurnTransitionProgressStage | null,
 ): string {
-  switch (stage) {
-    case "loading":
-      return "loading world state";
-    case "simulating":
-      return "simulating the turn";
-    case "persisting":
-      return "saving results";
-    case "queued":
-    case null:
-      return "waiting to start";
+  if (stage === "loading") {
+    return "loading world state";
   }
+
+  if (stage === "persisting") {
+    return "saving results";
+  }
+
+  if (stage === "queued" || stage === null) {
+    return "waiting to start";
+  }
+
+  // Everything else is a per-phase simulation stage (#1400). This label stays
+  // coarse; the pause overlay is where individual phases are named.
+  return "simulating the turn";
 }
 
 // Coarse, monotonic progress for the bar. The worker reports stages, not
@@ -62,17 +66,19 @@ export function getTurnProgressLabel(
 export function getTurnProgressPercentage(
   stage: TurnTransitionProgressStage | null,
 ): number {
-  switch (stage) {
-    case "loading":
-      return 35;
-    case "simulating":
-      return 70;
-    case "persisting":
-      return 90;
-    case "queued":
-    case null:
-      return 10;
+  if (stage === "loading") {
+    return 35;
   }
+
+  if (stage === "persisting") {
+    return 90;
+  }
+
+  if (stage === "queued" || stage === null) {
+    return 10;
+  }
+
+  return 70;
 }
 
 export function getReadinessSummaryDescription(

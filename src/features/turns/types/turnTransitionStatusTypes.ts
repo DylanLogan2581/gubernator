@@ -1,12 +1,33 @@
 export type TurnTransitionState = "running" | "completed" | "failed";
 
-// Coarse progress the background turn worker stamps while the turn runs
-// (#1278). Null before the worker picks the job up and once it finishes.
+// Progress the background turn worker stamps while the turn runs (#1278):
+// either a queue/load/persist stage or the simulation phase currently running
+// (#1400). Null before the worker picks the job up and once it finishes.
 export type TurnTransitionProgressStage =
+  | "building_upkeep"
+  | "citizen_consumption"
+  | "construction"
+  | "deposit_extraction"
+  | "education"
+  | "events"
+  | "homelessness"
   | "loading"
+  | "logs_and_snapshots"
+  | "managed_populations"
+  | "military_upkeep"
+  | "national_economy"
+  | "partnerships"
+  | "passive_effects"
   | "persisting"
   | "queued"
-  | "simulating";
+  | "resource_decay"
+  | "simulating"
+  | "standard_jobs"
+  | "stockpile_clamp"
+  | "succession"
+  | "trade_routes"
+  | "treaties"
+  | "treaty_marriage_notes";
 
 export type LatestTurnTransitionStatus = {
   readonly finishedAt: string | null;

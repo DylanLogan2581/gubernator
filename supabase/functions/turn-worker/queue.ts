@@ -8,6 +8,8 @@ import { logCaughtError } from "../_shared/edgeRequestLogger.ts";
 import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
+import type { SimulationPhaseName } from "../_shared/simulation/simulationTypes.ts";
+
 export type TurnJobClaim = {
   readonly attempts: number;
   readonly enqueuedByUserId: string | null;
@@ -18,11 +20,13 @@ export type TurnJobClaim = {
   readonly worldId: string;
 };
 
+// Either a worker stage or the simulation phase currently executing (#1400).
 export type TurnTransitionProgressStage =
   | "loading"
   | "persisting"
   | "queued"
-  | "simulating";
+  | "simulating"
+  | SimulationPhaseName;
 
 export type ServiceRoleConfig = {
   readonly headers: Record<string, string>;

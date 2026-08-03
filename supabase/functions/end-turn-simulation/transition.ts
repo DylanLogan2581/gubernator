@@ -21,6 +21,7 @@ import type {
   NationStockpileDelta,
   NationTurnSnapshot,
   ReadinessSummary,
+  RunSimulationOptions,
   SettlementSnapshot,
   SimConstructionStatus,
   SimulationInputState,
@@ -173,10 +174,11 @@ export type SimulationTransitionResult =
 export async function planSimulationTransition(
   input: SimulationInputState,
   transitionId: string,
+  options?: RunSimulationOptions,
 ): Promise<SimulationTransitionResult> {
   let result: SimulationResult;
   try {
-    result = await runSimulation(input, transitionId);
+    result = await runSimulation(input, transitionId, options);
   } catch (error) {
     if (error instanceof SimulationRejectionError) {
       if (error.code === "world_archived") {

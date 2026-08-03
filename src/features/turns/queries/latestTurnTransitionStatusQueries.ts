@@ -41,10 +41,30 @@ const LATEST_TURN_TRANSITION_STATUS_SELECT =
   "id,world_id,from_turn_number,to_turn_number,status,started_at,finished_at,progress_stage";
 const TURN_TRANSITION_STATES = ["running", "completed", "failed"] as const;
 const TURN_TRANSITION_PROGRESS_STAGES = [
+  "building_upkeep",
+  "citizen_consumption",
+  "construction",
+  "deposit_extraction",
+  "education",
+  "events",
+  "homelessness",
   "loading",
+  "logs_and_snapshots",
+  "managed_populations",
+  "military_upkeep",
+  "national_economy",
+  "partnerships",
+  "passive_effects",
   "persisting",
   "queued",
+  "resource_decay",
   "simulating",
+  "standard_jobs",
+  "stockpile_clamp",
+  "succession",
+  "trade_routes",
+  "treaties",
+  "treaty_marriage_notes",
 ] as const;
 // The turn now runs in a background worker (#1278), so a running transition is
 // only observable by polling. Idle worlds fall back to the default (no poll).

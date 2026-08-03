@@ -127,7 +127,19 @@ export async function runTurnJob(
 
     await setTransitionProgress(config, transitionId, "simulating", requestId);
 
-    const transitionResult = await planSimulationTransition(stateResult.input, transitionId);
+    const progressTransitionId = transitionId;
+    const transitionResult = await planSimulationTransition(
+      stateResult.input,
+      transitionId,
+      {
+        onPhase: (phase) => {
+          // Fire-and-forget: setTransitionProgress already swallows its own
+          // errors, and awaiting here would serialise a network round-trip
+          // between every phase.
+          void setTransitionProgress(config, progressTransitionId, phase, requestId);
+        },
+      },
+    );
 
     if (!transitionResult.ok) {
       throw new Error(transitionResult.error.error.message);

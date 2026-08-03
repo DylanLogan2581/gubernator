@@ -357,7 +357,12 @@ describe("handleTurnWorkerRequest", () => {
       })
       .filter((stage): stage is string | null => stage !== undefined);
 
-    expect(stages).toEqual(["loading", "simulating", "persisting", null]);
+    // The framing stages bracket the run; every simulation phase stamps
+    // itself in between (#1400).
+    expect(stages.slice(0, 2)).toEqual(["loading", "simulating"]);
+    expect(stages.slice(-2)).toEqual(["persisting", null]);
+    expect(stages).toContain("standard_jobs");
+    expect(stages).toContain("logs_and_snapshots");
   });
 
   it("fails the transition and releases the job for retry when the apply fails", async () => {
