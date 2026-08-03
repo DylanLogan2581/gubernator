@@ -132,7 +132,7 @@ describe("worldRetentionConfigQueryOptions", () => {
     expect(options.enabled).toBe(false);
   });
 
-  it("fills in the documented defaults when no row exists", async () => {
+  it("returns nulls when no row exists so the ui can show defaults", async () => {
     const client = createTableClient(null);
     const queryClient = createQueryClient();
 
@@ -141,9 +141,9 @@ describe("worldRetentionConfigQueryOptions", () => {
     );
 
     expect(config).toEqual({
-      logRetentionTurns: 200,
+      logRetentionTurns: null,
       memoryRetentionTurns: null,
-      snapshotRetentionTurns: 200,
+      snapshotRetentionTurns: null,
       worldId: "world-1",
     });
   });

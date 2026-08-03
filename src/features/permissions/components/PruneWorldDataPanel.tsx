@@ -216,7 +216,7 @@ export function PruneWorldDataPanel({
           <h3 className="text-sm font-semibold">Retention configuration</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Set how many completed turns of data this world keeps automatically.
-            Leave a field empty to keep all data of that type forever.
+            Leave a field empty to use the value shown as its placeholder.
           </p>
 
           {retentionConfigQuery.isPending && (
@@ -267,16 +267,19 @@ function RetentionConfigFields({
     setWorldRetentionConfigMutationOptions({ queryClient }),
   );
 
-  const [logTurns, setLogTurns] = useState(String(config.logRetentionTurns));
-  const [snapshotTurns, setSnapshotTurns] = useState(
-    String(config.snapshotRetentionTurns),
-  );
-  const [memoryTurns, setMemoryTurns] = useState(
-    config.memoryRetentionTurns === null
-      ? ""
-      : String(config.memoryRetentionTurns),
-  );
+  const initialLogTurns = toFieldValue(config.logRetentionTurns);
+  const initialSnapshotTurns = toFieldValue(config.snapshotRetentionTurns);
+  const initialMemoryTurns = toFieldValue(config.memoryRetentionTurns);
+
+  const [logTurns, setLogTurns] = useState(initialLogTurns);
+  const [snapshotTurns, setSnapshotTurns] = useState(initialSnapshotTurns);
+  const [memoryTurns, setMemoryTurns] = useState(initialMemoryTurns);
   const [fieldError, setFieldError] = useState<string | null>(null);
+
+  const isDirty =
+    logTurns !== initialLogTurns ||
+    snapshotTurns !== initialSnapshotTurns ||
+    memoryTurns !== initialMemoryTurns;
 
   function handleSave(): void {
     const log = parseRetentionField(logTurns);
@@ -368,7 +371,7 @@ function RetentionConfigFields({
         <Button
           type="button"
           size="sm"
-          disabled={setRetentionMutation.isPending}
+          disabled={setRetentionMutation.isPending || !isDirty}
           onClick={handleSave}
         >
           Save retention settings
@@ -376,6 +379,10 @@ function RetentionConfigFields({
       </div>
     </div>
   );
+}
+
+function toFieldValue(value: number | null): string {
+  return value === null ? "" : String(value);
 }
 
 function parseRetentionField(value: string): number | null | "invalid" {

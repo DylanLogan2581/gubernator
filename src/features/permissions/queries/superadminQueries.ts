@@ -12,7 +12,6 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
-import { WORLD_RETENTION_DEFAULTS } from "../types/superadminTypes";
 import {
   isSendEmailErrorPayload,
   readSendEmailErrorPayload,
@@ -189,13 +188,12 @@ async function getWorldRetentionConfig(
     throw normalizeSupabaseError(error);
   }
 
+  // Stored values are returned verbatim: null means "not configured", which the
+  // database resolves to WORLD_RETENTION_DEFAULTS at prune time.
   return {
-    logRetentionTurns:
-      data?.log_retention_turns ?? WORLD_RETENTION_DEFAULTS.logRetentionTurns,
+    logRetentionTurns: data?.log_retention_turns ?? null,
     memoryRetentionTurns: data?.memory_retention_turns ?? null,
-    snapshotRetentionTurns:
-      data?.snapshot_retention_turns ??
-      WORLD_RETENTION_DEFAULTS.snapshotRetentionTurns,
+    snapshotRetentionTurns: data?.snapshot_retention_turns ?? null,
     worldId,
   };
 }

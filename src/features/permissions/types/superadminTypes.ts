@@ -43,10 +43,14 @@ export const WORLD_RETENTION_DEFAULTS = {
   snapshotRetentionTurns: 200,
 } as const;
 
+/**
+ * Stored retention settings for a world. `null` means "not explicitly
+ * configured" — the database coalesces those to `WORLD_RETENTION_DEFAULTS`.
+ */
 export type WorldRetentionConfig = {
   readonly worldId: string;
-  readonly logRetentionTurns: number;
-  readonly snapshotRetentionTurns: number;
+  readonly logRetentionTurns: number | null;
+  readonly snapshotRetentionTurns: number | null;
   readonly memoryRetentionTurns: number | null;
 };
 
