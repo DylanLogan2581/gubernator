@@ -770,3 +770,214 @@ describe("pagination", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Concurrent pagination (#1280)
+// ---------------------------------------------------------------------------
+
+type PagedServer = {
+  readonly maxInFlight: () => number;
+  readonly rangeHeaders: string[];
+  readonly requestedCount: boolean[];
+};
+
+/**
+ * Stub a PostgREST-like server over `rows` that honours the `Range` header and
+ * reports an exact total when `Prefer: count=exact` is sent. Resolves each page
+ * on a later microtask so overlapping requests are observable.
+ */
+function stubPagedServer(
+  rows: readonly unknown[],
+  { exactCount = true }: { exactCount?: boolean } = {},
+): PagedServer {
+  const rangeHeaders: string[] = [];
+  const requestedCount: boolean[] = [];
+  let inFlight = 0;
+  let peakInFlight = 0;
+
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async (
+        _url: string,
+        init?: { headers?: Record<string, string> },
+      ): Promise<Response> => {
+        const rangeHeader = init?.headers?.Range ?? "0-999";
+        rangeHeaders.push(rangeHeader);
+        requestedCount.push(init?.headers?.Prefer === "count=exact");
+
+        inFlight += 1;
+        peakInFlight = Math.max(peakInFlight, inFlight);
+        // Yield twice so concurrently-issued pages overlap here.
+        await Promise.resolve();
+        await Promise.resolve();
+        inFlight -= 1;
+
+        const [startRaw, endRaw] = rangeHeader.split("-");
+        const start = parseInt(startRaw, 10);
+        const end = parseInt(endRaw, 10);
+        const page = rows.slice(start, end + 1);
+        const total = exactCount ? String(rows.length) : "*";
+
+        return new Response(JSON.stringify(page), {
+          status: 200,
+          headers: {
+            "Content-Range": `${start}-${start + Math.max(page.length - 1, 0)}/${total}`,
+          },
+        });
+      },
+    ),
+  );
+
+  return { maxInFlight: () => peakInFlight, rangeHeaders, requestedCount };
+}
+
+function makeCitizens(count: number): unknown[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `citizen-${String(i).padStart(6, "0")}`,
+    settlement_id: SETTLEMENT_ID,
+    citizen_type: "settler",
+    given_name: "Citizen",
+    surname: String(i),
+    sex: i % 2 === 0 ? "M" : "F",
+    status: "alive",
+    born_on_turn_number: 1,
+    parent_a_citizen_id: null,
+    parent_b_citizen_id: null,
+  }));
+}
+
+describe("concurrent pagination", () => {
+  it("loads the same rows in the same order as the sequential walk", async () => {
+    const citizens = makeCitizens(7_321);
+
+    const sequential = await (async () => {
+      stubPagedServer(citizens, { exactCount: false });
+      return fetchCitizens(ctx, WORLD_ID);
+    })();
+    vi.unstubAllGlobals();
+
+    const server = stubPagedServer(citizens, { exactCount: true });
+    const concurrent = await fetchCitizens(ctx, WORLD_ID);
+
+    expect(sequential.ok).toBe(true);
+    expect(concurrent.ok).toBe(true);
+    if (sequential.ok && concurrent.ok) {
+      expect(concurrent.rows).toHaveLength(citizens.length);
+      expect(concurrent.rows).toEqual(sequential.rows);
+    }
+
+    // 8 pages: the count probe plus 7 fanned-out pages.
+    expect(server.rangeHeaders).toHaveLength(8);
+    expect(server.maxInFlight()).toBeGreaterThan(1);
+  });
+
+  it("requests the exact count only on the probe page", async () => {
+    const server = stubPagedServer(makeCitizens(3_500));
+
+    await fetchCitizens(ctx, WORLD_ID);
+
+    expect(server.requestedCount[0]).toBe(true);
+    expect(server.requestedCount.slice(1)).toEqual([false, false, false]);
+    expect(server.rangeHeaders).toEqual([
+      "0-999",
+      "1000-1999",
+      "2000-2999",
+      "3000-3999",
+    ]);
+  });
+
+  it("bounds how many page requests are in flight at once", async () => {
+    const server = stubPagedServer(makeCitizens(40_000));
+
+    const result = await fetchCitizens(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(40_000);
+    }
+    expect(server.maxInFlight()).toBeLessThanOrEqual(6);
+  });
+
+  it("keeps walking when rows are appended after the count was taken", async () => {
+    const citizens = makeCitizens(2_500);
+    let served = 0;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (
+          _url: string,
+          init?: { headers?: Record<string, string> },
+        ): Promise<Response> => {
+          const rangeHeader = init?.headers?.Range ?? "0-999";
+          const [startRaw, endRaw] = rangeHeader.split("-");
+          const start = parseInt(startRaw, 10);
+          const end = parseInt(endRaw, 10);
+          served += 1;
+
+          // The probe reports a stale total of 2000 while the table really
+          // holds 2500 rows, so the "final" planned page comes back full.
+          const total = served === 1 ? "2000" : "*";
+          const page = citizens.slice(start, end + 1);
+
+          return Promise.resolve(
+            new Response(JSON.stringify(page), {
+              status: 200,
+              headers: {
+                "Content-Range": `${start}-${start + Math.max(page.length - 1, 0)}/${total}`,
+              },
+            }),
+          );
+        },
+      ),
+    );
+
+    const result = await fetchCitizens(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(2_500);
+      expect(result.rows).toEqual(citizens);
+    }
+  });
+
+  it("propagates an http error from a fanned-out page", async () => {
+    const citizens = makeCitizens(3_000);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (
+          _url: string,
+          init?: { headers?: Record<string, string> },
+        ): Promise<Response> => {
+          const rangeHeader = init?.headers?.Range ?? "0-999";
+          const start = parseInt(rangeHeader.split("-")[0], 10);
+
+          if (start === 2000) {
+            return Promise.resolve(new Response("boom", { status: 500 }));
+          }
+
+          const page = citizens.slice(start, start + 1000);
+
+          return Promise.resolve(
+            new Response(JSON.stringify(page), {
+              status: 200,
+              headers: {
+                "Content-Range": `${start}-${start + page.length - 1}/3000`,
+              },
+            }),
+          );
+        },
+      ),
+    );
+
+    const result = await fetchCitizens(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toEqual({ kind: "http_error", safeDeny: false });
+    }
+  });
+});

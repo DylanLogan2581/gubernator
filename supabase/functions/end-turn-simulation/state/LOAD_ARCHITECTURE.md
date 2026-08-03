@@ -52,7 +52,11 @@ challenge: assembling ~16 different entity types from as many PostgREST tables.
    (buildings, construction projects, deposits, managed populations, trade routes) also use
    `fetchRowsPaginated` as of #797 — at 50+ settlements these can exceed 1 000 rows. `event_effects`
    is scoped to the current world via an `events!inner(world_id)` join so effects from other worlds
-   are never fetched.
+   are never fetched. Since #1280 the first page of each paginated fetch also sends
+   `Prefer: count=exact`; when PostgREST returns a real total the remaining pages are issued
+   concurrently (at most 6 in flight per table, results reassembled in offset order) instead of
+   Range-walked one round-trip at a time. An unknown total, or rows appended after the count, falls
+   back to the sequential walk. See `pagination.bench.ts` (~3x faster at 100k citizens).
 
 4. **HTTP pipelining:** Modern TCP and HTTP/2 implementations pipeline multiple requests over one
    connection, achieving near-RPC latency with RPC simplicity trade-offs.

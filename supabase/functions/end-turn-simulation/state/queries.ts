@@ -99,10 +99,194 @@ async function fetchRows({
   return { ok: true, rows: payload };
 }
 
+const PAGE_SIZE = 1000;
+
+// How many page requests a single table may have in flight at once. Bounded so
+// a wide world (~30 tables paginating together) cannot exhaust the Edge runtime's
+// connection pool.
+const MAX_CONCURRENT_PAGES = 6;
+
+type PageResult =
+  | {
+      readonly ok: true;
+      readonly rows: readonly unknown[];
+      readonly contentRange: string | null;
+    }
+  | { readonly ok: false; readonly reason: FetchReason };
+
+/** Fetch a single `PAGE_SIZE` window of a table via the `Range` header. */
+async function fetchPage({
+  ctx,
+  offset,
+  params,
+  table,
+  withCount,
+}: {
+  readonly ctx: FetchContext;
+  readonly offset: number;
+  readonly params: Record<string, string>;
+  readonly table: string;
+  readonly withCount: boolean;
+}): Promise<PageResult> {
+  const searchParams = new URLSearchParams(params);
+  let response: Response;
+
+  try {
+    // PostgREST honours the default `items` range unit; a `rows=` prefix is
+    // parsed as an unknown unit and silently ignored, so every page returns
+    // the first `max-rows` rows and pagination never advances (infinite loop
+    // / OOM for any table exceeding one page). Send the bare `start-end`.
+    const rangeHeader = `${offset}-${offset + PAGE_SIZE - 1}`;
+    response = await supabaseFetch(
+      `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
+      {
+        headers: {
+          ...ctx.headers,
+          Range: rangeHeader,
+          // Only the probe page asks for an exact count; that turns the
+          // Content-Range total from `*` into a real number, which lets the
+          // remaining pages be issued concurrently instead of Range-walked.
+          ...(withCount ? { Prefer: "count=exact" } : {}),
+        },
+        method: "GET",
+      },
+      ctx.timeoutMs,
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "fetch_error",
+        table,
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+        offset,
+      }),
+    );
+    return { ok: false, reason: "fetch_failed" };
+  }
+
+  if (!response.ok) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "http_error",
+        table,
+        status: response.status,
+        timestamp: new Date().toISOString(),
+        offset,
+      }),
+    );
+    return {
+      ok: false,
+      reason: {
+        kind: "http_error",
+        ...classifyHttpError(response.status),
+      },
+    };
+  }
+
+  const payload: unknown = await response.json();
+
+  if (!Array.isArray(payload)) {
+    return { ok: false, reason: "invalid_payload" };
+  }
+
+  return {
+    ok: true,
+    rows: payload,
+    contentRange: response.headers.get("Content-Range"),
+  };
+}
+
+type RangeInfo = {
+  readonly rangeEnd: number;
+  readonly total: number | null;
+};
+
+/**
+ * Parse a PostgREST `Content-Range` header (`<start>-<end>/<total>`, where the
+ * total is `*` unless an exact count was requested). Returns null when the
+ * header is missing or malformed, which callers must treat as a truncation risk.
+ */
+function parseContentRange(
+  contentRange: string | null,
+  table: string,
+): RangeInfo | null {
+  if (contentRange === null) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "missing_content_range",
+        table,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+    return null;
+  }
+
+  const rangeMatch = contentRange.match(/(\d+)-(\d+)\/(\d+|\*)/);
+
+  if (rangeMatch === null) {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "content_range_parse_error",
+        table,
+        contentRange,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+    return null;
+  }
+
+  const totalRaw = rangeMatch[3];
+
+  return {
+    rangeEnd: parseInt(rangeMatch[2], 10),
+    total: totalRaw === "*" ? null : parseInt(totalRaw, 10),
+  };
+}
+
+/**
+ * Run `task` over each offset with at most `MAX_CONCURRENT_PAGES` in flight,
+ * returning the results in offset order (never completion order) so the loaded
+ * row set stays byte-identical to the sequential Range-walk.
+ */
+async function mapPagesWithConcurrency(
+  offsets: readonly number[],
+  task: (offset: number) => Promise<PageResult>,
+): Promise<PageResult[]> {
+  const results = new Array<PageResult>(offsets.length);
+  let next = 0;
+
+  const workers = Array.from(
+    { length: Math.min(MAX_CONCURRENT_PAGES, offsets.length) },
+    async () => {
+      while (next < offsets.length) {
+        const index = next;
+        next += 1;
+        results[index] = await task(offsets[index]);
+      }
+    },
+  );
+
+  await Promise.all(workers);
+
+  return results;
+}
+
 /**
  * Fetch rows with automatic pagination for responses that exceed the 1000-row limit.
- * Detects truncation via Content-Range header and paginates to fetch all rows.
- * Raises error if response is truncated (safeguard against silent data loss).
+ *
+ * The first request doubles as a count probe: when PostgREST reports an exact
+ * total, every remaining page is issued concurrently (bounded) rather than
+ * Range-walked one round-trip at a time. Falls back to the sequential walk when
+ * the total is unknown, and always finishes sequentially if rows were appended
+ * after the count was taken.
+ *
+ * Raises an error if a response is truncated (safeguard against silent data loss).
  */
 async function fetchRowsPaginated({
   ctx,
@@ -114,130 +298,92 @@ async function fetchRowsPaginated({
   readonly table: string;
 }): Promise<FetchRowsResult> {
   const allRows: unknown[] = [];
-  let offset = 0;
-  const pageSize = 1000;
 
+  const probe = await fetchPage({ ctx, offset: 0, params, table, withCount: true });
+
+  if (!probe.ok) {
+    return { ok: false, reason: probe.reason };
+  }
+
+   
+  allRows.push(...probe.rows);
+
+  // A short page (fewer rows than the page size) is always the final page;
+  // there cannot be more rows to fetch regardless of the Content-Range header.
+  if (probe.rows.length < PAGE_SIZE) {
+    return { ok: true, rows: allRows };
+  }
+
+  const probeRange = parseContentRange(probe.contentRange, table);
+
+  if (probeRange === null) {
+    return { ok: false, reason: "response_truncated" };
+  }
+
+  let offset = probeRange.rangeEnd + 1;
+
+  if (probeRange.total !== null) {
+    if (probeRange.rangeEnd >= probeRange.total - 1) {
+      return { ok: true, rows: allRows };
+    }
+
+    // Exact total known: fan the remaining pages out concurrently.
+    const offsets: number[] = [];
+
+    for (let start = offset; start < probeRange.total; start += PAGE_SIZE) {
+      offsets.push(start);
+    }
+
+    const pages = await mapPagesWithConcurrency(offsets, (pageOffset) =>
+      fetchPage({ ctx, offset: pageOffset, params, table, withCount: false }),
+    );
+
+    for (const page of pages) {
+      if (!page.ok) {
+        return { ok: false, reason: page.reason };
+      }
+
+       
+      allRows.push(...page.rows);
+    }
+
+    const lastPage = pages[pages.length - 1];
+
+    // A short final page proves the table ended where the count said it would.
+    if (lastPage.ok && lastPage.rows.length < PAGE_SIZE) {
+      return { ok: true, rows: allRows };
+    }
+
+    // Rows were appended after the count: keep walking sequentially.
+    offset = offsets[offsets.length - 1] + PAGE_SIZE;
+  }
+
+  // Total unknown (`*`) or more rows remain: walk the tail one page at a time.
   while (true) {
-    const searchParams = new URLSearchParams(params);
+    const page = await fetchPage({ ctx, offset, params, table, withCount: false });
 
-    let response: Response;
-
-    try {
-      // PostgREST honours the default `items` range unit; a `rows=` prefix is
-      // parsed as an unknown unit and silently ignored, so every page returns
-      // the first `max-rows` rows and pagination never advances (infinite loop
-      // / OOM for any table exceeding one page). Send the bare `start-end`.
-      const rangeHeader = `${offset}-${offset + pageSize - 1}`;
-      response = await supabaseFetch(
-        `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
-        {
-          headers: { ...ctx.headers, Range: rangeHeader },
-          method: "GET",
-        },
-        ctx.timeoutMs,
-      );
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      // eslint-disable-next-line no-restricted-syntax
-      console.log(
-        JSON.stringify({
-          event: "fetch_error",
-          table,
-          error: errorMessage,
-          timestamp: new Date().toISOString(),
-          offset,
-        }),
-      );
-      return { ok: false, reason: "fetch_failed" };
+    if (!page.ok) {
+      return { ok: false, reason: page.reason };
     }
 
-    if (!response.ok) {
-      // eslint-disable-next-line no-restricted-syntax
-      console.log(
-        JSON.stringify({
-          event: "http_error",
-          table,
-          status: response.status,
-          timestamp: new Date().toISOString(),
-          offset,
-        }),
-      );
-      return {
-        ok: false,
-        reason: {
-          kind: "http_error",
-          ...classifyHttpError(response.status),
-        },
-      };
-    }
+     
+    allRows.push(...page.rows);
 
-    const payload: unknown = await response.json();
-
-    if (!Array.isArray(payload)) {
-      return { ok: false, reason: "invalid_payload" };
-    }
-
-    const pageRowCount = payload.length;
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    allRows.push(...payload);
-
-    // A short page (fewer rows than the page size) is always the final page;
-    // there cannot be more rows to fetch regardless of the Content-Range header.
-    if (pageRowCount < pageSize) {
+    if (page.rows.length < PAGE_SIZE) {
       break;
     }
 
-    // Check Content-Range header to determine whether more rows exist.
-    const contentRange = response.headers.get("Content-Range");
+    const range = parseContentRange(page.contentRange, table);
 
-    if (contentRange === null) {
-      // No Content-Range header but a full page: cannot rule out more rows.
-      // Treat as truncation risk to avoid silent data loss.
-      // eslint-disable-next-line no-restricted-syntax
-      console.log(
-        JSON.stringify({
-          event: "missing_content_range",
-          table,
-          timestamp: new Date().toISOString(),
-        }),
-      );
+    if (range === null) {
       return { ok: false, reason: "response_truncated" };
     }
 
-    // PostgREST Content-Range format is `<start>-<end>/<total>` where the total
-    // is `*` unless an exact count was requested (e.g. `0-999/*` or `0-999/1500`).
-    // There is no `items ` prefix.
-    const rangeMatch = contentRange.match(/(\d+)-(\d+)\/(\d+|\*)/);
-
-    if (rangeMatch === null) {
-      // Malformed header, assume truncation risk and raise error.
-      // eslint-disable-next-line no-restricted-syntax
-      console.log(
-        JSON.stringify({
-          event: "content_range_parse_error",
-          table,
-          contentRange,
-          timestamp: new Date().toISOString(),
-        }),
-      );
-      return { ok: false, reason: "response_truncated" };
+    if (range.total !== null && range.rangeEnd >= range.total - 1) {
+      break;
     }
 
-    const rangeEnd = parseInt(rangeMatch[2], 10);
-    const totalRaw = rangeMatch[3];
-
-    // If the total is known and we've reached it, stop.
-    if (totalRaw !== "*") {
-      const total = parseInt(totalRaw, 10);
-
-      if (rangeEnd >= total - 1) {
-        break;
-      }
-    }
-
-    // Total unknown (`*`) or more rows remain: fetch the next full page.
-    offset = rangeEnd + 1;
+    offset = range.rangeEnd + 1;
   }
 
   return { ok: true, rows: allRows };
