@@ -179,13 +179,14 @@ async function fetchWorldCitizenIds(): Promise<{
   ids: string[];
   error: string | null;
 }> {
-  const { data, error } = await svc
-    .from("citizens")
-    .select("id")
-    .eq("world_id", WORLD_ID);
-  if (error !== null) return { ids: [], error: error.message };
-  const rows = (data ?? []) as unknown as { id: string }[];
-  return { ids: rows.map((r) => r.id), error: null };
+  const { rows, error } = await selectAllPages(() =>
+    svc.from("citizens").select("id").eq("world_id", WORLD_ID).order("id"),
+  );
+  if (error !== null) return { ids: [], error };
+  return {
+    ids: (rows as unknown as { id: string }[]).map((r) => r.id),
+    error: null,
+  };
 }
 
 // The seeded world has hundreds of citizens; enumerating every id in a single PostgREST `.in()`
@@ -201,27 +202,57 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return batches;
 }
 
+// PostgREST caps every response at `max_rows` (supabase/config.toml: 1000) and
+// truncates SILENTLY — no error, just a short array. The seeded world is well
+// past that on several tables, so a single unpaginated read returns a partial,
+// non-deterministically-ordered snapshot; restoring from one leaves rows behind
+// and the re-insert then collides on the primary key. Every read below pages
+// through with an explicit order so the full set comes back.
+const PAGE_SIZE = 1000;
+
+async function selectAllPages(
+  build: () => {
+    range: (
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  },
+): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  const rows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build().range(from, from + PAGE_SIZE - 1);
+    if (error !== null) return { rows: [], error: error.message };
+    const page = (data ?? []) as Record<string, unknown>[];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return { rows, error: null };
+  }
+}
+
 // Selects `columns` from `table` where `column` is in `ids`, batching the
-// `.in()` filter so the request URL stays short. Every id-filtered read in this
-// file goes through here: the seeded world has grown past the point where a
-// single `.in()` fits in a request URL, and an unbatched one fails with
-// "URI too long" rather than returning a wrong answer.
+// `.in()` filter so the request URL stays short and paging each batch so no
+// result is truncated. Every id-filtered read in this file goes through here:
+// the seeded world has grown past the point where a single `.in()` fits in a
+// request URL, and an unbatched one fails with "URI too long".
 async function selectByIds(
   table: string,
   column: string,
   ids: readonly string[],
   columns = "*",
+  orderColumn = "id",
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
   const rows: Record<string, unknown>[] = [];
   for (const batch of chunk(ids, ID_BATCH_SIZE)) {
-    const { data, error } = await svc
-      // The table name is a literal from this file, not user input; the client's
-      // generated table union can't express that, so widen it here.
-      .from(table as never)
-      .select(columns)
-      .in(column, batch);
-    if (error !== null) return { rows: [], error: error.message };
-    rows.push(...((data ?? []) as unknown as Record<string, unknown>[]));
+    const { rows: page, error } = await selectAllPages(() =>
+      svc
+        // The table name is a literal from this file, not user input; the
+        // client's generated table union can't express that, so widen it here.
+        .from(table as never)
+        .select(columns)
+        .in(column, batch)
+        .order(orderColumn),
+    );
+    if (error !== null) return { rows: [], error };
+    rows.push(...page);
   }
   return { rows, error: null };
 }
@@ -231,16 +262,14 @@ async function selectByIds(
 async function fetchAssignmentsForCitizens(
   citizenIds: readonly string[],
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
-  const rows: Record<string, unknown>[] = [];
-  for (const batch of chunk(citizenIds, ID_BATCH_SIZE)) {
-    const { data, error } = await svc
-      .from("citizen_assignments")
-      .select("*")
-      .in("citizen_id", batch);
-    if (error !== null) return { rows: [], error: error.message };
-    rows.push(...((data ?? []) as Record<string, unknown>[]));
-  }
-  return { rows, error: null };
+  return await selectByIds(
+    "citizen_assignments",
+    "citizen_id",
+    citizenIds,
+    "*",
+    // citizen_assignments is keyed by citizen_id, not id.
+    "citizen_id",
+  );
 }
 
 // Deletes all citizen_assignments for the given citizen ids, batching the `.in()`
@@ -313,15 +342,18 @@ async function captureBeforeState(): Promise<string[]> {
   }
 
   // Every citizen's life state, keyed by id.
-  const { data: citizenRows, error: citizenErr } = await svc
-    .from("citizens")
-    .select("id,status,death_cause,death_cause_category")
-    .eq("world_id", WORLD_ID);
+  const { rows: citizenRows, error: citizenErr } = await selectAllPages(() =>
+    svc
+      .from("citizens")
+      .select("id,status,death_cause,death_cause_category")
+      .eq("world_id", WORLD_ID)
+      .order("id"),
+  );
   if (citizenErr !== null) {
-    errors.push(`capture citizens: ${citizenErr.message}`);
+    errors.push(`capture citizens: ${citizenErr}`);
   } else {
     beforeCitizenLifeState.clear();
-    for (const row of citizenRows ?? []) {
+    for (const row of citizenRows) {
       const r = row as { id: string } & CitizenLifeState;
       beforeCitizenLifeState.set(r.id, {
         status: r.status,
