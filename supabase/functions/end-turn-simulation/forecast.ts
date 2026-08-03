@@ -57,6 +57,8 @@ export function computeForecastSnapshot(
   input: SimulationInputState,
 ): ForecastSnapshot {
   const projectById = new Map(input.constructionProjects.map((p) => [p.id, p]));
+  const buildingById = new Map(input.settlementBuildings.map((b) => [b.id, b]));
+  const tradeRouteById = new Map(input.tradeRoutes.map((r) => [r.id, r]));
 
   // Initialize forecast by settlement (mutable during construction)
   const bySettlement: {
@@ -144,9 +146,7 @@ export function computeForecastSnapshot(
   // Building upkeep failures (missed upkeep count increases)
   for (const change of simulationResult.buildingStateChanges) {
     if (change.missedUpkeepCountDelta !== null && change.missedUpkeepCountDelta > 0) {
-      const building = input.settlementBuildings.find(
-        (b) => b.id === change.settlementBuildingId,
-      );
+      const building = buildingById.get(change.settlementBuildingId);
       if (building !== undefined) {
         const forecast = bySettlement[building.settlementId];
         if (forecast !== undefined) {
@@ -158,7 +158,7 @@ export function computeForecastSnapshot(
 
   // Trade route changes
   for (const outcome of simulationResult.tradeRouteOutcomes) {
-    const route = input.tradeRoutes.find((r) => r.id === outcome.tradeRouteId);
+    const route = tradeRouteById.get(outcome.tradeRouteId);
     if (route !== undefined) {
       const forecast = bySettlement[route.originSettlementId];
       if (forecast !== undefined) {

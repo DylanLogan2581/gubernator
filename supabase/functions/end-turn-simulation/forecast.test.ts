@@ -177,4 +177,95 @@ describe("forecast computation", () => {
     expect(deaths?.homelessness).toBe(1);
     expect(deaths?.other).toBe(1); // 5 total - 3 starvation - 1 homeless
   });
+
+  it("resolves upkeep failures and trade changes across many buildings and routes", () => {
+    const settlementCount = 20;
+    const perSettlement = 25;
+
+    const settlements = Array.from({ length: settlementCount }, (_, s) => ({
+      id: `settlement-${s}`,
+      name: `Settlement ${s}`,
+    }));
+    const settlementBuildings = settlements.flatMap((settlement, s) =>
+      Array.from({ length: perSettlement }, (_, b) => ({
+        id: `building-${s}-${b}`,
+        settlementId: settlement.id,
+      }))
+    );
+    const tradeRoutes = settlements.flatMap((settlement, s) =>
+      Array.from({ length: perSettlement }, (_, r) => ({
+        id: `route-${s}-${r}`,
+        originSettlementId: settlement.id,
+      }))
+    );
+
+    const input = {
+      isWorldArchived: false,
+      turnNumber: 1,
+      settlements,
+      resources: [],
+      stockpiles: [],
+      buildingTiers: [],
+      settlementBuildings,
+      constructionProjects: [],
+      tradeRoutes,
+      partnerships: [],
+      citizens: [],
+      deposits: [],
+      events: [],
+    } as unknown as SimulationInputState;
+
+    // Every building misses upkeep; one unknown id must be ignored.
+    const buildingStateChanges = [
+      ...settlementBuildings.map((b) => ({
+        settlementBuildingId: b.id,
+        missedUpkeepCountDelta: 1,
+      })),
+      { settlementBuildingId: "building-missing", missedUpkeepCountDelta: 1 },
+      { settlementBuildingId: "building-0-0", missedUpkeepCountDelta: 0 },
+    ];
+    const tradeRouteOutcomes = [
+      ...tradeRoutes.map((r, i) => ({
+        tradeRouteId: r.id,
+        delivered: i % 2 === 0,
+        pauseReason: i % 2 === 0 ? null : "insufficient_stock",
+        quantityTransferred: i,
+      })),
+      {
+        tradeRouteId: "route-missing",
+        delivered: false,
+        pauseReason: "gone",
+        quantityTransferred: 0,
+      },
+    ];
+
+    const result = {
+      buildingStateChanges,
+      constructionUpdates: [],
+      resourceSnapshots: [],
+      settlementSnapshots: [],
+      tradeRouteOutcomes,
+    } as unknown as SimulationResult;
+
+    const forecast = computeForecastSnapshot(result, input);
+
+    expect(Object.keys(forecast.bySettlement)).toHaveLength(settlementCount);
+    for (let s = 0; s < settlementCount; s += 1) {
+      const entry = forecast.bySettlement[`settlement-${s}`];
+      expect(entry?.buildingUpkeepFailures).toEqual(
+        Array.from({ length: perSettlement }, (_, b) => `building-${s}-${b}`),
+      );
+      expect(entry?.tradeChanges.map((c) => c.tradeRouteId)).toEqual(
+        Array.from({ length: perSettlement }, (_, r) => `route-${s}-${r}`),
+      );
+    }
+
+    const firstChange = forecast.bySettlement["settlement-0"]?.tradeChanges[1];
+    expect(firstChange).toEqual({
+      tradeRouteId: "route-0-1",
+      delivered: false,
+      pauseReason: "insufficient_stock",
+      quantityTransferred: 1,
+    });
+  });
 });
