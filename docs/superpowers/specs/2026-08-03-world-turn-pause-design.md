@@ -137,6 +137,14 @@ small query per user per 3 s in place of a full page's worth of queries.
 Per-phase progress writes are side-band: they must not touch the RNG, and the golden
 determinism fixture must remain byte-identical.
 
+**Per-phase reporting requires an async engine.** `runSimulation` is synchronous, with 20
+straight-line phase calls. A ~7 s synchronous block starves the event loop, so the worker
+cannot flush a progress write mid-run — it can only stamp a stage before and after. The engine
+therefore becomes `async`, awaiting a yield between phases, and gains an optional `onPhase`
+hook. There is one production caller (`transition.ts:179`). Phase order and RNG draws are
+unchanged; only the scheduling around them changes, which is why the golden fixture stays
+byte-identical.
+
 ### 3. Overlay
 
 A new `WorldTurnPauseOverlay`, rendered inside `WorldEntryGate` in
