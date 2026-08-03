@@ -151,8 +151,9 @@ export async function resolveSupabaseEndTurnSimulationInput(
 
 // Privileged variant for the background turn worker (#1278), which runs the
 // pipeline off the request and so has no end user's JWT to borrow. The service
-// role bypasses RLS; settlement_stockpiles_view's effective_cap helper admits
-// it explicitly (20261219000000_add_async_turn_worker.sql). Never reachable
+// role bypasses RLS, including on settlement_stockpiles_view, whose
+// effective_cap is computed set-based from the base tables
+// (20261221000000_set_based_stockpiles_view_cap.sql). Never reachable
 // from a browser request — the worker function is the only caller.
 export async function resolveServiceRoleEndTurnSimulationInput(
   requestBody: EndTurnSimulationRequestBody,

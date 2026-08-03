@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (5);
+  plan (8);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -30,6 +30,15 @@ values
     'x',
     now(),
     '{"username":"sesc_owner"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '6e100000-0000-0000-0000-000000000002',
+    'sesc-outsider@example.com',
+    'x',
+    now(),
+    '{"username":"sesc_outsider"}'::jsonb,
     now(),
     now()
   );
@@ -255,7 +264,76 @@ select
 reset role;
 
 -- ===========================================================================
--- TEST 5: function is SECURITY DEFINER (catalog query, no auth needed)
+-- TEST 5 + 6: settlement_stockpiles_view computes effective_cap set-based
+--             (#1395) and must stay byte-identical to the gated helper for a
+--             caller with world access.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"6e100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        v.effective_cap
+      from
+        public.settlement_stockpiles_view v
+      where
+        v.settlement_id = '6e400000-0000-0000-0000-000000000001'
+        and v.resource_id = '6e500000-0000-0000-0000-000000000001'
+    ),
+    200::numeric,
+    'settlement_stockpiles_view effective_cap matches the helper for a resource with building effects'
+  );
+
+select
+  is (
+    (
+      select
+        v.effective_cap
+      from
+        public.settlement_stockpiles_view v
+      where
+        v.settlement_id = '6e400000-0000-0000-0000-000000000001'
+        and v.resource_id = '6e500000-0000-0000-0000-000000000002'
+    ),
+    50::numeric,
+    'settlement_stockpiles_view effective_cap is base cap only for a resource with no matching effects'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- TEST 7: cross-world negative — a user with no role in the world sees no
+--         rows (and therefore no caps) through the view.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"6e100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)
+      from
+        public.settlement_stockpiles_view v
+      where
+        v.settlement_id = '6e400000-0000-0000-0000-000000000001'
+    ),
+    0::bigint,
+    'settlement_stockpiles_view returns no rows for a user without access to the world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- TEST 8: function is SECURITY DEFINER (catalog query, no auth needed)
 -- ===========================================================================
 select
   is (
