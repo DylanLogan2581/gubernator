@@ -7,19 +7,33 @@
 import { describe, expect, it } from "vitest";
 
 import { createSeededRng } from "../../seededRng.ts";
+import { compareById } from "../../sortUtils.ts";
 import { makeCitizen, makeSettlement } from "../testFixtures.ts";
 
-import { applyFormationForSettlement } from "./formation.ts";
+import {
+  applyFormationForSettlement,
+  createAncestorSetLookup,
+} from "./formation.ts";
 
-import type { FormationResult } from "./formation.ts";
-import type { SimCitizen } from "../../simulationTypes.ts";
+import type { AncestorSetLookup, FormationResult } from "./formation.ts";
+import type {
+  PartnershipChange,
+  SimCitizen,
+} from "../../simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function toCitizenById(citizens: SimCitizen[]): Map<string, SimCitizen> {
-  return new Map(citizens.map((c) => [c.id, c]));
+function inSettlement(citizens: SimCitizen[], settlementId: string): SimCitizen[] {
+  return citizens.filter((c) => c.settlementId === settlementId);
+}
+
+function ancestorsAt(
+  citizens: SimCitizen[],
+  depth: number,
+): AncestorSetLookup {
+  return createAncestorSetLookup(new Map(citizens.map((c) => [c.id, c])), depth);
 }
 
 const SETTLEMENT = makeSettlement({ id: "s1", name: "Testville" });
@@ -44,14 +58,14 @@ describe("applyFormationForSettlement — determinism", () => {
     function run(): FormationResult {
       return applyFormationForSettlement(
         SETTLEMENT,
-        toCitizenById(citizens),
+        inSettlement(citizens, "s1"),
         new Set(),
         new Set(),
         new Set(),
         10,
         0,
         0.5,
-        0,
+        ancestorsAt(citizens, 0),
         createSeededRng("same-seed"),
       );
     }
@@ -75,14 +89,14 @@ describe("applyFormationForSettlement — partnershipSeekChance gating", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(),
       10,
       0,
       0,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
@@ -99,14 +113,14 @@ describe("applyFormationForSettlement — partnershipSeekChance gating", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(),
       10,
       0,
       1,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
@@ -157,14 +171,14 @@ describe("applyFormationForSettlement — incest prevention", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(),
       10,
       0,
       1,
-      1, // incestPreventionDepth: 1 generation (self + parents)
+      ancestorsAt(citizens, 1),
       createSeededRng("any-seed"),
     );
 
@@ -195,14 +209,14 @@ describe("applyFormationForSettlement — incest prevention", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(),
       10,
       0,
       1,
-      1,
+      ancestorsAt(citizens, 1),
       createSeededRng("any-seed"),
     );
 
@@ -239,14 +253,14 @@ describe("applyFormationForSettlement — minimumPartnershipAgeTurns gating", ()
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(),
       10,
       5,
       1,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
@@ -267,14 +281,14 @@ describe("applyFormationForSettlement — candidate pool exclusions", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(["m-partnered"]),
       new Set(),
       10,
       0,
       1,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
@@ -292,14 +306,14 @@ describe("applyFormationForSettlement — candidate pool exclusions", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(["m-just-died"]),
       new Set(),
       new Set(),
       10,
       0,
       1,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
@@ -317,14 +331,14 @@ describe("applyFormationForSettlement — candidate pool exclusions", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(["m-mourning"]),
       10,
       0,
       1,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
@@ -343,17 +357,155 @@ describe("applyFormationForSettlement — cross-settlement isolation", () => {
 
     const result = applyFormationForSettlement(
       SETTLEMENT,
-      toCitizenById(citizens),
+      inSettlement(citizens, "s1"),
       new Set(),
       new Set(),
       new Set(),
       10,
       0,
       1,
-      0,
+      ancestorsAt(citizens, 0),
       createSeededRng("any-seed"),
     );
 
     expect(result.partnershipChanges).toHaveLength(0);
   });
+});
+
+describe("applyFormationForSettlement — memoized ancestry equivalence", () => {
+  // Reference implementation of the pre-memoization matching loop: rebuilds the
+  // ancestor sets for every candidate pair. The memoized implementation must
+  // produce byte-identical pairings on the same seed and fixture.
+  function naiveBuildAncestorSet(
+    citizenId: string,
+    depth: number,
+    citizenById: Map<string, SimCitizen>,
+  ): Set<string> {
+    const result = new Set<string>();
+    let frontier = new Set<string>([citizenId]);
+    for (let gen = 0; gen <= depth; gen++) {
+      for (const id of frontier) result.add(id);
+      if (gen === depth) break;
+      const next = new Set<string>();
+      for (const id of frontier) {
+        const c = citizenById.get(id);
+        if (c === undefined) continue;
+        if (c.parentACitizenId !== null) next.add(c.parentACitizenId);
+        if (c.parentBCitizenId !== null) next.add(c.parentBCitizenId);
+      }
+      frontier = next;
+    }
+    return result;
+  }
+
+  function naiveFormation(
+    citizens: SimCitizen[],
+    depth: number,
+    seekChance: number,
+    rng: () => number,
+  ): PartnershipChange[] {
+    const citizenById = new Map(citizens.map((c) => [c.id, c]));
+    const eligible = citizens
+      .filter((c) => c.status === "alive" && c.settlementId === "s1")
+      .sort(compareById);
+    const seekingMales: SimCitizen[] = [];
+    const seekingFemales: SimCitizen[] = [];
+    for (const citizen of eligible) {
+      if (rng() < seekChance) {
+        if (citizen.sex === "male") seekingMales.push(citizen);
+        else if (citizen.sex === "female") seekingFemales.push(citizen);
+      }
+    }
+    const paired = new Set<string>();
+    const pairs: PartnershipChange[] = [];
+    for (const male of seekingMales) {
+      if (paired.has(male.id)) continue;
+      for (const female of seekingFemales) {
+        if (paired.has(female.id)) continue;
+        if (depth > 0) {
+          const a = naiveBuildAncestorSet(male.id, depth, citizenById);
+          const b = naiveBuildAncestorSet(female.id, depth, citizenById);
+          let kin = false;
+          for (const id of a) {
+            if (b.has(id)) {
+              kin = true;
+              break;
+            }
+          }
+          if (kin) continue;
+        }
+        pairs.push({
+          citizenAId: male.id,
+          citizenBId: female.id,
+          type: "formed",
+        });
+        paired.add(male.id);
+        paired.add(female.id);
+        break;
+      }
+    }
+    return pairs;
+  }
+
+  /** Dense settlement: 12 founder couples, each with several children. */
+  function makeDenseSettlement(): SimCitizen[] {
+    const citizens: SimCitizen[] = [];
+    for (let family = 0; family < 12; family++) {
+      const fa = `p-a-${family}`;
+      const fb = `p-b-${family}`;
+      citizens.push(
+        makeCitizen({ id: fa, settlementId: "s1", sex: "male", status: "dead" }),
+        makeCitizen({
+          id: fb,
+          settlementId: "s1",
+          sex: "female",
+          status: "dead",
+        }),
+      );
+      for (let child = 0; child < 6; child++) {
+        citizens.push(
+          makeCitizen({
+            id: `c-${family}-${child}`,
+            parentACitizenId: fa,
+            parentBCitizenId: fb,
+            settlementId: "s1",
+            sex: child % 2 === 0 ? "male" : "female",
+          }),
+        );
+      }
+    }
+    // A citizen in another settlement must stay out of the pool.
+    citizens.push(makeCitizen({ id: "z-outsider", settlementId: "s2", sex: "female" }));
+    return citizens;
+  }
+
+  it.each([0, 1, 2])(
+    "matches the per-pair-BFS reference implementation at depth %i",
+    (depth) => {
+      const citizens = makeDenseSettlement();
+
+      const result = applyFormationForSettlement(
+        SETTLEMENT,
+        inSettlement(citizens, "s1"),
+        new Set(),
+        new Set(),
+        new Set(),
+        10,
+        0,
+        0.6,
+        ancestorsAt(citizens, depth),
+        createSeededRng("dense-seed"),
+      );
+
+      const expected = naiveFormation(
+        citizens,
+        depth,
+        0.6,
+        createSeededRng("dense-seed"),
+      );
+
+      expect(result.partnershipChanges).toEqual(expected);
+      expect(result.partnershipChanges.length).toBeGreaterThan(0);
+    },
+  );
 });

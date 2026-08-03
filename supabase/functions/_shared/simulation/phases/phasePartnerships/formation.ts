@@ -35,17 +35,44 @@ function buildAncestorSet(
   return result;
 }
 
+/**
+ * Resolves the ancestor set of a citizen, memoized per citizen id.
+ *
+ * Built once per phase so partner matching does one BFS per citizen instead of
+ * one per candidate pair. The result is purely a function of `citizenById` and
+ * `depth`, so memoization cannot change outcomes.
+ */
+export type AncestorSetLookup = (citizenId: string) => Set<string>;
+
+export function createAncestorSetLookup(
+  citizenById: Map<string, SimCitizen>,
+  depth: number,
+): AncestorSetLookup {
+  const cache = new Map<string, Set<string>>();
+  return (citizenId) => {
+    const cached = cache.get(citizenId);
+    if (cached !== undefined) return cached;
+    const built = buildAncestorSet(citizenId, depth, citizenById);
+    cache.set(citizenId, built);
+    return built;
+  };
+}
+
 function hasCloseKinship(
   aId: string,
   bId: string,
-  depth: number,
-  citizenById: Map<string, SimCitizen>,
+  ancestorSetOf: AncestorSetLookup,
 ): boolean {
-  if (depth === 0) return false;
-  const aAncestors = buildAncestorSet(aId, depth, citizenById);
-  const bAncestors = buildAncestorSet(bId, depth, citizenById);
-  for (const id of aAncestors) {
-    if (bAncestors.has(id)) return true;
+  const aAncestors = ancestorSetOf(aId);
+  const bAncestors = ancestorSetOf(bId);
+  // At depth 0 each set is just {self}, so distinct citizens never intersect —
+  // matching the previous explicit `depth === 0 → false` short-circuit.
+  const [small, large] =
+    aAncestors.size <= bAncestors.size
+      ? [aAncestors, bAncestors]
+      : [bAncestors, aAncestors];
+  for (const id of small) {
+    if (large.has(id)) return true;
   }
   return false;
 }
@@ -58,22 +85,24 @@ export type FormationResult = {
 
 export function applyFormationForSettlement(
   settlement: SimSettlement,
-  citizenById: Map<string, SimCitizen>,
+  settlementCitizens: readonly SimCitizen[],
   priorDeadIds: Set<string>,
   pairedCitizenIds: Set<string>,
   inMourningCitizenIds: Set<string>,
   turnNumber: number,
   minimumPartnershipAgeTurns: number,
   partnershipSeekChance: number,
-  incestPreventionDepth: number,
+  ancestorSetOf: AncestorSetLookup,
   rng: SeededRng,
 ): FormationResult {
   const sid = settlement.id;
 
-  const eligible = Array.from(citizenById.values()).filter((c) => {
+  // `settlementCitizens` is the settlement's slice of the per-turn citizen
+  // index, so the candidate pool is bounded by settlement size instead of
+  // rescanning every citizen in the world once per settlement.
+  const eligible = settlementCitizens.filter((c) => {
     if (c.status !== "alive") return false;
     if (priorDeadIds.has(c.id)) return false;
-    if (c.settlementId !== sid) return false;
     if (pairedCitizenIds.has(c.id)) return false;
     if (inMourningCitizenIds.has(c.id)) return false;
     const born = c.bornOnTurnNumber;
@@ -97,15 +126,15 @@ export function applyFormationForSettlement(
   const notifications: SimulationNotification[] = [];
   const newlyPaired = new Set<string>();
 
+  if (seekingMales.length === 0 || seekingFemales.length === 0) {
+    return { logs, notifications, partnershipChanges };
+  }
+
   for (const male of seekingMales) {
     if (newlyPaired.has(male.id)) continue;
     for (const female of seekingFemales) {
       if (newlyPaired.has(female.id)) continue;
-      if (
-        hasCloseKinship(male.id, female.id, incestPreventionDepth, citizenById)
-      ) {
-        continue;
-      }
+      if (hasCloseKinship(male.id, female.id, ancestorSetOf)) continue;
 
       partnershipChanges.push({
         citizenAId: male.id,

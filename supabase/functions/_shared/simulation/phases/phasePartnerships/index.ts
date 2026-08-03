@@ -3,12 +3,18 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import { groupPartnershipsBySettlement } from "../../indexing/bySettlement.ts";
+import {
+  groupCitizensBySettlement,
+  groupPartnershipsBySettlement,
+} from "../../indexing/bySettlement.ts";
 import { createSeededRng } from "../../seededRng.ts";
 
 import { applyBornOnTurnNumberBackfill } from "./backfill.ts";
 import { applyFertilityForSettlement } from "./fertility.ts";
-import { applyFormationForSettlement } from "./formation.ts";
+import {
+  applyFormationForSettlement,
+  createAncestorSetLookup,
+} from "./formation.ts";
 import { applyWidowing } from "./widowing.ts";
 
 import type {
@@ -84,6 +90,18 @@ export function phasePartnerships(
     citizenById,
   );
 
+  // Built once per phase: formation reads only its own settlement's citizens
+  // (order preserved from `citizenById`, so the eligible pool — and after
+  // `compareById` the RNG draw order — is unchanged), and resolves ancestor
+  // sets from a memo instead of re-running a BFS per candidate pair.
+  const citizensBySettlement = groupCitizensBySettlement(
+    Array.from(citizenById.values()),
+  );
+  const ancestorSetOf = createAncestorSetLookup(
+    citizenById,
+    incestPreventionDepth,
+  );
+
   const popCapBySettlement = context.shared.pendingPopCapBySettlement;
   const stockpileQty = new Map(context.shared.pendingStockpiles);
 
@@ -108,14 +126,14 @@ export function phasePartnerships(
   for (const settlement of settlements) {
     const formation = applyFormationForSettlement(
       settlement,
-      citizenById,
+      citizensBySettlement.get(settlement.id) ?? [],
       widowing.priorDeadIds,
       widowing.pairedCitizenIds,
       widowing.inMourningCitizenIds,
       turnNumber,
       minimumPartnershipAgeTurns,
       partnershipSeekChance,
-      incestPreventionDepth,
+      ancestorSetOf,
       rng,
     );
     allPartnershipChanges.push(...formation.partnershipChanges);
