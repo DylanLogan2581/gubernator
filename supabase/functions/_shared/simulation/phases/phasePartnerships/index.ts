@@ -3,6 +3,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { groupPartnershipsBySettlement } from "../../indexing/bySettlement.ts";
 import { createSeededRng } from "../../seededRng.ts";
 
 import { applyBornOnTurnNumberBackfill } from "./backfill.ts";
@@ -75,6 +76,14 @@ export function phasePartnerships(
     (p) => p.status === "active" && !widowing.newlyWidowedPartnershipIds.has(p.id),
   );
 
+  // Index active partnerships by citizen A's settlement once — fertility reads
+  // only its own settlement's partnerships (order preserved, so the RNG stream
+  // is unchanged).
+  const activePartnershipsBySettlement = groupPartnershipsBySettlement(
+    activeInputPartnerships,
+    citizenById,
+  );
+
   const popCapBySettlement = context.shared.pendingPopCapBySettlement;
   const stockpileQty = new Map(context.shared.pendingStockpiles);
 
@@ -115,7 +124,7 @@ export function phasePartnerships(
 
     const fertility = applyFertilityForSettlement(
       settlement,
-      activeInputPartnerships,
+      activePartnershipsBySettlement.get(settlement.id) ?? [],
       citizenById,
       stockpileQty,
       popCapBySettlement,

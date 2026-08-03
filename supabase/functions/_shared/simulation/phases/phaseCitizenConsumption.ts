@@ -4,10 +4,12 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import { formatStockpileForDisplay } from "../decimalMath.ts";
+import { groupCitizensBySettlement } from "../indexing/bySettlement.ts";
 import { compareById } from "../sortUtils.ts";
 
 import type {
   CitizenDeath,
+  SimCitizen,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -54,6 +56,8 @@ function formatStarvationDeathDetail({
 export function phaseCitizenConsumption(
   context: SimulationContext,
   effectiveSettlementIdByCitizenId: ReadonlyMap<string, string>,
+  // Built once per turn in runSimulation; keyed by effective settlement.
+  citizensBySettlementId?: ReadonlyMap<string, readonly SimCitizen[]>,
 ): PhaseCitizenConsumptionOutput {
   const { citizens, populationRules, settlements, systemResourceIds, turnNumber } = context.input;
   const { pendingEventMultipliers } = context.shared;
@@ -69,16 +73,20 @@ export function phaseCitizenConsumption(
   const allNotifications: SimulationNotification[] = [];
   const allDeltas: StockpileDelta[] = [];
 
+  const citizensBySettlement = citizensBySettlementId ??
+    groupCitizensBySettlement(
+      citizens,
+      (c) => effectiveSettlementIdByCitizenId.get(c.id) ?? c.settlementId,
+    );
+
   for (const settlement of settlements) {
     const sid = settlement.id;
 
     // A soldier consumes at their army's stationed settlement, not their home
     // settlement (#1111) — see effectiveSettlementIdByCitizenId's construction
     // in runSimulation.ts.
-    const aliveInSettlement = citizens.filter(
-      (c) =>
-        c.status === "alive" &&
-        (effectiveSettlementIdByCitizenId.get(c.id) ?? c.settlementId) === sid,
+    const aliveInSettlement = (citizensBySettlement.get(sid) ?? []).filter(
+      (c) => c.status === "alive",
     );
     const aliveCount = aliveInSettlement.length;
 

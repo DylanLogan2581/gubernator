@@ -16,6 +16,7 @@ import type {
   PartnershipChange,
   ResourceSnapshot,
   SettlementSnapshot,
+  SimCitizen,
   SimulationContext,
   SimulationLogEntry,
   StockpileDelta,
@@ -30,6 +31,8 @@ export type PhaseLogsAndSnapshotsAccumulator = {
   readonly allDeaths: readonly CitizenDeath[];
   readonly buildingStateChanges: readonly BuildingStateChange[];
   readonly citizenBirths: readonly CitizenBirth[];
+  // Built once per turn in runSimulation; keyed by home settlement.
+  readonly citizensBySettlementId?: ReadonlyMap<string, readonly SimCitizen[]>;
   // Negative deltas from consumption phases (upkeep, citizen consumption, etc.)
   readonly consumptionDeltas: readonly StockpileDelta[];
   readonly depositUpdates: readonly DepositUpdate[];
@@ -66,6 +69,7 @@ export function phaseLogsAndSnapshots(
     allDeaths,
     buildingStateChanges,
     citizenBirths,
+    citizensBySettlementId,
     consumptionDeltas,
     depositUpdates,
     educationSummaryBySettlementId,
@@ -81,6 +85,7 @@ export function phaseLogsAndSnapshots(
     allDeaths,
     buildingStateChanges,
     citizenBirths,
+    citizensBySettlementId,
     depositUpdates,
     educationSummaryBySettlementId,
     managedPopulationUpdates,

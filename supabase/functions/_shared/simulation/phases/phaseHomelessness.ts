@@ -3,10 +3,12 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import { formatStockpileForDisplay } from "../decimalMath.ts";
+import { groupCitizensBySettlement } from "../indexing/bySettlement.ts";
 import { compareById } from "../sortUtils.ts";
 
 import type {
   CitizenDeath,
+  SimCitizen,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -21,6 +23,8 @@ export type PhaseHomelessnessOutput = {
 export function phaseHomelessness(
   context: SimulationContext,
   enlistedSoldierCitizenIds: ReadonlySet<string>,
+  // Built once per turn in runSimulation; keyed by home settlement.
+  citizensBySettlementId?: ReadonlyMap<string, readonly SimCitizen[]>,
 ): PhaseHomelessnessOutput {
   const {
     buildingTiers,
@@ -52,16 +56,17 @@ export function phaseHomelessness(
   const allLogs: SimulationLogEntry[] = [];
   const allNotifications: SimulationNotification[] = [];
 
+  const citizensBySettlement = citizensBySettlementId ?? groupCitizensBySettlement(citizens);
+
   for (const settlement of settlements) {
     const sid = settlement.id;
     const cap = popCapBySettlement.get(sid) ?? 0;
 
     // Enlisted soldiers are never homeless while stationed — barracks/camp
     // housing is assumed regardless of settlement (#1111).
-    const aliveNpcs = citizens.filter(
+    const aliveNpcs = (citizensBySettlement.get(sid) ?? []).filter(
       (c) =>
         c.status === "alive" &&
-        c.settlementId === sid &&
         c.citizenType === "npc" &&
         !context.shared.pendingDeaths.has(c.id) &&
         !enlistedSoldierCitizenIds.has(c.id),

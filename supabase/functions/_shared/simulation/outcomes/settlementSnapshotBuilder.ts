@@ -2,6 +2,8 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { groupBySettlementId, groupCitizensBySettlement } from "../indexing/bySettlement.ts";
+
 import type {
   BuildingStateChange,
   CitizenBirth,
@@ -15,6 +17,7 @@ import type {
   SettlementSnapshotManagedPopEntry,
   SettlementSnapshotTradeEntry,
   SettlementSnapshotWarnings,
+  SimCitizen,
   SimulationContext,
   TradeRouteOutcome,
 } from "../simulationTypes.ts";
@@ -31,6 +34,8 @@ export type BuildSettlementSnapshotsParams = {
   readonly allDeaths: readonly CitizenDeath[];
   readonly buildingStateChanges: readonly BuildingStateChange[];
   readonly citizenBirths: readonly CitizenBirth[];
+  // Built once per turn in runSimulation; keyed by home settlement.
+  readonly citizensBySettlementId?: ReadonlyMap<string, readonly SimCitizen[]>;
   readonly depositUpdates: readonly DepositUpdate[];
   readonly educationSummaryBySettlementId: ReadonlyMap<string, EducationSummary>;
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
@@ -58,6 +63,7 @@ export function buildSettlementSnapshots(
     allDeaths,
     buildingStateChanges,
     citizenBirths,
+    citizensBySettlementId,
     depositUpdates,
     educationSummaryBySettlementId,
     managedPopulationUpdates,
@@ -147,14 +153,51 @@ export function buildSettlementSnapshots(
     }
   }
 
+  // Per-settlement groups, built once (single pass each) instead of one
+  // full-array scan per settlement. Order within each group is preserved.
+  const citizensBySettlement = citizensBySettlementId ?? groupCitizensBySettlement(citizens);
+  const deathsBySettlement = groupBySettlementId(
+    allDeaths,
+    (d) => citizenSettlementById.get(d.citizenId),
+  );
+  const birthsBySettlement = groupBySettlementId(citizenBirths, (b) => b.settlementId);
+  const formedPartnershipsBySettlement = groupBySettlementId(
+    partnershipChanges.filter(
+      (ch): ch is Extract<PartnershipChange, { type: "formed" }> => ch.type === "formed",
+    ),
+    (ch) => citizenSettlementById.get(ch.citizenAId),
+  );
+  const buildingsBySettlement = groupBySettlementId(
+    settlementBuildings,
+    (b) => b.settlementId,
+  );
+  const managedPopulationsBySettlement = groupBySettlementId(
+    managedPopulations,
+    (mp) => mp.settlementId,
+  );
+  // A route touching a settlement at both ends is listed once, matching the
+  // previous per-settlement scan.
+  const tradeRoutesBySettlement = new Map<string, typeof tradeRoutes[number][]>();
+  for (const route of tradeRoutes) {
+    for (
+      const sid of route.originSettlementId === route.destinationSettlementId
+        ? [route.originSettlementId]
+        : [route.originSettlementId, route.destinationSettlementId]
+    ) {
+      const group = tradeRoutesBySettlement.get(sid);
+      if (group === undefined) tradeRoutesBySettlement.set(sid, [route]);
+      else group.push(route);
+    }
+  }
+
   const snapshots: SettlementSnapshot[] = [];
 
   for (const settlement of settlements) {
     const sid = settlement.id;
 
     // --- Population counts ---
-    const aliveInSettlement = citizens.filter(
-      (c) => c.status === "alive" && c.settlementId === sid,
+    const aliveInSettlement = (citizensBySettlement.get(sid) ?? []).filter(
+      (c) => c.status === "alive",
     );
     const initialAliveNpc = aliveInSettlement.filter(
       (c) => c.citizenType === "npc",
@@ -163,9 +206,7 @@ export function buildSettlementSnapshots(
       (c) => c.citizenType === "player_character",
     ).length;
 
-    const deathsInSettlement = allDeaths.filter(
-      (d) => citizenSettlementById.get(d.citizenId) === sid,
-    );
+    const deathsInSettlement = deathsBySettlement.get(sid) ?? [];
     const deathCount = deathsInSettlement.length;
     const starvationDeathsCount = deathsInSettlement.filter(
       (d) => d.category === "starvation",
@@ -180,29 +221,20 @@ export function buildSettlementSnapshots(
       (d) => citizenTypeById.get(d.citizenId) === "player_character",
     ).length;
 
-    const birthsInSettlement = citizenBirths.filter(
-      (b) => b.settlementId === sid,
-    );
-    const birthCount = birthsInSettlement.length;
+    const birthCount = (birthsBySettlement.get(sid) ?? []).length;
 
     const aliveNpc = initialAliveNpc - npcDeathCount + birthCount;
     const alivePc = initialAlivePc - pcDeathCount;
     const aliveTotal = aliveNpc + alivePc;
 
     // --- Partnerships formed ---
-    const partnershipsFormedCount = partnershipChanges.filter(
-      (ch): ch is Extract<PartnershipChange, { type: "formed" }> =>
-        ch.type === "formed" &&
-        citizenSettlementById.get(ch.citizenAId) === sid,
-    ).length;
+    const partnershipsFormedCount = (formedPartnershipsBySettlement.get(sid) ?? []).length;
 
     // --- Population cap ---
     const populationCap = popCapBySettlement.get(sid) ?? 0;
 
     // --- Building summary ---
-    const buildingsInSettlement = settlementBuildings.filter(
-      (b) => b.settlementId === sid,
-    );
+    const buildingsInSettlement = buildingsBySettlement.get(sid) ?? [];
     let activeCount = 0;
     let autoDeconCount = 0;
     let manualDeconCount = 0;
@@ -223,8 +255,7 @@ export function buildSettlementSnapshots(
 
     // --- Managed population summary ---
     const managedPopulationSummary: SettlementSnapshotManagedPopEntry[] = [];
-    for (const mp of managedPopulations) {
-      if (mp.settlementId !== sid) continue;
+    for (const mp of managedPopulationsBySettlement.get(sid) ?? []) {
       managedPopulationSummary.push({
         currentCount: managedPopCountById.get(mp.id) ?? mp.currentCount,
         instanceId: mp.id,
@@ -233,13 +264,7 @@ export function buildSettlementSnapshots(
 
     // --- Trade summary ---
     const tradeSummary: SettlementSnapshotTradeEntry[] = [];
-    for (const route of tradeRoutes) {
-      if (
-        route.originSettlementId !== sid &&
-        route.destinationSettlementId !== sid
-      ) {
-        continue;
-      }
+    for (const route of tradeRoutesBySettlement.get(sid) ?? []) {
       const outcome = outcomeByRouteId.get(route.id);
       if (outcome === undefined) continue;
       tradeSummary.push({

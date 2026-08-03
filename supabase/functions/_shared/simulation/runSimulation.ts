@@ -3,6 +3,10 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import {
+  groupCitizensBySettlement,
+  indexCitizensById,
+} from "./indexing/bySettlement.ts";
 import { phaseBuildingUpkeep } from "./phases/phaseBuildingUpkeep.ts";
 import { phaseCitizenConsumption } from "./phases/phaseCitizenConsumption.ts";
 import { phaseConstruction } from "./phases/phaseConstruction.ts";
@@ -113,6 +117,11 @@ export function runSimulation(
       pendingNationStockpiles,
     },
   };
+
+  // Per-turn indexes built once and threaded into phases, so hot loops read
+  // `map.get(settlementId)` instead of re-scanning every citizen per settlement.
+  const citizenById = indexCitizensById(input.citizens);
+  const citizensBySettlementId = groupCitizensBySettlement(input.citizens);
 
   function applyDeltas(deltas: readonly StockpileDelta[]): void {
     for (const d of deltas) {
@@ -344,7 +353,18 @@ export function runSimulation(
   // Phase 8 — Citizen Consumption
   // -------------------------------------------------------------------------
 
-  const p8 = phaseCitizenConsumption(context, effectiveSettlementIdByCitizenId);
+  // Soldiers consume where they are stationed, so consumption needs its own
+  // grouping keyed by effective settlement.
+  const citizensByEffectiveSettlementId = groupCitizensBySettlement(
+    input.citizens,
+    (c) => effectiveSettlementIdByCitizenId.get(c.id) ?? c.settlementId,
+  );
+
+  const p8 = phaseCitizenConsumption(
+    context,
+    effectiveSettlementIdByCitizenId,
+    citizensByEffectiveSettlementId,
+  );
   applyDeltas(p8.stockpileDeltas);
 
   // Propagate phase-8 deaths into shared state so downstream phases (10+) see
@@ -363,7 +383,11 @@ export function runSimulation(
   // Phase 10 — Homelessness
   // -------------------------------------------------------------------------
 
-  const p10 = phaseHomelessness(context, enlistedSoldierCitizenIds);
+  const p10 = phaseHomelessness(
+    context,
+    enlistedSoldierCitizenIds,
+    citizensBySettlementId,
+  );
 
   // -------------------------------------------------------------------------
   // Phase 11 — Events
@@ -586,7 +610,7 @@ export function runSimulation(
   const settlementWithFormations = new Set<string>();
   for (const pc of partnershipChanges) {
     if (pc.type === "formed") {
-      const citizen = input.citizens.find((c) => c.id === pc.citizenAId);
+      const citizen = citizenById.get(pc.citizenAId);
       const settleId = citizen?.settlementId;
       if (settleId !== null && settleId !== undefined) {
         settlementWithFormations.add(settleId);
@@ -638,6 +662,7 @@ export function runSimulation(
     allDeaths,
     buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
     citizenBirths: allCitizenBirths,
+    citizensBySettlementId,
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
     educationSummaryBySettlementId: p4dot5.educationSummaryBySettlementId,
