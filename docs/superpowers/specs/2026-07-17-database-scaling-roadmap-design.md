@@ -150,3 +150,73 @@ Phases 1–3 each ship standalone value and can proceed in parallel if staffed; 
 - Memory-table retention default: keep-all, or a long bounded window — product call on narrative persistence.
 - Worker substrate for Phase 4: scheduled Edge function vs pg-boss vs dedicated worker — decide against operational constraints at planning time.
 - Whether the safe bounded retention default (200 turns) is global or per-world-template configurable.
+
+---
+
+## ADR-001 — Phase 4 worker substrate (2026-08-03, issue #1277)
+
+**Status:** accepted.
+
+### Context
+
+Phase 4 moves turn execution off the synchronous Edge request. The substrate
+question from the open questions above had to be settled before the queue could
+be built, because it determines whether Phase 5 (payload/turn chunking) is
+contingent polish or a hard prerequisite.
+
+Options considered:
+
+1. **In-database queue (`turn_jobs` table or pgmq) + `pg_cron` → `pg_net` invoking an Edge worker.**
+   Repo-native: `pg_cron` is already enabled (`20261123000000_enable_pg_cron_retention.sql`),
+   nothing new to host or deploy. But Supabase Edge Functions have their own
+   execution ceiling, so the largest turns may still not fit in one worker
+   invocation.
+2. **External polling worker** (a small deployed Node/Deno service consuming the
+   queue). No runtime cap, cleanest for arbitrary-duration turns, but it is new
+   infrastructure to host, deploy, secure and monitor — the project currently
+   deploys nothing outside Supabase.
+3. **pg-boss** — needs a long-running Node process, so it collapses into option 2
+   plus a dependency.
+
+### Decision
+
+Adopt **option 1**: a durable in-database `turn_jobs` queue with SECURITY DEFINER
+claim RPCs, consumed by a Supabase-hosted worker. No external infrastructure is
+introduced.
+
+The queue is deliberately **worker-agnostic**: the claim protocol
+(`enqueue_turn_job` / `claim_turn_job` / `heartbeat_turn_job` /
+`complete_turn_job` / `fail_turn_job`) makes no assumption about where the
+claimant runs. Its only contract is `claimed_by` + a periodic `heartbeat_at`, so
+option 2 remains a drop-in swap later — an external worker would consume the
+exact same RPCs — without a schema change or a data migration.
+
+`pgmq` was rejected in favour of a plain table because the queue is tiny
+(at most one active job per world), needs domain columns (`world_id`,
+`from_turn_number`, `turn_transition_id`) and a domain-specific uniqueness rule,
+and benefits from being visible to the existing pgTAP and RLS tooling.
+
+### Consequences
+
+- **Phase 5 (payload & turn chunking) becomes mandatory, not contingent.** A
+  bounded worker runtime means the largest turns must be chunked across
+  invocations; the job row is the natural place to carry chunk progress.
+- The existing `turn_transitions` lifecycle stays the coordination surface and
+  the UI's polling target (`latestTurnTransitionStatusQueryOptions`); the queue
+  sits beside it, linked by `turn_jobs.turn_transition_id`.
+- Single-active-turn-per-world is enforced twice: a partial unique index on
+  `turn_jobs(world_id) where status in ('pending','claimed')`, and an enqueue-time
+  refusal while a `turn_transitions` row for the world is still `running`, taken
+  under the existing `FOR UPDATE` world lock.
+- Crashed workers are recovered by heartbeat staleness rather than by a manual
+  admin action; `fail_stuck_turn_transition` remains the escape hatch for a
+  wedged transition.
+- If the Edge ceiling later proves insufficient even with chunking, the escape
+  hatch is option 2 and it costs no schema work.
+
+### Follow-ups
+
+- #4.1 / #4.2 build the worker loop and the enqueue-side UX on top of this queue.
+- The `pg_cron` → `pg_net` scheduling of the worker is deliberately **not** part
+  of #1277; it lands with the worker itself, so no schedule fires against an
+  unimplemented consumer.

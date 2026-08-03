@@ -4517,6 +4517,82 @@ export type Database = {
           },
         ];
       };
+      turn_jobs: {
+        Row: {
+          attempts: number;
+          claimed_at: string | null;
+          claimed_by: string | null;
+          created_at: string;
+          enqueued_by_user_id: string | null;
+          finished_at: string | null;
+          from_turn_number: number;
+          heartbeat_at: string | null;
+          id: string;
+          last_error: string | null;
+          max_attempts: number;
+          status: string;
+          turn_transition_id: string | null;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          attempts?: number;
+          claimed_at?: string | null;
+          claimed_by?: string | null;
+          created_at?: string;
+          enqueued_by_user_id?: string | null;
+          finished_at?: string | null;
+          from_turn_number: number;
+          heartbeat_at?: string | null;
+          id?: string;
+          last_error?: string | null;
+          max_attempts?: number;
+          status?: string;
+          turn_transition_id?: string | null;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          attempts?: number;
+          claimed_at?: string | null;
+          claimed_by?: string | null;
+          created_at?: string;
+          enqueued_by_user_id?: string | null;
+          finished_at?: string | null;
+          from_turn_number?: number;
+          heartbeat_at?: string | null;
+          id?: string;
+          last_error?: string | null;
+          max_attempts?: number;
+          status?: string;
+          turn_transition_id?: string | null;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "turn_jobs_enqueued_by_user_id_fkey";
+            columns: ["enqueued_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_jobs_turn_transition_id_fkey";
+            columns: ["turn_transition_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_jobs_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       turn_log_entries: {
         Row: {
           citizen_id: string | null;
@@ -5793,6 +5869,10 @@ export type Database = {
         };
         Returns: boolean;
       };
+      claim_turn_job: {
+        Args: { p_stale_after?: string; p_worker_id: string };
+        Returns: Json;
+      };
       col_is_null:
         | {
             Args: {
@@ -5829,6 +5909,10 @@ export type Database = {
             };
             Returns: string;
           };
+      complete_turn_job: {
+        Args: { p_job_id: string; p_worker_id: string };
+        Returns: boolean;
+      };
       create_army: {
         Args: {
           p_funding_source: string;
@@ -6553,6 +6637,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      enqueue_turn_job: {
+        Args: { p_expected_turn_number: number; p_world_id: string };
+        Returns: string;
+      };
       enroll_citizen: {
         Args: { p_citizen_id: string; p_settlement_building_id: string };
         Returns: {
@@ -6624,6 +6712,10 @@ export type Database = {
           p_world_id: string;
         };
         Returns: Json;
+      };
+      fail_turn_job: {
+        Args: { p_error?: string; p_job_id: string; p_worker_id: string };
+        Returns: string;
       };
       findfuncs: { Args: { "": string }; Returns: string[] };
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] };
@@ -6772,6 +6864,14 @@ export type Database = {
       };
       has_unique: { Args: { "": string }; Returns: string };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
+      heartbeat_turn_job: {
+        Args: {
+          p_job_id: string;
+          p_transition_id?: string;
+          p_worker_id: string;
+        };
+        Returns: boolean;
+      };
       import_world_from_template: {
         Args: { p_name: string; p_template?: Json };
         Returns: {
