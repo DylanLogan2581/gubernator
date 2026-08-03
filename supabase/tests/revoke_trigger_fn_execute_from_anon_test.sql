@@ -17,7 +17,7 @@
 begin;
 
 select
-  plan (35);
+  plan (37);
 
 -- ---------------------------------------------------------------------------
 -- Trigger functions (22): called by the DB engine via triggers, not by
@@ -311,6 +311,31 @@ select
     ),
     false,
     'settlement_effective_storage_cap_internal EXECUTE revoked from anon'
+  );
+
+-- #1394: these two internals are ungated SECURITY DEFINER oracles, so
+-- authenticated must not hold EXECUTE either -- a future default-privilege
+-- grant would otherwise silently reopen cross-world probing.
+select
+  is (
+    has_function_privilege(
+      'authenticated',
+      'public.settlement_alive_citizen_count_internal (uuid)'::regprocedure,
+      'EXECUTE'
+    ),
+    false,
+    'settlement_alive_citizen_count_internal EXECUTE revoked from authenticated'
+  );
+
+select
+  is (
+    has_function_privilege(
+      'authenticated',
+      'public.settlement_effective_storage_cap_internal (uuid, uuid)'::regprocedure,
+      'EXECUTE'
+    ),
+    false,
+    'settlement_effective_storage_cap_internal EXECUTE revoked from authenticated'
   );
 
 select
