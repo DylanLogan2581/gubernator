@@ -11,7 +11,9 @@ import {
   aggregateVitalStats,
   createTurnLabelers,
   defaultReportTurnRange,
+  populationTrendChartHeightClassName,
   PopulationTrendChart,
+  PopulationTrendLayout,
   TurnRangeSelector,
   VitalStatsComparisonTable,
   worldNationsPopulationQueryOptions,
@@ -100,10 +102,14 @@ export function WorldReportsSection({
         </CardHeader>
         <CardContent>
           {worldPopQuery.isPending ? (
-            <div className="space-y-3">
-              <Skeleton className="h-56 w-full" />
-              <Skeleton className="h-48 w-full" />
-            </div>
+            <PopulationTrendLayout>
+              <Skeleton
+                className={`${populationTrendChartHeightClassName} w-full`}
+              />
+              <Skeleton
+                className={`${populationTrendChartHeightClassName} w-full`}
+              />
+            </PopulationTrendLayout>
           ) : worldPopQuery.isError ? (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />

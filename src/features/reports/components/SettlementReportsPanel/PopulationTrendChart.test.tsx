@@ -45,6 +45,15 @@ describe("PopulationTrendChart", () => {
     expect(screen.queryByText(/no population snapshots/i)).toBeNull();
   });
 
+  it("lays the two charts out as a container-query grid", () => {
+    const { container } = render(
+      <PopulationTrendChart rows={[makeRow(1)]} turnLabel={turnLabel} />,
+    );
+    const outer = container.firstElementChild;
+    expect(outer).toHaveClass("@container");
+    expect(outer?.firstElementChild).toHaveClass("grid", "@3xl:grid-cols-2");
+  });
+
   it("renders a single-point series without falling back to the empty state", () => {
     render(<PopulationTrendChart rows={[makeRow(1)]} turnLabel={turnLabel} />);
     expect(screen.queryByText(/no population snapshots/i)).toBeNull();
