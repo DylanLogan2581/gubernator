@@ -32,8 +32,7 @@ type NavGroupProps = {
   readonly labelSlot?: ReactNode;
 };
 
-// Renders one labelled sidebar section (PLAY / SETTLEMENT / NATION / WORLD /
-// ADMIN). `link` is a fully-built <Link> element from the caller so route
+// Renders one labelled sidebar section (SETTLEMENT / NATION / WORLD / ADMIN). `link` is a fully-built <Link> element from the caller so route
 // `to`/`params`/`search` stay literal and type-checked at the call site
 // instead of being widened to `string` by a generic prop here.
 export function NavGroup({

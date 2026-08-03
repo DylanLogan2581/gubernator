@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   AlertTriangle,
-  Bell,
   BookOpen,
   Clock,
   Globe2,
@@ -11,7 +10,6 @@ import {
   Mail,
   MapPin,
   ShieldCheck,
-  UserCircle2,
   Users,
   Zap,
 } from "lucide-react";
@@ -24,7 +22,6 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { lawAmendmentsAwaitingMyVoteCountQueryOptions } from "@/features/law-amendments";
-import { unreadNotificationsCountQueryOptions } from "@/features/notifications";
 import {
   useActivePlayerCharacter,
   useEffectiveCanAdmin,
@@ -67,7 +64,6 @@ export function AppSidebar(): JSX.Element | null {
     sidebarTurnLabel: turnLabel,
     sidebarWorldId: worldId,
     sidebarWorldName: worldName,
-    userId,
   } = useAppShellWorldContext();
   const { activeCharacter } = useActivePlayerCharacter();
   const { nationId, settlementId } = useWorldScope();
@@ -75,11 +71,6 @@ export function AppSidebar(): JSX.Element | null {
   // Account-level superadmin nav is suppressed the same way world-admin nav
   // is: an active PC means the viewer is playing, not administering.
   const effectiveIsSuperAdmin = useEffectiveCanAdmin(isSuperAdmin);
-
-  const unreadCountQuery = useQuery(
-    unreadNotificationsCountQueryOptions(userId),
-  );
-  const unreadCount = unreadCountQuery.data ?? 0;
 
   // "Awaiting your vote" badges (#1120) -- only for a viewer with an active
   // player character (admins with no PC don't get a personal vote badge).
@@ -177,7 +168,7 @@ export function AppSidebar(): JSX.Element | null {
         <WorldHeaderCard turnLabel={null} worldId={null} worldName={null} />
         <SidebarContent>
           <NavGroup
-            label="PLAY"
+            label="WORLD"
             items={[
               {
                 key: "worlds",
@@ -187,18 +178,6 @@ export function AppSidebar(): JSX.Element | null {
                   <Link to="/worlds">
                     <Globe2 aria-hidden="true" />
                     <span>Worlds</span>
-                  </Link>
-                ),
-              },
-              {
-                key: "notifications",
-                label: "Notifications",
-                isActive: location.pathname === "/notifications",
-                badge: unreadCount,
-                link: (
-                  <Link to="/notifications">
-                    <Bell aria-hidden="true" />
-                    <span>Notifications</span>
                   </Link>
                 ),
               },
@@ -250,63 +229,6 @@ export function AppSidebar(): JSX.Element | null {
           segments: NATION_SECTION_SEGMENTS,
         })
       : null;
-  const playItems: NavGroupItem[] = [
-    {
-      key: "dashboard",
-      label: "Dashboard",
-      isActive: location.pathname === `/worlds/${worldId}`,
-      link: (
-        <Link to="/worlds/$worldId" params={{ worldId }}>
-          <LayoutDashboard aria-hidden="true" />
-          <span>Dashboard</span>
-        </Link>
-      ),
-    },
-    ...(activeCharacter === null
-      ? []
-      : [
-          {
-            key: "my-character",
-            label: "My Character",
-            isActive:
-              location.pathname ===
-              `/worlds/${worldId}/citizens/${activeCharacter.id}`,
-            link: (
-              <Link
-                to="/worlds/$worldId/citizens/$citizenId"
-                params={{ citizenId: activeCharacter.id, worldId }}
-              >
-                <UserCircle2 aria-hidden="true" />
-                <span>My Character</span>
-              </Link>
-            ),
-          },
-        ]),
-    {
-      key: "events",
-      label: "Events",
-      isActive: location.pathname.startsWith(`/worlds/${worldId}/events`),
-      link: (
-        <Link to="/worlds/$worldId/events" params={{ worldId }}>
-          <Zap aria-hidden="true" />
-          <span>Events</span>
-        </Link>
-      ),
-    },
-    {
-      key: "notifications",
-      label: "Notifications",
-      isActive: location.pathname === "/notifications",
-      badge: unreadCount,
-      link: (
-        <Link to="/notifications">
-          <Bell aria-hidden="true" />
-          <span>Notifications</span>
-        </Link>
-      ),
-    },
-  ];
-
   // No resolvable scope (fresh admin, no pin, no PC home settlement) ->
   // collapse to a single entry pointing at a settlement listing: the current
   // nation's Settlements page when a nation is scoped, otherwise the world
@@ -378,6 +300,28 @@ export function AppSidebar(): JSX.Element | null {
 
   const worldItems: NavGroupItem[] = [
     {
+      key: "dashboard",
+      label: "Dashboard",
+      isActive: location.pathname === `/worlds/${worldId}`,
+      link: (
+        <Link to="/worlds/$worldId" params={{ worldId }}>
+          <LayoutDashboard aria-hidden="true" />
+          <span>Dashboard</span>
+        </Link>
+      ),
+    },
+    {
+      key: "events",
+      label: "Events",
+      isActive: location.pathname.startsWith(`/worlds/${worldId}/events`),
+      link: (
+        <Link to="/worlds/$worldId/events" params={{ worldId }}>
+          <Zap aria-hidden="true" />
+          <span>Events</span>
+        </Link>
+      ),
+    },
+    {
       key: "nations",
       label: "Nations",
       isActive: location.pathname === `/worlds/${worldId}/nations`,
@@ -425,8 +369,6 @@ export function AppSidebar(): JSX.Element | null {
         </SidebarHeader>
       ) : null}
       <SidebarContent>
-        <NavGroup label="PLAY" items={playItems} />
-        <SidebarSeparator />
         <NavGroup
           label="SETTLEMENT"
           items={settlementItems}
