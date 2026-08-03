@@ -529,11 +529,21 @@ select
 select
   lives_ok (
     $$
-      select upsert_world_retention_config(
+      insert into public.world_retention_config (
+        world_id,
+        log_retention_turns,
+        snapshot_retention_turns
+      )
+      values (
         'c4200000-0000-0000-0000-000000000001'::uuid,
         50,  -- log_retention_turns
         100  -- snapshot_retention_turns
       )
+      on conflict (world_id) do update
+        set
+          log_retention_turns = excluded.log_retention_turns,
+          snapshot_retention_turns = excluded.snapshot_retention_turns,
+          updated_at = now()
     $$,
     'Superadmin can upsert world_retention_config'
   );

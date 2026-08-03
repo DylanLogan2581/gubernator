@@ -8942,14 +8942,6 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      upsert_world_retention_config: {
-        Args: {
-          p_log_retention_turns?: number;
-          p_snapshot_retention_turns?: number;
-          p_world_id: string;
-        };
-        Returns: undefined;
-      };
       user_has_player_character_in_world: {
         Args: { p_world_id: string };
         Returns: boolean;

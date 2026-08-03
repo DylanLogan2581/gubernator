@@ -1032,20 +1032,27 @@ select
 
 -- ---------------------------------------------------------------------------
 -- Test: set memory_retention_turns and prune again -> memory tables now pruned.
--- upsert_world_retention_config (Task 1.1) is still a 3-arg RPC (world,
--- log_retention_turns, snapshot_retention_turns) with no memory parameter, so
--- memory_retention_turns is set directly on the config row here.
 -- cutoff = 300 - 100 = 200. Old memory rows (turn 50 / activation 40) < 200:
 -- pruned. Recent memory rows (turn 250 / activation 250) >= 200: kept.
 -- ---------------------------------------------------------------------------
 select
   lives_ok (
     $$
-    select upsert_world_retention_config(
+    insert into public.world_retention_config (
+      world_id,
+      log_retention_turns,
+      snapshot_retention_turns
+    )
+    values (
       'c7200000-0000-0000-0000-000000000001'::uuid,
       200, -- log_retention_turns
       200  -- snapshot_retention_turns
     )
+    on conflict (world_id) do update
+      set
+        log_retention_turns = excluded.log_retention_turns,
+        snapshot_retention_turns = excluded.snapshot_retention_turns,
+        updated_at = now()
   $$,
     'Superadmin can upsert world_retention_config (log/snapshot turns)'
   );

@@ -26,7 +26,7 @@
 begin;
 
 select
-  plan (31);
+  plan (30);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -735,24 +735,6 @@ select
     'P0001',
     null,
     'update_event_group_with_events rejects archived world'
-  );
-
--- ===========================================================================
--- 31. upsert_world_retention_config rejects archived world
---     (superadmin-only; archive guard fires immediately after auth check)
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    select public.upsert_world_retention_config (
-      'be200000-0000-0000-0000-000000000001',
-      10,
-      10
-    )
-    $test$,
-    'P0001',
-    null,
-    'upsert_world_retention_config rejects archived world'
   );
 
 reset role;
