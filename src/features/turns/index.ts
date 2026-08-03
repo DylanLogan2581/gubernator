@@ -41,6 +41,12 @@ export {
   getTurnProgressPercentage,
 } from "./utils/endTurnDescriptions";
 export { TurnTransitionProgressPanel } from "./components/TurnTransitionProgressPanel";
+export { WorldTurnPauseOverlay } from "./components/WorldTurnPauseOverlay";
+export {
+  useWorldTurnPause,
+  type UseWorldTurnPauseResult,
+  type WorldTurnPauseState,
+} from "./hooks/useWorldTurnPause";
 export {
   TurnTransitionOutcomeContent,
   TurnTransitionOutcomeEmptyState,
