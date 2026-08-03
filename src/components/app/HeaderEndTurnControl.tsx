@@ -5,6 +5,7 @@ import {
   EndTurnConfirmationDialog,
   getControlDescription,
   getEndTurnErrorDescription,
+  getTurnProgressLabel,
   useEndTurnControl,
 } from "@/features/turns";
 
@@ -77,8 +78,12 @@ export function HeaderEndTurnControl({
         data-command-palette-action="end-turn"
       >
         <StepForward aria-hidden="true" />
-        <span className="truncate">
-          {isTurnRunning || endTurnMutation.isPending ? (
+        {/* The turn runs in a background worker (#1278): the chip reports the
+            worker's stage rather than a blocking spinner. */}
+        <span aria-live="polite" className="truncate">
+          {isTurnRunning ? (
+            `Running: ${getTurnProgressLabel(latestTransitionQuery.data?.progressStage ?? null)}`
+          ) : endTurnMutation.isPending ? (
             "Running..."
           ) : (
             <>

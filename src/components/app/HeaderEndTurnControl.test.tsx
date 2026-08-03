@@ -52,6 +52,36 @@ describe("HeaderEndTurnControl", () => {
     expect(clientFixture.invoke).not.toHaveBeenCalled();
   });
 
+  it("reports the background worker stage while a turn is running", async () => {
+    // The turn runs in a background worker (#1278): the chip tracks the
+    // transition poll instead of spinning on the request.
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+      turnTransitionRow: {
+        finished_at: null,
+        from_turn_number: 7,
+        id: "transition-1",
+        progress_stage: "persisting",
+        started_at: new Date().toISOString(),
+        status: "running",
+        to_turn_number: 8,
+        world_id: "world-1",
+      },
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderHeaderEndTurnControl();
+
+    const button = await screen.findByRole("button", {
+      name: "Running: saving results",
+    });
+    expect(button).toBeDisabled();
+    expect(button.title).toBe(
+      "End-turn transition is running in the background (saving results).",
+    );
+    expect(screen.queryByRole("button", { name: /^End Turn/ })).toBeNull();
+  });
+
   it("shows a compact readiness count once loaded", async () => {
     const clientFixture = createClientFixture({
       settlementRows: [
@@ -168,8 +198,10 @@ function createQueryClient(): QueryClient {
 
 function createClientFixture({
   settlementRows,
+  turnTransitionRow = null,
 }: {
   readonly settlementRows: readonly TestSettlementReadinessRow[];
+  readonly turnTransitionRow?: TestTurnTransitionRow | null;
 }): ClientFixture {
   const invoke = vi.fn().mockReturnValue({
     data: {
@@ -191,7 +223,7 @@ function createClientFixture({
           return createSettlementsQueryBuilder(settlementRows);
         }
 
-        return createTurnTransitionsQueryBuilder();
+        return createTurnTransitionsQueryBuilder(turnTransitionRow);
       }),
       functions: {
         invoke,
@@ -225,14 +257,27 @@ function createSettlementsQueryBuilder(
   return builder;
 }
 
-function createTurnTransitionsQueryBuilder(): unknown {
+function createTurnTransitionsQueryBuilder(
+  row: TestTurnTransitionRow | null,
+): unknown {
   const builder = {
     eq: vi.fn(() => builder),
     limit: vi.fn(() => builder),
-    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: row, error: null })),
     order: vi.fn(() => builder),
     select: vi.fn(() => builder),
   };
 
   return builder;
 }
+
+type TestTurnTransitionRow = {
+  readonly finished_at: string | null;
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly progress_stage: string | null;
+  readonly started_at: string;
+  readonly status: string;
+  readonly to_turn_number: number;
+  readonly world_id: string;
+};

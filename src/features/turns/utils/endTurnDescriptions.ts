@@ -57,6 +57,24 @@ export function getTurnProgressLabel(
   }
 }
 
+// Coarse, monotonic progress for the bar. The worker reports stages, not
+// percentages, so these are presentational anchors rather than measurements.
+export function getTurnProgressPercentage(
+  stage: TurnTransitionProgressStage | null,
+): number {
+  switch (stage) {
+    case "loading":
+      return 35;
+    case "simulating":
+      return 70;
+    case "persisting":
+      return 90;
+    case "queued":
+    case null:
+      return 10;
+  }
+}
+
 export function getReadinessSummaryDescription(
   readinessSummary: SettlementReadinessSummary,
 ): string {

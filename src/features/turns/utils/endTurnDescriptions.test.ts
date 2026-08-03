@@ -6,6 +6,7 @@ import {
   getControlDescription,
   getErrorDescription,
   getReadinessSummaryDescription,
+  getTurnProgressPercentage,
 } from "./endTurnDescriptions";
 
 describe("getControlDescription", () => {
@@ -211,5 +212,18 @@ describe("getErrorDescription", () => {
     expect(getErrorDescription(null)).toBe(
       "Try refreshing the page. If the problem continues, contact an administrator.",
     );
+  });
+});
+
+describe("getTurnProgressPercentage", () => {
+  it("advances monotonically through the worker stages", () => {
+    expect(getTurnProgressPercentage("queued")).toBe(10);
+    expect(getTurnProgressPercentage("loading")).toBe(35);
+    expect(getTurnProgressPercentage("simulating")).toBe(70);
+    expect(getTurnProgressPercentage("persisting")).toBe(90);
+  });
+
+  it("treats an unreported stage as freshly queued", () => {
+    expect(getTurnProgressPercentage(null)).toBe(10);
   });
 });

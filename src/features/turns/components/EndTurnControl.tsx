@@ -15,6 +15,7 @@ import {
 import { EndTurnConfirmationDialog } from "./EndTurnConfirmationDialog";
 import { MetricTile } from "./EndTurnMetric";
 import { NationReadinessList } from "./NationReadinessList";
+import { TurnTransitionProgressPanel } from "./TurnTransitionProgressPanel";
 
 import type { JSX } from "react";
 
@@ -139,6 +140,8 @@ function EndTurnControlContent({
       {nationReadinessListQuery.isSuccess ? (
         <NationReadinessList items={nationReadinessListQuery.data} />
       ) : null}
+
+      <TurnTransitionProgressPanel transition={latestTransitionQuery.data} />
 
       {isStuckRunning ? (
         <Alert variant="destructive">

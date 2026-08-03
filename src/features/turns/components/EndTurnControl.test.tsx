@@ -600,6 +600,66 @@ describe("EndTurnControl", () => {
     ).toBeEnabled();
   });
 
+  it("shows background progress and blocks a second run while a turn is running", async () => {
+    // The turn runs in a background worker (#1278): the running state comes
+    // from the transition poll, not from an in-flight request.
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+      turnTransitionRow: createTurnTransitionRow({
+        progress_stage: "simulating",
+        status: "running",
+      }),
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+
+    expect(await screen.findByText("Advancing to turn 8")).toBeDefined();
+    expect(screen.getByText("simulating the turn")).toBeDefined();
+    expect(
+      screen.getByRole("progressbar", { name: "Turn transition progress" }),
+    ).toHaveAttribute("aria-valuenow", "70");
+    expect(screen.getByRole("button", { name: "Running..." })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "End-turn transition is running in the background (simulating the turn).",
+      ),
+    ).toBeDefined();
+    expect(clientFixture.invoke).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a failed background run and still allows another attempt", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+      turnTransitionRow: createTurnTransitionRow({
+        finished_at: new Date().toISOString(),
+        status: "failed",
+      }),
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Last turn transition failed",
+    );
+
+    const button = await screen.findByRole("button", {
+      name: "Run turn transition",
+    });
+    expect(button).toBeEnabled();
+
+    await user.click(button);
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
+  });
+
   it("closes the dialog when Escape is pressed", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
@@ -638,6 +698,16 @@ type TestSettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+};
+type TestTurnTransitionRow = {
+  readonly finished_at: string | null;
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly progress_stage: string | null;
+  readonly started_at: string;
+  readonly status: string;
+  readonly to_turn_number: number;
+  readonly world_id: string;
 };
 type TestNationReadinessRow = {
   readonly eligible_voter_count: number;
@@ -705,11 +775,13 @@ function createClientFixture({
   nationReadinessRows = [],
   settlementQueryError,
   settlementRows,
+  turnTransitionRow = null,
 }: {
   readonly invokeResult?: FunctionInvokeResult;
   readonly nationReadinessRows?: readonly TestNationReadinessRow[];
   readonly settlementQueryError?: Error;
   readonly settlementRows: readonly TestSettlementReadinessRow[];
+  readonly turnTransitionRow?: TestTurnTransitionRow | null;
 }): ClientFixture {
   const invoke = vi.fn().mockReturnValue(invokeResult);
 
@@ -723,8 +795,7 @@ function createClientFixture({
           );
         }
 
-        // Return empty builder for turn_transitions to avoid errors
-        return createTurnTransitionsQueryBuilder();
+        return createTurnTransitionsQueryBuilder(turnTransitionRow);
       }),
       functions: {
         invoke,
@@ -800,15 +871,32 @@ function createSettlementsQueryBuilder(
   return builder;
 }
 
-function createTurnTransitionsQueryBuilder(): unknown {
-  // Return null for turn transitions (no running transition in test)
+function createTurnTransitionsQueryBuilder(
+  row: TestTurnTransitionRow | null,
+): unknown {
   const builder = {
     eq: vi.fn(() => builder),
     limit: vi.fn(() => builder),
-    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: row, error: null })),
     order: vi.fn(() => builder),
     select: vi.fn(() => builder),
   };
 
   return builder;
+}
+
+function createTurnTransitionRow(
+  overrides: Partial<TestTurnTransitionRow> = {},
+): TestTurnTransitionRow {
+  return {
+    finished_at: null,
+    from_turn_number: 7,
+    id: "transition-1",
+    progress_stage: null,
+    started_at: new Date().toISOString(),
+    status: "running",
+    to_turn_number: 8,
+    world_id: "world-1",
+    ...overrides,
+  };
 }

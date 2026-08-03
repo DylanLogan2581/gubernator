@@ -38,7 +38,9 @@ export {
   getControlDescription,
   getErrorDescription as getEndTurnErrorDescription,
   getTurnProgressLabel,
+  getTurnProgressPercentage,
 } from "./utils/endTurnDescriptions";
+export { TurnTransitionProgressPanel } from "./components/TurnTransitionProgressPanel";
 export {
   TurnTransitionOutcomeContent,
   TurnTransitionOutcomeEmptyState,
