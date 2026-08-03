@@ -38,8 +38,8 @@ export function phaseStandardJobs(
   const levelById = new Map(educationLevels.map((l) => [l.id, l]));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
   const officeholderCitizenIds = new Set(
-  nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
-);
+    nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+  );
   const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
   const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 
@@ -105,9 +105,9 @@ export function phaseStandardJobs(
       nationId: settlement.nationId,
       payload: {
         jobId: job.id,
-        message: `${unqualifiedCount} assigned worker${
-          unqualifiedCount === 1 ? "" : "s"
-        } ${unqualifiedCount === 1 ? "lacks" : "lack"} ${levelName} for ${job.name}`,
+        message: `${unqualifiedCount} assigned worker${unqualifiedCount === 1 ? "" : "s"} ${
+          unqualifiedCount === 1 ? "lacks" : "lack"
+        } ${levelName} for ${job.name}`,
         settlementId: sid,
         unqualifiedCount,
       },

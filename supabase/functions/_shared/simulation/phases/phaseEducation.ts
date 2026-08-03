@@ -239,8 +239,9 @@ export function phaseEducation(
       const nextTransition = config.levels.find(
         (l) => l.fromLevelId === enrollment.targetLevelId,
       );
-      const nextLevel =
-        nextTransition !== undefined ? levelById.get(nextTransition.toLevelId) : undefined;
+      const nextLevel = nextTransition !== undefined
+        ? levelById.get(nextTransition.toLevelId)
+        : undefined;
 
       if (nextLevel !== undefined) {
         enrollmentProgressUpdates.push({
@@ -258,7 +259,8 @@ export function phaseEducation(
       const grad = gradInfoBySettlement.get(sid) ?? { combos: new Set<string>(), count: 0 };
       grad.count += 1;
       const levelName = reachedLevel?.name ?? "an unknown level";
-      const buildingName = blueprintNameById.get(building.buildingBlueprintId) ?? "an unknown building";
+      const buildingName = blueprintNameById.get(building.buildingBlueprintId) ??
+        "an unknown building";
       grad.combos.add(`${levelName}@@${buildingName}`);
       gradInfoBySettlement.set(sid, grad);
     }
@@ -289,7 +291,8 @@ export function phaseEducation(
         info.count === 1 ? "" : "s"
       } completed ${levelName} at the ${buildingName}.`;
     } else {
-      messageText = `${info.count} citizens completed schooling at ${info.combos.size} school(s) this turn.`;
+      messageText =
+        `${info.count} citizens completed schooling at ${info.combos.size} school(s) this turn.`;
     }
 
     notifications.push({

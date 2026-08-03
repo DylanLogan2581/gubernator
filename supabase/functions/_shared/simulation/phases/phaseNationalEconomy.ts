@@ -112,17 +112,15 @@ export function phaseNationalEconomy(
     const nation = nationById.get(settlement.nationId);
     if (nation === undefined) continue;
 
-    const policy =
-      overridePolicyByKey.get(`${nation.id}:${settlement.id}`) ??
+    const policy = overridePolicyByKey.get(`${nation.id}:${settlement.id}`) ??
       defaultPolicyByNation.get(nation.id);
     if (policy === undefined || policy.exempt) continue;
 
     const efficiency = GOVERNMENT_TAX_EFFICIENCY[nation.governmentType];
 
-    const targetResourceIds =
-      policy.taxedResourceIds !== null
-        ? [...policy.taxedResourceIds].sort()
-        : (resourcesBySettlement.get(settlement.id) ?? []);
+    const targetResourceIds = policy.taxedResourceIds !== null
+      ? [...policy.taxedResourceIds].sort()
+      : (resourcesBySettlement.get(settlement.id) ?? []);
 
     for (const resourceId of targetResourceIds) {
       const stockpileKey = `${settlement.id}:${resourceId}`;

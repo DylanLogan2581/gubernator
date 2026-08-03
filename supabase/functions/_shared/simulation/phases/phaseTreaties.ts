@@ -77,7 +77,12 @@ export function phaseTreaties(context: SimulationContext): PhaseTreatiesOutput {
   const tributePaid = new Map<string, Map<string, number>>();
   const tributeReceived = new Map<string, Map<string, number>>();
 
-  function addTo(totals: Map<string, Map<string, number>>, nationId: string, resourceId: string, amount: number): void {
+  function addTo(
+    totals: Map<string, Map<string, number>>,
+    nationId: string,
+    resourceId: string,
+    amount: number,
+  ): void {
     let byResource = totals.get(nationId);
     if (byResource === undefined) {
       byResource = new Map();

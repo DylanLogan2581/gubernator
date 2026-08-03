@@ -140,7 +140,6 @@ describe("bundled scenario turn-1 integration", () => {
       const { data: worldRow, error: importErr } = await auth
         .rpc("import_world_from_template", {
           p_name: `[test] ${scenario.name}`,
-          p_visibility: "private",
           p_template: scenario.template as unknown as Json,
         })
         .maybeSingle<{ id: string; current_turn_number: number }>();

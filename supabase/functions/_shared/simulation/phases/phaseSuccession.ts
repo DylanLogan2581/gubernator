@@ -5,7 +5,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import { GOVERNMENT_RULES, getSuccessionCandidates } from "../../government/index.ts";
+import { getSuccessionCandidates, GOVERNMENT_RULES } from "../../government/index.ts";
 import { compareById } from "../sortUtils.ts";
 
 import type { CitizenSuccessionInfo } from "../../government/index.ts";
@@ -26,9 +26,7 @@ function formatCitizenName(citizen: {
   readonly givenName: string;
   readonly surname: string | null;
 }): string {
-  return citizen.surname !== null
-    ? `${citizen.givenName} ${citizen.surname}`
-    : citizen.givenName;
+  return citizen.surname !== null ? `${citizen.givenName} ${citizen.surname}` : citizen.givenName;
 }
 
 // Deterministic: eldest (lowest bornOnTurnNumber) first, then citizenId

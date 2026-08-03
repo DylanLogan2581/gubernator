@@ -134,7 +134,6 @@ export function roundToDatabaseScale(value: DecimalValue): DecimalValue {
   return Math.round(value * 10000) / 10000;
 }
 
-
 /**
  * Floors a float64 value to the database scale (4 decimal places), never
  * rounding up. Use for deterministic derived amounts (e.g. tax collection)

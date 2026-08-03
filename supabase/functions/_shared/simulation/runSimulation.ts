@@ -528,7 +528,9 @@ export function runSimulation(
       payload: {
         armyId: army.id,
         deadSoldierCount: deceased.length,
-        detail: `${deceased.length} soldier${deceased.length === 1 ? "" : "s"} of ${army.name} ${summary}.`,
+        detail: `${deceased.length} soldier${
+          deceased.length === 1 ? "" : "s"
+        } of ${army.name} ${summary}.`,
         unitId,
       },
       phase: "soldierDeathCascade",

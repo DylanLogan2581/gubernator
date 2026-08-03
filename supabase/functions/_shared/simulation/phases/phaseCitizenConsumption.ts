@@ -55,8 +55,7 @@ export function phaseCitizenConsumption(
   context: SimulationContext,
   effectiveSettlementIdByCitizenId: ReadonlyMap<string, string>,
 ): PhaseCitizenConsumptionOutput {
-  const { citizens, populationRules, settlements, systemResourceIds, turnNumber } =
-    context.input;
+  const { citizens, populationRules, settlements, systemResourceIds, turnNumber } = context.input;
   const { pendingEventMultipliers } = context.shared;
 
   const { foodId, freshWaterId } = systemResourceIds;

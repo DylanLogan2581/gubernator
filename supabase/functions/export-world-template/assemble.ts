@@ -26,7 +26,9 @@ function deriveWorldSlug(name: string, id: string): string {
 function resolveEducationTierLevel(
   level: RawEducationTierLevelRow,
   eduNameById: ReadonlyMap<string, string>,
-): { readonly from_level: string | null; readonly to_level: string; readonly turns: number } | null {
+):
+  | { readonly from_level: string | null; readonly to_level: string; readonly turns: number }
+  | null {
   if (level.from_level_id !== null) {
     const fromLevel = eduNameById.get(level.from_level_id);
     if (fromLevel === undefined) return null;

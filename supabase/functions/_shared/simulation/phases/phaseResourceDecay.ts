@@ -57,10 +57,9 @@ export function phaseResourceDecay(
     // Percent mode floors the magnitude of the change toward zero (matching
     // the original decay-only arithmetic); flat mode applies the configured
     // quantity directly.
-    const rawDelta =
-      changeMode === "percent"
-        ? Math.sign(changeAmount) * Math.floor((pre * Math.abs(changeAmount)) / 100)
-        : changeAmount;
+    const rawDelta = changeMode === "percent"
+      ? Math.sign(changeAmount) * Math.floor((pre * Math.abs(changeAmount)) / 100)
+      : changeAmount;
     if (rawDelta === 0) continue;
 
     const cap = effectiveStorageCaps.get(key);

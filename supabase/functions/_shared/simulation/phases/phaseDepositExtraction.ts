@@ -52,8 +52,8 @@ export function phaseDepositExtraction(
     jobs.sort((a, b) => a.id.localeCompare(b.id));
   }
   const officeholderCitizenIds = new Set(
-  nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
-);
+    nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+  );
   const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
   const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 
@@ -152,8 +152,7 @@ export function phaseDepositExtraction(
       // Consume this job's worker inputs from the settlement stockpile.
       for (const input of job.workerInputsJson) {
         const consumed = jobWorkers * input.amountPerWorker * inputShortfallScale;
-        inputsConsumed[input.resourceId] =
-          (inputsConsumed[input.resourceId] ?? 0) + consumed;
+        inputsConsumed[input.resourceId] = (inputsConsumed[input.resourceId] ?? 0) + consumed;
         const key = `${sid}:${input.resourceId}`;
         allDeltas.push({
           delta: -consumed,
