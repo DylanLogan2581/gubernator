@@ -539,6 +539,34 @@ export type SimResource = {
   readonly id: string;
 };
 
+// The 20 simulation phases in run order. Reported by runSimulation's onPhase
+// hook so the turn worker can stamp which phase is executing.
+export type SimulationPhaseName =
+  | "standard_jobs"
+  | "deposit_extraction"
+  | "construction"
+  | "building_upkeep"
+  | "education"
+  | "passive_effects"
+  | "trade_routes"
+  | "national_economy"
+  | "treaties"
+  | "managed_populations"
+  | "military_upkeep"
+  | "citizen_consumption"
+  | "partnerships"
+  | "homelessness"
+  | "events"
+  | "stockpile_clamp"
+  | "resource_decay"
+  | "succession"
+  | "treaty_marriage_notes"
+  | "logs_and_snapshots";
+
+export type RunSimulationOptions = {
+  readonly onPhase?: (phase: SimulationPhaseName) => void;
+};
+
 export type SimulationInputState = {
   readonly armies: readonly SimArmy[];
   readonly armyUnits: readonly SimArmyUnit[];

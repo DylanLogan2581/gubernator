@@ -127,7 +127,7 @@ export async function runTurnJob(
 
     await setTransitionProgress(config, transitionId, "simulating", requestId);
 
-    const transitionResult = planSimulationTransition(stateResult.input, transitionId);
+    const transitionResult = await planSimulationTransition(stateResult.input, transitionId);
 
     if (!transitionResult.ok) {
       throw new Error(transitionResult.error.error.message);

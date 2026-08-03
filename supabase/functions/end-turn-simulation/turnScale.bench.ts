@@ -157,7 +157,7 @@ const world = makeScaledWorld(REPLICAS, CITIZEN_TARGET);
   runtime.gc?.();
   const before = heapMb();
   const inputMb = jsonMb(world);
-  const result = runSimulation(world, "tt-bench");
+  const result = await runSimulation(world, "tt-bench");
   const afterSim = heapMb();
   const payload = mapSimulationResultToPayload(result, world);
   const payloadMb = jsonMb(payload);
@@ -183,12 +183,12 @@ const world = makeScaledWorld(REPLICAS, CITIZEN_TARGET);
 }
 
 describe(`${world.settlements.length} settlements × ${world.citizens.length} citizens`, () => {
-  bench("runSimulation", () => {
-    runSimulation(world, "tt-bench");
+  bench("runSimulation", async () => {
+    await runSimulation(world, "tt-bench");
   }, { iterations: 3, warmupIterations: 1 });
 
-  bench("runSimulation + payload map + stringify", () => {
-    const result = runSimulation(world, "tt-bench");
+  bench("runSimulation + payload map + stringify", async () => {
+    const result = await runSimulation(world, "tt-bench");
     JSON.stringify(mapSimulationResultToPayload(result, world));
   }, { iterations: 3, warmupIterations: 1 });
 });

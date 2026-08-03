@@ -167,7 +167,7 @@ export async function handleEndTurnSimulationRequest(
         return respond(previewStateResult.error, previewStateResult.status);
       }
 
-      const previewPlanResult = planSimulationTransition(
+      const previewPlanResult = await planSimulationTransition(
         previewStateResult.input,
         FORECAST_PREVIEW_TRANSITION_ID,
       );

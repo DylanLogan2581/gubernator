@@ -34,31 +34,31 @@ import { computeForecastSnapshot } from "./forecast.ts";
 
 const GOLDEN_PATH = "./simulation.golden.json";
 
-function computeGolden(): { simulation: unknown; forecast: unknown } {
+async function computeGolden(): Promise<{ simulation: unknown; forecast: unknown }> {
   const input = makeGoldenWorldInput();
-  const simulation = runSimulation(input, GOLDEN_TRANSITION_ID);
+  const simulation = await runSimulation(input, GOLDEN_TRANSITION_ID);
   const forecast = computeForecastSnapshot(simulation, input);
   return { simulation, forecast };
 }
 
 describe("golden determinism", () => {
   it("produces output identical to the committed golden", async () => {
-    const actual = `${JSON.stringify(computeGolden(), null, 2)}\n`;
+    const actual = `${JSON.stringify(await computeGolden(), null, 2)}\n`;
     await expect(actual).toMatchFileSnapshot(GOLDEN_PATH);
   });
 
-  it("produces identical output across repeated runs", () => {
-    expect(JSON.stringify(computeGolden())).toBe(
-      JSON.stringify(computeGolden()),
+  it("produces identical output across repeated runs", async () => {
+    expect(JSON.stringify(await computeGolden())).toBe(
+      JSON.stringify(await computeGolden()),
     );
   });
 
-  it("exercises a broad slice of the engine", () => {
+  it("exercises a broad slice of the engine", async () => {
     // Guards against the golden silently degrading into an empty-world
     // snapshot: if a future fixture edit stops producing these outputs, the
     // golden would still "pass" while covering almost nothing.
-    const { simulation } = computeGolden();
-    const result = simulation as ReturnType<typeof runSimulation>;
+    const { simulation } = await computeGolden();
+    const result = simulation as Awaited<ReturnType<typeof runSimulation>>;
 
     expect(result.settlementSnapshots.length).toBe(3);
     expect(result.resourceSnapshots.length).toBeGreaterThan(5);

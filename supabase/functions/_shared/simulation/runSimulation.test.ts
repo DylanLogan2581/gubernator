@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { makeGoldenWorldInput } from "./goldenWorldFixture.ts";
 import { runSimulation } from "./runSimulation.ts";
 
 import type {
@@ -13,6 +14,7 @@ import type {
   SimSettlement,
   SimStockpile,
   SimulationInputState,
+  SimulationPhaseName,
   SimUnitSoldier,
   SimUnitType,
 } from "./simulationTypes.ts";
@@ -211,7 +213,7 @@ function makeUnitType(id = "ut1"): SimUnitType {
 // ---------------------------------------------------------------------------
 
 describe("runSimulation — partnership formed then dies in homelessness same turn", () => {
-  it("drops phantom partnership log/notification/snapshot count when partner dies in phase 10", () => {
+  it("drops phantom partnership log/notification/snapshot count when partner dies in phase 10", async () => {
     // Setup: two citizens, no population cap, high homelessness rate.
     // Expected: phase 9 forms partnership, phase 10 kills the younger citizen.
     // Result: no partnership.formed log, notification, or count in snapshot.
@@ -245,7 +247,7 @@ describe("runSimulation — partnership formed then dies in homelessness same tu
       },
     });
 
-    const result = runSimulation(input, "form-then-die-uuid");
+    const result = await runSimulation(input, "form-then-die-uuid");
 
     // Verify no partnership.formed logs
     const partnershipLogs = result.logEntries.filter(
@@ -278,7 +280,7 @@ describe("runSimulation — partnership formed then dies in homelessness same tu
 });
 
 describe("runSimulation — managed_population_change event delta", () => {
-  it("applies event delta to managed population current_count", () => {
+  it("applies event delta to managed population current_count", async () => {
     const input = makeInput({
       managedPopulationTypes: [
         {
@@ -315,7 +317,7 @@ describe("runSimulation — managed_population_change event delta", () => {
       ],
     });
 
-    const result = runSimulation(input, "test-transition-id");
+    const result = await runSimulation(input, "test-transition-id");
 
     const update = result.managedPopulationUpdates.find(
       (u) => u.managedPopulationInstanceId === "mp1",
@@ -325,7 +327,7 @@ describe("runSimulation — managed_population_change event delta", () => {
     expect(update?.toStatus).toBeNull();
   });
 
-  it("clamps event delta so count cannot go below zero", () => {
+  it("clamps event delta so count cannot go below zero", async () => {
     const input = makeInput({
       managedPopulationTypes: [
         {
@@ -362,7 +364,7 @@ describe("runSimulation — managed_population_change event delta", () => {
       ],
     });
 
-    const result = runSimulation(input, "test-transition-id");
+    const result = await runSimulation(input, "test-transition-id");
 
     const update = result.managedPopulationUpdates.find(
       (u) => u.managedPopulationInstanceId === "mp1",
@@ -378,7 +380,7 @@ describe("runSimulation — managed_population_change event delta", () => {
 // ---------------------------------------------------------------------------
 
 describe("runSimulation — officeholders leave the settlement labor pool", () => {
-  it("a citizen holding a nation office contributes zero job production that transition", () => {
+  it("a citizen holding a nation office contributes zero job production that transition", async () => {
     const job: SimJob = {
       baseCapacity: null,
       id: "job1",
@@ -411,8 +413,8 @@ describe("runSimulation — officeholders leave the settlement labor pool", () =
       stockpiles: [makeStockpile("s1", "food", 0)],
     };
 
-    const withoutOffice = runSimulation(makeInput(baseInput), "t1");
-    const withOffice = runSimulation(
+    const withoutOffice = await runSimulation(makeInput(baseInput), "t1");
+    const withOffice = await runSimulation(
       makeInput({ ...baseInput, nationOffices: [{ citizenId: "c1", excludesFromLabor: true }] }),
       "t2",
     );
@@ -434,7 +436,7 @@ describe("runSimulation — officeholders leave the settlement labor pool", () =
 // ---------------------------------------------------------------------------
 
 describe("runSimulation — national economy tax collection", () => {
-  it("citizen consumption sees the post-tax stockpile", () => {
+  it("citizen consumption sees the post-tax stockpile", async () => {
     const job: SimJob = {
       baseCapacity: null,
       id: "job1",
@@ -483,13 +485,13 @@ describe("runSimulation — national economy tax collection", () => {
       stockpiles: [makeStockpile("s1", "food", 0)],
     };
 
-    const taxedResult = runSimulation(makeInput(baseInput), "t-tax");
+    const taxedResult = await runSimulation(makeInput(baseInput), "t-tax");
     const taxedLog = taxedResult.logEntries.find(
       (l) => l.category === "citizen.consumed_food_water",
     );
     expect(taxedLog).toMatchObject({ payload: { foodStock: 0 } });
 
-    const untaxedResult = runSimulation(
+    const untaxedResult = await runSimulation(
       makeInput({
         ...baseInput,
         nations: [
@@ -505,7 +507,7 @@ describe("runSimulation — national economy tax collection", () => {
     expect(untaxedLog).toMatchObject({ payload: { foodStock: 10 } });
   });
 
-  it("does nothing when tax_rate is 0 (regression-safe default)", () => {
+  it("does nothing when tax_rate is 0 (regression-safe default)", async () => {
     const job: SimJob = {
       baseCapacity: null,
       id: "job1",
@@ -530,7 +532,7 @@ describe("runSimulation — national economy tax collection", () => {
       tradeRouteId: null,
     };
 
-    const result = runSimulation(
+    const result = await runSimulation(
       makeInput({
         citizenAssignments: [assignment],
         citizens: [makeMaleNpc("worker", "s1")],
@@ -556,10 +558,10 @@ describe("runSimulation — national economy tax collection", () => {
 // ---------------------------------------------------------------------------
 
 describe("runSimulation — soldier lifecycle (#1111)", () => {
-  it("a soldier consumes food at their army's stationed settlement, not their home settlement", () => {
+  it("a soldier consumes food at their army's stationed settlement, not their home settlement", async () => {
     const soldier = makeMaleNpc("soldier1", "home");
 
-    const result = runSimulation(
+    const result = await runSimulation(
       makeInput({
         armies: [makeArmy("a1", "stationed")],
         armyUnits: [makeArmyUnit("u1", "a1")],
@@ -586,10 +588,10 @@ describe("runSimulation — soldier lifecycle (#1111)", () => {
     expect(result.citizenPatches).toHaveLength(0);
   });
 
-  it("starvation death removes the soldier's unit_soldiers row, logs it, and disbands an emptied unit", () => {
+  it("starvation death removes the soldier's unit_soldiers row, logs it, and disbands an emptied unit", async () => {
     const soldier = makeMaleNpc("soldier1", "home");
 
-    const result = runSimulation(
+    const result = await runSimulation(
       makeInput({
         armies: [makeArmy("a1", "stationed")],
         armyUnits: [makeArmyUnit("u1", "a1")],
@@ -621,10 +623,10 @@ describe("runSimulation — soldier lifecycle (#1111)", () => {
     ).toBe(true);
   });
 
-  it("a soldier is never counted as homeless at their home settlement while enlisted", () => {
+  it("a soldier is never counted as homeless at their home settlement while enlisted", async () => {
     const soldier = makeMaleNpc("soldier1", "home");
 
-    const result = runSimulation(
+    const result = await runSimulation(
       makeInput({
         armies: [makeArmy("a1", "stationed")],
         armyUnits: [makeArmyUnit("u1", "a1")],
@@ -655,10 +657,10 @@ describe("runSimulation — soldier lifecycle (#1111)", () => {
 // ---------------------------------------------------------------------------
 
 describe("runSimulation — treaty tribute applied once (#1127)", () => {
-  it("a nation-funded army affordable at 1x tribute debit does not desert", () => {
+  it("a nation-funded army affordable at 1x tribute debit does not desert", async () => {
     const soldier = makeMaleNpc("soldier1", "stationed");
 
-    const result = runSimulation(
+    const result = await runSimulation(
       makeInput({
         armies: [
           makeArmy("a1", "stationed", { fundingSource: "nation", nationId: "payer" }),
@@ -711,5 +713,51 @@ describe("runSimulation — treaty tribute applied once (#1127)", () => {
       nationId: "payer",
       resourceId: "gold",
     }]);
+  });
+});
+
+describe("runSimulation onPhase", () => {
+  it("reports every phase once, in run order", async () => {
+    const seen: SimulationPhaseName[] = [];
+
+    await runSimulation(makeGoldenWorldInput(), "tt-phase-test", {
+      onPhase: (phase) => {
+        seen.push(phase);
+      },
+    });
+
+    expect(seen).toEqual([
+      "standard_jobs",
+      "deposit_extraction",
+      "construction",
+      "building_upkeep",
+      "education",
+      "passive_effects",
+      "trade_routes",
+      "national_economy",
+      "treaties",
+      "managed_populations",
+      "military_upkeep",
+      "citizen_consumption",
+      "partnerships",
+      "homelessness",
+      "events",
+      "stockpile_clamp",
+      "resource_decay",
+      "succession",
+      "treaty_marriage_notes",
+      "logs_and_snapshots",
+    ]);
+  });
+
+  it("yields to the event loop between phases", async () => {
+    let ticked = false;
+    setTimeout(() => {
+      ticked = true;
+    }, 0);
+
+    await runSimulation(makeGoldenWorldInput(), "tt-yield-test");
+
+    expect(ticked).toBe(true);
   });
 });

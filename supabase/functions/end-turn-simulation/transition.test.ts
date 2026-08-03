@@ -153,9 +153,9 @@ function makeEmptyResult(): SimulationResult {
 const FIXED_TRANSITION_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
 describe("planSimulationTransition", () => {
-  it("returns ok:false with status 409 for an archived world", () => {
+  it("returns ok:false with status 409 for an archived world", async () => {
     const input = makeBaseInput({ isWorldArchived: true });
-    const result = planSimulationTransition(input, FIXED_TRANSITION_ID);
+    const result = await planSimulationTransition(input, FIXED_TRANSITION_ID);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.status).toBe(409);
@@ -163,9 +163,9 @@ describe("planSimulationTransition", () => {
     }
   });
 
-  it("returns ok:true and echoes the transitionId from the caller", () => {
+  it("returns ok:true and echoes the transitionId from the caller", async () => {
     const input = makeBaseInput();
-    const result = planSimulationTransition(input, FIXED_TRANSITION_ID);
+    const result = await planSimulationTransition(input, FIXED_TRANSITION_ID);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.transitionId).toBe(FIXED_TRANSITION_ID);
@@ -173,10 +173,10 @@ describe("planSimulationTransition", () => {
     }
   });
 
-  it("uses the provided transitionId as the RNG seed (same id → same payload)", () => {
+  it("uses the provided transitionId as the RNG seed (same id → same payload)", async () => {
     const input = makeBaseInput();
-    const r1 = planSimulationTransition(input, FIXED_TRANSITION_ID);
-    const r2 = planSimulationTransition(input, FIXED_TRANSITION_ID);
+    const r1 = await planSimulationTransition(input, FIXED_TRANSITION_ID);
+    const r2 = await planSimulationTransition(input, FIXED_TRANSITION_ID);
     if (r1.ok && r2.ok) {
       expect(r1.transitionId).toBe(r2.transitionId);
     }

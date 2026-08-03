@@ -170,13 +170,13 @@ export type SimulationTransitionResult =
 // planSimulationTransition
 // ---------------------------------------------------------------------------
 
-export function planSimulationTransition(
+export async function planSimulationTransition(
   input: SimulationInputState,
   transitionId: string,
-): SimulationTransitionResult {
+): Promise<SimulationTransitionResult> {
   let result: SimulationResult;
   try {
-    result = runSimulation(input, transitionId);
+    result = await runSimulation(input, transitionId);
   } catch (error) {
     if (error instanceof SimulationRejectionError) {
       if (error.code === "world_archived") {

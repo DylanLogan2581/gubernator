@@ -34,20 +34,31 @@ import type {
   NationStockpileDelta,
   NationTurnSnapshot,
   ReadinessSummary,
+  RunSimulationOptions,
   SimulationContext,
   SimulationInputState,
   SimulationLogEntry,
   SimulationNotification,
+  SimulationPhaseName,
   SimulationResult,
   StockpileDelta,
 } from "./simulationTypes.ts";
 
 export { SimulationRejectionError } from "./simulationTypes.ts";
 
-export function runSimulation(
+export async function runSimulation(
   input: SimulationInputState,
   _transitionId: string,
-): SimulationResult {
+  options?: RunSimulationOptions,
+): Promise<SimulationResult> {
+  // Yield to the event loop so the worker can flush a progress write between
+  // phases. Reporting is side-band: it must not touch the RNG, and phase order
+  // is unchanged, so the golden fixture stays byte-identical.
+  const enterPhase = async (phase: SimulationPhaseName): Promise<void> => {
+    options?.onPhase?.(phase);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+
   if (input.isWorldArchived === true) {
     throw new SimulationRejectionError(
       "world_archived",
@@ -195,6 +206,7 @@ export function runSimulation(
   // Phase 1 — Standard Jobs
   // -------------------------------------------------------------------------
 
+  await enterPhase("standard_jobs");
   const p1 = phaseStandardJobs(context);
   applyDeltas(p1.stockpileDeltas);
 
@@ -202,6 +214,7 @@ export function runSimulation(
   // Phase 2 — Deposit Extraction
   // -------------------------------------------------------------------------
 
+  await enterPhase("deposit_extraction");
   const p2 = phaseDepositExtraction(context);
   applyDeltas(p2.stockpileDeltas);
 
@@ -209,6 +222,7 @@ export function runSimulation(
   // Phase 3 — Construction
   // -------------------------------------------------------------------------
 
+  await enterPhase("construction");
   const p3 = phaseConstruction(context);
   applyDeltas(p3.stockpileDeltas);
 
@@ -216,6 +230,7 @@ export function runSimulation(
   // Phase 4 — Building Upkeep
   // -------------------------------------------------------------------------
 
+  await enterPhase("building_upkeep");
   const p4 = phaseBuildingUpkeep(context);
   applyDeltas(p4.stockpileDeltas);
 
@@ -265,12 +280,14 @@ export function runSimulation(
   // changes, which only exist after phaseBuildingUpkeep (p4) runs — so
   // education runs here instead, after p4 and before Phase 5.
 
+  await enterPhase("education");
   const p4dot5 = phaseEducation(context, p4.buildingStateChanges);
 
   // -------------------------------------------------------------------------
   // Phase 5 — Passive Effects
   // -------------------------------------------------------------------------
 
+  await enterPhase("passive_effects");
   const p5 = phasePassiveEffects(context);
   applyDeltas(p5.stockpileDeltas);
 
@@ -278,6 +295,7 @@ export function runSimulation(
   // Phase 6 — Trade Routes
   // -------------------------------------------------------------------------
 
+  await enterPhase("trade_routes");
   const p6 = phaseTradeRoutes(context);
   applyDeltas(p6.stockpileDeltas);
 
@@ -292,6 +310,7 @@ export function runSimulation(
     ...p1.stockpileDeltas.filter((d) => d.delta > 0),
     ...p2.stockpileDeltas.filter((d) => d.delta > 0),
   ];
+  await enterPhase("national_economy");
   const p6dot5 = phaseNationalEconomy(context, nationalEconomyProductionDeltas);
   applyDeltas(p6dot5.stockpileDeltas);
   applyNationDeltas(p6dot5.nationStockpileDeltas);
@@ -304,6 +323,7 @@ export function runSimulation(
   // handled separately (phaseTreatyMarriageNotes, below) once this-turn
   // deaths from every mortality-causing phase are known.
 
+  await enterPhase("treaties");
   const p6dot75 = phaseTreaties(context);
   applyNationDeltas(p6dot75.nationStockpileDeltas);
 
@@ -311,6 +331,7 @@ export function runSimulation(
   // Phase 7 — Managed Populations
   // -------------------------------------------------------------------------
 
+  await enterPhase("managed_populations");
   const p7 = phaseManagedPopulations(context);
   applyDeltas(p7.stockpileDeltas);
 
@@ -320,6 +341,7 @@ export function runSimulation(
   // Runs after national economy (post-tax nation/settlement stockpiles) and
   // before citizen consumption, per the issue's ordering requirement.
 
+  await enterPhase("military_upkeep");
   const p7dot5 = phaseMilitaryUpkeep(context);
   applyDeltas(p7dot5.stockpileDeltas);
   applyNationDeltas(p7dot5.nationStockpileDeltas);
@@ -360,6 +382,7 @@ export function runSimulation(
     (c) => effectiveSettlementIdByCitizenId.get(c.id) ?? c.settlementId,
   );
 
+  await enterPhase("citizen_consumption");
   const p8 = phaseCitizenConsumption(
     context,
     effectiveSettlementIdByCitizenId,
@@ -377,12 +400,14 @@ export function runSimulation(
   // Phase 9 — Partnerships (receives starvation deaths from phase 8)
   // -------------------------------------------------------------------------
 
+  await enterPhase("partnerships");
   const p9 = phasePartnerships(context, p8.citizenDeaths);
 
   // -------------------------------------------------------------------------
   // Phase 10 — Homelessness
   // -------------------------------------------------------------------------
 
+  await enterPhase("homelessness");
   const p10 = phaseHomelessness(
     context,
     enlistedSoldierCitizenIds,
@@ -393,6 +418,7 @@ export function runSimulation(
   // Phase 11 — Events
   // -------------------------------------------------------------------------
 
+  await enterPhase("events");
   const p11 = phaseEvents(context);
 
   // -------------------------------------------------------------------------
@@ -461,6 +487,7 @@ export function runSimulation(
     });
   }
 
+  await enterPhase("stockpile_clamp");
   const p12 = phaseStockpileClamp(
     context,
     pendingStockpiles,
@@ -480,6 +507,7 @@ export function runSimulation(
     ]),
   );
 
+  await enterPhase("resource_decay");
   const p12dot5 = phaseResourceDecay(
     pendingStockpiles,
     resourcesByWorldId,
@@ -572,7 +600,9 @@ export function runSimulation(
     }
   }
 
+  await enterPhase("succession");
   const pSuccession = phaseSuccession(context, allDeaths);
+  await enterPhase("treaty_marriage_notes");
   const pTreatyMarriageNotes = phaseTreatyMarriageNotes(context, allDeaths);
 
   // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
@@ -658,6 +688,7 @@ export function runSimulation(
 
   const allCitizenBirths = [...p9.citizenBirths, ...p11.citizenBirths];
 
+  await enterPhase("logs_and_snapshots");
   const p13 = phaseLogsAndSnapshots(context, {
     allDeaths,
     buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
