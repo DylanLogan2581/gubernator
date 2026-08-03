@@ -535,7 +535,13 @@ describe("settlement detail route", () => {
       );
       renderAt(BASE_PATH);
       expect(
-        await screen.findByRole("heading", { level: 1, name: "Hometown" }),
+        await screen.findByRole(
+          "heading",
+          { level: 1, name: "Hometown" },
+          // The route mounts a full page tree behind several mocked queries; the
+          // 1s default is marginal on a loaded CI runner.
+          { timeout: 5000 },
+        ),
       ).toBeDefined();
       expect(screen.getByTestId("turn-transition-outcome-panel")).toBeDefined();
       expect(screen.getByTestId("active-events-card")).toBeDefined();
@@ -546,7 +552,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/citizens`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
 
       expect(screen.getByTestId("citizens-panel")).toBeDefined();
       expect(screen.queryByTestId("assignment-board")).toBeNull();
@@ -557,7 +569,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/assignments`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
 
       const board = screen.getByTestId("assignment-board");
       const props = JSON.parse(board.dataset.props ?? "{}") as Record<
@@ -585,7 +603,13 @@ describe("settlement detail route", () => {
           createClient({ adminRows: [{ world_id: WORLD_ID }] }),
         );
         renderAt(`${BASE_PATH}/${segment}`);
-        await screen.findByRole("heading", { level: 1, name: "Hometown" });
+        await screen.findByRole(
+          "heading",
+          { level: 1, name: "Hometown" },
+          // The route mounts a full page tree behind several mocked queries; the
+          // 1s default is marginal on a loaded CI runner.
+          { timeout: 5000 },
+        );
         expect(screen.getByTestId(testId)).toBeDefined();
       },
     );
@@ -595,7 +619,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/forecast`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
       expect(await screen.findByText(/forecast/i)).toBeDefined();
     });
 
@@ -604,7 +634,13 @@ describe("settlement detail route", () => {
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
       renderAt(`${BASE_PATH}/settings`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
       expect(screen.getByTestId("nameset-card")).toBeDefined();
       expect(
         screen.getByRole("button", { name: "Delete settlement" }),
@@ -628,7 +664,13 @@ describe("settlement detail route", () => {
         switchTo: vi.fn(),
       });
       renderAt(`${BASE_PATH}/settings`);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
       expect(screen.getByText("Admin access paused")).toBeDefined();
       expect(
         screen.queryByRole("button", { name: "Delete settlement" }),
@@ -728,7 +770,13 @@ describe("settlement detail route", () => {
         switchTo: vi.fn(),
       });
       renderAt(BASE_PATH);
-      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "Hometown" },
+        // The route mounts a full page tree behind several mocked queries; the
+        // 1s default is marginal on a loaded CI runner.
+        { timeout: 5000 },
+      );
 
       const editButtons = await screen.findAllByRole("button", {
         name: "Edit",
