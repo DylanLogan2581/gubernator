@@ -11,6 +11,10 @@ import type { SupabaseWorldRow } from "./rowTypes.ts";
 export type FetchContext = {
   readonly headers: { readonly apikey: string; readonly authorization: string };
   readonly supabaseUrl: string;
+  // Per-request timeout. Omitted on the browser-facing preview path, which is
+  // bounded by the 30s request anyway; the background worker raises it because
+  // a large world's reads can outlast that budget (#1278).
+  readonly timeoutMs?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -51,6 +55,7 @@ async function fetchRows({
     response = await supabaseFetch(
       `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
       { headers: ctx.headers, method: "GET" },
+      ctx.timeoutMs,
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -129,6 +134,7 @@ async function fetchRowsPaginated({
           headers: { ...ctx.headers, Range: rangeHeader },
           method: "GET",
         },
+        ctx.timeoutMs,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -278,6 +284,7 @@ export async function fetchWorldRow(
     response = await supabaseFetch(
       `${ctx.supabaseUrl}/rest/v1/worlds?${searchParams}`,
       { headers: ctx.headers, method: "GET" },
+      ctx.timeoutMs,
     );
   } catch {
     return { ok: false, reason: "fetch_failed" };

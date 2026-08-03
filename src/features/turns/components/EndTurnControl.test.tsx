@@ -230,7 +230,7 @@ describe("EndTurnControl", () => {
     expect(
       (await screen.findAllByRole("button", { name: "Running..." }))[0],
     ).toBeDisabled();
-    expect(screen.getByText("End-turn transition is running.")).toBeDefined();
+    expect(screen.getByText("Queueing the end-turn transition.")).toBeDefined();
     expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-simulation", {
       body: {
         expectedTurnNumber: 7,
@@ -266,44 +266,11 @@ describe("EndTurnControl", () => {
     expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
   });
 
-  it("toasts the new turn and simulation counts after the transition", async () => {
+  it("toasts that the turn was queued and closes the dialog", async () => {
+    // The turn itself runs in a background worker now (#1278), so the request
+    // reports acceptance; the outcome toast comes from the transition poll.
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
-      invokeResult: {
-        data: {
-          data: {
-            actorId: "user-1",
-            summary: {
-              currentTurnNumber: 8,
-              fromTurnNumber: 7,
-              patchCounts: {
-                assignmentClears: 0,
-                bornOnTurnBackfill: 0,
-                buildingStateChanges: 3,
-                buildingsCreated: 0,
-                citizenBirths: 1,
-                citizenDeaths: 2,
-                constructionUpdates: 0,
-                depositUpdates: 1,
-                logEntries: 0,
-                managedPopulationUpdates: 0,
-                notifications: 0,
-                overshootStamped: 0,
-                partnershipChanges: 0,
-                readinessReset: 0,
-                settlementSnapshots: 0,
-                stockpileDeltas: 0,
-                tradeRouteOutcomes: 0,
-              },
-              toTurnNumber: 8,
-              transitionId: "transition-1",
-            },
-            worldId: "world-1",
-          },
-          ok: true,
-        },
-        error: null,
-      },
       settlementRows: [
         createSettlementRow({ auto_ready_enabled: true }),
         createSettlementRow({
@@ -327,74 +294,11 @@ describe("EndTurnControl", () => {
     await vi.waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledTimes(1);
     });
-    expect(toastSuccess).toHaveBeenCalledWith("Advanced to turn 8", {
-      description: "2 deaths, 1 births, 3 building changes, 1 deposit updates.",
+    expect(toastSuccess).toHaveBeenCalledWith("Turn advancement started", {
+      description:
+        "The turn is running in the background. This page updates when it finishes.",
     });
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByText("End-turn transition completed.")).toBeNull();
-  });
-
-  it("toasts simulation counts sourced from the response summary", async () => {
-    const user = userEvent.setup();
-    const clientFixture = createClientFixture({
-      invokeResult: {
-        data: {
-          data: {
-            actorId: "user-1",
-            summary: {
-              currentTurnNumber: 8,
-              fromTurnNumber: 7,
-              patchCounts: {
-                assignmentClears: 0,
-                bornOnTurnBackfill: 0,
-                buildingStateChanges: 2,
-                buildingsCreated: 0,
-                citizenBirths: 3,
-                citizenDeaths: 5,
-                constructionUpdates: 0,
-                depositUpdates: 4,
-                logEntries: 0,
-                managedPopulationUpdates: 0,
-                notifications: 0,
-                overshootStamped: 0,
-                partnershipChanges: 0,
-                readinessReset: 0,
-                settlementSnapshots: 0,
-                stockpileDeltas: 0,
-                tradeRouteOutcomes: 0,
-              },
-              toTurnNumber: 8,
-              transitionId: "transition-1",
-            },
-            worldId: "world-1",
-          },
-          ok: true,
-        },
-        error: null,
-      },
-      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
-    });
-    requireSupabaseClient.mockReturnValue(clientFixture.client);
-
-    renderEndTurnControl();
-
-    await screen.findByText("Current turn");
-    await user.click(
-      await screen.findByRole("button", { name: "Run turn transition" }),
-    );
-    await user.click(
-      await screen.findByRole("button", { name: "Confirm turn transition" }),
-    );
-
-    await vi.waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledTimes(1);
-    });
-    const [, options] = toastSuccess.mock.calls[0];
-
-    expect(options?.description).toContain("5 deaths");
-    expect(options?.description).toContain("3 births");
-    expect(options?.description).toContain("2 building changes");
-    expect(options?.description).toContain("4 deposit updates");
   });
 
   it("toasts an error message for stale-turn failures", async () => {
@@ -790,31 +694,8 @@ function createClientFixture({
     data: {
       data: {
         actorId: "user-1",
-        summary: {
-          currentTurnNumber: 8,
-          fromTurnNumber: 7,
-          patchCounts: {
-            assignmentClears: 0,
-            bornOnTurnBackfill: 0,
-            buildingStateChanges: 0,
-            buildingsCreated: 0,
-            citizenBirths: 0,
-            citizenDeaths: 0,
-            constructionUpdates: 0,
-            depositUpdates: 0,
-            logEntries: 0,
-            managedPopulationUpdates: 0,
-            notifications: 0,
-            overshootStamped: 0,
-            partnershipChanges: 0,
-            readinessReset: 0,
-            settlementSnapshots: 0,
-            stockpileDeltas: 0,
-            tradeRouteOutcomes: 0,
-          },
-          toTurnNumber: 8,
-          transitionId: "transition-1",
-        },
+        jobId: "job-1",
+        transitionId: "transition-1",
         worldId: "world-1",
       },
       ok: true,

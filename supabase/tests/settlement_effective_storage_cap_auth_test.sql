@@ -1,11 +1,12 @@
 -- pgTAP auth tests for public.settlement_effective_storage_cap.
 -- Verifies that unauthenticated and foreign-world callers are rejected, while
--- in-world users and world admins are admitted.
+-- in-world users, world admins, and the background turn worker's service role
+-- are admitted.
 -- Run with: npx supabase test db
 begin;
 
 select
-  plan (5);
+  plan (6);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -240,6 +241,29 @@ select
     ),
     100::numeric,
     'in-world user (player-character path) is allowed and receives the correct storage cap'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- TEST 6: SERVICE ROLE — allowed without a user context (#1278)
+-- The background turn worker loads simulation state privileged, with no end
+-- user's JWT to satisfy current_user_has_world_access.
+-- ===========================================================================
+set
+  local role service_role;
+
+set
+  local "request.jwt.claims" = '{"role":"service_role"}';
+
+select
+  is (
+    public.settlement_effective_storage_cap (
+      '3b400000-0000-0000-0000-000000000001',
+      '3b500000-0000-0000-0000-000000000001'
+    ),
+    100::numeric,
+    'service role is allowed without a user context and receives the correct storage cap'
   );
 
 reset role;

@@ -25,7 +25,7 @@ describe("latestTurnTransitionStatusQueryOptions", () => {
     expect(status).toBeNull();
     expect(testClient.from).toHaveBeenCalledWith("turn_transitions");
     expect(testClient.transitionBuilder.select).toHaveBeenCalledWith(
-      "id,world_id,from_turn_number,to_turn_number,status,started_at,finished_at",
+      "id,world_id,from_turn_number,to_turn_number,status,started_at,finished_at,progress_stage",
     );
     expect(testClient.transitionBuilder.eq).toHaveBeenCalledWith(
       "world_id",
@@ -58,6 +58,7 @@ describe("latestTurnTransitionStatusQueryOptions", () => {
       fromTurnNumber: 4,
       id: "transition-1",
       isRunning: true,
+      progressStage: null,
       startedAt: "2026-05-03T10:00:00.000Z",
       state: "running",
       toTurnNumber: 5,

@@ -29,14 +29,41 @@ describe("getControlDescription", () => {
     ).toBe("End turn is disabled until readiness can be reviewed.");
   });
 
-  it("returns pending message while transition is running", () => {
+  it("returns a queueing message while the request is in flight", () => {
     expect(
       getControlDescription({
         isArchived: false,
         isPending: true,
         isReadinessUnavailable: false,
       }),
-    ).toBe("End-turn transition is running.");
+    ).toBe("Queueing the end-turn transition.");
+  });
+
+  it("describes the background worker's progress while the turn runs", () => {
+    expect(
+      getControlDescription({
+        isArchived: false,
+        isPending: false,
+        isReadinessUnavailable: false,
+        isTurnRunning: true,
+        progressStage: "simulating",
+      }),
+    ).toBe(
+      "End-turn transition is running in the background (simulating the turn).",
+    );
+  });
+
+  it("falls back to a waiting label when no stage has been reported", () => {
+    expect(
+      getControlDescription({
+        isArchived: false,
+        isPending: false,
+        isReadinessUnavailable: false,
+        isTurnRunning: true,
+      }),
+    ).toBe(
+      "End-turn transition is running in the background (waiting to start).",
+    );
   });
 
   it("returns empty description when ready", () => {

@@ -5,14 +5,20 @@ import {
 
 import { isEndTurnTransitionError } from "../mutations/endTurnTransitionMutations";
 
+import type { TurnTransitionProgressStage } from "../types/turnTransitionStatusTypes";
+
 export function getControlDescription({
   isArchived,
   isPending,
   isReadinessUnavailable,
+  isTurnRunning = false,
+  progressStage = null,
 }: {
   readonly isArchived: boolean;
   readonly isPending: boolean;
   readonly isReadinessUnavailable: boolean;
+  readonly isTurnRunning?: boolean;
+  readonly progressStage?: TurnTransitionProgressStage | null;
 }): string {
   if (isArchived) {
     return "End turn is disabled because this world is archived.";
@@ -22,11 +28,33 @@ export function getControlDescription({
     return "End turn is disabled until readiness can be reviewed.";
   }
 
+  // The turn runs in a background worker (#1278), so it outlives the request
+  // that queued it: describe the transition, not the mutation.
+  if (isTurnRunning) {
+    return `End-turn transition is running in the background (${getTurnProgressLabel(progressStage)}).`;
+  }
+
   if (isPending) {
-    return "End-turn transition is running.";
+    return "Queueing the end-turn transition.";
   }
 
   return "";
+}
+
+export function getTurnProgressLabel(
+  stage: TurnTransitionProgressStage | null,
+): string {
+  switch (stage) {
+    case "loading":
+      return "loading world state";
+    case "simulating":
+      return "simulating the turn";
+    case "persisting":
+      return "saving results";
+    case "queued":
+    case null:
+      return "waiting to start";
+  }
 }
 
 export function getReadinessSummaryDescription(

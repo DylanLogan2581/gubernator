@@ -16,10 +16,10 @@ export {
 export {
   EndTurnTransitionError,
   endTurnTransitionMutationOptions,
+  invalidateAfterTurnAdvance,
   isEndTurnTransitionError,
   type EndTurnTransitionInput,
   type EndTurnTransitionMutationResult,
-  type EndTurnTransitionSummary,
 } from "./mutations/endTurnTransitionMutations";
 export {
   FailStuckTurnTransitionError,
@@ -37,6 +37,7 @@ export {
 export {
   getControlDescription,
   getErrorDescription as getEndTurnErrorDescription,
+  getTurnProgressLabel,
 } from "./utils/endTurnDescriptions";
 export {
   TurnTransitionOutcomeContent,
@@ -75,5 +76,6 @@ export type {
 } from "./types/currentTurnTypes";
 export type {
   LatestTurnTransitionStatus,
+  TurnTransitionProgressStage,
   TurnTransitionState,
 } from "./types/turnTransitionStatusTypes";

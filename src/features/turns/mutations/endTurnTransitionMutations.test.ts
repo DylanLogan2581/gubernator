@@ -5,46 +5,24 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
   endTurnTransitionMutationOptions,
+  invalidateAfterTurnAdvance,
   isEndTurnTransitionError,
 } from "./endTurnTransitionMutations";
 
-const successPatchCounts = {
-  assignmentClears: 0,
-  bornOnTurnBackfill: 0,
-  buildingStateChanges: 0,
-  buildingsCreated: 0,
-  citizenBirths: 0,
-  citizenDeaths: 0,
-  constructionUpdates: 0,
-  depositUpdates: 0,
-  logEntries: 0,
-  managedPopulationUpdates: 0,
-  notifications: 0,
-  overshootStamped: 0,
-  partnershipChanges: 0,
-  readinessReset: 0,
-  settlementSnapshots: 0,
-  stockpileDeltas: 0,
-  tradeRouteOutcomes: 0,
-};
-
+// The function now accepts the turn and hands back the ids to watch; the
+// summary arrives via the transition poll once the worker finishes (#1278).
 const successResult = {
   data: {
     actorId: "user-1",
-    summary: {
-      currentTurnNumber: 4,
-      fromTurnNumber: 3,
-      patchCounts: successPatchCounts,
-      toTurnNumber: 4,
-      transitionId: "transition-abc",
-    },
+    jobId: "job-abc",
+    transitionId: "transition-abc",
     worldId: "world-1",
   },
   ok: true,
 };
 
 describe("endTurnTransitionMutationOptions", () => {
-  it("calls the Edge Function with turn input and returns the summary", async () => {
+  it("calls the Edge Function with turn input and returns the queued ids", async () => {
     const clientFixture = createClient({ data: successResult, error: null });
     const queryClient = createQueryClient();
     vi.spyOn(queryClient, "invalidateQueries").mockResolvedValue();
@@ -60,13 +38,8 @@ describe("endTurnTransitionMutationOptions", () => {
 
     expect(result).toEqual({
       actorId: "user-1",
-      summary: {
-        currentTurnNumber: 4,
-        fromTurnNumber: 3,
-        patchCounts: successPatchCounts,
-        toTurnNumber: 4,
-        transitionId: "transition-abc",
-      },
+      jobId: "job-abc",
+      transitionId: "transition-abc",
       worldId: "world-1",
     });
     expect(options.mutationKey).toEqual(["turns", "end-turn-simulation"]);
@@ -78,7 +51,7 @@ describe("endTurnTransitionMutationOptions", () => {
     });
   });
 
-  it("invalidates all affected queries on success", async () => {
+  it("only refreshes the transition status when the turn is queued", async () => {
     const clientFixture = createClient({ data: successResult, error: null });
     const queryClient = createQueryClient();
     const invalidateQueries = vi
@@ -93,6 +66,21 @@ describe("endTurnTransitionMutationOptions", () => {
       expectedTurnNumber: 3,
       worldId: "world-1",
     });
+
+    // Nothing else has changed yet -- the worker has not run the turn.
+    expect(invalidateQueries).toHaveBeenCalledTimes(1);
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["turns", "latest-transition-status", "world-1"],
+    });
+  });
+
+  it("invalidates all affected queries once the turn has advanced", async () => {
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+
+    await invalidateAfterTurnAdvance(queryClient, "world-1");
 
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["worlds"] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["turns"] });

@@ -13,6 +13,7 @@ Browser (React SPA)
   ├─► Supabase REST API (PostgREST)   — queries, RPC calls
   └─► Supabase Edge Functions         — privileged operations
          ├─ end-turn-simulation
+         ├─ turn-worker
          ├─ export-world-template
          └─ admin-create-user
                │
@@ -23,7 +24,7 @@ Browser (React SPA)
 ```
 
 The frontend never holds service-role credentials. Edge functions that need
-admin-level DB access (`end-turn-simulation`, `admin-create-user`) receive
+admin-level DB access (`end-turn-simulation`, `turn-worker`, `admin-create-user`) receive
 `SUPABASE_SERVICE_ROLE_KEY` from the Supabase runtime and use it only for
 specific privileged RPC calls.
 
@@ -38,7 +39,7 @@ Client
   │  POST /functions/v1/end-turn-simulation
   │  { worldId, expectedTurnNumber }
   ▼
-end-turn-simulation (Edge Function)
+end-turn-simulation (Edge Function) — queues only, returns in ~1s
   │
   ├─ 1. Validate request body
   ├─ 2. Resolve auth context (JWT → userId)
@@ -47,30 +48,49 @@ end-turn-simulation (Edge Function)
   ├─ 5. Authorize (world admin or superadmin)
   ├─ 6. start_turn_transition RPC (service-role)
   │       └─ locks world, returns transitionId
-  ├─ 7. resolveSupabaseEndTurnSimulationInput
-  │       └─ load full world state (user JWT)
-  ├─ 8. planSimulationTransition
+  ├─ 7. enqueue_turn_job RPC (caller's JWT)
+  │       └─ one active job per world, linked to the transition
+  ├─ 8. Fire-and-forget nudge → turn-worker (best effort)
+  └─ 202 { jobId, transitionId, worldId, actorId }
+
+turn-worker (Edge Function, service-role only)
+  │
+  ├─ a. claim_turn_job RPC (FOR UPDATE SKIP LOCKED)
+  ├─ b. resolveServiceRoleEndTurnSimulationInput
+  │       └─ load full world state (service role)
+  ├─ c. planSimulationTransition
   │       ├─ runSimulation(input, transitionId)  ← pure, deterministic
   │       └─ mapSimulationResultToPayload
-  ├─ 9. computeForecastSnapshot
-  └─ 10. persistSimulationTransition
-          └─ apply_turn_transition RPC (service-role)
-                ├─ writes stockpile deltas, snapshots, log entries
-                ├─ creates citizens/deaths/partnerships
-                ├─ writes notifications
-                └─ advances world.current_turn_number
+  ├─ d. computeForecastSnapshot
+  ├─ e. persistSimulationTransition
+  │       └─ apply_turn_transition RPC (service-role)
+  │             ├─ writes stockpile deltas, snapshots, log entries
+  │             ├─ creates citizens/deaths/partnerships
+  │             ├─ writes notifications
+  │             └─ advances world.current_turn_number
+  └─ f. complete_turn_job RPC (idempotent)
 ```
 
-The `start_turn_transition` RPC locks the world against concurrent end-turns.
-If the Edge Function crashes after step 6 but before step 10, the world is left
-in `running` status — see [Admin Operations: stuck-transition
+The turn runs in the background so it is not bounded by the request's 30s
+budget (issue #1278). The client watches `turn_transitions` — `status` plus the
+worker's `progress_stage` — via `latestTurnTransitionStatusQueryOptions`, which
+polls while a transition is running.
+
+`start_turn_transition` locks the world against concurrent end-turns, and
+`turn_jobs` enforces one active job per world on top of it. A worker that dies
+mid-run leaves a stale `heartbeat_at`; the next `claim_turn_job` re-claims the
+job, which fences the dead worker out of ever completing it. A failed attempt
+marks its transition failed (`fail_stuck_turn_transition`) before releasing the
+claim, so the retry opens a fresh transition rather than re-applying against a
+terminal one — see [Admin Operations: stuck-transition
 recovery](admin-operations.md#stuck-transition-recovery).
 
 ### Forecast preview path
 
-When `preview: true` is sent in the request body, the function runs steps 1–5
-and 7–9, then returns `{ forecastSnapshot }` without calling
-`start_turn_transition` or `apply_turn_transition`. No state is modified.
+When `preview: true` is sent in the request body, the function runs steps 1–5,
+then loads state and simulates inline (nothing is queued) and returns
+`{ forecastSnapshot }` without calling `start_turn_transition`,
+`enqueue_turn_job`, or `apply_turn_transition`. No state is modified.
 Non-admin users who have the `view_forecast` permission may call this path.
 
 ---
@@ -168,9 +188,13 @@ The RPC raises `P0001` with a typed hint on business-logic errors:
 
 ## State loading
 
-World state is loaded in `resolveSupabaseEndTurnSimulationInput`
+The forecast-preview path loads world state in
+`resolveSupabaseEndTurnSimulationInput`
 (`supabase/functions/end-turn-simulation/state.ts`) using the caller's JWT, not
-the service-role key. This means RLS policies apply. The loaded
+the service-role key, so RLS policies apply. The background worker has no end
+user's JWT and uses `resolveServiceRoleEndTurnSimulationInput` instead, which
+runs privileged (`settlement_effective_storage_cap` admits the service role
+explicitly for this reason). Both share the same loader. The loaded
 `SimulationInputState` type
 (`supabase/functions/_shared/simulation/simulationTypes.ts`) includes every
 table the simulation reads.

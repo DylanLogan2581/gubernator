@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
-import { endTurnTransitionMutationOptions } from "../mutations/endTurnTransitionMutations";
+import { invalidateAfterTurnAdvance } from "../mutations/endTurnTransitionMutations";
 
 import { turnQueryKeys } from "./turnQueryKeys";
 import {
@@ -139,48 +139,29 @@ describe("latestSettlementTransitionOutcomeQueryOptions", () => {
 // -- Cache invalidation on endTurnTransition success --
 
 describe("endTurnTransitionMutationOptions cache invalidation", () => {
-  it("invalidates the world transition outcome query on success", async () => {
-    const clientFixture = createMutationClient({
-      data: makeSuccessResult(),
-      error: null,
-    });
+  // Outcome queries can only change once the background worker has actually
+  // run the turn (#1278), so they are invalidated on transition completion
+  // rather than when the request is accepted.
+  it("invalidates the world transition outcome query once the turn advances", async () => {
     const queryClient = createQueryClient();
     const invalidateQueries = vi
       .spyOn(queryClient, "invalidateQueries")
       .mockResolvedValue();
 
-    const options = endTurnTransitionMutationOptions({
-      client: clientFixture.client,
-      queryClient,
-    });
-    await executeMutation(queryClient, options, {
-      expectedTurnNumber: 3,
-      worldId: "world-1",
-    });
+    await invalidateAfterTurnAdvance(queryClient, "world-1");
 
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: turnQueryKeys.latestTransitionOutcome("world-1"),
     });
   });
 
-  it("invalidates all settlement transition outcome queries on success", async () => {
-    const clientFixture = createMutationClient({
-      data: makeSuccessResult(),
-      error: null,
-    });
+  it("invalidates all settlement transition outcome queries once the turn advances", async () => {
     const queryClient = createQueryClient();
     const invalidateQueries = vi
       .spyOn(queryClient, "invalidateQueries")
       .mockResolvedValue();
 
-    const options = endTurnTransitionMutationOptions({
-      client: clientFixture.client,
-      queryClient,
-    });
-    await executeMutation(queryClient, options, {
-      expectedTurnNumber: 3,
-      worldId: "world-1",
-    });
+    await invalidateAfterTurnAdvance(queryClient, "world-1");
 
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
@@ -190,8 +171,6 @@ describe("endTurnTransitionMutationOptions cache invalidation", () => {
 
 // -- Fixtures --
 
-type MutationOptions = ReturnType<typeof endTurnTransitionMutationOptions>;
-
 function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
@@ -199,69 +178,6 @@ function createQueryClient(): QueryClient {
       queries: { retry: false },
     },
   });
-}
-
-function createMutationClient(result: {
-  readonly data: unknown;
-  readonly error: unknown;
-}): {
-  readonly client: GubernatorSupabaseClient;
-} {
-  const invoke = vi.fn().mockResolvedValue(result);
-  return {
-    client: {
-      functions: { invoke },
-    } as unknown as GubernatorSupabaseClient,
-  };
-}
-
-function makeSuccessResult(): {
-  readonly data: unknown;
-  readonly ok: true;
-} {
-  return {
-    data: {
-      actorId: "user-1",
-      summary: {
-        currentTurnNumber: 4,
-        fromTurnNumber: 3,
-        patchCounts: {
-          assignmentClears: 0,
-          bornOnTurnBackfill: 0,
-          buildingStateChanges: 0,
-          buildingsCreated: 0,
-          citizenBirths: 0,
-          citizenDeaths: 0,
-          constructionUpdates: 0,
-          depositUpdates: 0,
-          logEntries: 0,
-          managedPopulationUpdates: 0,
-          notifications: 0,
-          overshootStamped: 0,
-          partnershipChanges: 0,
-          readinessReset: 0,
-          settlementSnapshots: 0,
-          stockpileDeltas: 0,
-          tradeRouteOutcomes: 0,
-        },
-        toTurnNumber: 4,
-        transitionId: "transition-abc",
-      },
-      worldId: "world-1",
-    },
-    ok: true,
-  };
-}
-
-function executeMutation(
-  queryClient: QueryClient,
-  options: MutationOptions,
-  variables: Parameters<NonNullable<MutationOptions["mutationFn"]>>[0],
-): Promise<Awaited<ReturnType<NonNullable<MutationOptions["mutationFn"]>>>> {
-  return queryClient
-    .getMutationCache()
-    .build(queryClient, options)
-    .execute(variables);
 }
 
 // -- Notification scope filtering fixtures --

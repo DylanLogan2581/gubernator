@@ -81,37 +81,13 @@ export type EndTurnTransitionInput = {
   readonly worldId: string;
 };
 
-export type PatchCounts = {
-  readonly assignmentClears: number;
-  readonly bornOnTurnBackfill: number;
-  readonly buildingStateChanges: number;
-  readonly buildingsCreated: number;
-  readonly citizenBirths: number;
-  readonly citizenDeaths: number;
-  readonly constructionUpdates: number;
-  readonly depositUpdates: number;
-  readonly logEntries: number;
-  readonly managedPopulationUpdates: number;
-  readonly notifications: number;
-  readonly overshootStamped: number;
-  readonly partnershipChanges: number;
-  readonly readinessReset: number;
-  readonly settlementSnapshots: number;
-  readonly stockpileDeltas: number;
-  readonly tradeRouteOutcomes: number;
-};
-
-export type EndTurnTransitionSummary = {
-  readonly currentTurnNumber: number;
-  readonly fromTurnNumber: number;
-  readonly patchCounts: PatchCounts;
-  readonly toTurnNumber: number;
-  readonly transitionId: string;
-};
-
+// The turn itself now runs in a background worker (#1278): the function accepts
+// the request and returns the ids to watch, and the outcome arrives through the
+// turn_transitions status poll rather than in this response.
 export type EndTurnTransitionMutationResult = {
   readonly actorId: string;
-  readonly summary: EndTurnTransitionSummary;
+  readonly jobId: string;
+  readonly transitionId: string;
   readonly worldId: string;
 };
 
@@ -146,45 +122,60 @@ export function endTurnTransitionMutationOptions({
     mutationFn: (input: EndTurnTransitionInput) =>
       endTurnTransition(client, input),
     mutationKey: [...turnQueryKeys.all, "end-turn-simulation"],
+    // The request only queues the turn now, so nothing else has changed yet.
+    // Refresh the transition status so the UI starts tracking the running turn;
+    // the wide invalidation happens in invalidateAfterTurnAdvance once the
+    // worker reports the transition finished.
     onSuccess: async (_result, input): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: turnQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
-        }),
-        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: settlementReadinessQueryKeys.list(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: settlementReadinessQueryKeys.summary(input.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: nationReadinessQueryKeys.list(input.worldId),
-        }),
-        queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: resourcesQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: buildingsQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: depositsQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.all,
-        }),
-        queryClient.invalidateQueries({ queryKey: tradeRoutesQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: citizensQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: eventQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: settlementSnapshotQueryKeys.all,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: snapshotAggregateQueryKeys.all,
-        }),
-      ]);
+      await queryClient.invalidateQueries({
+        queryKey: turnQueryKeys.latestTransitionStatus(input.worldId),
+      });
     },
   });
+}
+
+// Everything a completed turn can touch. Called when the background worker's
+// transition reaches a terminal status, not when the request is accepted.
+export async function invalidateAfterTurnAdvance(
+  queryClient: QueryClient,
+  worldId: string,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: turnQueryKeys.all }),
+    queryClient.invalidateQueries({
+      queryKey: turnQueryKeys.latestTransitionOutcome(worldId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
+    }),
+    queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
+    queryClient.invalidateQueries({
+      queryKey: settlementReadinessQueryKeys.list(worldId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: settlementReadinessQueryKeys.summary(worldId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: nationReadinessQueryKeys.list(worldId),
+    }),
+    queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: resourcesQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: buildingsQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: depositsQueryKeys.all }),
+    queryClient.invalidateQueries({
+      queryKey: managedPopulationsQueryKeys.all,
+    }),
+    queryClient.invalidateQueries({ queryKey: tradeRoutesQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: citizensQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: eventQueryKeys.all }),
+    queryClient.invalidateQueries({
+      queryKey: settlementSnapshotQueryKeys.all,
+    }),
+    queryClient.invalidateQueries({
+      queryKey: snapshotAggregateQueryKeys.all,
+    }),
+  ]);
 }
 
 export function isEndTurnTransitionError(
@@ -345,49 +336,14 @@ function isEndTurnTransitionFunctionErrorResponse(
   );
 }
 
-function isPatchCounts(value: unknown): value is PatchCounts {
-  return (
-    isRecord(value) &&
-    typeof value.assignmentClears === "number" &&
-    typeof value.bornOnTurnBackfill === "number" &&
-    typeof value.buildingStateChanges === "number" &&
-    typeof value.buildingsCreated === "number" &&
-    typeof value.citizenBirths === "number" &&
-    typeof value.citizenDeaths === "number" &&
-    typeof value.constructionUpdates === "number" &&
-    typeof value.depositUpdates === "number" &&
-    typeof value.logEntries === "number" &&
-    typeof value.managedPopulationUpdates === "number" &&
-    typeof value.notifications === "number" &&
-    typeof value.overshootStamped === "number" &&
-    typeof value.partnershipChanges === "number" &&
-    typeof value.readinessReset === "number" &&
-    typeof value.settlementSnapshots === "number" &&
-    typeof value.stockpileDeltas === "number" &&
-    typeof value.tradeRouteOutcomes === "number"
-  );
-}
-
-function isEndTurnTransitionSummary(
-  value: unknown,
-): value is EndTurnTransitionSummary {
-  return (
-    isRecord(value) &&
-    typeof value.currentTurnNumber === "number" &&
-    typeof value.fromTurnNumber === "number" &&
-    isPatchCounts(value.patchCounts) &&
-    typeof value.toTurnNumber === "number" &&
-    typeof value.transitionId === "string"
-  );
-}
-
 function isEndTurnTransitionMutationResult(
   value: unknown,
 ): value is EndTurnTransitionMutationResult {
   return (
     isRecord(value) &&
     typeof value.actorId === "string" &&
-    isEndTurnTransitionSummary(value.summary) &&
+    typeof value.jobId === "string" &&
+    typeof value.transitionId === "string" &&
     typeof value.worldId === "string"
   );
 }

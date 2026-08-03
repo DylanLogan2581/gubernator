@@ -16,12 +16,22 @@ Canonical engine lives in `supabase/functions/_shared/simulation/` (Deno-safe, c
 
 Browser (`endTurnTransitionMutations.ts`) → `client.functions.invoke("end-turn-simulation", {worldId, expectedTurnNumber, preview?})`. Super/world admins only (checked in `authorize.ts` AND inside both RPCs). `preview: true` = read-only forecast for any world member, nothing persisted.
 
-Real run, two-step RPC protocol against stuck turns:
+Real run is ASYNC (#1278): the request queues, the `turn-worker` function runs the pipeline.
+
+On the request:
 
 1. `start_turn_transition` — `FOR UPDATE` row lock on world, rejects `archived`/`stale_expected_turn`, inserts `turn_transitions status='running'`, returns transitionId.
-2. `runSimulation(input, transitionId)` in the function → `mapSimulationResultToPayload` (`transition.ts`).
-3. `apply_turn_transition(payload jsonb, ...)` — single transaction: advances turn, writes snapshots/logs/notifications/patches. Error hints: `world_archived`, `stale_expected_turn`, `state_drifted` (refresh + retry).
-4. Any failure after step 1 → `failStuckTurnTransition` (best-effort) so the world stays advanceable.
+2. `enqueue_turn_job(worldId, expectedTurn, transitionId)` — caller's JWT (authorizes via `is_world_admin`), one active job per world. Response is `202 {jobId, transitionId, worldId, actorId}`; a fire-and-forget nudge wakes the worker.
+3. Enqueue failure after step 1 → `failStuckTurnTransition` so the world stays advanceable.
+
+In `supabase/functions/turn-worker/` (service-role key required, checked in the handler):
+
+4. `claim_turn_job` → load state via `resolveServiceRoleEndTurnSimulationInput` (service role, NOT a user JWT) → `runSimulation(input, transitionId)` → `mapSimulationResultToPayload` (`transition.ts`) → `computeForecastSnapshot`.
+5. `apply_turn_transition(payload jsonb, ...)` — single transaction: advances turn, writes snapshots/logs/notifications/patches. Error hints: `world_archived`, `stale_expected_turn`, `state_drifted` (refresh + retry). Then `complete_turn_job` (idempotent).
+6. Any failure → `failStuckTurnTransition` then `fail_turn_job` (back to `pending` under `max_attempts`, else retired). A retry opens a FRESH transition, since the previous one is terminal.
+7. `heartbeat_turn_job` is checked immediately before the apply — a lost claim means another worker owns the turn, so this one applies nothing (no double-apply).
+
+The UI polls `turn_transitions.status` + `progress_stage` (`latestTurnTransitionStatusQueryOptions`); the mutation response no longer carries a summary.
 
 ## Phases (order is load-bearing)
 

@@ -4727,6 +4727,7 @@ export type Database = {
           from_turn_number: number;
           id: string;
           initiated_by_user_id: string;
+          progress_stage: string | null;
           readiness_summary_jsonb: Json | null;
           started_at: string;
           status: string;
@@ -4739,6 +4740,7 @@ export type Database = {
           from_turn_number: number;
           id?: string;
           initiated_by_user_id: string;
+          progress_stage?: string | null;
           readiness_summary_jsonb?: Json | null;
           started_at?: string;
           status?: string;
@@ -4751,6 +4753,7 @@ export type Database = {
           from_turn_number?: number;
           id?: string;
           initiated_by_user_id?: string;
+          progress_stage?: string | null;
           readiness_summary_jsonb?: Json | null;
           started_at?: string;
           status?: string;
@@ -6638,7 +6641,11 @@ export type Database = {
         };
       };
       enqueue_turn_job: {
-        Args: { p_expected_turn_number: number; p_world_id: string };
+        Args: {
+          p_expected_turn_number: number;
+          p_turn_transition_id?: string;
+          p_world_id: string;
+        };
         Returns: string;
       };
       enroll_citizen: {

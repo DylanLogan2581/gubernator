@@ -6,7 +6,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { normalizeSignInReturnPath, type AuthUiError } from "@/features/auth";
 import {
@@ -22,6 +22,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   endTurnTransitionMutationOptions,
+  invalidateAfterTurnAdvance,
   isEndTurnTransitionError,
   type EndTurnTransitionError,
   type EndTurnTransitionInput,
@@ -65,6 +66,7 @@ export type UseEndTurnControlResult = {
   readonly isNationOverrideAcknowledged: boolean;
   readonly isReadinessUnavailable: boolean;
   readonly isStuckRunning: boolean;
+  readonly isTurnRunning: boolean;
   readonly latestTransitionQuery: UseQueryResult<
     LatestTurnTransitionStatus | null,
     AuthUiError | LatestTurnTransitionStatusError
@@ -115,8 +117,14 @@ export function useEndTurnControl({
   );
   const isReadinessUnavailable =
     !readinessSummaryQuery.isSuccess || !nationReadinessListQuery.isSuccess;
+  // The turn runs in a background worker now (#1278), so "in flight" outlives
+  // the mutation: the request returns as soon as the job is queued.
+  const isTurnRunning = latestTransitionQuery.data?.isRunning === true;
   const isDisabled =
-    isArchived || isReadinessUnavailable || endTurnMutation.isPending;
+    isArchived ||
+    isReadinessUnavailable ||
+    endTurnMutation.isPending ||
+    isTurnRunning;
   const blockingNations = nationReadinessListQuery.isSuccess
     ? getBlockingNations(nationReadinessListQuery.data)
     : [];
@@ -135,6 +143,42 @@ export function useEndTurnControl({
     const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
     return startedTime < thirtyMinutesAgo;
   })();
+
+  // The worker reports the outcome through the transition row, not through the
+  // mutation response, so the success toast and the wide cache invalidation
+  // fire here -- once, when the transition this control started goes terminal.
+  const watchedTransitionIdRef = useRef<string | null>(null);
+  const transition = latestTransitionQuery.data;
+
+  useEffect(() => {
+    const watchedId = watchedTransitionIdRef.current;
+
+    if (
+      watchedId === null ||
+      transition === null ||
+      transition === undefined ||
+      transition.id !== watchedId ||
+      transition.isRunning
+    ) {
+      return;
+    }
+
+    watchedTransitionIdRef.current = null;
+
+    if (transition.state === "failed") {
+      notifyMutationError(
+        new Error("Turn advancement failed."),
+        "The background turn run failed. Check the world state and try again.",
+      );
+      return;
+    }
+
+    void invalidateAfterTurnAdvance(queryClient, worldId).then(() => {
+      notifyMutationSuccess(
+        `Advanced to turn ${transition.toTurnNumber.toString()}`,
+      );
+    });
+  }, [queryClient, transition, worldId]);
 
   function openConfirmation(): void {
     if (isDisabled) {
@@ -180,13 +224,10 @@ export function useEndTurnControl({
         },
         onSuccess: (result) => {
           setIsConfirming(false);
-          const { patchCounts, toTurnNumber } = result.summary;
-          const deaths = patchCounts.citizenDeaths;
-          const births = patchCounts.citizenBirths;
-          const buildingChanges = patchCounts.buildingStateChanges;
-          const depositUpdates = patchCounts.depositUpdates;
-          notifyMutationSuccess(`Advanced to turn ${toTurnNumber.toString()}`, {
-            description: `${deaths.toString()} deaths, ${births.toString()} births, ${buildingChanges.toString()} building changes, ${depositUpdates.toString()} deposit updates.`,
+          watchedTransitionIdRef.current = result.transitionId;
+          notifyMutationSuccess("Turn advancement started", {
+            description:
+              "The turn is running in the background. This page updates when it finishes.",
           });
         },
       },
@@ -237,6 +278,7 @@ export function useEndTurnControl({
     isNationOverrideAcknowledged,
     isReadinessUnavailable,
     isStuckRunning,
+    isTurnRunning,
     latestTransitionQuery,
     nationReadinessListQuery,
     openConfirmation,

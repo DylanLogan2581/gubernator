@@ -220,3 +220,19 @@ and benefits from being visible to the existing pgTAP and RLS tooling.
 - The `pg_cron` → `pg_net` scheduling of the worker is deliberately **not** part
   of #1277; it lands with the worker itself, so no schedule fires against an
   unimplemented consumer.
+
+### Delivered (2026-08-03, issue #1278)
+
+Phase 4 shipped on this substrate: `supabase/functions/turn-worker/` consumes
+the queue and runs the unchanged `resolveEndTurnSimulationInput` →
+`runSimulation` → `computeForecastSnapshot` → `apply_turn_transition` pipeline,
+while `end-turn-simulation` reduces to auth → `start_turn_transition` →
+`enqueue_turn_job` → `202`. Two follow-ups are explicitly still open:
+
+- **Periodic scheduling.** The worker is woken by a nudge from the enqueueing
+  request. Recovering a job whose worker died still waits for the next
+  invocation rather than a timer; the `pg_cron` → `pg_net` sweep lands with
+  phase 5.
+- **The ~100k-citizen budget target.** Not yet demonstrated. Per this ADR's own
+  consequences, the largest turns need phase 5 chunking before a single worker
+  invocation can be expected to hold them.

@@ -78,6 +78,8 @@ function EndTurnControlContent({
     isNationOverrideAcknowledged,
     isReadinessUnavailable,
     isStuckRunning,
+    isTurnRunning,
+    latestTransitionQuery,
     nationReadinessListQuery,
     openConfirmation,
     readinessSummaryQuery,
@@ -108,7 +110,9 @@ function EndTurnControlContent({
           className="w-fit"
         >
           <StepForward aria-hidden="true" />
-          {endTurnMutation.isPending ? "Running..." : "Run turn transition"}
+          {isTurnRunning || endTurnMutation.isPending
+            ? "Running..."
+            : "Run turn transition"}
         </Button>
       </div>
 
@@ -165,6 +169,8 @@ function EndTurnControlContent({
           isArchived,
           isPending: endTurnMutation.isPending,
           isReadinessUnavailable,
+          isTurnRunning,
+          progressStage: latestTransitionQuery.data?.progressStage ?? null,
         })}
       </p>
 

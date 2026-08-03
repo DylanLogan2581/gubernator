@@ -41,6 +41,8 @@ export function HeaderEndTurnControl({
     isDisabled,
     isNationOverrideAcknowledged,
     isReadinessUnavailable,
+    isTurnRunning,
+    latestTransitionQuery,
     openConfirmation,
     readinessSummaryQuery,
     requiresNationOverrideConfirmation,
@@ -59,6 +61,8 @@ export function HeaderEndTurnControl({
     isArchived,
     isPending: endTurnMutation.isPending,
     isReadinessUnavailable,
+    isTurnRunning,
+    progressStage: latestTransitionQuery.data?.progressStage ?? null,
   });
 
   return (
@@ -74,7 +78,7 @@ export function HeaderEndTurnControl({
       >
         <StepForward aria-hidden="true" />
         <span className="truncate">
-          {endTurnMutation.isPending ? (
+          {isTurnRunning || endTurnMutation.isPending ? (
             "Running..."
           ) : (
             <>

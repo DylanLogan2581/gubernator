@@ -591,6 +591,30 @@ let totalDepositRemainingAfter = 0;
 let populationRowsAfter: { id: string; current_count: number }[] = [];
 let totalConstructionProgressAfter = 0;
 let notifCountAfter: number | null | undefined;
+let transitionStatusAfterWorker: string | null = null;
+
+// Polls until the background worker drives the transition to a terminal
+// status. Throws rather than silently asserting against a half-run turn.
+async function waitForTransitionToFinish(id: string): Promise<string> {
+  const deadline = Date.now() + 120_000;
+
+  while (Date.now() < deadline) {
+    const { data } = await svc
+      .from("turn_transitions")
+      .select("status")
+      .eq("id", id)
+      .single();
+    const status = data?.status as string | undefined;
+
+    if (status !== undefined && status !== "running") {
+      return status;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(`turn transition ${id} did not finish within 120s`);
+}
 
 describe("end-turn-simulation integration", () => {
   beforeAll(async () => {
@@ -688,19 +712,25 @@ describe("end-turn-simulation integration", () => {
     );
     responseStatus = response.status;
 
-    if (response.status !== 200) {
+    if (response.status !== 202) {
       const responseText = await response.text();
       throw new Error(
         `end-turn-simulation request failed: ${response.status} ${response.statusText} ${responseText}`,
       );
     }
 
+    // #1278: the request only queues the turn. The pipeline runs in the
+    // turn-worker function, so every assertion below is against what that
+    // worker produced -- this is the end-to-end proof that the background
+    // host yields the same transition the inline path used to.
     responseBody = (await response.json()) as unknown;
     transitionId = (
       responseBody as {
-        data: { summary: { transitionId: string } };
+        data: { transitionId: string };
       }
-    ).data.summary.transitionId;
+    ).data.transitionId;
+
+    transitionStatusAfterWorker = await waitForTransitionToFinish(transitionId);
 
     // World turn after the call.
     const { data: world } = await svc
@@ -780,20 +810,24 @@ describe("end-turn-simulation integration", () => {
       .select("id", { count: "exact", head: true })
       .eq("world_id", WORLD_ID);
     notifCountAfter = fetchedNotifCount;
-  }, 60_000);
+  }, 180_000);
 
-  it("returns 200 with the expected turn summary", () => {
-    expect(responseStatus).toBe(200);
+  it("returns 202 with the queued job and transition ids", () => {
+    expect(responseStatus).toBe(202);
     expect(responseBody).toMatchObject({
       ok: true,
       data: {
+        transitionId,
         worldId: WORLD_ID,
-        summary: {
-          fromTurnNumber: startTurn,
-          toTurnNumber: startTurn + 1,
-        },
       },
     });
+    expect((responseBody as { data: { jobId: string } }).data.jobId).toEqual(
+      expect.any(String),
+    );
+  });
+
+  it("completes the transition in the background worker", () => {
+    expect(transitionStatusAfterWorker).toBe("completed");
   });
 
   it("increments the world's current_turn_number", () => {
@@ -882,5 +916,8 @@ describe("end-turn-simulation integration", () => {
         `Integration test teardown failed:\n${teardownErrors.map((e) => `  - ${e}`).join("\n")}`,
       );
     }
-  }, 30_000);
+    // 60s, not 30s: the restore undoes a turn the background worker applied
+    // in full, and on a loaded machine the batched id-filtered deletes were
+    // already running close to the old budget.
+  }, 60_000);
 });

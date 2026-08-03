@@ -212,14 +212,23 @@ Each edge function validates these at cold start via `assertEdgeEnvVars` in
 the Docker compose stack (production) inject them automatically — you do not
 set them manually.
 
-| Variable                    | Used by                                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------------------- |
-| `SUPABASE_URL`              | all functions                                                                                |
-| `SUPABASE_ANON_KEY`         | all functions                                                                                |
-| `SUPABASE_SERVICE_ROLE_KEY` | `end-turn-simulation`, `admin-create-user`, `export-world-template` (rate-limit bucket only) |
+| Variable                    | Used by                                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`              | all functions                                                                                               |
+| `SUPABASE_ANON_KEY`         | all functions                                                                                               |
+| `SUPABASE_SERVICE_ROLE_KEY` | `end-turn-simulation`, `turn-worker`, `admin-create-user`, `export-world-template` (rate-limit bucket only) |
 
 If a required variable is missing at cold start, the function throws immediately
 with `"Edge function cold-start failed — missing required env vars: ..."`.
+
+The `turn-worker` function is system-only: it requires the service-role key as
+its bearer token (platform JWT verification alone would admit any signed user
+token). It is woken by a fire-and-forget nudge from `end-turn-simulation` after
+a turn is queued. That nudge is an optimisation, not the delivery mechanism —
+the durable `turn_jobs` queue is, and any invocation drains up to three jobs,
+so a dropped nudge only delays a turn until the next invocation. Scheduling a
+periodic sweep (`pg_cron` → `pg_net`) is deliberately left to the phase 5 work
+that also introduces turn chunking.
 
 ### 3. Start the stack and apply migrations
 

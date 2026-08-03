@@ -1,4 +1,3 @@
-import { logEndTurnSuccess } from "../_shared/auditLog.ts";
 import {
   generateRequestId,
   logRequestEntry,
@@ -23,9 +22,10 @@ import {
   createJsonResponse,
   getAllowedOrigins,
 } from "./http.ts";
+import { kickTurnWorker } from "./kick.ts";
 import {
+  enqueueTurnJob,
   failStuckTurnTransition,
-  persistSimulationTransition,
   startTurnTransition,
 } from "./persist.ts";
 import { resolveSupabaseSimulationAuthContext } from "./session.ts";
@@ -35,11 +35,11 @@ import { parseEndTurnSimulationRequestBody } from "./validate.ts";
 
 import type {
   EndTurnSimulationHandlerOptions,
-  EndTurnSimulationPersistResult,
   EndTurnSimulationResponse,
 } from "./types.ts";
 
 export type {
+  EndTurnSimulationAcceptedResponse,
   EndTurnSimulationAuthContext,
   EndTurnSimulationAuthContextResult,
   EndTurnSimulationAuthorizationResult,
@@ -48,7 +48,6 @@ export type {
   EndTurnSimulationHandlerOptions,
   EndTurnSimulationRequestBody,
   EndTurnSimulationResponse,
-  EndTurnSimulationSuccessResponse,
 } from "./types.ts";
 
 // Placeholder transition id for read-only forecast previews. The simulation
@@ -192,14 +191,10 @@ export async function handleEndTurnSimulationRequest(
       return respond(authorizationResult.error, authorizationResult.status);
     }
 
-    const stateResult = await resolveSupabaseEndTurnSimulationInput(
-      validateResult.body,
-      authContextResult.context,
-    );
-    if (!stateResult.ok) {
-      return respond(stateResult.error, stateResult.status);
-    }
-
+    // #1278: everything past this point is queueing, not simulating. The
+    // load -> simulate -> persist pipeline runs in the turn-worker function so
+    // it is not bounded by this request's 30s budget. The transition is opened
+    // here (not in the worker) so the client gets an id to poll immediately.
     const startResult = await startTurnTransition(
       validateResult.body,
       authContextResult.context,
@@ -208,74 +203,41 @@ export async function handleEndTurnSimulationRequest(
       return respond(startResult.error, startResult.status);
     }
 
-    let persistResult: EndTurnSimulationPersistResult;
-
-    try {
-      const transitionResult = planSimulationTransition(
-        stateResult.input,
-        startResult.transitionId,
-      );
-      if (!transitionResult.ok) {
-        await failStuckTurnTransition(
-          validateResult.body.worldId,
-          startResult.transitionId,
-          authContextResult.context.userId,
-          transitionResult.error.error.message,
-        );
-        return respond(transitionResult.error, transitionResult.status);
-      }
-
-      const forecastSnapshot = computeForecastSnapshot(
-        transitionResult.result,
-        stateResult.input,
-      );
-
-      persistResult = await persistSimulationTransition(
-        validateResult.body,
-        transitionResult.payload,
-        startResult.transitionId,
-        authContextResult.context.userId,
-        forecastSnapshot,
-      );
-      if (!persistResult.ok) {
-        await failStuckTurnTransition(
-          validateResult.body.worldId,
-          startResult.transitionId,
-          authContextResult.context.userId,
-          persistResult.error.error.message,
-        );
-        return respond(persistResult.error, persistResult.status);
-      }
-    } catch (error) {
+    const enqueueResult = await enqueueTurnJob(
+      validateResult.body,
+      authContextResult.context,
+      startResult.transitionId,
+    );
+    if (!enqueueResult.ok) {
+      // Leaving the transition 'running' with nothing queued would wedge the
+      // world until an admin used the recovery UI.
       await failStuckTurnTransition(
         validateResult.body.worldId,
         startResult.transitionId,
         authContextResult.context.userId,
-        error instanceof Error ? error.message : "unexpected error during plan/persist",
+        enqueueResult.error.error.message,
       );
-      throw error;
+      return respond(enqueueResult.error, enqueueResult.status);
     }
 
-    logEndTurnSuccess(
-      authContextResult.context.userId,
-      validateResult.body.worldId,
-      persistResult.summary.fromTurnNumber,
-      persistResult.summary.toTurnNumber,
-      startResult.transitionId,
-    );
+    // Best-effort nudge so the queued turn starts now rather than on the next
+    // request. The claim protocol is the source of truth either way: a lost
+    // nudge only delays the job, it never loses it.
+    kickTurnWorker(requestId);
 
-    logRequestSuccess(requestId, "end_turn_simulation_completed", Date.now() - startMs);
+    logRequestSuccess(requestId, "end_turn_simulation_queued", Date.now() - startMs);
 
     return respond(
       {
         data: {
           actorId: authContextResult.context.userId,
-          summary: persistResult.summary,
+          jobId: enqueueResult.jobId,
+          transitionId: startResult.transitionId,
           worldId: validateResult.body.worldId,
         },
         ok: true,
       },
-      200,
+      202,
     );
   } catch (error) {
     // Handle unexpected errors with CORS headers

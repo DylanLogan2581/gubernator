@@ -35,10 +35,14 @@ export type EndTurnSimulationErrorResponse = {
   readonly ok: false;
 };
 
-export type EndTurnSimulationSuccessResponse = {
+// #1278: the request no longer runs the turn. It starts the transition, queues
+// the job, and hands back the ids the client polls on; the summary arrives via
+// turn_transitions once the background worker finishes.
+export type EndTurnSimulationAcceptedResponse = {
   readonly data: {
     readonly actorId: string;
-    readonly summary: ApplyTurnTransitionSummary;
+    readonly jobId: string;
+    readonly transitionId: string;
     readonly worldId: string;
   };
   readonly ok: true;
@@ -52,9 +56,9 @@ export type EndTurnSimulationForecastResponse = {
 };
 
 export type EndTurnSimulationResponse =
+  | EndTurnSimulationAcceptedResponse
   | EndTurnSimulationErrorResponse
-  | EndTurnSimulationForecastResponse
-  | EndTurnSimulationSuccessResponse;
+  | EndTurnSimulationForecastResponse;
 
 export type EndTurnSimulationAuthContext = {
   readonly authorizationHeader?: string;

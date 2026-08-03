@@ -10,6 +10,7 @@ import { turnQueryKeys } from "./turnQueryKeys";
 
 import type {
   LatestTurnTransitionStatus,
+  TurnTransitionProgressStage,
   TurnTransitionState,
 } from "../types/turnTransitionStatusTypes";
 
@@ -29,6 +30,7 @@ type LatestTurnTransitionStatusRow = {
   readonly finished_at: string | null;
   readonly from_turn_number: number;
   readonly id: string;
+  readonly progress_stage: string | null;
   readonly started_at: string;
   readonly status: string;
   readonly to_turn_number: number;
@@ -36,8 +38,17 @@ type LatestTurnTransitionStatusRow = {
 };
 
 const LATEST_TURN_TRANSITION_STATUS_SELECT =
-  "id,world_id,from_turn_number,to_turn_number,status,started_at,finished_at";
+  "id,world_id,from_turn_number,to_turn_number,status,started_at,finished_at,progress_stage";
 const TURN_TRANSITION_STATES = ["running", "completed", "failed"] as const;
+const TURN_TRANSITION_PROGRESS_STAGES = [
+  "loading",
+  "persisting",
+  "queued",
+  "simulating",
+] as const;
+// The turn now runs in a background worker (#1278), so a running transition is
+// only observable by polling. Idle worlds fall back to the default (no poll).
+const RUNNING_TRANSITION_POLL_MS = 3000;
 
 export class LatestTurnTransitionStatusError extends Error {
   readonly code: LatestTurnTransitionStatusErrorCode;
@@ -68,6 +79,8 @@ export function latestTurnTransitionStatusQueryOptions(
   return queryOptions({
     queryFn: () => getLatestTurnTransitionStatus(client, worldId),
     queryKey: turnQueryKeys.latestTransitionStatus(worldId),
+    refetchInterval: (query) =>
+      query.state.data?.isRunning === true ? RUNNING_TRANSITION_POLL_MS : false,
     retry: shouldRetryLatestTurnTransitionStatusQuery,
   });
 }
@@ -150,6 +163,7 @@ function toLatestTurnTransitionStatus(
     fromTurnNumber: row.from_turn_number,
     id: row.id,
     isRunning: row.status === "running",
+    progressStage: toTurnTransitionProgressStage(row.progress_stage),
     startedAt: row.started_at,
     state: row.status,
     toTurnNumber: row.to_turn_number,
@@ -159,4 +173,14 @@ function toLatestTurnTransitionStatus(
 
 function isTurnTransitionState(status: string): status is TurnTransitionState {
   return TURN_TRANSITION_STATES.some((state) => state === status);
+}
+
+// Unknown stages are treated as "no progress reported" rather than an error:
+// progress is cosmetic and must never break the status poll.
+function toTurnTransitionProgressStage(
+  stage: string | null,
+): TurnTransitionProgressStage | null {
+  return (
+    TURN_TRANSITION_PROGRESS_STAGES.find((known) => known === stage) ?? null
+  );
 }

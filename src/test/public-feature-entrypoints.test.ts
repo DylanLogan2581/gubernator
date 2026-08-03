@@ -68,7 +68,6 @@ import {
   type CurrentTurnDateDisplay,
   type EndTurnTransitionInput,
   type EndTurnTransitionMutationResult,
-  type EndTurnTransitionSummary,
   type LatestTurnTransitionStatus,
   type TurnTransitionLogEntry,
   type TurnTransitionNotification,
@@ -170,9 +169,9 @@ describe("public feature entrypoints", () => {
       readonly worldId: string;
     }>();
     expectTypeOf<
-      Pick<EndTurnTransitionSummary, "currentTurnNumber" | "transitionId">
+      Pick<EndTurnTransitionMutationResult, "jobId" | "transitionId">
     >().toEqualTypeOf<{
-      readonly currentTurnNumber: number;
+      readonly jobId: string;
       readonly transitionId: string;
     }>();
     expectTypeOf<

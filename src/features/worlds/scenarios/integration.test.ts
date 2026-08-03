@@ -49,6 +49,29 @@ const anon = createClient(LOCAL_URL, LOCAL_ANON_KEY, {
   },
 });
 
+// Polls until the background turn worker (#1278) drives the transition to a
+// terminal status. Throws rather than asserting against a half-run turn.
+async function waitForTransitionToFinish(id: string): Promise<string> {
+  const deadline = Date.now() + 90_000;
+
+  while (Date.now() < deadline) {
+    const { data } = await svc
+      .from("turn_transitions")
+      .select("status")
+      .eq("id", id)
+      .single();
+    const status = data?.status as string | undefined;
+
+    if (status !== undefined && status !== "running") {
+      return status;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(`turn transition ${id} did not finish within 90s`);
+}
+
 // ---------------------------------------------------------------------------
 // Test state populated in beforeAll
 // ---------------------------------------------------------------------------
@@ -163,7 +186,8 @@ describe("bundled scenario turn-1 integration", () => {
       ).resolves.not.toThrow();
 
       // ------------------------------------------------------------------
-      // 3. Call end-turn-simulation.
+      // 3. Queue the turn (#1278: the pipeline runs in the turn-worker
+      //    function, so the request only returns the ids to watch).
       // ------------------------------------------------------------------
       const response = await fetch(
         `${LOCAL_URL}/functions/v1/end-turn-simulation`,
@@ -180,7 +204,7 @@ describe("bundled scenario turn-1 integration", () => {
         },
       );
 
-      if (response.status !== 200) {
+      if (response.status !== 202) {
         const responseText = await response.text();
         throw new Error(
           `end-turn-simulation failed for scenario '${scenario.id}': ` +
@@ -188,21 +212,20 @@ describe("bundled scenario turn-1 integration", () => {
         );
       }
 
-      const body: unknown = await response.json();
-      expect(body).toMatchObject({
-        ok: true,
-        data: {
-          worldId,
-          summary: {
-            fromTurnNumber: startTurn,
-            toTurnNumber: startTurn + 1,
-          },
-        },
-      });
+      const body = (await response.json()) as {
+        data: { transitionId: string; worldId: string };
+        ok: boolean;
+      };
+      expect(body).toMatchObject({ data: { worldId }, ok: true });
 
       // ------------------------------------------------------------------
-      // 4. Verify world turn incremented in the DB.
+      // 4. Wait for the background worker, then verify the turn incremented.
       // ------------------------------------------------------------------
+      const transitionStatus = await waitForTransitionToFinish(
+        body.data.transitionId,
+      );
+      expect(transitionStatus).toBe("completed");
+
       const { data: world } = await svc
         .from("worlds")
         .select("current_turn_number")
@@ -210,7 +233,7 @@ describe("bundled scenario turn-1 integration", () => {
         .single();
       expect(world?.current_turn_number).toBe(startTurn + 1);
     },
-    60_000,
+    120_000,
   );
 
   // ---------------------------------------------------------------------------

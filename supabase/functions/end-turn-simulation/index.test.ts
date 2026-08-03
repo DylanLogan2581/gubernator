@@ -16,6 +16,7 @@ const FOOD_ID = "00000000-0000-0000-0000-000000000010";
 const WATER_ID = "00000000-0000-0000-0000-000000000011";
 const USER_ID = "00000000-0000-0000-0000-000000000100";
 const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
+const JOB_ID = "00000000-0000-0000-0000-0000000000aa";
 
 function makeValidBody(): string {
   return JSON.stringify({ expectedTurnNumber: 5, worldId: WORLD_ID });
@@ -46,20 +47,6 @@ function makeWorldRow(): Record<string, unknown> {
     starvation_severity_multiplier: 1.0,
     status: "active",
     water_consumption_per_citizen: 1.0,
-  };
-}
-
-function makeSuccessSummary(): Record<string, unknown> {
-  return {
-    currentTurnNumber: 6,
-    fromTurnNumber: 5,
-    patchCounts: {
-      buildingStateChanges: 0,
-      citizenBirths: 0,
-      citizenDeaths: 0,
-    },
-    toTurnNumber: 6,
-    transitionId: TRANSITION_ID,
   };
 }
 
@@ -168,7 +155,10 @@ function stubFullCycle(
     "rpc/is_super_admin": { body: false, status: 200 },
     "rpc/is_world_admin": { body: true, status: 200 },
     "rpc/start_turn_transition": { body: TRANSITION_ID, status: 200 },
-    "rpc/apply_turn_transition": { body: makeSuccessSummary(), status: 200 },
+    "rpc/enqueue_turn_job": { body: JOB_ID, status: 200 },
+    // The request nudges the worker after queueing; the queue, not the nudge,
+    // is what actually delivers the job.
+    "/functions/v1/turn-worker": { body: { claimed: 0, outcomes: [] }, status: 200 },
     ...makeStateResponses(),
     ...overrides,
   });
@@ -283,8 +273,8 @@ describe("handleEndTurnSimulationRequest", () => {
       { allowedOrigins: ["http://localhost:5173"] },
     );
 
-    // Should succeed (200), not fail at CORS check (403)
-    expect(response.status).toBe(200);
+    // Should be accepted (202), not fail at CORS check (403)
+    expect(response.status).toBe(202);
     const responseBody = (await response.json()) as {
       data?: { actorId: string };
       ok?: boolean;
@@ -426,8 +416,10 @@ describe("handleEndTurnSimulationRequest", () => {
   // -------------------------------------------------------------------------
 
   describe("POST — happy path", () => {
-    it("returns 200 with actorId, worldId, and transition summary on success", async () => {
-      stubFullCycle();
+    it("returns 202 with the queued job and transition ids on success", async () => {
+      // #1278: the request queues the turn; the summary lands on the
+      // transition row once the background worker finishes.
+      const fetchMock = stubFullCycle();
 
       const response = await handleEndTurnSimulationRequest(
         new Request("http://localhost/end-turn-simulation", {
@@ -440,36 +432,45 @@ describe("handleEndTurnSimulationRequest", () => {
         }),
       );
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(202);
 
       const responseBody = (await response.json()) as {
         data: {
           actorId: string;
-          summary: {
-            currentTurnNumber: number;
-            fromTurnNumber: number;
-            patchCounts: Record<string, number>;
-            toTurnNumber: number;
-            transitionId: string;
-          };
+          jobId: string;
+          transitionId: string;
           worldId: string;
         };
         ok: boolean;
       };
 
       expect(responseBody.ok).toBe(true);
-      expect(responseBody.data.actorId).toBe(USER_ID);
-      expect(responseBody.data.worldId).toBe(WORLD_ID);
+      expect(responseBody.data).toEqual({
+        actorId: USER_ID,
+        jobId: JOB_ID,
+        transitionId: TRANSITION_ID,
+        worldId: WORLD_ID,
+      });
 
-      const { summary } = responseBody.data;
-      expect(summary.fromTurnNumber).toBe(5);
-      expect(summary.toTurnNumber).toBe(6);
-      expect(summary.currentTurnNumber).toBe(6);
-      expect(summary.transitionId).toBe(TRANSITION_ID);
-      expect(summary.patchCounts).toEqual({
-        buildingStateChanges: 0,
-        citizenBirths: 0,
-        citizenDeaths: 0,
+      // The request must not simulate or apply anything itself.
+      const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
+      expect(
+        calledUrls.some((url) => url.includes("rpc/apply_turn_transition")),
+      ).toBe(false);
+
+      // enqueue_turn_job runs with the caller's JWT: it authorizes through
+      // is_world_admin(), which needs an auth.uid() the service role lacks.
+      const enqueueCall = fetchMock.mock.calls.find(([url]) =>
+        String(url).includes("rpc/enqueue_turn_job"),
+      );
+      expect(enqueueCall).toBeDefined();
+      const [, enqueueInit] = enqueueCall as [string, RequestInit];
+      const enqueueHeaders = enqueueInit.headers as Record<string, string>;
+      expect(enqueueHeaders["authorization"]).toBe("Bearer valid-token");
+      expect(JSON.parse(enqueueInit.body as string)).toEqual({
+        p_expected_turn_number: 5,
+        p_turn_transition_id: TRANSITION_ID,
+        p_world_id: WORLD_ID,
       });
     });
 
@@ -622,9 +623,9 @@ describe("handleEndTurnSimulationRequest", () => {
       }
     });
 
-    it("returns 409 when the persist RPC reports an archived world", async () => {
+    it("returns 409 when the enqueue RPC reports an archived world", async () => {
       stubFullCycle({
-        "rpc/apply_turn_transition": {
+        "rpc/enqueue_turn_job": {
           body: {
             code: "P0001",
             hint: "world_archived",
@@ -653,9 +654,9 @@ describe("handleEndTurnSimulationRequest", () => {
       });
     });
 
-    it("returns 409 when the persist RPC reports a stale expected turn", async () => {
+    it("returns 409 when the enqueue RPC reports a stale expected turn", async () => {
       stubFullCycle({
-        "rpc/apply_turn_transition": {
+        "rpc/enqueue_turn_job": {
           body: {
             code: "P0001",
             hint: "stale_expected_turn",
@@ -685,15 +686,17 @@ describe("handleEndTurnSimulationRequest", () => {
     });
 
     // -------------------------------------------------------------------
-    // #958 — a persist failure after start_turn_transition must fail the
-    // wedged 'running' row in the same request, not leave it stuck.
+    // #958 / #1278 — a failure after start_turn_transition must fail the
+    // wedged 'running' row in the same request, not leave it stuck. With the
+    // pipeline moved to the worker, the failure the request can still hit is
+    // the enqueue itself.
     // -------------------------------------------------------------------
-    it("marks the running transition failed via fail_stuck_turn_transition when persist fails", async () => {
+    it("marks the running transition failed via fail_stuck_turn_transition when enqueue fails", async () => {
       const fetchMock = stubFullCycle({
-        "rpc/apply_turn_transition": {
+        "rpc/enqueue_turn_job": {
           body: {
-            code: "P0001",
-            message: "simulation engine may not kill a player character",
+            code: "XX000",
+            message: "queue unavailable",
           },
           status: 500,
         },
@@ -724,7 +727,7 @@ describe("handleEndTurnSimulationRequest", () => {
       const responseBody: unknown = await response.json();
       expect(response.status).toBe(500);
       expect(responseBody).toMatchObject({
-        error: { code: "end_turn_transition_failed" },
+        error: { code: "end_turn_transition_unavailable" },
         ok: false,
       });
 

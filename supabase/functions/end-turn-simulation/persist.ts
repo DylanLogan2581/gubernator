@@ -21,6 +21,11 @@ import type {
   EndTurnSimulationRequestBody,
 } from "./types.ts";
 
+// Matches the synchronous request budget. The background turn worker overrides
+// it: applying a large world's turn is one long transaction that can outlast
+// any request-shaped timeout (#1278).
+const DEFAULT_RPC_TIMEOUT_MS = 30_000;
+
 type SupabaseRpcError = {
   readonly code: string;
   readonly hint?: string;
@@ -31,6 +36,17 @@ type StartTurnTransitionResult =
   | {
     readonly ok: true;
     readonly transitionId: string;
+  }
+  | {
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
+
+type EnqueueTurnJobResult =
+  | {
+    readonly jobId: string;
+    readonly ok: true;
   }
   | {
     readonly error: EndTurnSimulationErrorResponse;
@@ -62,6 +78,7 @@ function isApplyTurnTransitionSummary(
 export async function startTurnTransition(
   body: EndTurnSimulationRequestBody,
   authContext: EndTurnSimulationAuthContext,
+  timeoutMs = DEFAULT_RPC_TIMEOUT_MS,
 ): Promise<StartTurnTransitionResult> {
   const requestId = generateRequestId();
   logRequestEntry(
@@ -102,7 +119,7 @@ export async function startTurnTransition(
         },
         method: "POST",
       },
-      30000,
+      timeoutMs,
     );
   } catch {
     logCaughtError(
@@ -169,12 +186,94 @@ export async function startTurnTransition(
   return { ok: true, transitionId };
 }
 
+// #1278: hand the turn to the background worker instead of running it inline.
+// Called with the requester's JWT, not the service-role key: enqueue_turn_job
+// authorizes through is_super_admin()/is_world_admin(), which need an auth.uid().
+export async function enqueueTurnJob(
+  body: EndTurnSimulationRequestBody,
+  authContext: EndTurnSimulationAuthContext,
+  transitionId: string,
+): Promise<EnqueueTurnJobResult> {
+  const requestId = generateRequestId();
+  logRequestEntry(requestId, authContext.userId, "enqueue_turn_job", body.worldId);
+
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+  const authorizationHeader = authContext.authorizationHeader;
+
+  if (
+    supabaseUrl === undefined ||
+    supabaseAnonKey === undefined ||
+    authorizationHeader === undefined
+  ) {
+    logRequestFailure(
+      requestId,
+      "end_turn_transition_unavailable",
+      "Supabase configuration unavailable",
+    );
+    return createEnqueueUnavailableResult();
+  }
+
+  let response: Response;
+  try {
+    response = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/rpc/enqueue_turn_job`,
+      {
+        body: JSON.stringify({
+          p_expected_turn_number: body.expectedTurnNumber,
+          p_turn_transition_id: transitionId,
+          p_world_id: body.worldId,
+        }),
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: authorizationHeader,
+          "content-type": "application/json",
+        },
+        method: "POST",
+      },
+      30000,
+    );
+  } catch {
+    logCaughtError(requestId, "fetch_error", "Failed to reach enqueue_turn_job RPC");
+    return createEnqueueUnavailableResult();
+  }
+
+  if (!response.ok) {
+    const errorBody: unknown = await response.json().catch(() => undefined);
+
+    if (isSupabaseRpcError(errorBody)) {
+      logCaughtError(requestId, errorBody.code, errorBody.message, errorBody.hint);
+      return rpcErrorToEnqueueResult(errorBody, requestId);
+    }
+
+    logCaughtError(requestId, "unknown_error", "Unexpected error response format");
+    return createEnqueueUnavailableResult();
+  }
+
+  let jobId: unknown;
+  try {
+    jobId = await response.json();
+  } catch {
+    logCaughtError(requestId, "response_parse_error", "Failed to parse job id response");
+    return createEnqueueUnavailableResult();
+  }
+
+  if (typeof jobId !== "string") {
+    logCaughtError(requestId, "invalid_response_type", "Job id is not a string");
+    return createEnqueueUnavailableResult();
+  }
+
+  logRequestSuccess(requestId, `Turn job enqueued: ${jobId}`);
+  return { jobId, ok: true };
+}
+
 export async function persistSimulationTransition(
   body: EndTurnSimulationRequestBody,
   payload: ApplyTurnTransitionPayload,
   transitionId: string,
   actorUserId: string,
   forecastSnapshot: ForecastSnapshot,
+  timeoutMs = DEFAULT_RPC_TIMEOUT_MS,
 ): Promise<EndTurnSimulationPersistResult> {
   const requestId = generateRequestId();
   logRequestEntry(
@@ -217,7 +316,7 @@ export async function persistSimulationTransition(
         },
         method: "POST",
       },
-      30000,
+      timeoutMs,
     );
   } catch {
     logCaughtError(
@@ -511,6 +610,83 @@ function rpcErrorToResult(
     "Unknown RPC error",
   );
   return createTransitionUnavailableResult();
+}
+
+function rpcErrorToEnqueueResult(
+  error: SupabaseRpcError,
+  requestId: string,
+): EnqueueTurnJobResult {
+  if (error.code === "42501") {
+    logRequestFailure(requestId, "unauthorized", "RPC permission denied");
+    return {
+      error: createErrorResponse({
+        code: "unauthorized",
+        message: "End turn is unavailable for this world.",
+      }),
+      ok: false,
+      status: 403,
+    };
+  }
+
+  if (error.code === "P0001") {
+    if (error.hint === "world_archived") {
+      logRequestFailure(requestId, "end_turn_world_archived", "World archived");
+      return {
+        error: createErrorResponse({
+          code: "end_turn_world_archived",
+          message: "World is archived and cannot be advanced.",
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
+
+    if (error.hint === "stale_expected_turn") {
+      logRequestFailure(
+        requestId,
+        "end_turn_stale_expected_turn",
+        "Turn number mismatch",
+      );
+      return {
+        error: createErrorResponse({
+          code: "end_turn_stale_expected_turn",
+          message: "Expected current turn no longer matches the world state.",
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
+
+    if (error.hint === "running_transition") {
+      logRequestFailure(
+        requestId,
+        "end_turn_running_transition",
+        "A turn is already running for this world",
+      );
+      return {
+        error: createErrorResponse({
+          code: "end_turn_running_transition",
+          message: "A turn is already being advanced for this world.",
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
+  }
+
+  logRequestFailure(requestId, "end_turn_transition_unavailable", "Unknown RPC error");
+  return createEnqueueUnavailableResult();
+}
+
+function createEnqueueUnavailableResult(): EnqueueTurnJobResult {
+  return {
+    error: createErrorResponse({
+      code: "end_turn_transition_unavailable",
+      message: "End turn could not be queued.",
+    }),
+    ok: false,
+    status: 500,
+  };
 }
 
 function createStartUnavailableResult(): StartTurnTransitionResult {

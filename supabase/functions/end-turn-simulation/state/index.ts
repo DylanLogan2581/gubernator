@@ -149,6 +149,36 @@ export async function resolveSupabaseEndTurnSimulationInput(
   return await resolveEndTurnInputFromCtx(requestBody, ctx);
 }
 
+// Privileged variant for the background turn worker (#1278), which runs the
+// pipeline off the request and so has no end user's JWT to borrow. The service
+// role bypasses RLS; settlement_stockpiles_view's effective_cap helper admits
+// it explicitly (20261219000000_add_async_turn_worker.sql). Never reachable
+// from a browser request — the worker function is the only caller.
+export async function resolveServiceRoleEndTurnSimulationInput(
+  requestBody: EndTurnSimulationRequestBody,
+  timeoutMs?: number,
+): Promise<EndTurnSimulationStateResult> {
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
+
+  if (supabaseUrl === undefined || supabaseServiceRoleKey === undefined) {
+    return createStateUnavailableResult();
+  }
+
+  const ctx: FetchContext = {
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      authorization: `Bearer ${supabaseServiceRoleKey}`,
+    },
+    supabaseUrl,
+    timeoutMs,
+  };
+
+  return await resolveEndTurnInputFromCtx(requestBody, ctx);
+}
+
 // ---------------------------------------------------------------------------
 // Internal: shared state-loading logic, keyed on a pre-built FetchContext.
 // ---------------------------------------------------------------------------
